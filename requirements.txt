@@ -1,9 +1,7 @@
-streamlit
+flask
 pandas
 yfinance
 edgartools
 python-dotenv
-seaborn
-matplotlib
 tabulate
 requests

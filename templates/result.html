@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Valuation Result: {{ ticker }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <a href="/" class="text-blue-500 hover:underline mb-4 inline-block">&larr; Back to Inputs</a>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-center">
+            <div class="p-4 bg-gray-50 rounded">
+                <span class="block text-gray-500">Current Price</span>
+                <span class="text-2xl font-bold">${{ "{:,.2f}".format(price) }}</span>
+            </div>
+            <div class="p-4 bg-blue-50 rounded border border-blue-200">
+                <span class="block text-blue-600">Intrinsic Value</span>
+                <span class="text-3xl font-bold text-blue-900">${{ "{:,.2f}".format(value) }}</span>
+                <span class="block text-sm {{ 'text-green-600' if value > price else 'text-red-600' }}">
+                    {{ "{:+.1%}".format((value/price)-1) }} Upside
+                </span>
+            </div>
+            <div class="p-4 bg-gray-50 rounded">
+                <span class="block text-gray-500">WACC</span>
+                <span class="text-2xl font-bold">{{ "{:.2%}".format(wacc) }}</span>
+            </div>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4">Sensitivity Analysis</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-center text-sm">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="p-2 border">WACC / Term G</th>
+                        {% for h in sensitivity.headers[1:] %}
+                        <th class="p-2 border">{{ h }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in sensitivity.rows %}
+                    <tr>
+                        <td class="font-bold bg-gray-100 border p-2">{{ row[0] }}</td>
+                        {% for cell in row[1:] %}
+                        <td class="border p-2 hover:bg-gray-50">{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <h2 class="text-xl font-bold mt-8 mb-4">Projections</h2>
+        <div class="overflow-x-auto text-xs">
+            <table class="min-w-full">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th class="p-2">Year</th>
+                        <th class="p-2">Rev</th>
+                        <th class="p-2">EBIT</th>
+                        <th class="p-2">UFCF</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in projections %}
+                    <tr class="odd:bg-white even:bg-gray-50">
+                        <td class="p-2 text-center">{{ p.Year }}</td>
+                        <td class="p-2 text-right">${{ "{:,.0f}".format(p.Revenue) }}</td>
+                        <td class="p-2 text-right">${{ "{:,.0f}".format(p.EBIT) }}</td>
+                        <td class="p-2 text-right font-bold">${{ "{:,.0f}".format(p.UFCF) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+</html>

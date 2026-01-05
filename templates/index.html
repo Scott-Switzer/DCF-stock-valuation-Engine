@@ -1,155 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DCF Valuation Engine</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>DCF Valuation Model</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <div class="grain-overlay"></div>
-    
-    <header class="header">
-        <div class="container">
-            <h1 class="logo">DCF Valuation Engine</h1>
-            <p class="tagline">Discounted Cash Flow Analysis</p>
+
+<body class="bg-gray-100 min-h-screen py-10">
+    <div class="max-w-xl mx-auto bg-white p-8 rounded-lg shadow-md">
+        <h1 class="text-3xl font-bold mb-6 text-center text-blue-900">DCF Valuation Model</h1>
+
+        {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <strong>Error:</strong> {{ error }}
         </div>
-    </header>
+        {% endif %}
 
-    <main class="container">
-        <div class="grid">
-            <!-- Input Section -->
-            <section class="card input-section">
-                <h2 class="section-title">Valuation Parameters</h2>
-                
-                <form id="dcfForm">
-                    <div class="form-group">
-                        <label for="ticker">Company Ticker</label>
-                        <input type="text" id="ticker" name="ticker" placeholder="AAPL" required>
-                        <span class="helper-text">Enter the stock symbol (e.g., AAPL, MSFT, GOOGL)</span>
-                    </div>
+        <form method="POST" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Ticker Symbol</label>
+                <input type="text" name="ticker" value="AAPL"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required>
+            </div>
 
-                    <div class="form-group">
-                        <label>Revenue Growth Rates (5 Years)</label>
-                        <div class="growth-inputs">
-                            <div class="input-row">
-                                <span class="year-label">Year 1</span>
-                                <input type="number" name="growth_1" step="0.01" placeholder="0.05" required>
-                                <span class="percent">%</span>
-                            </div>
-                            <div class="input-row">
-                                <span class="year-label">Year 2</span>
-                                <input type="number" name="growth_2" step="0.01" placeholder="0.05" required>
-                                <span class="percent">%</span>
-                            </div>
-                            <div class="input-row">
-                                <span class="year-label">Year 3</span>
-                                <input type="number" name="growth_3" step="0.01" placeholder="0.04" required>
-                                <span class="percent">%</span>
-                            </div>
-                            <div class="input-row">
-                                <span class="year-label">Year 4</span>
-                                <input type="number" name="growth_4" step="0.01" placeholder="0.04" required>
-                                <span class="percent">%</span>
-                            </div>
-                            <div class="input-row">
-                                <span class="year-label">Year 5</span>
-                                <input type="number" name="growth_5" step="0.01" placeholder="0.03" required>
-                                <span class="percent">%</span>
-                            </div>
-                        </div>
-                        <span class="helper-text">Enter as decimals (e.g., 0.05 for 5%)</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="terminal_growth">Terminal Growth Rate</label>
-                        <div class="input-row">
-                            <input type="number" id="terminal_growth" name="terminal_growth" step="0.001" placeholder="0.025" required>
-                            <span class="percent">%</span>
-                        </div>
-                        <span class="helper-text">Long-term growth rate (typically 2-3%)</span>
-                    </div>
-
-                    <button type="submit" class="btn-primary" id="calculateBtn">
-                        <span class="btn-text">Calculate Valuation</span>
-                        <span class="btn-loader" style="display: none;">
-                            <span class="spinner"></span> Calculating...
-                        </span>
-                    </button>
-                </form>
-            </section>
-
-            <!-- Results Section -->
-            <section class="card results-section" id="resultsSection" style="display: none;">
-                <h2 class="section-title">Valuation Results</h2>
-                
-                <div class="result-highlight">
-                    <div class="metric-large">
-                        <span class="metric-label">12-Month Target Price</span>
-                        <span class="metric-value" id="targetPrice">$0.00</span>
-                    </div>
-                    <div class="metric-comparison">
-                        <div class="metric-small">
-                            <span class="metric-label">Current Price</span>
-                            <span class="metric-value" id="currentPrice">$0.00</span>
-                        </div>
-                        <div class="metric-small">
-                            <span class="metric-label">Upside/Downside</span>
-                            <span class="metric-value" id="upside">0%</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="metrics-grid">
-                    <div class="metric">
-                        <span class="metric-label">WACC</span>
-                        <span class="metric-value" id="wacc">0%</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Market Cap</span>
-                        <span class="metric-value" id="marketCap">$0</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Beta</span>
-                        <span class="metric-value" id="beta">0.00</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Shares Outstanding</span>
-                        <span class="metric-value" id="shares">0</span>
-                    </div>
-                </div>
-
-                <div class="projections-table" id="projectionsTable"></div>
-
-                <button class="btn-secondary" id="viewLogsBtn">View Detailed Calculations</button>
-            </section>
-        </div>
-
-        <!-- Error Display -->
-        <div class="error-message" id="errorMessage" style="display: none;"></div>
-
-        <!-- Calculation Logs Modal -->
-        <div class="modal" id="logsModal" style="display: none;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Detailed Calculation Log</h3>
-                    <button class="modal-close" id="closeModal">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <pre id="calculationLogs"></pre>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Terminal Growth Rate</label>
+                    <input type="number" step="0.001" name="term_g" value="0.025"
+                        class="mt-1 block w-full rounded-md border-gray-300 p-2 border">
                 </div>
             </div>
-        </div>
-    </main>
 
-    <footer class="footer">
-        <div class="container">
-            <p>Data provided by Financial Modeling Prep API | Built with Flask</p>
-            <p class="disclaimer">For educational purposes only. Not financial advice.</p>
-        </div>
-    </footer>
+            <h3 class="text-lg font-semibold pt-4">Growth Rates (Next 5 Years)</h3>
+            <div class="grid grid-cols-5 gap-2">
+                {% for i in range(1, 6) %}
+                <div>
+                    <label class="block text-xs text-center">Year {{ i }}</label>
+                    <input type="number" step="0.01" name="g{{ i }}" value="{{ 0.05 if i < 3 else 0.03 }}"
+                        class="w-full p-1 border rounded text-center">
+                </div>
+                {% endfor %}
+            </div>
 
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
+                Calculate Valuation
+            </button>
+        </form>
+    </div>
 </body>
+
 </html>
