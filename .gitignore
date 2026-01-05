@@ -1,0 +1,7 @@
+keys.env
+__pycache__/
+*.pyc
+.DS_Store
+.env
+market_data_cache.json
+*.zip
