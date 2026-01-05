@@ -4,3 +4,7 @@ pandas
 edgartools
 python-dotenv
 requests
+seaborn
+matplotlib
+tabulate
+gunicorn
