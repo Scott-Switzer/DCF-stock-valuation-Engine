@@ -43,9 +43,10 @@
                 <tbody>
                     {% for row in sensitivity.rows %}
                     <tr>
-                        <td class="font-bold bg-gray-100 border p-2">{{ row[0] }}</td>
-                        {% for cell in row[1:] %}
-                        <td class="border p-2 hover:bg-gray-50">{{ cell }}</td>
+                        {% for cell in row %}
+                        <td class="border p-2" style="{{ cell.style }}">
+                            {{ cell.value }}
+                        </td>
                         {% endfor %}
                     </tr>
                     {% endfor %}

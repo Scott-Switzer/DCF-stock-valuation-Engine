@@ -27,17 +27,43 @@ def index():
             model = DCFModel(data, assumptions)
             val = model.calculate_intrinsic_value()
             
-            # 3. Sensitivity
+            # 3. Sensitivity & Heatmap Logic
             g_steps, matrix = model.generate_sensitivity_table()
             
-            # Format Data for Template
+            # Find range for color scaling
+            all_prices = [p for _, row in matrix for p in row]
+            min_p, max_p = min(all_prices), max(all_prices)
+            current_p = data.stock_price
+            
             sensitivity_data = {
                 "headers": ["WACC"] + [f"{g:.1%}" for g in g_steps],
                 "rows": []
             }
+            
             for wacc, prices in matrix:
-                row = [f"{wacc:.1%}"] + [f"${p:,.2f}" for p in prices]
-                sensitivity_data["rows"].append(row)
+                row_items = [{"value": f"{wacc:.1%}", "style": "font-weight: bold; background-color: #f3f4f6;"}]
+                
+                for p in prices:
+                    # Color Logic: Relative to Current Price
+                    if p >= current_p:
+                        # Green Intensity
+                        # Scale: (p - curr) / (max - curr) -> 0 to 1
+                        intensity = (p - current_p) / (max_p - current_p) if max_p > current_p else 0
+                        alpha = 0.1 + (0.6 * intensity) # Min 0.1, Max 0.7 opacity
+                        bg_color = f"rgba(34, 197, 94, {alpha:.2f})" # Tailwind Green-500
+                    else:
+                        # Red Intensity
+                        # Scale: (curr - p) / (curr - min) -> 0 to 1
+                        intensity = (current_p - p) / (current_p - min_p) if current_p > min_p else 0
+                        alpha = 0.1 + (0.6 * intensity)
+                        bg_color = f"rgba(239, 68, 68, {alpha:.2f})" # Tailwind Red-500
+                        
+                    row_items.append({
+                        "value": f"${p:,.2f}", 
+                        "style": f"background-color: {bg_color};"
+                    })
+                    
+                sensitivity_data["rows"].append(row_items)
 
             return render_template(
                 'result.html',
