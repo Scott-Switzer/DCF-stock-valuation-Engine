@@ -9,7 +9,6 @@ import yfinance as yf
 from datetime import datetime
 from dotenv import load_dotenv
 from typing import List, Optional, Dict, Any
-from edgar import Company, set_identity
 
 # Import the data class from dcf_code
 from dcf_code import FinancialData
@@ -21,20 +20,8 @@ load_dotenv('.env')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("dcf_loader")
 
-# 2. Configure Edgartools Identity
-EDGAR_IDENTITY = os.getenv("EDGAR_IDENTITY")
-if EDGAR_IDENTITY:
-    set_identity(EDGAR_IDENTITY)
-else:
-    logger.warning("EDGAR_IDENTITY not found. Edgartools may fail.")
-
-# 3. Configure Local Storage for Edgartools (Speed Boost)
-if os.getenv("EDGAR_USE_LOCAL_DATA", "False").lower() == "true":
-    logger.info("Edgartools Local Data Caching: ENABLED (Expect faster repeat runs)")
-
-
 # --- Caching Layer (Market Data) ---
-CACHE_FILE = "market_data_cache.json"
+CACHE_FILE = "/tmp/market_data_cache.json" # Use /tmp for Vercel/Lambda read-write consistency
 CACHE_EXPIRY_HOURS = 24
 
 def load_cache() -> Dict[str, Any]:
@@ -129,7 +116,7 @@ class HybridDataFetcher:
     def __init__(self, ticker: str):
         self.ticker = ticker.upper()
         self.yf_ticker = yf.Ticker(self.ticker)
-        # self.company = Company(self.ticker) # Keep edgar for future use
+        # self.company = Company(self.ticker) # REMOVED for Vercel Size Limit
         
     def get_market_data(self) -> Dict[str, Any]:
         cached = get_cached_market_data(self.ticker)

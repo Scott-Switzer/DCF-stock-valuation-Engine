@@ -1,7 +1,5 @@
 flask
-pandas
 yfinance
-edgartools
+pandas
 python-dotenv
-tabulate
 requests
