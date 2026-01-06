@@ -80,6 +80,27 @@
                 <input type="text" name="ticker" id="ticker-input" value="" autocomplete="off"
                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required
                     placeholder="Type Ticker Here">
+
+                <!-- Helper Text -->
+                <div class="mt-1 flex items-center gap-1 text-xs text-gray-500">
+                    <span>Missing a ticker?</span>
+                    <div class="relative group inline-block cursor-help">
+                        <span class="underline decoration-dotted text-blue-600 hover:text-blue-800">Why are some
+                            excluded?</span>
+                        <div
+                            class="absolute bottom-full left-0 mb-2 w-64 p-3 bg-gray-900 text-white rounded shadow-xl hidden group-hover:block z-50">
+                            <p class="font-bold mb-1">Standard DCF Limitations</p>
+                            <p class="mb-2">We exclude assets that require specialized valuation models:</p>
+                            <ul class="list-disc pl-4 space-y-1">
+                                <li><strong>ETFs/Funds</strong>: No direct cash flows.</li>
+                                <li><strong>REITs</strong>: Valued using FFO/AFFO.</li>
+                                <li><strong>Banks</strong>: Valued using Dividends/Residual Income.</li>
+                                <li><strong>LPs/MLPs</strong>: Different tax/cash structures.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="autocomplete-list" class="autocomplete-items hidden"></div>
             </div>
 
