@@ -117,6 +117,7 @@
         const termGInput = document.getElementById('term-g-input');
         const warningModal = document.getElementById('growth-warning');
         let currentFocus = -1;
+        let debounceTimer = null;
 
         // Terminal Growth Warning
         termGInput.addEventListener('change', function () {
@@ -130,35 +131,112 @@
             warningModal.classList.add('hidden');
         }
 
-        // Autocomplete Logic
-        input.addEventListener('input', async function () {
-            const val = this.value;
+        // Debounced Search (300ms)
+        input.addEventListener('input', function () {
+            clearTimeout(debounceTimer);
+            const val = this.value.trim();
+
             closeAllLists();
-            if (!val) return;
 
-            const response = await fetch(`/api/tickers?q=${encodeURIComponent(val)}&limit=10`);
-            const tickers = await response.json();
+            if (val.length < 2) return;
 
-            if (tickers.length === 0) return;
+            debounceTimer = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/search?q=${encodeURIComponent(val)}&limit=12`);
 
-            list.classList.remove('hidden');
-            tickers.forEach(ticker => {
-                const div = document.createElement('div');
-                div.innerHTML = `<strong>${ticker.substr(0, val.length)}</strong>${ticker.substr(val.length)}`;
-                div.addEventListener('click', function () {
-                    input.value = ticker;
-                    closeAllLists();
-                });
-                list.appendChild(div);
-            });
+                    if (!response.ok) {
+                        if (response.status === 429) {
+                            showError('Too many requests. Please wait a moment.');
+                        }
+                        return;
+                    }
+
+                    const results = await response.json();
+
+                    if (results.error) {
+                        showError(results.error);
+                        return;
+                    }
+
+                    if (results.length === 0) {
+                        showFallbackMessage(val);
+                        return;
+                    }
+
+                    showResults(results, val);
+
+                } catch (err) {
+                    console.error('Search error:', err);
+                    showFallbackMessage(val);
+                }
+            }, 300);
         });
 
+        function showResults(results, query) {
+            list.innerHTML = '';
+            list.classList.remove('hidden');
+
+            results.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center';
+
+                // Highlight matching part
+                const symbol = item.symbol || '';
+                const highlightedSymbol = symbol.replace(
+                    new RegExp(`^(${query})`, 'i'),
+                    '<strong class="text-blue-600">$1</strong>'
+                );
+
+                div.innerHTML = `
+                    <div>
+                        <span class="font-mono">${highlightedSymbol}</span>
+                        <span class="text-gray-500 text-sm ml-2">${item.shortname || ''}</span>
+                    </div>
+                    <span class="text-xs text-gray-400">${item.exchange || ''}</span>
+                `;
+
+                div.addEventListener('click', () => {
+                    input.value = symbol;
+                    closeAllLists();
+                });
+
+                list.appendChild(div);
+            });
+        }
+
+        function showFallbackMessage(query) {
+            list.innerHTML = '';
+            list.classList.remove('hidden');
+
+            const div = document.createElement('div');
+            div.className = 'text-gray-500 text-sm';
+            div.innerHTML = `
+                <p>No results found. You can still enter <strong>${query.toUpperCase()}</strong> manually.</p>
+                <button type="button" class="mt-2 text-blue-600 hover:underline" onclick="document.getElementById('ticker-input').value='${query.toUpperCase()}'; closeAllLists();">
+                    Use "${query.toUpperCase()}" anyway →
+                </button>
+            `;
+            list.appendChild(div);
+        }
+
+        function showError(message) {
+            list.innerHTML = '';
+            list.classList.remove('hidden');
+            const div = document.createElement('div');
+            div.className = 'text-red-500 text-sm';
+            div.textContent = message;
+            list.appendChild(div);
+        }
+
+        // Keyboard navigation
         input.addEventListener('keydown', function (e) {
-            const items = list.getElementsByTagName('div');
+            const items = list.querySelectorAll('div.flex');
             if (e.keyCode === 40) { // Down
+                e.preventDefault();
                 currentFocus++;
                 addActive(items);
             } else if (e.keyCode === 38) { // Up
+                e.preventDefault();
                 currentFocus--;
                 addActive(items);
             } else if (e.keyCode === 13) { // Enter
@@ -166,21 +244,21 @@
                 if (currentFocus > -1 && items[currentFocus]) {
                     items[currentFocus].click();
                 }
+            } else if (e.keyCode === 27) { // Escape
+                closeAllLists();
             }
         });
 
         function addActive(items) {
-            if (!items) return;
+            if (!items || items.length === 0) return;
             removeActive(items);
             if (currentFocus >= items.length) currentFocus = 0;
             if (currentFocus < 0) currentFocus = items.length - 1;
-            items[currentFocus].classList.add('autocomplete-active');
+            items[currentFocus].classList.add('bg-blue-50');
         }
 
         function removeActive(items) {
-            for (const item of items) {
-                item.classList.remove('autocomplete-active');
-            }
+            items.forEach(item => item.classList.remove('bg-blue-50'));
         }
 
         function closeAllLists() {
@@ -190,7 +268,9 @@
         }
 
         document.addEventListener('click', function (e) {
-            if (e.target !== input) closeAllLists();
+            if (e.target !== input && !list.contains(e.target)) {
+                closeAllLists();
+            }
         });
     </script>
 </body>

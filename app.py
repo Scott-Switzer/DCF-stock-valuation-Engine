@@ -1,18 +1,43 @@
 from flask import Flask, render_template, request, jsonify
 from dcf_loader import load_data_from_api
 from dcf_code import DCFModel, DCFAssumptions
-from tickers import search_tickers, get_all_tickers
+from ticker_search import search_tickers, fallback_search, check_rate_limit
 import os
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-@app.route('/api/tickers')
-def api_tickers():
-    """API endpoint for ticker autocomplete search"""
-    query = request.args.get('q', '')
-    limit = int(request.args.get('limit', 10))
-    matches = search_tickers(query, limit)
-    return jsonify(matches)
+@app.route('/api/search')
+def api_search():
+    """
+    Dynamic ticker search endpoint using yfinance.
+    GET /api/search?q=AAPL&limit=12
+    Returns: [{symbol, shortname, exchange, type, score}]
+    """
+    # Rate limiting
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if not check_rate_limit(client_ip):
+        return jsonify({'error': 'Rate limit exceeded. Try again later.'}), 429
+    
+    query = request.args.get('q', '').strip()
+    limit = min(int(request.args.get('limit', 12)), 20)  # Cap at 20
+    
+    # Require minimum query length
+    if len(query) < 2:
+        return jsonify([])
+    
+    # Try yfinance search first
+    results = search_tickers(query, limit)
+    
+    # Fallback to static list if yfinance fails
+    if not results:
+        logger.warning(f"yfinance search failed for '{query}', using fallback")
+        results = fallback_search(query, limit)
+    
+    return jsonify(results)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
