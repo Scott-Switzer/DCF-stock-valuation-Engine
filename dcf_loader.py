@@ -4,6 +4,8 @@ import time
 import json
 import logging
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
@@ -13,6 +15,26 @@ from edgar import Company, set_identity
 
 # Import the data class from dcf_code
 from dcf_code import FinancialData
+
+# --- HTTP Session with Timeout and Retries ---
+HTTP_TIMEOUT = (3.05, 15)  # (connect, read) seconds
+
+def create_session_with_retry():
+    """Create a requests session with retry logic and timeout"""
+    session = requests.Session()
+    retries = Retry(
+        total=3,
+        backoff_factor=0.5,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET"]
+    )
+    adapter = HTTPAdapter(max_retries=retries)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+# Global session for reuse
+_http_session = create_session_with_retry()
 
 # --- Configuration & Setup ---
 load_dotenv('.env')
@@ -146,12 +168,13 @@ class HybridDataFetcher:
                 "treasury_yield": 0.042,
                 "market_return": 0.10,
             }
+            # Fetch treasury yield with timeout
             try:
                 tnx = yf.Ticker("^TNX")
-                hist = tnx.history(period="1d")
+                hist = tnx.history(period="1d", timeout=10)
                 if not hist.empty:
                     data["treasury_yield"] = hist['Close'].iloc[-1] / 100
-            except:
+            except Exception:
                 pass
                 
             set_cached_market_data(self.ticker, data)
@@ -251,16 +274,16 @@ class FMPDataFetcher:
         self.base_url = "https://financialmodelingprep.com/stable"
 
     def _safe_request(self, url: str):
-        """Robust request handler with rate limiting"""
+        """Robust request handler with timeout, rate limiting, and retries"""
         try:
-            # Respect Rate Limits (Estimated 10/sec for free, checking errors)
+            # Respect Rate Limits
             time.sleep(0.2) 
-            response = requests.get(url, timeout=10)
+            response = _http_session.get(url, timeout=HTTP_TIMEOUT)
             
             if response.status_code == 429:
                 logger.warning("FMP Rate Limit Exceeded. Waiting 1s...")
                 time.sleep(1.0)
-                response = requests.get(url, timeout=10)
+                response = _http_session.get(url, timeout=HTTP_TIMEOUT)
 
             if response.status_code == 200:
                 data = response.json()
@@ -270,6 +293,9 @@ class FMPDataFetcher:
                 return data
             
             logger.error(f"FMP Request failed: {response.status_code} for {url}")
+            return []
+        except requests.Timeout:
+            logger.error(f"FMP request timed out: {url}")
             return []
         except Exception as e:
             logger.error(f"FMP Connection error: {e}")

@@ -22,5 +22,9 @@ COPY . .
 ENV PORT=5000
 EXPOSE 5000
 
-# Run the application (using Gunicorn for production)
-CMD gunicorn --bind 0.0.0.0:$PORT app:app
+# Gunicorn tuning for I/O-bound workloads:
+# - 4 workers for multi-core utilization
+# - 4 threads per worker for concurrent I/O
+# - 30s timeout to prevent hung requests
+# - Access log for monitoring
+CMD gunicorn --bind 0.0.0.0:$PORT --workers 4 --threads 4 --timeout 30 --access-logfile - app:app
