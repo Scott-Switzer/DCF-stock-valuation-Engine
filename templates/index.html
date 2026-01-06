@@ -111,21 +111,14 @@
         </form>
     </div>
 
+    <!-- Load Ticker Data -->
+    <script src="/static/js/tickers.js"></script>
+
     <script>
         const input = document.getElementById('ticker-input');
         const list = document.getElementById('autocomplete-list');
-        const termGInput = document.getElementById('term-g-input');
-        const warningModal = document.getElementById('growth-warning');
+        const fallback = document.getElementById('fallback-option');
         let currentFocus = -1;
-        let debounceTimer = null;
-
-        // Terminal Growth Warning
-        termGInput.addEventListener('change', function () {
-            const val = parseFloat(this.value);
-            if (val > 0.04) {
-                warningModal.classList.remove('hidden');
-            }
-        });
 
         function closeWarning() {
             warningModal.classList.add('hidden');

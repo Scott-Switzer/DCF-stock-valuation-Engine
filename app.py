@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from dcf_loader import load_data_from_api
 from dcf_code import DCFModel, DCFAssumptions
-from ticker_search import search_tickers, fallback_search, check_rate_limit
 import os
 import re
 import math
@@ -80,38 +79,6 @@ def check_valuation_rate_limit(ip: str) -> bool:
 # =============================================================================
 # ROUTES
 # =============================================================================
-@app.route('/api/search')
-def api_search():
-    """
-    Dynamic ticker search endpoint using yfinance.
-    GET /api/search?q=AAPL&limit=12
-    Returns: [{symbol, shortname, exchange, type, score}]
-    """
-    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    if not check_rate_limit(client_ip):
-        return jsonify({'error': 'Rate limit exceeded. Try again later.'}), 429
-    
-    query = request.args.get('q', '').strip()
-    
-    # Validate limit parameter
-    try:
-        limit = min(int(request.args.get('limit', 12)), 20)
-    except ValueError:
-        limit = 12
-    
-    if len(query) < 2:
-        return jsonify([])
-    
-    # Sanitize query for logging (no control chars)
-    safe_query = re.sub(r'[^\w\s.-]', '', query)[:20]
-    
-    results = search_tickers(query, limit)
-    
-    if not results:
-        logger.warning(f"yfinance search failed for '{safe_query}', using fallback")
-        results = fallback_search(query, limit)
-    
-    return jsonify(results)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
