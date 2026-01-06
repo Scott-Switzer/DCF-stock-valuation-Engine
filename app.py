@@ -1,10 +1,18 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from dcf_loader import load_data_from_api
 from dcf_code import DCFModel, DCFAssumptions
-import pandas as pd
+from tickers import search_tickers, get_all_tickers
 import os
 
 app = Flask(__name__)
+
+@app.route('/api/tickers')
+def api_tickers():
+    """API endpoint for ticker autocomplete search"""
+    query = request.args.get('q', '')
+    limit = int(request.args.get('limit', 10))
+    matches = search_tickers(query, limit)
+    return jsonify(matches)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -48,13 +56,15 @@ def index():
                     if p >= current_p:
                         # Green Intensity
                         # Scale: (p - curr) / (max - curr) -> 0 to 1
-                        intensity = (p - current_p) / (max_p - current_p) if max_p > current_p else 0
+                        denom = max_p - current_p
+                        intensity = (p - current_p) / denom if denom > 0 else 0
                         alpha = 0.1 + (0.6 * intensity) # Min 0.1, Max 0.7 opacity
                         bg_color = f"rgba(34, 197, 94, {alpha:.2f})" # Tailwind Green-500
                     else:
                         # Red Intensity
                         # Scale: (curr - p) / (curr - min) -> 0 to 1
-                        intensity = (current_p - p) / (current_p - min_p) if current_p > min_p else 0
+                        denom = current_p - min_p
+                        intensity = (current_p - p) / denom if denom > 0 else 0
                         alpha = 0.1 + (0.6 * intensity)
                         bg_color = f"rgba(239, 68, 68, {alpha:.2f})" # Tailwind Red-500
                         
@@ -72,14 +82,19 @@ def index():
                 value=val,
                 wacc=model.wacc,
                 projections=model.projections,
-                sensitivity=sensitivity_data
+                sensitivity=sensitivity_data,
+                calculation_log=model.calculation_log
             )
             
         except Exception as e:
-            return render_template('index.html', error=str(e))
+            import logging
+            logging.error(f"DCF Calculation Error: {e}")
+            return render_template('index.html', error="An error occurred processing your request. Please check the ticker symbol and try again.")
             
     return render_template('index.html')
 
-# Vercel requires the app to be exposed as 'app'
+# Production: debug is controlled by environment variable
+import os
 if __name__ == '__main__':
-    app.run(debug=True)
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug_mode)

@@ -4,11 +4,6 @@ from typing import Dict, List, Optional
 @dataclass
 class DCFAssumptions:
     """
-    Container for all assumptions needed to run the DCF.
-    """
-@dataclass
-class DCFAssumptions:
-    """
     Container for USER inputs: only growth rates and terminal parameters.
     Everything else is fetched from API.
     """
@@ -79,14 +74,9 @@ class FinancialData:
         return [a - l for a, l in zip(self.total_assets, self.total_liabilities)]
 
 
-class DCFModel:
-    def __init__(self, data: FinancialData, assumptions: DCFAssumptions):
-        self.data = data
-        self.assumptions = assumptions
-        self.wacc = 0.0
-        self.projections = []
-        
 import numpy as np
+import io
+import sys
 
 class DCFModel:
     def __init__(self, data: FinancialData, assumptions: DCFAssumptions):
@@ -94,11 +84,17 @@ class DCFModel:
         self.assumptions = assumptions
         self.wacc = 0.0
         self.projections = []
+        self.calculation_log = []  # Stores output for web display
+        
+    def _log(self, message: str):
+        """Print AND store message for web transparency"""
+        print(message)
+        self.calculation_log.append(message)
         
     def _print_header(self, title):
-        print(f"\n{'='*60}")
-        print(f" {title}")
-        print(f"{'='*60}")
+        self._log(f"\n{'='*60}")
+        self._log(f" {title}")
+        self._log(f"{'='*60}")
 
     def _calculate_historical_margins(self):
         """
@@ -128,12 +124,12 @@ class DCFModel:
         def fmt_list(arr):
             return "[" + ", ".join([f"{x:,.0f}" for x in arr]) + "]"
 
-        print(f"Years Used:           {self.data.years[-rec_count:]}")
-        print(f"Historical Revenue:   {fmt_list(rev)}")
-        print(f"Historical EBIT:      {fmt_list(ebit)}")
-        print(f"Historical D&A:       {fmt_list(da)}")
-        print(f"Historical CapEx:     {fmt_list(capex)}")
-        print(f"Historical NWC:       {fmt_list(nwc)}")
+        self._log(f"Years Used:           {self.data.years[-rec_count:]}")
+        self._log(f"Historical Revenue:   {fmt_list(rev)}")
+        self._log(f"Historical EBIT:      {fmt_list(ebit)}")
+        self._log(f"Historical D&A:       {fmt_list(da)}")
+        self._log(f"Historical CapEx:     {fmt_list(capex)}")
+        self._log(f"Historical NWC:       {fmt_list(nwc)}")
 
         try:
             # 1. OPERATING MARGINS (ROWS 13-29)
@@ -153,18 +149,18 @@ class DCFModel:
             capex_margins = np.abs(capex) / rev
             avg_capex_m = np.mean(capex_margins)
             
-            print(f"\n--- Calculated Margins (Last 3 Years) ---")
-            print(f"EBIT Margins:   {ebit_margins}")
-            print(f"Avg EBIT Margin: {avg_ebit_m:.4%}")
+            self._log(f"\n--- Calculated Margins (Last 3 Years) ---")
+            self._log(f"EBIT Margins:   {ebit_margins}")
+            self._log(f"Avg EBIT Margin: {avg_ebit_m:.4%}")
             
-            print(f"D&A Margins:    {da_margins}")
-            print(f"Avg D&A Margin:  {avg_da_m:.4%}")
+            self._log(f"D&A Margins:    {da_margins}")
+            self._log(f"Avg D&A Margin:  {avg_da_m:.4%}")
             
-            print(f"NWC Margins:    {nwc_margins}")
-            print(f"Avg NWC Margin:  {avg_nwc_m:.4%}")
+            self._log(f"NWC Margins:    {nwc_margins}")
+            self._log(f"Avg NWC Margin:  {avg_nwc_m:.4%}")
             
-            print(f"CapEx Margins:  {capex_margins}")
-            print(f"Avg CapEx Margin:{avg_capex_m:.4%}")
+            self._log(f"CapEx Margins:  {capex_margins}")
+            self._log(f"Avg CapEx Margin:{avg_capex_m:.4%}")
             
         except ZeroDivisionError:
             print("Error: Zero Revenue found, cannot calculate margins.")
@@ -185,11 +181,11 @@ class DCFModel:
         rm = self.data.market_return_rate
         cost_equity = rf + beta * (rm - rf)
         
-        print(f"1. Cost of Equity (CAPM)")
-        print(f"   Risk Fee Rate: {rf:.2%}")
-        print(f"   Beta:          {beta:.3f}")
-        print(f"   Market Return: {rm:.2%}")
-        print(f"   -> Cost Equity: {cost_equity:.2%}")
+        self._log(f"1. Cost of Equity (CAPM)")
+        self._log(f"   Risk Fee Rate: {rf:.2%}")
+        self._log(f"   Beta:          {beta:.3f}")
+        self._log(f"   Market Return: {rm:.2%}")
+        self._log(f"   -> Cost Equity: {cost_equity:.2%}")
 
         # 2. Cost of Debt (After Tax)
         total_debt = self.data.total_debt[-1] if self.data.total_debt else 0
@@ -199,12 +195,12 @@ class DCFModel:
         tax_rate = self.data.effective_tax_rate[-1] if self.data.effective_tax_rate else 0.21
         cost_debt_at = cost_of_debt * (1 - tax_rate)
         
-        print(f"\n2. Cost of Debt")
-        print(f"   Interest Exp:  ${int_exp:,.0f}")
-        print(f"   Total Debt:    ${total_debt:,.0f}")
-        print(f"   Pre-Tax Cost:  {cost_of_debt:.2%}")
-        print(f"   Tax Rate:      {tax_rate:.2%}")
-        print(f"   -> After-Tax:   {cost_debt_at:.2%}")
+        self._log(f"\n2. Cost of Debt")
+        self._log(f"   Interest Exp:  ${int_exp:,.0f}")
+        self._log(f"   Total Debt:    ${total_debt:,.0f}")
+        self._log(f"   Pre-Tax Cost:  {cost_of_debt:.2%}")
+        self._log(f"   Tax Rate:      {tax_rate:.2%}")
+        self._log(f"   -> After-Tax:   {cost_debt_at:.2%}")
 
         # 3. Capital Structure Weights
         market_cap = self.data.market_cap
@@ -223,15 +219,15 @@ class DCFModel:
         pref_divs = self.data.preferred_dividends[-1] if self.data.preferred_dividends else 0
         cost_pref = abs(pref_divs) / pref_equity if pref_equity > 0 else 0
         
-        print(f"\n3. Weighting")
-        print(f"   Market Cap:    ${market_cap:,.0f} ({w_equity:.1%})")
-        print(f"   Total Debt:    ${total_debt:,.0f} ({w_debt:.1%})")
-        print(f"   Pref Equity:   ${pref_equity:,.0f} ({w_pref:.1%})")
+        self._log(f"\n3. Weighting")
+        self._log(f"   Market Cap:    ${market_cap:,.0f} ({w_equity:.1%})")
+        self._log(f"   Total Debt:    ${total_debt:,.0f} ({w_debt:.1%})")
+        self._log(f"   Pref Equity:   ${pref_equity:,.0f} ({w_pref:.1%})")
         
         wacc = (w_equity * cost_equity) + (w_debt * cost_debt_at) + (w_pref * cost_pref)
         self.wacc = wacc
         
-        print(f"\n-> FINAL WACC: {wacc:.4%}")
+        self._log(f"\n-> FINAL WACC: {wacc:.4%}")
         return wacc
 
     def forecast_cash_flows(self):
@@ -242,7 +238,7 @@ class DCFModel:
         ebit_m, da_m, nwc_m, capex_m, last_nwc = self._calculate_historical_margins()
         
         self._print_header("PHASE 2 & 3: PROJECTIONS & UFCF")
-        print(f"Base Revenue: ${self.data.revenue[-1]:,.0f}")
+        self._log(f"Base Revenue: ${self.data.revenue[-1]:,.0f}")
         
         projections = []
         curr_rev = self.data.revenue[-1] # Base Revenue (Year 0)
@@ -253,8 +249,8 @@ class DCFModel:
         # Tax Rate used for projections
         tax_rate = self.data.effective_tax_rate[-1] if self.data.effective_tax_rate else 0.21
         
-        print(f"{'Year':<5} | {'Revenue':<15} | {'EBIT':<15} | {'Taxes':<12} | {'NOPAT':<15} | {'D&A':<12} | {'CapEx':<12} | {'Chg NWC':<12} | {'UFCF':<15}")
-        print("-" * 140)
+        self._log(f"{'Year':<5} | {'Revenue':<15} | {'EBIT':<15} | {'Taxes':<12} | {'NOPAT':<15} | {'D&A':<12} | {'CapEx':<12} | {'Chg NWC':<12} | {'UFCF':<15}")
+        self._log("-" * 140)
 
         for i, g in enumerate(self.assumptions.revenue_growth_rates):
             # 1. Project Revenue
@@ -292,7 +288,7 @@ class DCFModel:
             }
             projections.append(row)
             
-            print(f"{i+1:<5} | {curr_rev:,.0f} | {ebit:,.0f} | {taxes:,.0f} | {nopat:,.0f} | {da:,.0f} | {capex:,.0f} | {change_nwc:,.0f} | {ufcf:,.0f}")
+            self._log(f"{i+1:<5} | {curr_rev:,.0f} | {ebit:,.0f} | {taxes:,.0f} | {nopat:,.0f} | {da:,.0f} | {capex:,.0f} | {change_nwc:,.0f} | {ufcf:,.0f}")
             
             prev_nwc = nwc_level 
             
@@ -352,9 +348,9 @@ class DCFModel:
         PHASE 4 & 5: VALUATION & 12-MONTH TARGET PRICE BRIDGE
         (Main execution method with logging)
         """
-        print(f"\n{'#'*60}")
+        self._log(f"\n{'#'*60}")
         print(" STARTING VALUATION")
-        print(f"{'#'*60}")
+        self._log(f"{'#'*60}")
 
         # Step 1: WACC
         wacc = self.calculate_wacc()
@@ -370,17 +366,17 @@ class DCFModel:
 
         # Step 3: Discount Stage 1
         pv_ufcf_sum = 0
-        print(f"{'Year':<5} | {'UFCF':<15} | {'Discount Fac':<12} | {'PV':<15}")
-        print("-" * 60)
+        self._log(f"{'Year':<5} | {'UFCF':<15} | {'Discount Fac':<12} | {'PV':<15}")
+        self._log("-" * 60)
         
         for i, flow in enumerate(ufcfs):
             factor = (1 + wacc) ** (i + 1)
             pv = flow / factor
             pv_ufcf_sum += pv
-            print(f"{i+1:<5} | {flow:,.0f} | {factor:.4f}       | {pv:,.0f}")
+            self._log(f"{i+1:<5} | {flow:,.0f} | {factor:.4f}       | {pv:,.0f}")
             
-        print(f"{'-'*60}")
-        print(f"Stage 1 PV Sum: ${pv_ufcf_sum:,.0f}")
+        self._log(f"{'-'*60}")
+        self._log(f"Stage 1 PV Sum: ${pv_ufcf_sum:,.0f}")
         
         # Step 4: Terminal Value (Stage 2)
         final_ufcf = ufcfs[-1]
@@ -389,49 +385,49 @@ class DCFModel:
         tv = 0.0
         if wacc > g:
             tv = (final_ufcf * (1 + g)) / (wacc - g)
-            print(f"\nTerminal Value Calculation (Gordon Growth):")
-            print(f"   Final UFCF:   ${final_ufcf:,.0f}")
-            print(f"   Growth (g):   {g:.2%}")
-            print(f"   WACC:         {wacc:.4%}")
-            print(f"   -> TV:        ${tv:,.0f}")
+            self._log(f"\nTerminal Value Calculation (Gordon Growth):")
+            self._log(f"   Final UFCF:   ${final_ufcf:,.0f}")
+            self._log(f"   Growth (g):   {g:.2%}")
+            self._log(f"   WACC:         {wacc:.4%}")
+            self._log(f"   -> TV:        ${tv:,.0f}")
         else:
-            print(f"Error: WACC ({wacc}) <= Terminal Growth ({g})")
+            self._log(f"Error: WACC ({wacc}) <= Terminal Growth ({g})")
 
         pv_tv = tv / ((1 + wacc) ** 5)
-        print(f"Discounting TV 5 years back...")
-        print(f"   PV of TV:     ${pv_tv:,.0f}")
+        self._log(f"Discounting TV 5 years back...")
+        self._log(f"   PV of TV:     ${pv_tv:,.0f}")
         
         # Step 5: Current Enterprise Value
         current_ev = pv_ufcf_sum + pv_tv
-        print(f"\n-> CURRENT ENTERPRISE VALUE: ${current_ev:,.0f}")
+        self._log(f"\n-> CURRENT ENTERPRISE VALUE: ${current_ev:,.0f}")
         
         # Step 6: PHASE 5 - THE 12-MONTH TARGET PRICE BRIDGE
         self._print_header("PHASE 5: 12-MONTH TARGET PRICE BRIDGE")
         
-        print(f"1. Current Enterprise Value:     ${current_ev:,.0f}")
-        print(f"2. Plus: Growth (1 Year @ WACC): +${current_ev * wacc:,.0f}")
-        print(f"3. Less: Year 1 Cash Flow Paid:  -${ufcfs[0]:,.0f}")
+        self._log(f"1. Current Enterprise Value:     ${current_ev:,.0f}")
+        self._log(f"2. Plus: Growth (1 Year @ WACC): +${current_ev * wacc:,.0f}")
+        self._log(f"3. Less: Year 1 Cash Flow Paid:  -${ufcfs[0]:,.0f}")
         
         # EV_12m = (Current EV * (1+WACC)) - Year 1 Cash Flow
         ev_12m = (current_ev * (1 + wacc)) - ufcfs[0]
-        print(f"-> 12-MONTH ENTERPRISE VALUE:    ${ev_12m:,.0f}")
+        self._log(f"-> 12-MONTH ENTERPRISE VALUE:    ${ev_12m:,.0f}")
         
         # Step 7: Equity Value
         total_debt = self.data.total_debt[-1] if self.data.total_debt else 0
         cash = self.data.cash_and_equivalents[-1] if self.data.cash_and_equivalents else 0
         net_debt = total_debt - cash
         
-        print(f"\nNet Debt Calculation:")
-        print(f"   Total Debt: ${total_debt:,.0f}")
-        print(f"   Less Cash:  -${cash:,.0f}")
-        print(f"   = Net Debt: ${net_debt:,.0f}")
+        self._log(f"\nNet Debt Calculation:")
+        self._log(f"   Total Debt: ${total_debt:,.0f}")
+        self._log(f"   Less Cash:  -${cash:,.0f}")
+        self._log(f"   = Net Debt: ${net_debt:,.0f}")
         
         equity_value_12m = ev_12m - net_debt
-        print(f"\n-> EQUIT VALUE (12m):            ${equity_value_12m:,.0f}")
+        self._log(f"\n-> EQUIT VALUE (12m):            ${equity_value_12m:,.0f}")
         
         # Step 8: Target Price
         shares = self.data.shares_outstanding
-        print(f"   Shares Outstanding:           {shares:,.0f}")
+        self._log(f"   Shares Outstanding:           {shares:,.0f}")
         
         if shares <= 0:
             return 0.0
@@ -470,5 +466,5 @@ class DCFModel:
 # assumptions = DCFAssumptions(revenue_growth_rates=[...], ...)
 # model = DCFModel(data, assumptions)
 # value = model.calculate_intrinsic_value()
-# print(f"Intrinsic Value: ${value}")
+# self._log(f"Intrinsic Value: ${value}")
 

@@ -77,6 +77,19 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Calculation Details (Collapsible) -->
+        <details class="mt-8">
+            <summary class="cursor-pointer text-lg font-bold text-blue-600 hover:text-blue-800">
+                📊 View Calculation Details (Click to Expand)
+            </summary>
+            <div
+                class="mt-4 bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto font-mono text-xs max-h-96 overflow-y-auto">
+                {% for line in calculation_log %}
+                <pre class="whitespace-pre-wrap">{{ line }}</pre>
+                {% endfor %}
+            </div>
+        </details>
     </div>
 </body>
 
