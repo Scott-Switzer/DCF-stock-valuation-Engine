@@ -45,10 +45,11 @@ logger = logging.getLogger("dcf_loader")
 
 # 2. Configure Edgartools Identity
 EDGAR_IDENTITY = os.getenv("EDGAR_IDENTITY")
-if EDGAR_IDENTITY:
-    set_identity(EDGAR_IDENTITY)
-else:
-    logger.warning("EDGAR_IDENTITY not found. Edgartools may fail.")
+if not EDGAR_IDENTITY:
+    # Fallback to prevent crash (User Agent required by SEC)
+    logger.warning("EDGAR_IDENTITY not found. Using fallback 'DCF_Valuation_App <no_email@example.com>'")
+    EDGAR_IDENTITY = "DCF_Valuation_App <no_email@example.com>"
+set_identity(EDGAR_IDENTITY)
 
 # 3. Configure Local Storage for Edgartools (Speed Boost)
 if os.getenv("EDGAR_USE_LOCAL_DATA", "False").lower() == "true":
@@ -57,6 +58,7 @@ if os.getenv("EDGAR_USE_LOCAL_DATA", "False").lower() == "true":
 # --- Caching Layer (Market Data) ---
 CACHE_FILE = "/tmp/market_data_cache.json" # Use /tmp for Vercel/Lambda read-write consistency
 CACHE_EXPIRY_HOURS = 24
+
 
 def load_cache() -> Dict[str, Any]:
     if os.path.exists(CACHE_FILE):
@@ -150,6 +152,7 @@ class HybridDataFetcher:
     def __init__(self, ticker: str):
         self.ticker = ticker.upper()
         self.yf_ticker = yf.Ticker(self.ticker)
+        # Re-enable Edgartools
         self.company = Company(self.ticker)
         
     def get_market_data(self) -> Dict[str, Any]:
