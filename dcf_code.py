@@ -447,9 +447,9 @@ class DCFModel:
         base_wacc = self.wacc
         base_g = self.assumptions.terminal_growth_rate
         
-        # Ranges
-        wacc_steps = [base_wacc - 0.01, base_wacc - 0.005, base_wacc, base_wacc + 0.005, base_wacc + 0.01]
-        g_steps =    [base_g - 0.02, base_g - 0.01, base_g, base_g + 0.01, base_g + 0.02]
+        # Ranges (0.1% steps for finer granularity)
+        wacc_steps = [base_wacc - 0.002, base_wacc - 0.001, base_wacc, base_wacc + 0.001, base_wacc + 0.002]
+        g_steps =    [base_g - 0.002, base_g - 0.001, base_g, base_g + 0.001, base_g + 0.002]
         
         matrix = []
         for w in wacc_steps:

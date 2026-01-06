@@ -33,10 +33,38 @@
             background-color: #3b82f6 !important;
             color: white;
         }
+
+        /* Warning Modal */
+        .warning-modal {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
     </style>
 </head>
 
 <body class="bg-gray-100 min-h-screen py-10">
+    <!-- Warning Popup (Hidden by default) -->
+    <div id="growth-warning" class="warning-modal hidden">
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-lg">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <span class="text-2xl">⚠️</span>
+                </div>
+                <div class="ml-3 flex-1">
+                    <p class="text-sm text-yellow-700">
+                        <strong>Warning:</strong> Terminal growth above 4% exceeds long-term GDP and will materially
+                        inflate valuation. Use only with strong justification.
+                    </p>
+                </div>
+                <button onclick="closeWarning()"
+                    class="ml-2 text-yellow-500 hover:text-yellow-700 font-bold text-xl">&times;</button>
+            </div>
+        </div>
+    </div>
+
     <div class="max-w-xl mx-auto bg-white p-8 rounded-lg shadow-md">
         <h1 class="text-3xl font-bold mb-6 text-center text-blue-900">DCF Valuation Model</h1>
 
@@ -49,18 +77,21 @@
         <form method="POST" class="space-y-6">
             <div class="relative">
                 <label class="block text-sm font-medium text-gray-700">Ticker Symbol</label>
-                <input type="text" name="ticker" id="ticker-input" value="AAPL" autocomplete="off"
+                <input type="text" name="ticker" id="ticker-input" value="" autocomplete="off"
                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required
-                    placeholder="Search tickers (e.g., AAPL, MSFT)">
+                    placeholder="Type Ticker Here">
                 <div id="autocomplete-list" class="autocomplete-items hidden"></div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Terminal Growth Rate</label>
-                    <input type="number" step="0.001" name="term_g" value="0.025"
-                        class="mt-1 block w-full rounded-md border-gray-300 p-2 border">
-                </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Terminal Growth Rate (g)</label>
+                <input type="number" step="0.001" name="term_g" id="term-g-input" value="0.0"
+                    class="mt-1 block w-full rounded-md border-gray-300 p-2 border">
+                <p class="mt-1 text-xs text-gray-500">
+                    The perpetual growth rate of free cash flow after the forecast period.<br>
+                    <strong>Guideline:</strong> Keep g between 2%–4%. Below inflation (~2%) implies real decline; above
+                    long-term GDP (~4%) is not sustainable.
+                </p>
             </div>
 
             <h3 class="text-lg font-semibold pt-4">Growth Rates (Next 5 Years)</h3>
@@ -68,7 +99,7 @@
                 {% for i in range(1, 6) %}
                 <div>
                     <label class="block text-xs text-center">Year {{ i }}</label>
-                    <input type="number" step="0.01" name="g{{ i }}" value="{{ 0.05 if i < 3 else 0.03 }}"
+                    <input type="number" step="0.01" name="g{{ i }}" value="0.00"
                         class="w-full p-1 border rounded text-center">
                 </div>
                 {% endfor %}
@@ -83,8 +114,23 @@
     <script>
         const input = document.getElementById('ticker-input');
         const list = document.getElementById('autocomplete-list');
+        const termGInput = document.getElementById('term-g-input');
+        const warningModal = document.getElementById('growth-warning');
         let currentFocus = -1;
 
+        // Terminal Growth Warning
+        termGInput.addEventListener('change', function () {
+            const val = parseFloat(this.value);
+            if (val > 0.04) {
+                warningModal.classList.remove('hidden');
+            }
+        });
+
+        function closeWarning() {
+            warningModal.classList.add('hidden');
+        }
+
+        // Autocomplete Logic
         input.addEventListener('input', async function () {
             const val = this.value;
             closeAllLists();
