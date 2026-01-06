@@ -152,8 +152,6 @@ class HybridDataFetcher:
     def __init__(self, ticker: str):
         self.ticker = ticker.upper()
         self.yf_ticker = yf.Ticker(self.ticker)
-        # Re-enable Edgartools
-        self.company = Company(self.ticker)
         
     def get_market_data(self) -> Dict[str, Any]:
         cached = get_cached_market_data(self.ticker)
@@ -193,13 +191,117 @@ class HybridDataFetcher:
         cf = self.yf_ticker.cashflow
         return inc, bal, cf
 
+# --- KEY CLASS 2: Edgar Fetcher (Financials) ---
+    def get_financials_via_edgar(self):
+        logger.info("Fetching Financial Statements from SEC Edgar...")
+        try:
+            company = Company(self.ticker)
+        except Exception as e:
+            raise ValueError(f"Edgar Init Failed: {e}")
+            
+        # These calls retrieve the standardized MultiPeriodStatement
+        inc = company.income_statement()
+        bal = company.balance_sheet()
+        cf = company.cash_flow()
+        
+        # Convert to DataFrames
+        return (
+            inc.to_dataframe() if inc else pd.DataFrame(), 
+            bal.to_dataframe() if bal else pd.DataFrame(), 
+            cf.to_dataframe() if cf else pd.DataFrame()
+        )
+
+    def _get_edgar_series(self, df: pd.DataFrame, phrases: List[str], count: int = 3) -> List[float]:
+        """
+        Robustly finds a row in Edgar DataFrame by checking 'label' column and Index.
+        Returns the data for the most recent 'count' years.
+        """
+        if df.empty:
+            return [0.0] * count
+            
+        # 1. Identify Year Columns (keys starting with 'FY')
+        year_cols = [c for c in df.columns if str(c).startswith('FY')]
+        # Sort years descending (newest first)
+        year_cols.sort(reverse=True, key=lambda x: str(x))
+        target_years = year_cols[:count]
+        
+        matched_row = None
+        
+        # Normalize phrases for case-insensitive matching
+        phrases = [p.lower() for p in phrases]
+        
+        # 2. Search by Label (Priority)
+        if 'label' in df.columns:
+            for phrase in phrases:
+                # Exact match first
+                mask = df['label'].astype(str).str.lower() == phrase
+                if mask.any():
+                    matched_row = df[mask].iloc[0]
+                    break
+                    
+                # Contains match (secondary)
+                mask = df['label'].astype(str).str.lower().str.contains(phrase, regex=False)
+                if mask.any():
+                    matched_row = df[mask].iloc[0]
+                    break
+
+        # 3. Search by Index (Concept Name) if no label match
+        if matched_row is None:
+            for phrase in phrases:
+                 # Remove spaces for concept matching (e.g. "Gross Profit" -> "GrossProfit")
+                 concept_phrase = phrase.replace(" ", "")
+                 mask = df.index.astype(str).str.lower().str.contains(concept_phrase, regex=False)
+                 if mask.any():
+                     matched_row = df[mask].iloc[0]
+                     break
+                     
+        if matched_row is None:
+            return [0.0] * count
+            
+        # 4. Extract Values
+        values = []
+        for y in target_years:
+            val = matched_row.get(y, 0.0)
+            values.append(_safe_float(val))
+            
+        # Pad if missing years
+        while len(values) < count:
+            values.append(0.0)
+            
+        # Return oldest to newest (DCF expectation)
+        return values[::-1]
+
+    def _get_edgar_years(self, df: pd.DataFrame, count: int = 3) -> List[str]:
+        if df.empty:
+            return ["YYYY"] * count
+        year_cols = [c for c in df.columns if str(c).startswith('FY')]
+        year_cols.sort(reverse=True, key=lambda x: str(x))
+        return year_cols[:count][::-1]
+
     def assemble(self) -> FinancialData:
         mkt = self.get_market_data()
-        inc, bal, cf = self.get_financials_via_yfinance()
         
-        if inc.empty or bal.empty:
-            raise ValueError(f"Could not fetch data for {self.ticker}. Ticker might be delisted or invalid.")
+        # 1. Try Edgar First (Official Data)
+        try:
+            inc, bal, cf = self.get_financials_via_edgar()
+            if not inc.empty and not bal.empty:
+                 logger.info("Using SEC Edgar Data.")
+                 return self._process_edgar_data(inc, bal, cf, mkt)
+        except Exception as e:
+             logger.warning(f"Edgar Financials Failed: {e}")
 
+        # 2. Fallback to YFinance (Live Data provider)
+        try:
+            inc, bal, cf = self.get_financials_via_yfinance()
+            if not inc.empty and not bal.empty:
+                 logger.info("Falling back to YFinance Data.")
+                 return self._process_yfinance_data(inc, bal, cf, mkt)
+        except Exception as e:
+             logger.warning(f"YFinance Financials Failed: {e}")
+
+        raise ValueError(f"Could not fetch data for {self.ticker} from Edgar or YFinance.")
+
+    def _process_yfinance_data(self, inc, bal, cf, mkt) -> FinancialData:
         rev_tags = ['Total Revenue', 'Operating Revenue', 'Revenue']
         ebit_tags = ['EBIT', 'Operating Income', 'Operating Profit']
         ebitda_tags = ['EBITDA', 'Normalized EBITDA']
@@ -268,167 +370,88 @@ class HybridDataFetcher:
 
         return fd
 
-# --- KEY CLASS 2: FMP Fetcher (Backup) ---
-class FMPDataFetcher:
-    def __init__(self, api_key: str = None):
-        self.api_key = api_key or os.getenv('FMP_API_KEY')
-        if not self.api_key:
-            raise ValueError("FMP_API_KEY not found. Cannot use FMP backup.")
-        self.base_url = "https://financialmodelingprep.com/stable"
-
-    def _safe_request(self, url: str):
-        """Robust request handler with timeout, rate limiting, and retries"""
-        try:
-            # Respect Rate Limits
-            time.sleep(0.2) 
-            response = _http_session.get(url, timeout=HTTP_TIMEOUT)
+    def _process_edgar_data(self, inc, bal, cf, mkt) -> FinancialData:
+        # Mappings based on common US GAAP labels in Edgar
+        years = self._get_edgar_years(inc)
+        
+        getter = self._get_edgar_series
+        
+        fd = FinancialData(
+            years=years,
+            revenue=getter(inc, ['Total Revenue', 'Revenues', 'Revenue']),
+            ebit=getter(inc, ['Operating Income', 'Operating Profit', 'Operating Income (Loss)']),
+            ebitda=getter(inc, ['Net Income', 'Net Loss']), # Approx starter, usually need to calc
+            net_income=getter(inc, ['Net Income', 'Net Income (Loss)', 'Net Loss']),
             
-            if response.status_code == 429:
-                logger.warning("FMP Rate Limit Exceeded. Waiting 1s...")
-                time.sleep(1.0)
-                response = _http_session.get(url, timeout=HTTP_TIMEOUT)
-
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, dict) and "Error Message" in data:
-                    logger.error(f"FMP API Error: {data['Error Message']}")
-                    return []
-                return data
+            # Interest is tricky in standardized views, often net
+            interest_expense=getter(inc, ['Interest Expense', 'Interest and Dividend Income']),
             
-            logger.error(f"FMP Request failed: {response.status_code} for {url}")
-            return []
-        except requests.Timeout:
-            logger.error(f"FMP request timed out: {url}")
-            return []
-        except Exception as e:
-            logger.error(f"FMP Connection error: {e}")
-            return []
-
-    def get_market_return(self) -> float:
-        return 0.10 # Fallback 10%
-
-    def get_financial_data(self, ticker: str) -> FinancialData:
-        logger.info(f"FMP BACKUP: Fetching {ticker} (Stable Endpoint)...")
-        
-        # 1. Financials
-        inc_url = f"{self.base_url}/income-statement?symbol={ticker}&limit=5&apikey={self.api_key}"
-        bal_url = f"{self.base_url}/balance-sheet-statement?symbol={ticker}&limit=5&apikey={self.api_key}"
-        cf_url  = f"{self.base_url}/cash-flow-statement?symbol={ticker}&limit=5&apikey={self.api_key}"
-        
-        inc_stmt = self._safe_request(inc_url)
-        bal_sheet = self._safe_request(bal_url)
-        cf_stmt = self._safe_request(cf_url)
-        
-        if not inc_stmt or not bal_sheet:
-            raise ValueError("FMP: Critical financial data could not be fetched.")
-
-        # 2. Market Data
-        quote_url = f"{self.base_url}/quote?symbol={ticker}&apikey={self.api_key}"
-        prof_url  = f"{self.base_url}/profile?symbol={ticker}&apikey={self.api_key}"
-        
-        quote_data = self._safe_request(quote_url)
-        profile_data = self._safe_request(prof_url)
-        
-        quote = quote_data[0] if quote_data else {}
-        profile = profile_data[0] if profile_data else {}
-        
-        # 3. Helpers
-        def get_series(data_list, key, count=3):
-            selected = data_list[:count]
-            values = [float(x.get(key, 0) or 0) for x in selected]
-            return values[::-1]
+            # Balance Sheet
+            current_assets=getter(bal, ['Total Current Assets', 'Current Assets']),
+            current_liabilities=getter(bal, ['Total Current Liabilities', 'Current Liabilities']),
+            cash_and_equivalents=getter(bal, ['Cash and Cash Equivalents', 'Cash']),
             
-        def get_dates(data_list, key='calendarYear', count=3):
-            subset = data_list[:count]
-            return [str(x.get(key, "")) for x in subset][::-1]
-
-        # 4. Tax Rate
-        tax_expense = [float(x.get('incomeTaxExpense', 0) or 0) for x in inc_stmt[:3]]
-        pre_tax_inc = [float(x.get('incomeBeforeTax', 0) or 0) for x in inc_stmt[:3]]
-        
-        eff_tax_rate = []
-        for t, i in zip(tax_expense, pre_tax_inc):
-            rate = t / i if i != 0 else 0.21
-            eff_tax_rate.append(rate)
-        eff_tax_rate = eff_tax_rate[::-1]
-
-        # 5. Shares & Price
-        q_shares = float(quote.get('sharesOutstanding') or 0)
-        q_mkt_cap = float(quote.get('marketCap') or 0)
-        q_price = float(quote.get('price') or 0)
-        p_mkt_cap = float(profile.get('marketCap') or 0)
-        p_price = float(profile.get('price') or 0)
-        
-        market_cap_val = q_mkt_cap if q_mkt_cap > 0 else p_mkt_cap
-        stock_price_val = q_price if q_price > 0 else p_price
-        
-        if q_shares > 0:
-            shares_val = q_shares
-        elif market_cap_val > 0 and stock_price_val > 0:
-            shares_val = market_cap_val / stock_price_val
-        else:
-            shares_val = 0.0
-
-        # 6. Map
-        return FinancialData(
-            years=get_dates(inc_stmt, 'calendarYear'),
-            revenue=get_series(inc_stmt, 'revenue'),
-            ebit=get_series(inc_stmt, 'operatingIncome'),
-            ebitda=get_series(inc_stmt, 'ebitda'),
-            net_income=get_series(inc_stmt, 'netIncome'),
-            effective_tax_rate=eff_tax_rate,
-            interest_expense=get_series(inc_stmt, 'interestExpense'),
+            # Debt is often split
+            short_term_debt=getter(bal, ['Short-term Debt', 'Commercial Paper']),
+            long_term_debt=getter(bal, ['Long-term Debt', 'Long-Term Debt']),
+            total_debt=getter(bal, ['Total Debt']), # Often computed
             
-            current_assets=get_series(bal_sheet, 'totalCurrentAssets'),
-            current_liabilities=get_series(bal_sheet, 'totalCurrentLiabilities'),
-            cash_and_equivalents=get_series(bal_sheet, 'cashAndCashEquivalents'),
-            short_term_debt=get_series(bal_sheet, 'shortTermDebt'),
-            long_term_debt=get_series(bal_sheet, 'longTermDebt'),
-            total_debt=get_series(bal_sheet, 'totalDebt'),
-            total_assets=get_series(bal_sheet, 'totalAssets'),
-            total_liabilities=get_series(bal_sheet, 'totalLiabilities'),
-            property_plant_equipment_net=get_series(bal_sheet, 'propertyPlantEquipmentNet'),
-            preferred_equity=get_series(bal_sheet, 'preferredStock'),
+            total_assets=getter(bal, ['Total Assets']),
+            total_liabilities=getter(bal, ['Total Liabilities']),
             
-            d_and_a=get_series(cf_stmt, 'depreciationAndAmortization'),
-            capex=get_series(cf_stmt, 'capitalExpenditure'),
-            preferred_dividends=get_series(cf_stmt, 'dividendsPaid'),
+            property_plant_equipment_net=getter(bal, ['Property, Plant and Equipment, Net', 'Net Property, Plant and Equipment']),
+            preferred_equity=getter(bal, ['Preferred Stock']),
             
-            shares_outstanding=shares_val,
-            beta=float(profile.get('beta', 1.0) or 1.0),
-            stock_price=stock_price_val,
-            market_cap=market_cap_val,
-            risk_free_rate=0.042, # Fallback
-            market_return_rate=0.10
+            # Cash Flow
+            d_and_a=getter(cf, ['Depreciation, Depletion and Amortization', 'Depreciation']),
+            capex=getter(cf, ['Payments to Acquire Property, Plant, and Equipment', 'Capital Expenditures']),
+            preferred_dividends=getter(cf, ['Payment of Preferred Stock Dividends']),
+            
+            # Market Data (YF)
+            shares_outstanding=float(mkt['shares']),
+            beta=float(mkt['beta']),
+            stock_price=float(mkt['price']),
+            market_cap=float(mkt['market_cap']),
+            risk_free_rate=float(mkt['treasury_yield']),
+            market_return_rate=float(mkt['market_return'])
         )
+        
+        # Recalc helpers
+        tax_prov = getter(inc, ['Income Tax Expense (Benefit)', 'Income Tax Provision'])
+        pre_tax = getter(inc, ['Income (Loss) Before Income Taxes', 'Income Before Tax'])
+        
+        eff_rates = []
+        for t, p in zip(tax_prov, pre_tax):
+            if p != 0:
+                eff_rates.append(t / p)
+            else:
+                eff_rates.append(0.21)
+        fd.effective_tax_rate = eff_rates
+        
+        # Patch EBITDA if missing
+        for i in range(3):
+            if fd.ebitda[i] == 0:
+                fd.ebitda[i] = fd.ebit[i] + fd.d_and_a[i]
 
-# --- Wrapper Function (Failover Logic) ---
+        return fd
+
+
+# Wrapper Logic Updated
 def load_data_from_api(ticker: str) -> FinancialData:
     start_time = time.time()
-    
-    # Attempt 1: Hybrid (Edgar/YF)
     try:
         fetcher = HybridDataFetcher(ticker)
         data = fetcher.assemble()
-        logger.info(f"Hybrid Data Load Complete for {ticker} in {time.time() - start_time:.2f}s")
+        logger.info(f"Data Load Complete for {ticker} in {time.time() - start_time:.2f}s")
         return data
     except Exception as e:
-        logger.warning(f"Hybrid Fetch Failed: {e}. Attempting Failover to FMP...")
-    
-    # Attempt 2: FMP Backup
-    try:
-        fmp = FMPDataFetcher() # Loads API key from env
-        data = fmp.get_financial_data(ticker)
-        logger.info(f"FMP Backup Load Complete for {ticker}")
-        return data
-    except Exception as e:
-        logger.critical(f"ALL DATA SOURCES FAILED for {ticker}. Error: {e}")
-        raise RuntimeError(f"Could not load data for {ticker} from any source.")
+        logger.critical(f"FATAL: All data sources failed for {ticker}. Error: {e}")
+        raise RuntimeError(f"Could not load data for {ticker}. Details: {e}")
 
 if __name__ == "__main__":
     # Test Block
     try:
-        t = "AAPL"
+        t = "MCD"
         print(f"Testing Loader for {t}...")
         d = load_data_from_api(t)
         print(f"Stock Price: ${d.stock_price}")
