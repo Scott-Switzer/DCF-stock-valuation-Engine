@@ -169,20 +169,34 @@ class HybridDataFetcher:
                 "treasury_yield": 0.042,
                 "market_return": 0.10,
             }
-            # Fetch treasury yield with timeout
-            try:
-                tnx = yf.Ticker("^TNX")
-                hist = tnx.history(period="1d", timeout=10)
-                if not hist.empty:
-                    data["treasury_yield"] = hist['Close'].iloc[-1] / 100
-            except Exception:
-                pass
-                
-            set_cached_market_data(self.ticker, data)
-            return data
         except Exception as e:
-            logger.error(f"YFinance Market Data Error: {e}")
-            raise
+            logger.warning(f"YFinance .info failed (likely rate limit): {e}. Attempting .fast_info fallback...")
+            try:
+                fast = self.yf_ticker.fast_info
+                data = {
+                    "price": fast.last_price,
+                    "beta": 1.0, # fast_info is limited, default to market average
+                    "shares": fast.shares,
+                    "market_cap": fast.market_cap,
+                    "treasury_yield": 0.042,
+                    "market_return": 0.10,
+                }
+                logger.info(f"Fallback to .fast_info successful for {self.ticker}")
+            except Exception as e2:
+                logger.error(f"YFinance .fast_info also failed: {e2}")
+                raise
+
+        # Fetch treasury yield with timeout (independent checks)
+        try:
+            tnx = yf.Ticker("^TNX")
+            hist = tnx.history(period="1d", timeout=5)
+            if not hist.empty:
+                data["treasury_yield"] = float(hist['Close'].iloc[-1] / 100)
+        except Exception:
+            pass
+            
+        set_cached_market_data(self.ticker, data)
+        return data
 
     def get_financials_via_yfinance(self):
         logger.info("Fetching Financial Statements (Standardized via YFinance)...")
