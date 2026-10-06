@@ -107,3 +107,27 @@ Return the complete canonical financial document. That endpoint is an optional f
 ## Future methods
 
 Keep financial providers separate from method-specific assumptions. DDM requires dividends/equity cost, comps require a reviewed peer set and comparable multiples, and bank residual-income methods need sector-specific capital assumptions. Add those as distinct calculation modules and tests; do not substitute the FCFF engine for every valuation method.
+
+## DDM and relative valuation interfaces
+
+Each method has its own typed boundary. `GET /api/sample/ddm` or `/api/sample/relative` returns `{financials,form}`; these are complete synthetic examples and useful contract fixtures. Add `?blank=1` for incomplete manual editor defaults. `POST /api/calculate/ddm` and `/api/calculate/relative` accept `{financials,assumptions}`. Matching exports use `/export/{method}/json` or `/export/{method}/csv`. Browser/import routes accept complete documents or exports through `/api/import/{method}`. Import and export do not create valuation records.
+
+Common sections: `company` (ticker, name, USD currency, suitability confirmation, sector/industry), `market` (positive dated USD price, diluted shares and share-count basis), `source` (kind/name/provenance/warnings), `units: "absolute"`, and `valuation_date`. All dated input must be on or before the valuation date. SEC, Zion and custom API documents require `source.available_at`; any supplied availability date is checked against the valuation date. RV peers may also supply `available_at`, which is checked when present. Typed numeric JSON is required for financial values; API assumption rates are decimals. Preserve `source.origin_kind: "synthetic"` when editing a synthetic-origin document.
+
+**DDM** uses `schema_version: "ddm-financials-v1"`, positive `base_common_dividends` (one fiscal year's total common cash dividends), and `dividend_as_of`. Assumptions:
+
+```json
+{"dividend_growth_rates":[0.05,0.05,0.05,0.05,0.05],"required_return":0.07,"terminal_growth_rate":0.02}
+```
+
+Optional `future_shares` sets 12-month diluted shares. Results contain present/12-month equity values, projected dividends, PVs, terminal equity value, sensitivity and warnings. Dividends and peer multiples are currently manual/imported; the live SEC loader remains a DCF statement loader. A future Zion dividend adapter must provide verified common distributions, not fabricated inferred dividends.
+
+**Relative** uses `schema_version: "relative-financials-v1"`, `target.historical_as_of`, `target.historical` and `target.forward`, each with revenue, EBITDA, EBIT, common net income and common book equity. Unused metrics may be null. It uses the same explicit `bridge` claims as DCF and `comparables` containing unique ticker/name, USD currency, `as_of`, source reference and a `multiples` object. Multiple keys: `ev_revenue`, `ev_ebitda`, `ev_ebit`, `pe`, `pb`. Missing/nonpositive multiples are unsuitable observations and excluded; selected methods must remain computable. Browser supports four peers; API supports twenty. Set `company.is_financial: true` for financial firms; sector/industry metadata also enforces equity-only methods.
+
+```json
+{"included_methods":["ev_revenue","ev_ebitda","pe"]}
+```
+
+Relative results have `intrinsic_value: null` and `upside: null`, plus the forward `target_price_12m`/`upside_12m`, per-metric mean/range/count, observable target market multiples, explicit claims and active selection. A forward peer-implied price is not mislabeled as a present intrinsic value.
+
+`POST /api/from-dcf/{method}` accepts a complete DCF financials/assumptions payload and returns editor defaults. It carries company identity, sources, market inputs and RV year-one forecasts. It leaves DDM dividends and RV peers blank, and clears suitability confirmation for the new method. These routes provide a clean future API integration boundary independent of UI code.

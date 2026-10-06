@@ -26,3 +26,7 @@ October 6 local evidence: current result, restored inputs and working autocomple
 ## Cloudflare acceptance
 
 Python Workers local smoke checks cover pages, static files, calculations and D1 insertion. Public production checks cover readiness, sample calculation, saved-reference lookup through authenticated D1, duplicate suppression, invalid input, exports, autocomplete and browser console errors. SEC AAPL annual statement loading succeeded in the Workers runtime; this is coverage evidence, not a completed real-company valuation. Zion remains unconfigured. D1 record tests bound serialization and avoid duplicate source documents.
+
+## DDM and relative valuation
+
+The suite tests independently interpret the corresponding worksheet formulas, exercise method-specific suitability and missing/nonfinite input, verify JSON/CSV round trips, DCF handoff, and method-aware D1 migration preserving existing DCF records. Relative valuation deliberately returns no present intrinsic value. DDM and peer inputs are explicit/manual; only DCF SEC statement loading has a live provider acceptance check.

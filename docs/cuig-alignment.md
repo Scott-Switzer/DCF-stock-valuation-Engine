@@ -27,7 +27,7 @@ The 12-month enterprise value also satisfies `EV_12m = EV_today Ã— (1 + WACC) âˆ
 - The form explicitly uses percentages (5 = 5%); internal/API rates are decimals.
 - For convenience, operating drivers can be filled from historical means and then edited per year. This is a starting assumption, not a forecast inferred by the workbook.
 - Net-income and book-value projections are retained for inspection and future models, but do not drive FCFF.
-- Sensitivity and scenario ranges are assumption cases, not confidence intervals. DDM, trading comps and a football field remain future scope.
+- Sensitivity and scenario ranges are assumption cases, not confidence intervals. DDM and trading comps are implemented separately; see ddm-relative-alignment.md. A football field remains future scope.
 - Both implementations assume end-period discounting. The workbook's valuation date does not adjust discount factors for a partial fiscal year. The app explicitly discloses this rather than implying a stub-period model.
 
 ## Independent reconciliation

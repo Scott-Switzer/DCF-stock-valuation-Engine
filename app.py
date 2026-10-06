@@ -256,6 +256,8 @@ def evaluate(doc, a):
     d = parse_document(doc)
     model = DCFModel(d, a)
     result = model.calculate()
+    result["method"] = "dcf"
+    result["model_version"] = "cuig-dcf-v1"
     growths, matrix = model.generate_sensitivity_table()
     result["sensitivity"] = {
         "growth_rates": growths,
@@ -342,7 +344,7 @@ def limit_expensive_work():
             run_sync(env.DB.prepare("DELETE FROM request_limits WHERE reset<?").bind(now).run())
         return None
     if request.method == "POST" and (
-        request.path == "/"
+        request.path in {"/", "/ddm", "/relative"}
         or request.path.startswith(("/api/financials", "/api/calculate", "/export/"))
     ):
         if not Store(app.config.get("STATE_PATH")).allow(
@@ -654,6 +656,11 @@ def edge_static(filename):
 
 
 app.view_functions["static"] = edge_static
+
+
+from suite_views import register_suite
+
+register_suite(app)
 
 
 if __name__ == "__main__":

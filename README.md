@@ -1,12 +1,16 @@
-# DCF Valuation Engine
+# CUIG Valuation Suite
 
-A five-year unlevered discounted cash flow application based on the **CUIG Valuation Template Fall 2026**. It shows intrinsic value today and a separate 12-month target scenario, with editable operating drivers, auditable financial sources and a replaceable data provider.
+A valuation suite with five-year unlevered discounted cash flow, dividend discount and trading-comparable models based on the **CUIG Valuation Template Fall 2026**. It shows intrinsic value today and a separate 12-month target scenario, with editable operating drivers, auditable financial sources and a replaceable data provider.
 
 **Public demo:** https://dcf-valuation-engine.scswitzer.workers.dev
 
 ![Synthetic DCF example](docs/screenshots/valuation-desktop.png)
 
 ## Features
+
+- DDM based on common-dividend forecasts, equity-return discounting and separate present/12-month values.
+- Relative valuation with EV/Revenue, EV/EBITDA, EV/EBIT, P/E and P/B, peer means, selectable methods and financial-firm restrictions.
+- DCF-to-method handoff reuses identity/forward forecasts while requiring sourced dividends and peers.
 
 - Three historical fiscal years and five years of individually editable revenue growth, EBIT, net-income, book-value, D&A, CapEx, working-capital and tax assumptions.
 - Present and 12-month enterprise-to-common-equity bridges, including preferred claims, noncontrolling interests, other nonoperating assets and diluted shares.
@@ -56,7 +60,7 @@ Environment variables are read directly. `.env.example` documents names, but the
 
 ## Methodology and limits
 
-Read [CUIG alignment](docs/cuig-alignment.md) for exact worksheet references, formula reconciliation and intentional differences.
+Read [DCF alignment](docs/cuig-alignment.md) and [DDM/relative alignment](docs/ddm-relative-alignment.md) for exact worksheet references, formula reconciliation and intentional differences.
 
 - End-of-year cash-flow discounting. Forecast periods start one year from the valuation date; fiscal-year stubs are not modeled.
 - WACC is an explicit assumption in the browser, as in CUIG. The Python interface also retains CAPM/WACC calculation for complete inputs. No dated default is portrayed as a fetched market rate.
@@ -84,6 +88,6 @@ Public calculations save inputs, assumptions, model version and results to priva
 
 ## Future valuation suite
 
-The normalized company document, pure calculation engine and structured API outputs are the foundation for additional methods. Trading comparables, DDM and a football-field view are future work. They will need their own assumptions, suitability checks and reconciliation tests rather than reusing FCFF for every sector.
+The normalized company document, pure calculation engine and structured API outputs are the foundation for additional methods. DCF, DDM and trading comparables are implemented. A combined football-field view and additional sector-specific methods remain future work. They will need their own assumptions, suitability checks and reconciliation tests rather than reusing FCFF for every sector.
 
 MIT licensed. The CUIG workbook is a user-supplied reference and is not redistributed or modified. Public provider data remains subject to each provider's terms and access policies.

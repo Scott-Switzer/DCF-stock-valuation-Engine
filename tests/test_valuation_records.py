@@ -1,3 +1,4 @@
+import pytest
 import json
 import sqlite3
 from pathlib import Path
@@ -8,7 +9,8 @@ from valuation_records import INSERT_SQL, record_values
 
 def test_database_records_preserve_inputs_flag_samples_and_deduplicate():
     db = sqlite3.connect(":memory:")
-    db.executescript(Path("migrations/0001_valuations.sql").read_text())
+    for migration in sorted(Path("migrations").glob("*.sql")):
+        db.executescript(migration.read_text())
     doc = demo_document()
     a = assumptions_from_json(
         {"revenue_growth_rates": [0.05] * 5, "terminal_growth_rate": 0.02, "wacc_override": 0.065}
@@ -50,3 +52,72 @@ def test_large_source_metadata_is_not_copied_into_stored_results():
     assert sum(len(v.encode()) for v in values if isinstance(v, str)) < 1_800_000
     assert "document" not in json.loads(values[-3])["metadata"]
     assert json.loads(values[-4])["source"]["note"] == doc["source"]["note"]
+
+
+def test_method_migration_preserves_existing_dcf_rows():
+    db = sqlite3.connect(":memory:")
+    db.executescript(Path("migrations/0001_valuations.sql").read_text())
+    db.execute(
+        "INSERT INTO valuations VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            "old-id",
+            "2026-10-06",
+            "cuig-dcf-v1",
+            "DEMO",
+            "2026-10-06",
+            "synthetic",
+            1,
+            31.45,
+            32.24,
+            20,
+            0.5725,
+            "{}",
+            "{}",
+            "{}",
+            "hash",
+            "input",
+        ),
+    )
+    db.executescript(Path("migrations/0002_valuation_methods.sql").read_text())
+    assert db.execute("SELECT id,method,intrinsic_value FROM valuations").fetchone() == (
+        "old-id",
+        "dcf",
+        31.45,
+    )
+
+
+@pytest.mark.parametrize("method", ["ddm", "relative"])
+def test_new_methods_store_their_own_model_version_and_nullable_intrinsic_value(method):
+    from suite_models import suite_sample
+    from suite_views import suite_assumptions, suite_evaluate
+
+    doc = suite_sample(method)
+    raw = (
+        {"dividend_growth_rates": [0.05] * 5, "required_return": 0.07, "terminal_growth_rate": 0.02}
+        if method == "ddm"
+        else {"included_methods": ["ev_revenue", "ev_ebitda", "pe"]}
+    )
+    a = suite_assumptions(method, raw)
+    r = suite_evaluate(method, doc, a)
+    db = sqlite3.connect(":memory:")
+    for migration in sorted(Path("migrations").glob("*.sql")):
+        db.executescript(migration.read_text())
+    db.execute(INSERT_SQL, record_values(doc, a, r, "hashed-network"))
+    row = db.execute("SELECT method,model_version,intrinsic_value FROM valuations").fetchone()
+    assert row[:2] == (method, r["model_version"])
+    assert row[2] == r["intrinsic_value"]
+
+
+def test_semantically_equal_integer_and_float_inputs_deduplicate():
+    from suite_models import suite_sample
+    from suite_views import suite_assumptions, suite_evaluate, suite_form, suite_form_payload
+    from werkzeug.datastructures import MultiDict
+
+    doc = suite_sample("relative")
+    a = suite_assumptions("relative", {"included_methods": ["ev_revenue", "ev_ebitda", "pe"]})
+    form = {k: str(v) if v is not None else "" for k, v in suite_form("relative").items()}
+    replay, b = suite_form_payload("relative", MultiDict(form))
+    assert doc == replay
+    one = record_values(doc, a, suite_evaluate("relative", doc, a), "hash")
+    two = record_values(replay, b, suite_evaluate("relative", replay, b), "hash")
+    assert one[-1] == two[-1]

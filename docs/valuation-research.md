@@ -5,15 +5,15 @@ D1 `valuations` contains private submissions, not trades or observed beliefs of 
 An owner-only exploratory query:
 
 ```sql
-SELECT ticker, substr(created_at,1,10) AS submission_day, model_version,
+SELECT ticker, substr(created_at,1,10) AS submission_day, method, model_version,
        count(*) AS scenarios,
        count(DISTINCT client_hash) AS daily_network_hashes,
-       avg(upside) AS mean_assumed_upside,
-       min(upside) AS minimum_assumed_upside,
-       max(upside) AS maximum_assumed_upside
+       avg(json_extract(result_json,'$.upside_12m')) AS mean_assumed_12m_upside,
+       min(json_extract(result_json,'$.upside_12m')) AS minimum_assumed_12m_upside,
+       max(json_extract(result_json,'$.upside_12m')) AS maximum_assumed_12m_upside
 FROM valuations
 WHERE is_demo=0
-GROUP BY ticker, submission_day, model_version
+GROUP BY ticker, submission_day, method, model_version
 HAVING count(DISTINCT client_hash)>=5;
 ```
 

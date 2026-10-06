@@ -22,6 +22,8 @@ for name in [
     "dcf_loader.py",
     "storage.py",
     "valuation_records.py",
+    "suite_models.py",
+    "suite_views.py",
     "embedded_assets.py",
 ]:
     shutil.copyfile(root / name, bundle / name)
