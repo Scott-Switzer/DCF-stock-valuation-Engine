@@ -479,6 +479,9 @@ def from_dcf_document(method, financials, assumptions):
         doc["base_common_dividends"] = None
         doc["dividend_as_of"] = latest["period_end"]
     else:
+        doc["source"].setdefault("warnings", []).append(
+            "Enter verified historical and forward common book equity for P/B; DCF book value may include preferred and noncontrolling equity."
+        )
         first = result["projections"][0]
         doc["bridge"] = deepcopy(financials["bridge"])
         doc["target"] = {
@@ -488,14 +491,14 @@ def from_dcf_document(method, financials, assumptions):
                 "ebitda": latest["ebit"] + latest["d_and_a"],
                 "ebit": latest["ebit"],
                 "net_income": latest["net_income"],
-                "book_value": latest["book_value"],
+                "book_value": None,
             },
             "forward": {
                 "revenue": first["Revenue"],
                 "ebitda": first["EBITDA"],
                 "ebit": first["EBIT"],
                 "net_income": first["Net Income"],
-                "book_value": first["Book Value"],
+                "book_value": None,
             },
         }
     return doc

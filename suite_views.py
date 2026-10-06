@@ -145,6 +145,10 @@ def suite_form_payload(method, form):
                 else number(form.get(f"{period}_{metric}"), f"{period} {metric}")
                 for _, metric in MULTIPLES.values()
             }
+        source_peers = original.get("comparables", [])
+        if not isinstance(source_peers, list) or any(not isinstance(p, dict) for p in source_peers):
+            raise ValueError("Each source peer must be a comparable record.")
+        original_peers = {ticker_symbol(p.get("ticker")): p for p in source_peers}
         doc["comparables"] = []
         for i in range(4):
             ticker = form.get(f"peer_ticker_{i}", "").strip()
@@ -158,6 +162,7 @@ def suite_form_payload(method, form):
                 continue
             doc["comparables"].append(
                 {
+                    **deepcopy(original_peers.get(ticker_symbol(ticker), {})),
                     "ticker": ticker_symbol(ticker),
                     "name": form.get(f"peer_name_{i}", ""),
                     "as_of": form.get(f"peer_as_of_{i}"),

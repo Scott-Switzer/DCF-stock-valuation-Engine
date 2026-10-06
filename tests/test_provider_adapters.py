@@ -268,3 +268,33 @@ def test_zion_does_not_certify_unavailable_or_wrong_period_data(change):
     else:
         with pytest.raises(ProviderError):
             zion_document(packet, "TEST", "2026-10-06")
+
+
+def test_sec_repeated_filings_scan_unique_periods_only(monkeypatch):
+    import dcf_loader
+    from collections import Counter
+
+    monkeypatch.setenv("EDGAR_IDENTITY", "Test Client test@example.com")
+    facts = sec_payload()
+    revenue = facts["facts"]["us-gaap"][TAGS["revenue"][0]]["units"]["USD"]
+    revenue *= 100
+    calls = Counter()
+    original = dcf_loader.sec_fact
+
+    def counted(facts, metric, end, asof):
+        calls[metric, end] += 1
+        return original(facts, metric, end, asof)
+
+    monkeypatch.setattr(dcf_loader, "sec_fact", counted)
+
+    class HTTP:
+        def get(self, url, **kwargs):
+            return (
+                {"0": {"ticker": "TEST", "cik_str": 123, "title": "Test"}}
+                if "company_tickers" in url
+                else facts
+            )
+
+    doc = load_sec("TEST", "2026-10-06", HTTP())
+    assert len(doc["historical"]) == 3
+    assert all(calls["revenue", end] <= 2 for end in ("2023-12-31", "2024-12-31", "2025-12-31"))

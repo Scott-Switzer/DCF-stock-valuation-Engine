@@ -496,16 +496,21 @@ def load_sec(ticker, asof, http):
     )
     doc = blank_document(ticker, entry["title"], asof, "sec")
     doc["source"].update(url=f"https://www.sec.gov/edgar/browse/?CIK={cik}", cik=cik)
-    ends = set()
+    candidates = set()
     for tag in TAGS["revenue"]:
         for row in (
             facts.get("facts", {}).get("us-gaap", {}).get(tag, {}).get("units", {}).get("USD", [])
         ):
             if row.get("filed", "9999") <= asof and row.get("end", "9999") <= asof:
-                value, _ = sec_fact(facts, "revenue", row["end"], asof)
-                if value is not None:
-                    ends.add(row["end"])
-    ends = sorted(ends)[-3:]
+                candidates.add(row["end"])
+    ends = []
+    for end in sorted(candidates, reverse=True):
+        value, _ = sec_fact(facts, "revenue", end, asof)
+        if value is not None:
+            ends.append(end)
+            if len(ends) == 3:
+                break
+    ends.sort()
     if len(ends) != 3:
         raise ProviderError(
             "SEC did not provide three annual USD revenue periods. Use manual input or Zion."

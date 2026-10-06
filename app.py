@@ -311,6 +311,35 @@ def payload():
     return form_payload(request.form)
 
 
+def rate_limit_response():
+    message = "Too many requests. Try again in one minute."
+    if request.path in {"/ddm", "/relative"} and not request.is_json:
+        from suite_views import TITLES, CLAIMS, MULTIPLES
+
+        method = request.path[1:]
+        response = app.make_response(
+            (
+                render_template(
+                    "suite_form.html",
+                    method=method,
+                    title=TITLES[method],
+                    form=dict(request.form),
+                    error=message,
+                    multiples=MULTIPLES,
+                    claims=CLAIMS,
+                ),
+                429,
+            )
+        )
+    elif request.path == "/" and not request.is_json:
+        response = app.make_response(render_inputs(dict(request.form), message, 429))
+    else:
+        response = jsonify(error=message)
+        response.status_code = 429
+    response.headers["Retry-After"] = "60"
+    return response
+
+
 @app.before_request
 def limit_expensive_work():
     if app.config.get("CLOUDFLARE"):
@@ -336,11 +365,7 @@ def limit_expensive_work():
                 .first()
             )
             if row.count > 10:
-                return (
-                    jsonify(error="Too many requests. Try again in one minute."),
-                    429,
-                    {"Retry-After": "60"},
-                )
+                return rate_limit_response()
             run_sync(env.DB.prepare("DELETE FROM request_limits WHERE reset<?").bind(now).run())
         return None
     if request.method == "POST" and (
@@ -350,14 +375,7 @@ def limit_expensive_work():
         if not Store(app.config.get("STATE_PATH")).allow(
             f"{request.remote_addr}:{request.path}", maximum=10
         ):
-            if request.path.startswith("/api/") or request.path.startswith("/export/"):
-                r = jsonify(error="Too many requests. Try again in one minute.")
-                r.status_code = 429
-                r.headers["Retry-After"] = "60"
-                return r
-            return render_inputs(
-                dict(request.form), "Too many requests. Try again in one minute.", 429
-            )
+            return rate_limit_response()
 
 
 @app.after_request

@@ -15,10 +15,12 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
 
 
 def normalized_inputs(value, key=None):
-    if key == "source":
-        return value
     if isinstance(value, dict):
-        return {k: normalized_inputs(v, k) for k, v in value.items()}
+        return {
+            k: normalized_inputs(v, k)
+            for k, v in value.items()
+            if k not in {"retrieved_at", "fetched_at", "request_id"}
+        }
     if isinstance(value, (list, tuple)):
         return [normalized_inputs(v) for v in value]
     if key == "ticker" and isinstance(value, str):

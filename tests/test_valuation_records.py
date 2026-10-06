@@ -121,3 +121,23 @@ def test_semantically_equal_integer_and_float_inputs_deduplicate():
     one = record_values(doc, a, suite_evaluate("relative", doc, a), "hash")
     two = record_values(replay, b, suite_evaluate("relative", replay, b), "hash")
     assert one[-1] == two[-1]
+
+
+def test_refreshed_metadata_deduplicates_without_discarding_provenance():
+    from copy import deepcopy
+
+    doc = demo_document()
+    doc["source"].update(retrieved_at="2026-10-06T12:00:00Z", request_id="request-one")
+    doc["historical"][0]["provenance"] = {"request_id": "nested-one", "release_id": "release-one"}
+    a = assumptions_from_json(
+        {"revenue_growth_rates": [0.05] * 5, "terminal_growth_rate": 0.02, "wacc_override": 0.065}
+    )
+    refreshed = deepcopy(doc)
+    refreshed["source"].update(retrieved_at="2026-10-06T13:00:00Z", request_id="request-two")
+    refreshed["historical"][0]["provenance"]["request_id"] = "nested-two"
+    one = record_values(doc, a, evaluate(doc, a), "hash")
+    two = record_values(refreshed, a, evaluate(refreshed, a), "hash")
+    assert one[-1] == two[-1]
+    assert json.loads(two[-4]) == refreshed
+    refreshed["historical"][0]["provenance"]["release_id"] = "release-two"
+    assert record_values(refreshed, a, evaluate(refreshed, a), "hash")[-1] != one[-1]
