@@ -1,0 +1,70 @@
+{
+  "schema_version": "dcf-financials-v1",
+  "valuation_date": "2026-10-06",
+  "units": "absolute",
+  "company": {
+    "ticker": "DEMO",
+    "name": "Example Operating Company",
+    "currency": "USD",
+    "eligible": true,
+    "sector": "Industrial"
+  },
+  "market": {
+    "price": 20.0,
+    "price_as_of": "2026-10-06",
+    "currency": "USD",
+    "diluted_shares": 100.0,
+    "shares_basis": "Synthetic diluted shares"
+  },
+  "bridge": {
+    "short_term_debt": 50.0,
+    "long_term_debt": 150.0,
+    "cash": 100.0,
+    "preferred_equity": 0.0,
+    "minority_interest": 0.0,
+    "other_nonoperating_assets": 0.0,
+    "as_of": "2025-12-31"
+  },
+  "historical": [
+    {
+      "period_end": "2023-12-31",
+      "revenue": 1000.0,
+      "ebit": 200.0,
+      "net_income": 150.0,
+      "capex": 50.0,
+      "d_and_a": 30.0,
+      "nwc": 100.0,
+      "book_value": 500.0,
+      "tax_rate": 0.25
+    },
+    {
+      "period_end": "2024-12-31",
+      "revenue": 1000.0,
+      "ebit": 200.0,
+      "net_income": 150.0,
+      "capex": 50.0,
+      "d_and_a": 30.0,
+      "nwc": 100.0,
+      "book_value": 500.0,
+      "tax_rate": 0.25
+    },
+    {
+      "period_end": "2025-12-31",
+      "revenue": 1000.0,
+      "ebit": 200.0,
+      "net_income": 150.0,
+      "capex": 50.0,
+      "d_and_a": 30.0,
+      "nwc": 100.0,
+      "book_value": 500.0,
+      "tax_rate": 0.25
+    }
+  ],
+  "source": {
+    "name": "Offline teaching example",
+    "kind": "synthetic",
+    "warnings": [
+      "Synthetic financials in absolute USD. DEMO is not a real security."
+    ]
+  }
+}

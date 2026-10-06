@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas requests yfinance
+          pip install -r requirements-local.txt
           
       - name: Generate Ticker List
         run: python build_ticker_array.py

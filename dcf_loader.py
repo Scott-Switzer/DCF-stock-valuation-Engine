@@ -1,476 +1,748 @@
+"""Provider adapters. No provider failure or missing fact is interpreted as zero."""
 
-import os
-import time
+from copy import deepcopy
+from datetime import date, datetime, timezone
 import json
-import logging
+import os
+from pathlib import Path
+import re
+import time
+from urllib.parse import urlparse
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-import pandas as pd
-import yfinance as yf
-from datetime import datetime
-from dotenv import load_dotenv
-from typing import List, Optional, Dict, Any
-from edgar import Company, set_identity
+from dcf_code import FinancialData, number
+from storage import Store
 
-# Import the data class from dcf_code
-from dcf_code import FinancialData
+SCHEMA = "dcf-financials-v1"
+HISTORY_FIELDS = (
+    "revenue",
+    "ebit",
+    "net_income",
+    "capex",
+    "d_and_a",
+    "nwc",
+    "book_value",
+    "tax_rate",
+)
+BRIDGE_FIELDS = (
+    "short_term_debt",
+    "long_term_debt",
+    "cash",
+    "preferred_equity",
+    "minority_interest",
+    "other_nonoperating_assets",
+)
 
-# --- HTTP Session with Timeout and Retries ---
-HTTP_TIMEOUT = (3.05, 15)  # (connect, read) seconds
 
-def create_session_with_retry():
-    """Create a requests session with retry logic and timeout"""
-    session = requests.Session()
-    retries = Retry(
-        total=3,
-        backoff_factor=0.5,
-        status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=["GET"]
+class ProviderError(RuntimeError):
+    pass
+
+
+def ticker_symbol(value):
+    if not isinstance(value, str):
+        raise ValueError("Ticker must be text.")
+    value = value.strip().upper().replace(".", "-")
+    if not re.fullmatch(r"[A-Z]{1,6}(?:-[A-Z]{1,2})?", value):
+        raise ValueError("Enter a supported stock ticker, such as AAPL or BRK-B.")
+    return value
+
+
+def iso_date(value, label):
+    if not isinstance(value, str):
+        raise ValueError(f"{label} requires an ISO date (YYYY-MM-DD).")
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        raise ValueError(f"{label} requires a valid ISO date (YYYY-MM-DD).") from None
+
+
+def eligibility(company):
+    text = " ".join(
+        str(company.get(k, "")) for k in ["sector", "industry", "security_type"]
+    ).lower()
+    if company.get("eligible") is not True or any(
+        x in text
+        for x in [
+            "bank",
+            "insurance",
+            "financial service",
+            "reit",
+            "real estate investment trust",
+            "etf",
+            "fund",
+            "limited partnership",
+            "mlp",
+        ]
+    ):
+        raise ValueError(
+            "This FCFF model supports eligible operating companies. Banks, insurers, REITs, funds and partnerships require another valuation model."
+        )
+
+
+def demo_document():
+    try:
+        from embedded_assets import ASSETS
+
+        return json.loads(ASSETS["data/demo.json"])
+    except ImportError:
+        return json.loads((Path(__file__).parent / "data/demo.json").read_text())
+
+
+def typed_number(value, label):
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise ValueError(f"{label} requires a typed JSON number; missing is not zero.")
+    return number(value, label)
+
+
+def parse_document(doc):
+    if not isinstance(doc, dict) or doc.get("schema_version") != SCHEMA:
+        raise ValueError(f"Financial document must use {SCHEMA}.")
+    for section in ["company", "market", "bridge", "source"]:
+        if not isinstance(doc.get(section), dict):
+            raise ValueError(f"Missing {section} section.")
+    company, market, bridge, source = (doc[k] for k in ["company", "market", "bridge", "source"])
+    symbol = ticker_symbol(company.get("ticker"))
+    eligibility(company)
+    asof = iso_date(doc.get("valuation_date"), "Valuation date")
+    if asof > date.today():
+        raise ValueError("Valuation date cannot be in the future.")
+    currency = company.get("currency")
+    if currency != "USD" or market.get("currency") != currency:
+        raise ValueError(
+            "This release requires matching USD financial and market currency; FX conversion is not modeled."
+        )
+    if doc.get("units") != "absolute":
+        raise ValueError("Financial amounts and shares must be in absolute units, not millions.")
+    if not isinstance(source.get("name"), str) or not source.get("name") or not source.get("kind"):
+        raise ValueError("A named source and source kind are required.")
+    if not isinstance(source.get("warnings", []), list) or any(
+        not isinstance(w, str) for w in source.get("warnings", [])
+    ):
+        raise ValueError("Source warnings must be a list of text messages.")
+    if not isinstance(source.get("kind"), str) or source.get("kind") not in {
+        "synthetic",
+        "manual",
+        "sec",
+        "zion",
+        "api",
+    }:
+        raise ValueError("Unknown financial source kind.")
+    rows = doc.get("historical")
+    if not isinstance(rows, list) or len(rows) != 3:
+        raise ValueError("Exactly three fiscal periods are required.")
+    periods = []
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("Each fiscal period must be a financial record.")
+        end = iso_date(row.get("period_end"), "Fiscal period")
+        if end > asof:
+            raise ValueError("Historical fiscal periods must be on or before the valuation date.")
+        periods.append(end.isoformat())
+        for name in HISTORY_FIELDS:
+            typed_number(row.get(name), f"{end} {name}")
+        if source["kind"] in {"sec", "zion", "api"}:
+            available = iso_date(
+                str(row.get("available_at", ""))[:10], "Financial availability date"
+            )
+            if available > asof:
+                raise ValueError("A historical statement was not available on the valuation date.")
+    if periods != sorted(set(periods)):
+        raise ValueError("Fiscal periods must be unique and chronological.")
+    if any(
+        not 300 <= (date.fromisoformat(b) - date.fromisoformat(a)).days <= 430
+        for a, b in zip(periods, periods[1:])
+    ):
+        raise ValueError("Three consecutive annual fiscal periods are required.")
+    for name in BRIDGE_FIELDS:
+        typed_number(bridge.get(name), name)
+        number(bridge.get(name), name, 0)
+    typed_number(market.get("price"), "Current price")
+    typed_number(market.get("diluted_shares"), "Diluted shares")
+    if market.get("price_as_of") is None:
+        raise ValueError("Price as-of date is required.")
+    if iso_date(str(market["price_as_of"])[:10], "Price date") > asof:
+        raise ValueError("Price date is later than the valuation date.")
+    if iso_date(str(bridge.get("as_of", ""))[:10], "Bridge as-of date") > asof:
+        raise ValueError("Bridge date is later than valuation date.")
+    get = lambda key: [number(r.get(key), key) for r in rows]
+    debt = number(bridge["short_term_debt"], "Short-term debt", 0) + number(
+        bridge["long_term_debt"], "Long-term debt", 0
     )
-    adapter = HTTPAdapter(max_retries=retries)
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
-    return session
+    zeros = [0.0] * 3
 
-# Global session for reuse
-_http_session = create_session_with_retry()
+    def repeated(key):
+        return [number(bridge[key], key, 0)] * 3
 
-# --- Configuration & Setup ---
-load_dotenv('.env')
+    fd = FinancialData(
+        years=periods,
+        revenue=get("revenue"),
+        ebit=get("ebit"),
+        ebitda=[r["ebit"] + r["d_and_a"] for r in rows],
+        net_income=get("net_income"),
+        effective_tax_rate=get("tax_rate"),
+        interest_expense=[],
+        current_assets=zeros,
+        current_liabilities=zeros,
+        cash_and_equivalents=repeated("cash"),
+        short_term_debt=repeated("short_term_debt"),
+        long_term_debt=repeated("long_term_debt"),
+        total_debt=[debt] * 3,
+        total_assets=get("book_value"),
+        total_liabilities=zeros,
+        property_plant_equipment_net=zeros,
+        preferred_equity=repeated("preferred_equity"),
+        d_and_a=get("d_and_a"),
+        capex=get("capex"),
+        preferred_dividends=[],
+        shares_outstanding=number(market.get("diluted_shares"), "Diluted shares", 0),
+        beta=1.0,
+        stock_price=number(market.get("price"), "Current price", 0),
+        market_cap=0.0,
+        risk_free_rate=0.04,
+        market_return_rate=0.1,
+        nwc_override=get("nwc"),
+        book_value_override=get("book_value"),
+        minority_interest=number(bridge["minority_interest"], "Minority interest", 0),
+        other_nonoperating_assets=number(
+            bridge["other_nonoperating_assets"], "Other nonoperating assets", 0
+        ),
+        metadata={
+            "ticker": symbol,
+            "company_name": company.get("name", symbol),
+            "currency": currency,
+            "valuation_date": asof.isoformat(),
+            "source": deepcopy(source),
+            "price_as_of": market["price_as_of"],
+            "shares_basis": market.get("shares_basis", "User supplied diluted shares"),
+            "is_demo": source["kind"] == "synthetic" or source.get("origin_kind") == "synthetic",
+            "document": deepcopy(doc),
+        },
+    )
+    fd.validate()
+    return fd
 
-# 1. Configure Logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger("dcf_loader")
 
-# 2. Configure Edgartools Identity
-EDGAR_IDENTITY = os.getenv("EDGAR_IDENTITY")
-if not EDGAR_IDENTITY:
-    # Fallback to prevent crash (User Agent required by SEC)
-    logger.warning("EDGAR_IDENTITY not found. Using fallback 'DCF_Valuation_App <no_email@example.com>'")
-    EDGAR_IDENTITY = "DCF_Valuation_App <no_email@example.com>"
-set_identity(EDGAR_IDENTITY)
+class JsonHTTP:
+    """One bounded request budget across all calls, explicit retries, no URL/key logs."""
 
-# 3. Configure Local Storage for Edgartools (Speed Boost)
-if os.getenv("EDGAR_USE_LOCAL_DATA", "False").lower() == "true":
-    logger.info("Edgartools Local Data Caching: ENABLED (Expect faster repeat runs)")
-
-# --- Caching Layer (Market Data) ---
-CACHE_FILE = "/tmp/market_data_cache.json" # Use /tmp for Vercel/Lambda read-write consistency
-CACHE_EXPIRY_HOURS = 24
-
-
-def load_cache() -> Dict[str, Any]:
-    if os.path.exists(CACHE_FILE):
+    def __init__(self, budget=24, session=None, store=None):
         try:
-            with open(CACHE_FILE, 'r') as f:
-                return json.load(f)
-        except Exception as e:
-            logger.warning(f"Failed to load cache: {e}")
-    return {}
+            from flask import current_app, has_request_context
 
-def save_cache(cache: Dict[str, Any]):
-    try:
-        with open(CACHE_FILE, 'w') as f:
-            json.dump(cache, f, indent=2)
-    except Exception as e:
-        logger.warning(f"Failed to save cache: {e}")
+            self.edge = has_request_context() and current_app.config.get("CLOUDFLARE")
+        except ImportError:
+            self.edge = False
+        self.deadline = time.monotonic() + budget
+        self.session = None if self.edge else session or requests.Session()
+        self.store = None if self.edge else store or Store()
 
-def get_cached_market_data(ticker: str) -> Optional[Dict[str, Any]]:
-    cache = load_cache()
-    if ticker in cache:
-        entry = cache[ticker]
-        cached_time = datetime.fromisoformat(entry['timestamp'])
-        age_hours = (datetime.now() - cached_time).total_seconds() / 3600
-        if age_hours < CACHE_EXPIRY_HOURS:
-            logger.info(f"Using Cached Market Data for {ticker} (Age: {age_hours:.1f}h)")
-            return entry['data']
-    return None
-
-def set_cached_market_data(ticker: str, data: Dict[str, Any]):
-    cache = load_cache()
-    cache[ticker] = {
-        "timestamp": datetime.now().isoformat(),
-        "data": data
-    }
-    save_cache(cache)
-
-
-# --- Helper Functions ---
-
-def _safe_float(val, default=0.0):
-    try:
-        if isinstance(val, (pd.Series, list)):
-            val = val[0] if len(val) > 0 else default
-        if val is None or pd.isna(val):
-            return default
-        return float(val)
-    except:
-        return default
-
-def _get_series_from_row(df: pd.DataFrame, tags: List[str], count: int = 3) -> List[float]:
-    """
-    Tries to find a row in the DataFrame matching one of the 'tags'.
-    Returns the most recent 'count' values as a list of floats.
-    """
-    matched_row = None
-    
-    for tag in tags:
-        if tag in df.index:
-            candidate = df.loc[tag]
-            if candidate.fillna(0).abs().sum() > 0:
-                matched_row = candidate
-                break
-            
-    if matched_row is None:
-        return [0.0] * count
-
-    # Extract values
-    values = matched_row.head(count).values.tolist()
-    
-    clean_values = []
-    for v in values:
-        clean_values.append(_safe_float(v))
-        
-    while len(clean_values) < count:
-        clean_values.append(0.0)
-        
-    return clean_values[::-1]
-
-def _get_dates_from_cols(df: pd.DataFrame, count: int = 3) -> List[str]:
-    cols = df.columns[:count]
-    dates = []
-    for c in cols:
-        try:
-            dates.append(str(c.year) if hasattr(c, 'year') else str(c)[:4])
-        except:
-            dates.append("Unknown")
-    return dates[::-1]
-
-# --- KEY CLASS 1: Hybrid Fetcher (Preferred) ---
-class HybridDataFetcher:
-    def __init__(self, ticker: str):
-        self.ticker = ticker.upper()
-        self.yf_ticker = yf.Ticker(self.ticker)
-        
-    def get_market_data(self) -> Dict[str, Any]:
-        cached = get_cached_market_data(self.ticker)
-        if cached:
-            return cached
-            
-        logger.info(f"Fetching Live Market Data for {self.ticker}...")
-        try:
-            info = self.yf_ticker.info
-            data = {
-                "price": info.get('currentPrice') or info.get('regularMarketPreviousClose') or 0.0,
-                "beta": info.get('beta', 1.0),
-                "shares": info.get('sharesOutstanding', 0),
-                "market_cap": info.get('marketCap', 0),
-                "treasury_yield": 0.042,
-                "market_return": 0.10,
-            }
-        except Exception as e:
-            logger.warning(f"YFinance .info failed (likely rate limit): {e}. Attempting .fast_info fallback...")
+    def get(self, url, *, headers=None, params=None, ttl=0, cache_key=None):
+        if self.edge:
+            return self.edge_get(url, headers=headers, params=params)
+        if cache_key:
+            cached = self.store.get(cache_key)
+            if cached is not None:
+                return cached
+        for attempt in range(2):
+            remaining = self.deadline - time.monotonic()
+            if remaining <= 0:
+                raise ProviderError(
+                    "Data provider exceeded its request deadline. Retry or enter financials manually."
+                )
             try:
-                fast = self.yf_ticker.fast_info
-                data = {
-                    "price": fast.last_price,
-                    "beta": 1.0, # fast_info is limited, default to market average
-                    "shares": fast.shares,
-                    "market_cap": fast.market_cap,
-                    "treasury_yield": 0.042,
-                    "market_return": 0.10,
-                }
-                logger.info(f"Fallback to .fast_info successful for {self.ticker}")
-            except Exception as e2:
-                logger.error(f"YFinance .fast_info also failed: {e2}")
+                with self.session.get(
+                    url,
+                    headers=headers,
+                    params=params,
+                    timeout=(min(3, remaining), min(5, remaining)),
+                    stream=True,
+                    allow_redirects=False,
+                ) as response:
+                    if response.status_code in {429, 500, 502, 503, 504} and attempt == 0:
+                        time.sleep(min(0.5, max(0, self.deadline - time.monotonic())))
+                        continue
+                    if response.status_code != 200:
+                        raise ProviderError(
+                            f"Data provider returned HTTP {response.status_code}. Check configuration or use manual input."
+                        )
+                    chunks = []
+                    size = 0
+                    for chunk in response.iter_content(65536):
+                        if time.monotonic() > self.deadline:
+                            raise ProviderError("Data provider exceeded its request deadline.")
+                        size += len(chunk)
+                        if size > 20_000_000:
+                            raise ProviderError("Data provider response exceeded the size limit.")
+                        chunks.append(chunk)
+                    raw = json.loads(b"".join(chunks))
+                    if cache_key and ttl:
+                        self.store.set(cache_key, raw, ttl)
+                    return raw
+            except (requests.RequestException, json.JSONDecodeError, UnicodeError):
+                if attempt == 1:
+                    raise ProviderError(
+                        "Data provider is unavailable or returned invalid JSON. Retry or use manual input."
+                    ) from None
+        raise ProviderError("Data provider is unavailable.")
+
+    def edge_get(self, url, headers=None, params=None):
+        from pyodide.ffi import run_sync
+        from workers import fetch
+        from urllib.parse import urlencode
+        import js
+
+        if params:
+            url += "?" + urlencode(params)
+        for attempt in range(2):
+            remaining = self.deadline - time.monotonic()
+            if remaining <= 0:
+                raise ProviderError("Data provider exceeded its request deadline.")
+            try:
+                response = run_sync(
+                    fetch(
+                        url,
+                        headers=headers or {},
+                        redirect="manual",
+                        signal=js.AbortSignal.timeout(int(min(remaining, 8) * 1000)),
+                    )
+                )
+                if response.status in {429, 500, 502, 503, 504} and attempt == 0:
+                    continue
+                if response.status != 200:
+                    raise ProviderError(
+                        f"Data provider returned HTTP {response.status}. Use manual input."
+                    )
+                reader = response.body.getReader()
+                chunks = bytearray()
+                while True:
+                    chunk = run_sync(reader.read())
+                    if chunk.done:
+                        break
+                    if (
+                        time.monotonic() > self.deadline
+                        or len(chunks) + chunk.value.byteLength > 20_000_000
+                    ):
+                        run_sync(reader.cancel())
+                        raise ProviderError(
+                            "Data provider exceeded the response size or time limit."
+                        )
+                    chunks.extend(chunk.value.to_bytes())
+                return json.loads(chunks)
+            except ProviderError:
                 raise
+            except Exception:
+                if attempt == 1:
+                    raise ProviderError(
+                        "Data provider is unavailable or returned invalid JSON."
+                    ) from None
+        raise ProviderError("Data provider is unavailable.")
 
-        # Fetch treasury yield with timeout (independent checks)
-        try:
-            tnx = yf.Ticker("^TNX")
-            hist = tnx.history(period="1d", timeout=5)
-            if not hist.empty:
-                data["treasury_yield"] = float(hist['Close'].iloc[-1] / 100)
-        except Exception:
-            pass
-            
-        set_cached_market_data(self.ticker, data)
-        return data
 
-    def get_financials_via_yfinance(self):
-        logger.info("Fetching Financial Statements (Standardized via YFinance)...")
-        inc = self.yf_ticker.financials
-        bal = self.yf_ticker.balance_sheet
-        cf = self.yf_ticker.cashflow
-        return inc, bal, cf
+TAGS = {
+    "revenue": [
+        "RevenueFromContractWithCustomerExcludingAssessedTax",
+        "Revenues",
+        "SalesRevenueNet",
+    ],
+    "ebit": ["OperatingIncomeLoss"],
+    "net_income": ["NetIncomeLoss", "ProfitLoss"],
+    "d_and_a": [
+        "DepreciationDepletionAndAmortization",
+        "DepreciationDepletionAndAmortizationPropertyPlantAndEquipment",
+    ],
+    "capex": ["PaymentsToAcquirePropertyPlantAndEquipment"],
+    "current_assets": ["AssetsCurrent"],
+    "current_liabilities": ["LiabilitiesCurrent"],
+    "cash": ["CashAndCashEquivalentsAtCarryingValue"],
+    "short_term_debt": ["DebtCurrent"],
+    "current_maturities": ["LongTermDebtCurrent"],
+    "short_term_borrowings": ["ShortTermBorrowings"],
+    "long_term_debt": ["LongTermDebtNoncurrent"],
+    "total_assets": ["Assets"],
+    "total_liabilities": ["Liabilities"],
+    "tax_expense": ["IncomeTaxExpenseBenefit"],
+    "pretax_income": [
+        "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+        "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments",
+    ],
+    "diluted_shares": ["WeightedAverageNumberOfDilutedSharesOutstanding"],
+    "preferred_equity": ["PreferredStockValue"],
+    "minority_interest": ["MinorityInterest"],
+}
+DURATION = {
+    "revenue",
+    "ebit",
+    "net_income",
+    "d_and_a",
+    "capex",
+    "tax_expense",
+    "pretax_income",
+    "diluted_shares",
+}
 
-# --- KEY CLASS 2: Edgar Fetcher (Financials) ---
-    def get_financials_via_edgar(self):
-        logger.info("Fetching Financial Statements from SEC Edgar...")
-        try:
-            company = Company(self.ticker)
-        except Exception as e:
-            raise ValueError(f"Edgar Init Failed: {e}")
-            
-        # These calls retrieve the standardized MultiPeriodStatement
-        inc = company.income_statement()
-        bal = company.balance_sheet()
-        cf = company.cash_flow()
-        
-        # Convert to DataFrames
-        return (
-            inc.to_dataframe() if inc else pd.DataFrame(), 
-            bal.to_dataframe() if bal else pd.DataFrame(), 
-            cf.to_dataframe() if cf else pd.DataFrame()
+
+def sec_fact(facts, metric, end, cutoff):
+    """Exact tag, unit and period matching. Latest filing available at cutoff."""
+    unit = "shares" if metric == "diluted_shares" else "USD"
+    for tag in TAGS[metric]:
+        candidates = []
+        for row in (
+            facts.get("facts", {}).get("us-gaap", {}).get(tag, {}).get("units", {}).get(unit, [])
+        ):
+            if (
+                row.get("end") != end
+                or row.get("form") not in {"10-K", "10-K/A"}
+                or row.get("filed", "9999") > cutoff
+            ):
+                continue
+            if metric in DURATION:
+                try:
+                    days = (date.fromisoformat(row["end"]) - date.fromisoformat(row["start"])).days
+                except (KeyError, ValueError):
+                    continue
+                if not 330 <= days <= 400:
+                    continue
+            elif row.get("start"):
+                continue
+            candidates.append(row)
+        if candidates:
+            latest = max(r["filed"] for r in candidates)
+            top = [r for r in candidates if r["filed"] == latest]
+            if len({r["val"] for r in top}) != 1:
+                raise ProviderError(
+                    f"Ambiguous SEC facts for {metric}, {end}; review the filing manually."
+                )
+            row = top[0]
+            return number(row["val"], metric), {
+                "tag": tag,
+                "period_end": end,
+                "filed": row["filed"],
+                "accession": row.get("accn"),
+                "unit": unit,
+            }
+    if metric == "short_term_debt":
+        maturity, mp = sec_fact(facts, "current_maturities", end, cutoff)
+        borrowing, bp = sec_fact(facts, "short_term_borrowings", end, cutoff)
+        if maturity is not None and borrowing is not None:
+            return maturity + borrowing, {
+                "components": [mp, bp],
+                "filed": max(mp["filed"], bp["filed"]),
+                "period_end": end,
+                "unit": "USD",
+            }
+    return None, None
+
+
+def blank_document(ticker, name, asof, kind):
+    return {
+        "schema_version": SCHEMA,
+        "valuation_date": asof,
+        "units": "absolute",
+        "company": {
+            "ticker": ticker,
+            "name": name,
+            "currency": "USD",
+            "eligible": False,
+            "sector": "",
+        },
+        "market": {
+            "price": None,
+            "price_as_of": asof,
+            "currency": "USD",
+            "diluted_shares": None,
+            "shares_basis": "Requires confirmation",
+        },
+        "bridge": {**dict.fromkeys(BRIDGE_FIELDS), "as_of": None},
+        "historical": [],
+        "source": {
+            "name": kind.upper(),
+            "kind": kind,
+            "retrieved_at": datetime.now(timezone.utc).isoformat(),
+            "warnings": [],
+        },
+    }
+
+
+def load_sec(ticker, asof, http):
+    identity = provider_setting("EDGAR_IDENTITY")
+    if "@" not in identity:
+        raise ProviderError(
+            "Set EDGAR_IDENTITY to your name and contact email on the server before using SEC data. Sample and manual modes remain available."
         )
-
-    def _get_edgar_series(self, df: pd.DataFrame, phrases: List[str], count: int = 3) -> List[float]:
-        """
-        Robustly finds a row in Edgar DataFrame by checking 'label' column and Index.
-        Returns the data for the most recent 'count' years.
-        """
-        if df.empty:
-            return [0.0] * count
-            
-        # 1. Identify Year Columns (keys starting with 'FY')
-        year_cols = [c for c in df.columns if str(c).startswith('FY')]
-        # Sort years descending (newest first)
-        year_cols.sort(reverse=True, key=lambda x: str(x))
-        target_years = year_cols[:count]
-        
-        matched_row = None
-        
-        # Normalize phrases for case-insensitive matching
-        phrases = [p.lower() for p in phrases]
-        
-        # 2. Search by Label (Priority)
-        if 'label' in df.columns:
-            for phrase in phrases:
-                # Exact match first
-                mask = df['label'].astype(str).str.lower() == phrase
-                if mask.any():
-                    matched_row = df[mask].iloc[0]
-                    break
-                    
-                # Contains match (secondary)
-                mask = df['label'].astype(str).str.lower().str.contains(phrase, regex=False)
-                if mask.any():
-                    matched_row = df[mask].iloc[0]
-                    break
-
-        # 3. Search by Index (Concept Name) if no label match
-        if matched_row is None:
-            for phrase in phrases:
-                 # Remove spaces for concept matching (e.g. "Gross Profit" -> "GrossProfit")
-                 concept_phrase = phrase.replace(" ", "")
-                 mask = df.index.astype(str).str.lower().str.contains(concept_phrase, regex=False)
-                 if mask.any():
-                     matched_row = df[mask].iloc[0]
-                     break
-                     
-        if matched_row is None:
-            return [0.0] * count
-            
-        # 4. Extract Values
-        values = []
-        for y in target_years:
-            val = matched_row.get(y, 0.0)
-            values.append(_safe_float(val))
-            
-        # Pad if missing years
-        while len(values) < count:
-            values.append(0.0)
-            
-        # Return oldest to newest (DCF expectation)
-        return values[::-1]
-
-    def _get_edgar_years(self, df: pd.DataFrame, count: int = 3) -> List[str]:
-        if df.empty:
-            return ["YYYY"] * count
-        year_cols = [c for c in df.columns if str(c).startswith('FY')]
-        year_cols.sort(reverse=True, key=lambda x: str(x))
-        return year_cols[:count][::-1]
-
-    def assemble(self) -> FinancialData:
-        mkt = self.get_market_data()
-        
-        # 1. Try Edgar First (Official Data)
-        try:
-            inc, bal, cf = self.get_financials_via_edgar()
-            if not inc.empty and not bal.empty:
-                 logger.info("Using SEC Edgar Data.")
-                 return self._process_edgar_data(inc, bal, cf, mkt)
-        except Exception as e:
-             logger.warning(f"Edgar Financials Failed: {e}")
-
-        # 2. Fallback to YFinance (Live Data provider)
-        try:
-            inc, bal, cf = self.get_financials_via_yfinance()
-            if not inc.empty and not bal.empty:
-                 logger.info("Falling back to YFinance Data.")
-                 return self._process_yfinance_data(inc, bal, cf, mkt)
-        except Exception as e:
-             logger.warning(f"YFinance Financials Failed: {e}")
-
-        raise ValueError(f"Could not fetch data for {self.ticker} from Edgar or YFinance.")
-
-    def _process_yfinance_data(self, inc, bal, cf, mkt) -> FinancialData:
-        rev_tags = ['Total Revenue', 'Operating Revenue', 'Revenue']
-        ebit_tags = ['EBIT', 'Operating Income', 'Operating Profit']
-        ebitda_tags = ['EBITDA', 'Normalized EBITDA']
-        net_inc_tags = ['Net Income', 'Net Income Common Stockholders']
-        tax_tags = ['Tax Provision', 'Income Tax Expense']
-        int_exp_tags = ['Interest Expense', 'Interest Expense Non Operating']
-        
-        ca_tags = ['Total Current Assets', 'Current Assets']
-        cl_tags = ['Total Current Liabilities', 'Current Liabilities']
-        cash_tags = ['Cash And Cash Equivalents', 'Cash']
-        std_tags = ['Current Debt', 'Short Term Debt', 'Commercial Paper']
-        ltd_tags = ['Long Term Debt']
-        td_tags = ['Total Debt']
-        ta_tags = ['Total Assets']
-        tl_tags = ['Total Liabilities']
-        ppe_tags = ['Net PPE', 'Plant Property Equipment Net', 'Property Plant And Equipment Net']
-        pref_tags = ['Preferred Stock', 'Preferred Stock Equity']
-        
-        da_tags = ['Depreciation And Amortization', 'Reconciled Depreciation']
-        capex_tags = ['Capital Expenditure', 'Capital Expenditures'] 
-        
-        years = _get_dates_from_cols(inc)
-        
-        fd = FinancialData(
-            years=years,
-            revenue=_get_series_from_row(inc, rev_tags),
-            ebit=_get_series_from_row(inc, ebit_tags),
-            ebitda=_get_series_from_row(inc, ebitda_tags),
-            net_income=_get_series_from_row(inc, net_inc_tags),
-            effective_tax_rate=[], 
-            interest_expense=_get_series_from_row(inc, int_exp_tags),
-            
-            current_assets=_get_series_from_row(bal, ca_tags),
-            current_liabilities=_get_series_from_row(bal, cl_tags),
-            cash_and_equivalents=_get_series_from_row(bal, cash_tags),
-            short_term_debt=_get_series_from_row(bal, std_tags),
-            long_term_debt=_get_series_from_row(bal, ltd_tags),
-            total_debt=_get_series_from_row(bal, td_tags),
-            total_assets=_get_series_from_row(bal, ta_tags),
-            total_liabilities=_get_series_from_row(bal, tl_tags),
-            property_plant_equipment_net=_get_series_from_row(bal, ppe_tags),
-            preferred_equity=_get_series_from_row(bal, pref_tags),
-            
-            d_and_a=_get_series_from_row(cf, da_tags),
-            capex=_get_series_from_row(cf, capex_tags),
-            preferred_dividends=[],
-            
-            shares_outstanding=float(mkt['shares']),
-            beta=float(mkt['beta']),
-            stock_price=float(mkt['price']),
-            market_cap=float(mkt['market_cap']),
-            risk_free_rate=float(mkt['treasury_yield']),
-            market_return_rate=float(mkt['market_return'])
+    headers = {
+        "User-Agent": identity,
+        "Accept-Encoding": "gzip, deflate",
+        "Accept": "application/json",
+    }
+    directory = http.get(
+        "https://www.sec.gov/files/company_tickers.json",
+        headers=headers,
+        ttl=86400,
+        cache_key="sec-directory",
+    )
+    entry = next(
+        (r for r in directory.values() if str(r.get("ticker", "")).replace(".", "-") == ticker),
+        None,
+    )
+    if not entry:
+        raise ProviderError(
+            "Ticker not found in SEC directory. Enter CIK-backed financials manually."
         )
-        
-        tax_vals = _get_series_from_row(inc, tax_tags)
-        inc_vals = _get_series_from_row(inc, ['Pretax Income', 'Income Before Tax'])
-        
-        eff_rates = []
-        for t, i in zip(tax_vals, inc_vals):
-            if i != 0:
-                eff_rates.append(t / i)
-            else:
-                eff_rates.append(0.21)
-        fd.effective_tax_rate = eff_rates
-
-        return fd
-
-    def _process_edgar_data(self, inc, bal, cf, mkt) -> FinancialData:
-        # Mappings based on common US GAAP labels in Edgar
-        years = self._get_edgar_years(inc)
-        
-        getter = self._get_edgar_series
-        
-        fd = FinancialData(
-            years=years,
-            revenue=getter(inc, ['Total Revenue', 'Revenues', 'Revenue']),
-            ebit=getter(inc, ['Operating Income', 'Operating Profit', 'Operating Income (Loss)']),
-            ebitda=getter(inc, ['Net Income', 'Net Loss']), # Approx starter, usually need to calc
-            net_income=getter(inc, ['Net Income', 'Net Income (Loss)', 'Net Loss']),
-            
-            # Interest is tricky in standardized views, often net
-            interest_expense=getter(inc, ['Interest Expense', 'Interest and Dividend Income']),
-            
-            # Balance Sheet
-            current_assets=getter(bal, ['Total Current Assets', 'Current Assets']),
-            current_liabilities=getter(bal, ['Total Current Liabilities', 'Current Liabilities']),
-            cash_and_equivalents=getter(bal, ['Cash and Cash Equivalents', 'Cash']),
-            
-            # Debt is often split
-            short_term_debt=getter(bal, ['Short-term Debt', 'Commercial Paper']),
-            long_term_debt=getter(bal, ['Long-term Debt', 'Long-Term Debt']),
-            total_debt=getter(bal, ['Total Debt']), # Often computed
-            
-            total_assets=getter(bal, ['Total Assets']),
-            total_liabilities=getter(bal, ['Total Liabilities']),
-            
-            property_plant_equipment_net=getter(bal, ['Property, Plant and Equipment, Net', 'Net Property, Plant and Equipment']),
-            preferred_equity=getter(bal, ['Preferred Stock']),
-            
-            # Cash Flow
-            d_and_a=getter(cf, ['Depreciation, Depletion and Amortization', 'Depreciation']),
-            capex=getter(cf, ['Payments to Acquire Property, Plant, and Equipment', 'Capital Expenditures']),
-            preferred_dividends=getter(cf, ['Payment of Preferred Stock Dividends']),
-            
-            # Market Data (YF)
-            shares_outstanding=float(mkt['shares']),
-            beta=float(mkt['beta']),
-            stock_price=float(mkt['price']),
-            market_cap=float(mkt['market_cap']),
-            risk_free_rate=float(mkt['treasury_yield']),
-            market_return_rate=float(mkt['market_return'])
+    cik = str(entry["cik_str"]).zfill(10)
+    facts = http.get(
+        f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json",
+        headers=headers,
+        ttl=3600,
+        cache_key=f"sec-facts-{cik}",
+    )
+    doc = blank_document(ticker, entry["title"], asof, "sec")
+    doc["source"].update(url=f"https://www.sec.gov/edgar/browse/?CIK={cik}", cik=cik)
+    ends = set()
+    for tag in TAGS["revenue"]:
+        for row in (
+            facts.get("facts", {}).get("us-gaap", {}).get(tag, {}).get("units", {}).get("USD", [])
+        ):
+            if row.get("filed", "9999") <= asof and row.get("end", "9999") <= asof:
+                value, _ = sec_fact(facts, "revenue", row["end"], asof)
+                if value is not None:
+                    ends.add(row["end"])
+    ends = sorted(ends)[-3:]
+    if len(ends) != 3:
+        raise ProviderError(
+            "SEC did not provide three annual USD revenue periods. Use manual input or Zion."
         )
-        
-        # Recalc helpers
-        tax_prov = getter(inc, ['Income Tax Expense (Benefit)', 'Income Tax Provision'])
-        pre_tax = getter(inc, ['Income (Loss) Before Income Taxes', 'Income Before Tax'])
-        
-        eff_rates = []
-        for t, p in zip(tax_prov, pre_tax):
-            if p != 0:
-                eff_rates.append(t / p)
-            else:
-                eff_rates.append(0.21)
-        fd.effective_tax_rate = eff_rates
-        
-        # Patch EBITDA if missing
-        for i in range(3):
-            if fd.ebitda[i] == 0:
-                fd.ebitda[i] = fd.ebit[i] + fd.d_and_a[i]
+    for end in ends:
+        extracted = {key: sec_fact(facts, key, end, asof) for key in TAGS}
+        val = lambda key: extracted[key][0]
+        provenance = {key: p for key, (_, p) in extracted.items() if p}
+        nwc = (
+            (val("current_assets") - val("cash"))
+            - (val("current_liabilities") - val("short_term_debt"))
+            if all(
+                val(k) is not None
+                for k in ["current_assets", "cash", "current_liabilities", "short_term_debt"]
+            )
+            else None
+        )
+        book = (
+            val("total_assets") - val("total_liabilities")
+            if val("total_assets") is not None and val("total_liabilities") is not None
+            else None
+        )
+        tax = (
+            val("tax_expense") / val("pretax_income")
+            if val("tax_expense") is not None and val("pretax_income") not in {None, 0}
+            else None
+        )
+        row = {
+            "period_end": end,
+            "available_at": max((p["filed"] for p in provenance.values()), default=asof),
+            "provenance": provenance,
+            **{k: val(k) for k in ["revenue", "ebit", "net_income", "capex", "d_and_a"]},
+            "nwc": nwc,
+            "book_value": book,
+            "tax_rate": tax,
+        }
+        doc["historical"].append(row)
+    for k in ["short_term_debt", "long_term_debt", "cash", "preferred_equity", "minority_interest"]:
+        doc["bridge"][k] = extracted[k][0]
+    doc["bridge"]["as_of"] = ends[-1]
+    doc["market"]["diluted_shares"] = extracted["diluted_shares"][0]
+    doc["market"]["shares_basis"] = (
+        "Annual weighted-average diluted shares from latest annual filing; review for current dilution."
+    )
+    doc["source"]["warnings"] = [
+        "Confirm eligibility and enter a dated market price. Missing facts remain blank and must be completed from the filing.",
+        "Review current debt classification: short-term borrowings can exist in addition to the current portion of long-term debt.",
+        "Review D&A taxonomy coverage, loss tax benefits, leases, noncontrolling interests and excess cash before valuation.",
+    ]
+    return doc
 
-        return fd
+
+ZION_METRICS = {
+    "revenue": "revenue",
+    "ebit": "operating_income",
+    "net_income": "net_income",
+    "capex": "capital_expenditures",
+    "d_and_a": "depreciation_and_amortization",
+    "nwc": "net_working_capital",
+    "book_value": "shareholders_equity",
+    "tax_rate": "effective_tax_rate",
+    "short_term_debt": "short_term_debt",
+    "long_term_debt": "long_term_debt",
+    "cash": "cash_and_cash_equivalents",
+    "preferred_equity": "preferred_equity",
+    "minority_interest": "minority_interest",
+    "other_nonoperating_assets": "other_nonoperating_assets",
+    "diluted_shares": "weighted_average_diluted_shares",
+    "current_assets": "current_assets",
+    "current_liabilities": "current_liabilities",
+    "tax_expense": "income_tax_expense",
+    "pretax_income": "pretax_income",
+}
 
 
-# Wrapper Logic Updated
-def load_data_from_api(ticker: str) -> FinancialData:
-    start_time = time.time()
+def zion_document(packet, ticker, asof):
+    if not isinstance(packet, dict) or packet.get("symbol") != ticker:
+        raise ProviderError("Zion returned a mismatched company packet.")
+    fundamentals = packet.get("fundamentals", {})
+    if packet.get("status") != "AVAILABLE" or fundamentals.get("status") != "AVAILABLE":
+        raise ProviderError("Zion company fundamentals are unavailable.")
+    annual = fundamentals.get("annual", [])
+    if not isinstance(annual, list):
+        raise ProviderError("Zion annual observations must be a list.")
+    doc = blank_document(ticker, ticker, asof, "zion")
+    doc["source"].update(
+        releases=packet.get("releases", {}),
+        request_id=packet.get("request_id"),
+        identity=packet.get("identity", {}),
+    )
+    groups = {}
+    inverse = {v: k for k, v in ZION_METRICS.items()}
+    for obs in annual:
+        if not isinstance(obs, dict) or obs.get("period_type") != "annual":
+            raise ProviderError("Zion annual data contains a nonannual observation.")
+        end = obs.get("period_end")
+        metric = inverse.get(obs.get("metric_id"))
+        if not end or end > asof or metric is None:
+            continue
+        available = str(obs.get("available_at", ""))
+        if not available or available[:10] > asof:
+            continue
+        expected = (
+            "shares" if metric == "diluted_shares" else "pure" if metric == "tax_rate" else "USD"
+        )
+        if obs.get("unit") != expected:
+            raise ProviderError(
+                f"Zion {metric} unit must be {expected}. No FX or scale conversion is implicit."
+            )
+        value = number(obs.get("value_decimal", obs.get("value")), metric)
+        record = groups.setdefault(end, {})
+        if metric in record and record[metric][0] != value:
+            raise ProviderError(
+                f"Zion has conflicting {metric} observations for {end}. Resolve revisions before valuation."
+            )
+        record[metric] = (value, deepcopy(obs))
+    ends = sorted(k for k, v in groups.items() if "revenue" in v)[-3:]
+    if len(ends) != 3:
+        raise ProviderError(
+            "Zion needs three annual revenue periods available at the valuation date. Use manual input for missing coverage."
+        )
+    for end in ends:
+        group = groups[end]
+        val = lambda k: group.get(k, (None, None))[0]
+        row = {
+            "period_end": end,
+            "available_at": max(v[1]["available_at"] for v in group.values()),
+            "provenance": {k: v[1] for k, v in group.items()},
+            **{k: val(k) for k in HISTORY_FIELDS},
+        }
+        if row["capex"] is not None:
+            row["capex"] = abs(row["capex"])
+        if row["nwc"] is None and all(
+            val(k) is not None
+            for k in ["current_assets", "cash", "current_liabilities", "short_term_debt"]
+        ):
+            row["nwc"] = (val("current_assets") - val("cash")) - (
+                val("current_liabilities") - val("short_term_debt")
+            )
+        if (
+            row["tax_rate"] is None
+            and val("pretax_income") not in {None, 0}
+            and val("tax_expense") is not None
+        ):
+            row["tax_rate"] = val("tax_expense") / val("pretax_income")
+        doc["historical"].append(row)
+    for k in BRIDGE_FIELDS:
+        doc["bridge"][k] = val(k)
+    doc["bridge"]["as_of"] = ends[-1]
+    doc["market"]["diluted_shares"] = val("diluted_shares")
+    latest = packet.get("prices", {}).get("latest", {}).get("observation") or {}
+    if (
+        latest
+        and packet.get("prices", {}).get("latest", {}).get("status") == "AVAILABLE"
+        and latest.get("session_date", "9999") <= asof
+        and latest.get("unit") is not None
+    ):
+        if latest.get("unit") != "USD/share":
+            raise ProviderError("Zion price currency does not match USD financials.")
+        doc["market"]["price"] = number(latest.get("close"), "Zion close", 0)
+        doc["market"]["price_as_of"] = latest.get("session_date")
+        doc["source"]["price_observation"] = deepcopy(latest)
+    doc["source"]["warnings"] = [
+        "Confirm operating-company eligibility, dilution, debt classification and any missing fields. Zion release and observation provenance are preserved."
+    ]
+    if latest and latest.get("unit") is None:
+        doc["source"]["warnings"].append(
+            "Price currency is unverified. Enter a dated USD market price manually."
+        )
+    return doc
+
+
+def provider_setting(name):
     try:
-        fetcher = HybridDataFetcher(ticker)
-        data = fetcher.assemble()
-        logger.info(f"Data Load Complete for {ticker} in {time.time() - start_time:.2f}s")
-        return data
-    except Exception as e:
-        logger.critical(f"FATAL: All data sources failed for {ticker}. Error: {e}")
-        raise RuntimeError(f"Could not load data for {ticker}. Details: {e}")
+        from flask import current_app, has_request_context, request
 
-if __name__ == "__main__":
-    # Test Block
-    try:
-        t = "MCD"
-        print(f"Testing Loader for {t}...")
-        d = load_data_from_api(t)
-        print(f"Stock Price: ${d.stock_price}")
-        print(f"Revenue (Last 3y): {d.revenue}")
-        print("Success!")
-    except Exception as e:
-        print(f"Failed: {e}")
+        if has_request_context() and current_app.config.get("CLOUDFLARE"):
+            return str(getattr(request.environ["workers.env"], name, ""))
+    except ImportError:
+        pass
+    return os.getenv(name, "")
 
+
+def configured_url(name):
+    base = provider_setting(name).rstrip("/")
+    p = urlparse(base)
+    if p.scheme != "https" or not p.netloc or p.username or p.password or p.query or p.fragment:
+        raise ProviderError(f"Configure {name} as an HTTPS base URL on the server.")
+    return base
+
+
+def load_document(source, ticker, asof):
+    ticker = ticker_symbol(ticker)
+    iso_date(asof, "Valuation date")
+    if source == "sample":
+        return demo_document()
+    if source == "manual":
+        doc = blank_document(ticker, ticker, asof, "manual")
+        year = date.fromisoformat(asof).year
+        doc["historical"] = [
+            {"period_end": f"{y}-12-31", **dict.fromkeys(HISTORY_FIELDS)}
+            for y in range(year - 3, year)
+        ]
+        doc["bridge"]["as_of"] = doc["historical"][-1]["period_end"]
+        doc["source"]["warnings"] = [
+            "User-entered financials require independent source verification."
+        ]
+        return doc
+    http = JsonHTTP()
+    if source == "sec":
+        return load_sec(ticker, asof, http)
+    if source == "zion":
+        base = configured_url("ZION_API_BASE_URL")
+        token = provider_setting("ZION_API_TOKEN")
+        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        # Zion supports an explicit point-in-time instant; date-only values are invalid.
+        packet = http.get(
+            f"{base}/v1/company/{ticker}",
+            headers=headers,
+            params={"as_of": f"{asof}T23:59:59Z", "limit": 1000},
+        )
+        return zion_document(packet, ticker, asof)
+    if source == "api":
+        base = configured_url("DCF_API_BASE_URL")
+        token = provider_setting("DCF_API_TOKEN")
+        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        doc = http.get(
+            f"{base}/v1/valuation/financials/{ticker}", headers=headers, params={"as_of": asof}
+        )
+        if not isinstance(doc, dict) or doc.get("company", {}).get("ticker") != ticker:
+            raise ProviderError("API returned a mismatched financial document.")
+        parse_document(doc)
+        return doc
+    raise ValueError("Choose sample, SEC, Zion or the configured financial API.")
+
+
+def load_data_from_api(ticker):
+    # Compatibility wrapper. The browser offers manual completion when provider fields are missing.
+    source = os.getenv("DCF_DEFAULT_PROVIDER", "zion")
+    return parse_document(load_document(source, ticker, date.today().isoformat()))

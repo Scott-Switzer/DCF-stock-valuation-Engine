@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dcf-valuation-engine",
+  "main": "worker_runtime/worker.py",
+  "account_id": "51b88c6a6ef833b3c2ff46e98d5d9356",
+  "compatibility_date": "2026-10-06",
+  "compatibility_flags": [
+    "python_workers"
+  ],
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dcf-valuations",
+      "database_id": "77b1393e-ef20-4081-9dd7-4a7ab787c933",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1
+  },
+  "vars": {
+    "EDGAR_IDENTITY": "Scott Switzer scswitzer@chapman.edu"
+  },
+  "build": {
+    "command": "python scripts/embed_assets.py"
+  },
+  "preview_urls": false
+}
