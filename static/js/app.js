@@ -81,7 +81,7 @@ if (valuationForm) {
     if (event.key === 'Escape') {closeSuggestions(); input.focus();}
   });
   document.addEventListener('click', event => {if (!input.contains(event.target) && !suggestions.contains(event.target)) closeSuggestions();});
-  const fillForm = values => {for (const [name,value] of Object.entries(values)) setField(name,value); preview(); updateGrowth();};
+  const fillForm = (values, notifySource = true) => {for (const [name,value] of Object.entries(values)) setField(name,value); if (notifySource) preview(); updateGrowth();};
   document.addEventListener('workspace-fill',event=>fillForm(event.detail));
   const remembered = sessionStorage.getItem('dcf-form');
   if (remembered && !document.querySelector('.notice.error')) {
@@ -140,6 +140,7 @@ if (valuationForm) {
     const tax=valuationForm.elements.h_tax_rate_2.value;
     if (tax==='') {notify('Enter the latest historical tax rate.',true);return;}
     for (let i=0;i<5;i++) setField(`tax_rate_${i}`,tax);
+    document.dispatchEvent(new Event('forecast-drivers-changed'));
     notify('Filled annual operating drivers from historical averages. Review and edit the forecast assumptions.');
   });
   document.getElementById('import-file').addEventListener('change', async event => {
@@ -154,7 +155,7 @@ if (valuationForm) {
         shares_basis:doc.market.shares_basis,bridge_as_of:doc.bridge.as_of,source_name:doc.source.name,...doc.bridge};
       delete values.as_of;
       doc.historical.forEach((row,i) => {values[`period_${i}`]=row.period_end;for (const key of ['revenue','ebit','net_income','capex','d_and_a','nwc','book_value','tax_rate']) values[`h_${key}_${i}`]=row[key] == null ? '' : row[key]*(key==='tax_rate'?100:1);});
-      fillForm(values); document.getElementById('derive-drivers').click();notify('Imported financial document. Review all forecast assumptions before calculating.');
+      fillForm(values, false); document.getElementById('derive-drivers').click(); preview(); notify('Imported financial document. Review all forecast assumptions before calculating.');
     } catch(error) {notify(error.message || 'Invalid financial JSON.',true);}
   });
   valuationForm.addEventListener('invalid', event => {

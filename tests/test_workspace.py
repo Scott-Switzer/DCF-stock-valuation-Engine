@@ -90,3 +90,11 @@ def test_invalid_preview_rejects_terminal_growth_without_saving(client):
     response = client.post("/api/preview/dcf", data=form)
     assert response.status_code == 400
     assert "lower than WACC" in response.get_json()["error"]
+
+@pytest.mark.parametrize('method,missing', [('ddm','common_dividends'),('relative','common_book_equity')])
+def test_imported_snapshot_missing_method_data_returns_clear_error(client, method, missing):
+    doc = demo_document()
+    doc['source'].pop(missing, None)
+    response = client.post('/api/assemble/' + method, json={'financials':doc})
+    assert response.status_code == 400
+    assert missing in response.get_json()['error']

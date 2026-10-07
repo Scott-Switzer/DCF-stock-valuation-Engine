@@ -169,6 +169,16 @@ def load_method(
             raise ValueError("Company snapshot ticker does not match.")
         asof = dcf["valuation_date"]
         costs = dcf["source"].get("capital_costs", {})
+        dcf["source"].setdefault("warnings", [])
+        needed = {"ddm": "common_dividends", "relative": "common_book_equity"}.get(method)
+        if needed:
+            supplemental = dcf["source"].get(needed)
+            required_keys = {"value", "period_end"} if method == "ddm" else {"value"}
+            if not isinstance(supplemental, dict) or not required_keys <= supplemental.keys():
+                raise ValueError(
+                    f"This imported snapshot needs source.{needed} for {method.upper()}. "
+                    "Add verified method-specific data to the import or load a company ticker above."
+                )
     else:
         dcf = load_yahoo(
             ticker,

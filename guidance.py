@@ -70,7 +70,26 @@ class Paragraphs(HTMLParser):
             self.parts.append(data)
 
 
-def guidance_excerpt(html):
+def forward_period(text, filed):
+    period = re.search(
+        r"\b(next|coming)\s+(quarter|fiscal year|year)\b|\b(fiscal(?:\s+year)?|full.year|first quarter|second quarter|third quarter|fourth quarter|Q[1-4])\s*(20\d{2})\b",
+        text, re.I,
+    )
+    if not period:
+        return False
+    if period.group(1):
+        return True
+    year = int(period.group(4))
+    if year < filed.year:
+        return False
+    # Fiscal-quarter boundaries are unknown: only an unambiguously future year qualifies.
+    if re.search(r"quarter|Q[1-4]", period.group(3), re.I):
+        return year > filed.year
+    return True
+
+
+def guidance_excerpt(html, filed=None):
+    filed = date.fromisoformat(filed) if filed else datetime.now(timezone.utc).date()
     parser = Paragraphs()
     parser.feed(html[:1_500_000])
     for paragraph in "".join(parser.parts).split("\n"):
@@ -79,15 +98,11 @@ def guidance_excerpt(html):
             40 <= len(text) <= 700
             and re.search(r"\b(revenue|sales)\b", text, re.I)
             and re.search(
-                r"\b(we|our company|the company)\s+(expect|expects|anticipate|anticipates|project|projects)\w*\b",
+                r"\b(we|our company|the company)\s+(expect|expects|anticipate|anticipates|project|projects)\b",
                 text,
                 re.I,
             )
-            and re.search(
-                r"\b(next|coming)\s+(quarter|fiscal year|year)\b|\b(fiscal(?:\s+year)?|full.year|first quarter|second quarter|third quarter|fourth quarter|Q[1-4])\s*(20\d{2})\b",
-                text,
-                re.I,
-            )
+            and forward_period(text, filed)
             and not re.search(r"forward.looking|safe.harbor|risks and uncertainties", text, re.I)
         ):
             return text
@@ -153,7 +168,7 @@ def load_guidance(ticker):
                     cache_key="sec-guidance-text-" + row["accession"] + "-" + name,
                     text_response=True,
                 )
-                excerpt = guidance_excerpt(html)
+                excerpt = guidance_excerpt(html, row["filed"])
                 if excerpt:
                     row.update(excerpt=excerpt, url=url)
                     break

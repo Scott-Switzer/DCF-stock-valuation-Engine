@@ -185,6 +185,23 @@
         emit({ type: "preview-error", error: error.message });
     }
   }
+  document.addEventListener("forecast-drivers-changed", () => {
+    for (const el of form.elements) {
+      if (
+        !/^(ebit_margin|da_margin|capex_margin|nwc_margin|net_income_margin|book_value_margin|tax_rate)_\d$/.test(
+          el.name,
+        )
+      )
+        continue;
+      preciseRates.delete(el.name);
+      if (el.value !== "" && Number.isFinite(Number(el.value))) {
+        const raw = el.value;
+        el.value = Number(raw).toFixed(2);
+        preciseRates.set(el.name, { raw, display: el.value });
+      }
+    }
+    if (doc) schedule();
+  });
   form.addEventListener("input", (event) => {
     if (!doc || !event.target.name) return;
     preciseRates.delete(event.target.name);

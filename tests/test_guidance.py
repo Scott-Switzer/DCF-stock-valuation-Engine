@@ -42,3 +42,14 @@ def test_guidance_excerpt_requires_forward_period_and_metric():
 def test_customer_expectations_and_safe_harbor_are_not_management_guidance():
     assert guidance_excerpt('<p>Customers expect sales to decline next fiscal year as spending changes.</p>') is None
     assert guidance_excerpt('<p>Our forward-looking statements include revenue we expect next quarter, subject to risks and uncertainties.</p>') is None
+
+
+def test_guidance_rejects_past_tense_and_past_explicit_periods():
+    for text in [
+        'In fiscal 2025, we expected revenue between $10 and $12 billion.',
+        'For fiscal 2025, we expect revenue between $10 and $12 billion.',
+        'In Q1 2026, we expect revenue between $10 and $12 billion.',
+    ]:
+        assert guidance_excerpt('<p>' + text + '</p>', '2026-07-30') is None
+    text = 'For fiscal year 2027, we expect revenue between $10 and $12 billion.'
+    assert guidance_excerpt('<p>' + text + '</p>', '2026-07-30') == text
