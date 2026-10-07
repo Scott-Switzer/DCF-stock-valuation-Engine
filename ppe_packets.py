@@ -132,29 +132,36 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
                 continue
         elif row.get("period_start") not in {None, "", end}:
             continue
-        if row.get("unit") != "USD":
-            raise ProviderError(f"Unexpected PPE unit for {metric}.")
-        f = _field(
-            row.get("value_decimal", row.get("value")),
-            end,
-            available,
-            "USD",
-            {
-                **source,
-                "provider": "PPE SEC canonical",
-                "accession": row.get("source_record_id"),
-                "evidence_id": row.get("evidence_id"),
-                "period_start": row.get("period_start"),
-            },
-        )
-        prior = groups.setdefault(end, {}).get(metric)
-        if prior and prior["available_at"] == available and prior["value"] != f["value"]:
-            raise ProviderError(f"Conflicting PPE {metric} observations for {end}.")
-        if not prior or available > prior["available_at"]:
-            groups[end][metric] = f
+        groups.setdefault(end, {}).setdefault(metric, []).append(row)
     ends = sorted(k for k, v in groups.items() if v.get("revenue"))[-3:]
     if not ends:
         raise ProviderError("No eligible annual PPE revenue.")
+    selected = {}
+    for end in ends:
+        selected[end] = {}
+        for metric, candidates in groups[end].items():
+            latest = max(r["available_at"] for r in candidates)
+            top = [r for r in candidates if r["available_at"] == latest]
+            if any(r.get("unit") != "USD" for r in top):
+                raise ProviderError(f"Unexpected PPE unit for {metric}.")
+            if len({_number(r.get("value_decimal", r.get("value"))) for r in top}) != 1:
+                raise ProviderError(f"Conflicting PPE {metric} observations for {end}.")
+            row = top[0]
+            selected[end][metric] = _field(
+                row.get("value_decimal", row.get("value")),
+                end,
+                latest,
+                "USD",
+                {
+                    **source,
+                    "provider": "PPE SEC canonical",
+                    "accession": row.get("source_record_id"),
+                    "evidence_id": row.get("evidence_id"),
+                    "period_start": row.get("period_start"),
+                    "quality_status": row.get("quality_status"),
+                },
+            )
+    groups = selected
     historical = []
     dividends = []
     bridges = {}

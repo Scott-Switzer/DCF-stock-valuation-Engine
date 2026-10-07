@@ -207,3 +207,27 @@ def test_untrusted_quality_and_wrong_canonical_issuer_are_rejected():
     row["entity_id"] = "entity:sec:cik:0000789019"
     with pytest.raises(ProviderError, match="issuer"):
         build_packet("AAPL", "0000320193", [row], None, "2026-10-07", {})
+
+
+def test_superseded_conflicts_do_not_poison_latest_revision():
+    rows = [
+        observation("revenue", 100),
+        observation("revenue", 101),
+        observation("revenue", 120, available="2026-01-01"),
+    ]
+    p = build_packet("AAPL", "0000320193", rows, None, "2026-10-07", {})
+    assert p["historical"][-1]["fields"]["revenue"]["value"] == 120
+
+
+def test_conflicts_outside_packet_periods_do_not_poison_current_packet():
+    rows = [
+        observation(
+            "revenue", 100, end=f"{y}-09-27", start=f"{y - 1}-09-29", available=f"{y}-10-31"
+        )
+        for y in [2020, 2023, 2024, 2025]
+    ]
+    rows.append(
+        observation("revenue", 101, end="2020-09-27", start="2019-09-29", available="2020-10-31")
+    )
+    p = build_packet("AAPL", "0000320193", rows, None, "2026-10-07", {})
+    assert [r["period_end"] for r in p["historical"]] == ["2023-09-27", "2024-09-27", "2025-09-27"]
