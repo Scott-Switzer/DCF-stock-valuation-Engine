@@ -144,3 +144,46 @@ Beta uses at least 104 matched weekly total-return observations against SPY. Cos
 RV starter peers are editable suggestions, not a claim of complete industry comparability. Negative/missing denominators are excluded; source dates and coverage warnings remain in the result. Automatic sector support is presently USD operating companies. Zion/MiniBloomberg remains an optional, unconfigured replacement behind the normalized provider boundary.
 
 Method loading requires only the applicable capital costs: DCF estimates full WACC; DDM estimates the common-equity return without requiring preferred-stock cost; RV does not require beta, Treasury or WACC observations. Restoring the peer editor preserves excluded-method checkbox states. The offline example can load with an empty ticker.
+
+### Live Zion / MiniBloomberg check — October 6, 2026
+
+The deployed `zion-financial-query-staging.scswitzer.workers.dev` responds to
+`/healthz`, but `/v1/company/AAPL` returns 404. The GitHub default branch likewise
+has tool routes and no `company_api.py`; the local company adapter source is ahead
+of that deployed contract. Do not enable the existing company-packet adapter
+against this base URL until that route is published and its coverage verified.
+
+The existing `/v1/tools/get_fundamentals` endpoint does work: an annual AAPL revenue
+request returned three observations with verified quality. Its capabilities list
+revenue, operating income, net income, equity and other basic metrics, but not the
+capex, D&A, operating working capital, effective tax rate and split debt data needed
+for complete DCF automatic loading. `shares_outstanding` must not be silently
+substituted for weighted-average diluted shares. A future tool adapter must preserve
+observation availability, units, release provenance and per-field missing coverage;
+Yahoo remains the automatic loader until this contract is complete.
+
+The separate Festival Bloomberg production runtime is private: its `/health`
+returns 401 `TERMINAL_AUTH_REQUIRED`. Its configuration uses Cloudflare Access and
+one serving container. No authentication or licensed-data boundaries were changed.
+Connecting that runtime needs an authorized server integration contract rather than
+exposing its private serving data through this public valuation application.
+
+### Preview scaling
+
+Cloudflare previews use native rate-limit bindings instead of D1 counters. The
+120/min preview, 20/min reference and 10/min write budgets apply per client hash per
+Cloudflare location; these are abuse protection, not exact global quotas. A shared
+network can share a budget. Valuation saving and provider-cache operations still
+use D1. External provider latency, cache misses and D1 saves remain capacity
+constraints and must be measured under representative traffic before promising a
+user count. No system guarantees unlimited users without bottlenecks.
+
+A local 1,000-iteration pure DCF benchmark (including sensitivity and scenarios)
+measured 1.76 ms median and 5.90 ms p95 on the development machine. This excludes
+network, Worker cold start and database overhead. It does not justify a native
+language rewrite or establish production throughput.
+
+Static script and stylesheet URLs now include a content fingerprint. Matching
+Cloudflare responses permit immutable one-year public caching; unversioned or
+mismatched URLs require revalidation. A new release changes URLs when content
+changes, so repeat visits can reuse assets without keeping stale UI code.

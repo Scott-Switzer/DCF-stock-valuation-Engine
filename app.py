@@ -355,7 +355,6 @@ def limit_expensive_work():
     if app.config.get("CLOUDFLARE"):
         import hashlib
         import hmac
-        import time
         from pyodide.ffi import run_sync
 
         env = request.environ["workers.env"]
@@ -367,24 +366,14 @@ def limit_expensive_work():
         ).hexdigest()
         request.environ["dcf.client_hash"] = client_hash
         if request.method == "POST" or reference_request:
-            now = int(time.time())
-            key = (
-                f"preview:{client_hash}:{now // 60}"
-                if preview_request
-                else f"references:{client_hash}:{now // 60}"
-                if reference_request
-                else f"{client_hash}:{now // 60}"
-            )
-            row = run_sync(
-                env.DB.prepare(
-                    "INSERT INTO request_limits(key,count,reset) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count"
-                )
-                .bind(key, now + 120)
-                .first()
-            )
-            if row.count > (120 if preview_request else 20 if reference_request else 10):
+            # Edge-local abuse protection keeps interactive previews off D1.
+            binding = env.PREVIEW_LIMIT if preview_request else env.REFERENCE_LIMIT if reference_request else env.WRITE_LIMIT
+            from pyodide.ffi import to_js
+            from js import Object
+
+            result = run_sync(binding.limit(to_js({"key": "dcf:" + client_hash}, dict_converter=Object.fromEntries)))
+            if not result.success:
                 return rate_limit_response()
-            run_sync(env.DB.prepare("DELETE FROM request_limits WHERE reset<?").bind(now).run())
         return None
     if preview_request:
         if not Store(app.config.get("STATE_PATH")).allow(
@@ -839,6 +828,26 @@ def privacy():
     return render_template("privacy.html")
 
 
+@lru_cache(maxsize=32)
+def asset_version(filename):
+    """Content fingerprints cache public code across requests without stale releases."""
+    import hashlib
+
+    if app.config.get("CLOUDFLARE"):
+        from embedded_assets import ASSETS
+
+        content = ASSETS.get("static/" + filename, "").encode()
+    else:
+        content = (Path(app.static_folder) / filename).read_bytes()
+    return hashlib.sha256(content).hexdigest()[:16]
+
+
+@app.url_defaults
+def version_static_urls(endpoint, values):
+    if endpoint in {"static", "edge_static"} and "filename" in values:
+        values.setdefault("v", asset_version(values["filename"]))
+
+
 @app.get("/static/<path:filename>", endpoint="edge_static")
 def edge_static(filename):
     if not app.config.get("CLOUDFLARE"):
@@ -849,7 +858,13 @@ def edge_static(filename):
     key = f"static/{filename}"
     if key not in ASSETS:
         return "Not found", 404
-    return Response(ASSETS[key], mimetype=mimetypes.guess_type(filename)[0] or "text/plain")
+    response = Response(ASSETS[key], mimetype=mimetypes.guess_type(filename)[0] or "text/plain")
+    response.headers["Cache-Control"] = (
+        "public, max-age=31536000, immutable"
+        if request.args.get("v") == asset_version(filename)
+        else "no-cache"
+    )
+    return response
 
 
 app.view_functions["static"] = edge_static

@@ -333,6 +333,7 @@
     $("live-price").textContent = money(r.target_price_12m);
     $("live-upside").textContent =
       `12-month model target · ${pct(r.upside_12m)} vs market`;
+    insights(r);
     priceBars(r);
     chart(r);
     bridge(r);
@@ -344,6 +345,35 @@
       $("live-notes").append(li);
     }
     $("live-details").textContent = JSON.stringify(r, null, 2);
+  }
+  function insights(r) {
+    const box = $("valuation-insights");
+    box.replaceChildren();
+    const cards = [];
+    if (Number.isFinite(analysts?.target?.mean) && analysts.target.mean > 0)
+      cards.push(["Versus analyst target", pct(r.target_price_12m / analysts.target.mean - 1), "Your 12-month target relative to consensus."]);
+    const terminalShare = r.method === "dcf" ? r.terminal_value_share : r.method === "ddm" && r.equity_value > 0 ? r.pv_terminal / r.equity_value : null;
+    if (Number.isFinite(terminalShare))
+      cards.push(["Terminal dependence", pct(terminalShare), terminalShare > 0.8 ? "Most value lies beyond year five. Review long-run growth." : "Share of present value beyond year five."]);
+    if (r.method === "relative") {
+      const selected = (r.multiples || []).filter(x => x.included && Number.isFinite(x.implied_price));
+      if (selected.length) {
+        cards.push(["Selected-method range", `${money(Math.min(...selected.map(x => x.implied_price)))}–${money(Math.max(...selected.map(x => x.implied_price)))}`, `${selected.length} equally weighted methods; not a confidence interval.`]);
+        cards.push(["Peer coverage", `${Math.min(...selected.map(x => x.count))}–${Math.max(...selected.map(x => x.count))}`, "Valid peers per selected multiple. Review missing or weak fits."]);
+      }
+    } else {
+      const a = r.assumptions || {};
+      const rate = r.method === "dcf" ? r.wacc : a.required_return;
+      if (Number.isFinite(rate) && Number.isFinite(a.terminal_growth_rate))
+        cards.push(["Discount / growth spread", `${((rate - a.terminal_growth_rate) * 100).toFixed(2)} pp`, "A narrow spread makes terminal value more sensitive."]);
+    }
+    for (const [label, value, note] of cards) {
+      const card = document.createElement("div"); card.className = "insight-card";
+      const title = document.createElement("span"); title.textContent = label;
+      const metric = document.createElement("strong"); metric.textContent = value;
+      const caption = document.createElement("small"); caption.textContent = note;
+      card.append(title, metric, caption); box.append(card);
+    }
   }
   function priceBars(r) {
     const values = [
