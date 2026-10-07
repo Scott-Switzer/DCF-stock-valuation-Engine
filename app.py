@@ -348,6 +348,7 @@ def rate_limit_response():
 
 @app.before_request
 def limit_expensive_work():
+    reference_request = request.method == "GET" and request.path.startswith("/api/references/")
     if app.config.get("CLOUDFLARE"):
         import hashlib
         import hmac
@@ -362,9 +363,13 @@ def limit_expensive_work():
             hashlib.sha256,
         ).hexdigest()
         request.environ["dcf.client_hash"] = client_hash
-        if request.method == "POST":
+        if request.method == "POST" or reference_request:
             now = int(time.time())
-            key = f"{client_hash}:{now // 60}"
+            key = (
+                f"references:{client_hash}:{now // 60}"
+                if reference_request
+                else f"{client_hash}:{now // 60}"
+            )
             row = run_sync(
                 env.DB.prepare(
                     "INSERT INTO request_limits(key,count,reset) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count"
@@ -372,9 +377,15 @@ def limit_expensive_work():
                 .bind(key, now + 120)
                 .first()
             )
-            if row.count > 10:
+            if row.count > (20 if reference_request else 10):
                 return rate_limit_response()
             run_sync(env.DB.prepare("DELETE FROM request_limits WHERE reset<?").bind(now).run())
+        return None
+    if reference_request:
+        if not Store(app.config.get("STATE_PATH")).allow(
+            f"{request.remote_addr}:references", maximum=20
+        ):
+            return rate_limit_response()
         return None
     if request.method == "POST" and (
         request.path in {"/", "/ddm", "/relative"}
@@ -468,6 +479,7 @@ def calculate_api():
 def analyst_references_api(ticker):
     try:
         from decision_support import load_analysts
+
         return jsonify(load_analysts(ticker))
     except ValueError as exc:
         return jsonify(error=str(exc)), 400

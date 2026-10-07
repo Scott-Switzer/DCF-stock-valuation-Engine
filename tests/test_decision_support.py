@@ -178,3 +178,56 @@ def test_known_peer_candidates_require_business_overlap_and_avoid_duplicate_issu
     assert starter_peers("AAPL", None)[1] == ["DELL", "HPQ"]
     assert "GOOG" not in starter_peers("GOOGL", None)[1]
     assert {"MSFT", "WMT"} <= set(starter_peers("AMZN", None)[1])
+
+
+def test_price_only_packet_does_not_hide_later_analyst_modules():
+    price = page({"price": {"symbol": "TEST", "currency": "USD", "marketCap": {"raw": 1000}}})
+    later = page(
+        {
+            "financialData": {"targetMeanPrice": {"raw": 140}},
+            "earningsTrend": {
+                "trend": [
+                    {
+                        "period": "+1y",
+                        "endDate": "2027-12-31",
+                        "revenueEstimate": {"revenueCurrency": "USD", "growth": {"raw": 0.1}},
+                    }
+                ]
+            },
+        }
+    ).replace(
+        '<script type="application/json">',
+        '<script type="application/json" data-url="https://query1.finance.yahoo.com/v10/finance/quoteSummary/TEST">',
+    )
+    data = parse_analysts(price + later, "TEST")
+    assert data["market_cap"] == 1000
+    assert data["target"]["mean"] == 140
+    assert data["revenue"][0]["growth"] == 0.1
+    # A different issuer's packet cannot supply targets or revenue to TEST.
+    other = later.replace("quoteSummary/TEST", "quoteSummary/OTHER")
+    assert parse_analysts(price + other, "TEST")["target"]["mean"] is None
+
+
+def test_goog_and_googl_have_equivalent_business_explanations():
+    assert peer_fit("GOOG", "META", 100, 100) == peer_fit("GOOGL", "META", 100, 100)
+    assert peer_fit("GOOG", "META", 100, 100)["shared_products_segments"] == ["advertising"]
+
+
+def test_reference_rate_limit_applies_across_different_tickers(tmp_path, monkeypatch):
+    from app import app
+    import decision_support
+
+    calls = []
+
+    def load(ticker):
+        calls.append(ticker)
+        return {"ticker": ticker}
+
+    monkeypatch.setattr(decision_support, "load_analysts", load)
+    monkeypatch.setitem(app.config, "STATE_PATH", str(tmp_path / "limits.sqlite3"))
+    with app.test_client() as client:
+        for i in range(20):
+            assert client.get("/api/references/T" + str(i)).status_code == 200
+        blocked = client.get("/api/references/OTHER")
+        assert blocked.status_code == 429
+        assert len(calls) == 20

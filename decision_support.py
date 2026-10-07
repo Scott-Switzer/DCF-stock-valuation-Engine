@@ -4,7 +4,7 @@ import json
 import math
 from datetime import date, datetime, timezone
 from html.parser import HTMLParser
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 from dcf_loader import JsonHTTP, ProviderError, ticker_symbol
 
@@ -58,7 +58,9 @@ class ScriptPackets(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         if tag == "script":
-            self.in_script = dict(attrs).get("type") == "application/json"
+            attributes = dict(attrs)
+            self.in_script = attributes.get("type") == "application/json"
+            self.packet_url = attributes.get("data-url", "")
             self.parts = []
 
     def handle_data(self, data):
@@ -70,7 +72,7 @@ class ScriptPackets(HTMLParser):
             try:
                 packet = json.loads("".join(self.parts))
                 if isinstance(packet, dict) and isinstance(packet.get("body"), str):
-                    self.packets.append(json.loads(packet["body"]))
+                    self.packets.append((json.loads(packet["body"]), self.packet_url))
             except (ValueError, TypeError):
                 pass
             self.in_script = False
@@ -79,21 +81,42 @@ class ScriptPackets(HTMLParser):
 def parse_analysts(html, ticker):
     parser = ScriptPackets()
     parser.feed(html)
-    for packet in parser.packets:
+    merged = {"price": {}, "financialData": {}, "earningsTrend": {"trend": []}}
+    verified_usd = False
+    for packet, packet_url in parser.packets:
         summary = packet.get("quoteSummary") if isinstance(packet, dict) else None
         results = summary.get("result") if isinstance(summary, dict) else None
-        if not isinstance(results, list) or not results:
+        if not isinstance(results, list) or not results or not isinstance(results[0], dict):
             continue
         root = results[0]
-        if not isinstance(root, dict):
+        price = root.get("price")
+        verified_price = (
+            isinstance(price, dict)
+            and price.get("symbol") == ticker
+            and price.get("currency") == "USD"
+        )
+        address = urlsplit(packet_url)
+        bound_url = (
+            address.scheme == "https"
+            and address.hostname in {"query1.finance.yahoo.com", "query2.finance.yahoo.com"}
+            and address.path == f"/v10/finance/quoteSummary/{ticker}"
+        )
+        # A packet with an explicit conflicting identity never inherits the page's identity.
+        if price is not None and not verified_price:
             continue
-        price = root.get("price", {})
-        if (
-            not isinstance(price, dict)
-            or price.get("symbol") != ticker
-            or price.get("currency") != "USD"
-        ):
+        if not verified_price and not bound_url:
             continue
+        verified_usd = verified_usd or verified_price
+        if verified_price:
+            merged["price"].update(price)
+        financial = root.get("financialData")
+        if isinstance(financial, dict):
+            merged["financialData"].update({k: v for k, v in financial.items() if v is not None})
+        trend_packet = root.get("earningsTrend")
+        if isinstance(trend_packet, dict) and isinstance(trend_packet.get("trend"), list):
+            merged["earningsTrend"]["trend"].extend(trend_packet["trend"])
+    for root in [merged] if verified_usd else []:
+        price = root["price"]
         revenues = []
         trend_packet = root.get("earningsTrend") or {}
         if not isinstance(trend_packet, dict):
@@ -144,7 +167,7 @@ def parse_analysts(html, ticker):
         if not revenues and target["mean"] is None and number(price.get("marketCap")) is None:
             continue
         return {
-            "revenue": revenues,
+            "revenue": list({(row["period"], row["period_end"]): row for row in revenues}.values()),
             "target": target,
             "currency": "USD",
             "market_cap": number(price.get("marketCap")),
@@ -161,7 +184,7 @@ def parse_analysts(html, ticker):
 def load_analysts(ticker):
     ticker = ticker_symbol(ticker)
     http = JsonHTTP(budget=8)
-    key = f"yahoo-analyst-references-v2-{ticker}"
+    key = f"yahoo-analyst-references-v3-{ticker}"
     cached = http.store.get(key)
     if cached is not None:
         if "error" in cached:
@@ -222,6 +245,9 @@ BUSINESSES = {
     "EOG": ("Energy", {"oil and gas"}),
     "OXY": ("Energy", {"oil and gas", "chemicals"}),
 }
+
+
+BUSINESSES["GOOG"] = BUSINESSES["GOOGL"]
 
 
 def peer_fit(target, peer, target_cap, peer_cap):
