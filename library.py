@@ -57,12 +57,13 @@ def _fetchall(sql, params=()):
     from flask import request, current_app
 
     if current_app.config.get("CLOUDFLARE"):
-        from pyodide.ffi import run_sync, to_py
+        from pyodide.ffi import run_sync
 
-        rows = run_sync(
+        result = run_sync(
             request.environ["workers.env"].DB.prepare(sql).bind(*params).all()
         )
-        return [dict(to_py(row)) if not isinstance(row, dict) else row for row in rows]
+        # D1 returns a result envelope; Pyodide converts its rows through JsProxy.
+        return result.results.to_py()
     db = _local()
     try:
         return [dict(r) for r in db.execute(sql, params).fetchall()]

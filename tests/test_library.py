@@ -116,3 +116,29 @@ def test_shared_view_renders_saved_record(tmp_path):
     page = c.get(f"/v/{token}")
     assert page.status_code == 200
     assert b"Shared read-only" in page.data
+
+
+def test_workers_library_reads_d1_result_envelope(tmp_path, monkeypatch):
+    import sys
+    from types import ModuleType, SimpleNamespace
+    import library
+
+    class Results:
+        def to_py(self):
+            return [{"id": "fixture", "name": "Bull"}]
+
+    class Statement:
+        def bind(self, *params):
+            assert params == ("owner",)
+            return self
+
+        def all(self):
+            return SimpleNamespace(results=Results(), success=True)
+
+    ffi = ModuleType("pyodide.ffi")
+    ffi.run_sync = lambda value: value
+    monkeypatch.setitem(sys.modules, "pyodide.ffi", ffi)
+    db = SimpleNamespace(prepare=lambda sql: Statement())
+    monkeypatch.setitem(app.config, "CLOUDFLARE", True)
+    with app.test_request_context("/api/templates", environ_overrides={"workers.env": SimpleNamespace(DB=db)}):
+        assert library._fetchall("SELECT id,name FROM templates WHERE client_hash=?", ("owner",)) == [{"id": "fixture", "name": "Bull"}]
