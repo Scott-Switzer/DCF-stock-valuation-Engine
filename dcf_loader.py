@@ -103,7 +103,7 @@ def parse_document(doc):
     symbol = ticker_symbol(company.get("ticker"))
     eligibility(company)
     asof = iso_date(doc.get("valuation_date"), "Valuation date")
-    if asof > date.today():
+    if asof > datetime.now(timezone.utc).date():
         raise ValueError("Valuation date cannot be in the future.")
     currency = company.get("currency")
     if currency != "USD" or market.get("currency") != currency:
@@ -233,15 +233,23 @@ class JsonHTTP:
             self.edge = False
         self.deadline = time.monotonic() + budget
         self.session = None if self.edge else session or requests.Session()
-        self.store = None if self.edge else store or Store()
+        if self.edge:
+            from provider_cache import EdgeStore
+
+            self.store = store or EdgeStore()
+        else:
+            self.store = store or Store()
 
     def get(self, url, *, headers=None, params=None, ttl=0, cache_key=None):
-        if self.edge:
-            return self.edge_get(url, headers=headers, params=params)
         if cache_key:
             cached = self.store.get(cache_key)
             if cached is not None:
                 return cached
+        if self.edge:
+            raw = self.edge_get(url, headers=headers, params=params)
+            if cache_key and ttl:
+                self.store.set(cache_key, raw, ttl)
+            return raw
         for attempt in range(2):
             remaining = self.deadline - time.monotonic()
             if remaining <= 0:
@@ -720,6 +728,10 @@ def load_document(source, ticker, asof):
         ]
         return doc
     http = JsonHTTP()
+    if source in {"auto", "yahoo"}:
+        from yahoo_provider import load_yahoo
+
+        return load_yahoo(ticker, asof, http)
     if source == "sec":
         return load_sec(ticker, asof, http)
     if source == "zion":
@@ -750,4 +762,6 @@ def load_document(source, ticker, asof):
 def load_data_from_api(ticker):
     # Compatibility wrapper. The browser offers manual completion when provider fields are missing.
     source = os.getenv("DCF_DEFAULT_PROVIDER", "zion")
-    return parse_document(load_document(source, ticker, date.today().isoformat()))
+    return parse_document(
+        load_document(source, ticker, datetime.now(timezone.utc).date().isoformat())
+    )

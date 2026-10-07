@@ -298,3 +298,34 @@ def test_sec_repeated_filings_scan_unique_periods_only(monkeypatch):
     doc = load_sec("TEST", "2026-10-06", HTTP())
     assert len(doc["historical"]) == 3
     assert all(calls["revenue", end] <= 2 for end in ("2023-12-31", "2024-12-31", "2025-12-31"))
+
+
+def test_edge_provider_cache_reuses_public_response_before_fetch(monkeypatch):
+    class Cache:
+        data = {}
+
+        def get(self, key):
+            return self.data.get(key)
+
+        def set(self, key, value, ttl):
+            self.data[key] = value
+
+    http = JsonHTTP.__new__(JsonHTTP)
+    http.edge = True
+    http.store = Cache()
+    calls = []
+
+    def fetch(url, **kwargs):
+        calls.append(url)
+        return {"price": 123}
+
+    monkeypatch.setattr(http, "edge_get", fetch)
+    for _ in range(2):
+        assert http.get("https://provider.example/quote", cache_key="quote-A", ttl=300) == {
+            "price": 123
+        }
+    assert len(calls) == 1
+    assert http.get("https://provider.example/quote-B", cache_key="quote-B", ttl=300) == {
+        "price": 123
+    }
+    assert len(calls) == 2

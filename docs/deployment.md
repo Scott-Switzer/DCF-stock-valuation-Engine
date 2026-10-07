@@ -28,6 +28,8 @@ The local CPython app does not collect valuation records. Its SQLite Store provi
 
 ## Providers
 
+Yahoo current snapshots power ticker-first DCF/DDM/RV. Migration 0003 adds a shared D1 cache for public provider responses; cache expiry is bounded to six hours. Provider calls have a shared request deadline. Unofficial endpoint failures remain visible.
+
 SEC uses the configured contact identity and bounded Workers `fetch` calls. Successful live coverage does not eliminate filing review: missing facts and prices remain blank, eligibility needs confirmation, and dilution/debt classifications require review. Optional `ZION_API_BASE_URL`, `ZION_API_TOKEN`, `DCF_API_BASE_URL`, and `DCF_API_TOKEN` belong in Worker vars/secrets. Zion is an implemented adapter, but its endpoint and credentials are not configured in this release. No licensed upstream dataset is redistributed.
 
 ## Acceptance and rollback

@@ -4,10 +4,11 @@ A valuation suite with five-year unlevered discounted cash flow, dividend discou
 
 **Public demo:** https://dcf-valuation-engine.scswitzer.workers.dev
 
-![Synthetic DCF example](docs/screenshots/valuation-desktop.png)
+![Live Apple DCF](docs/screenshots/ticker-aapl-desktop.jpg)
 
 ## Features
 
+- Enter a ticker to load three annual periods, market price, diluted shares, capital claims and estimated capital costs. Review the source notes, then edit your forecast assumptions.
 - DDM based on common-dividend forecasts, equity-return discounting and separate present/12-month values.
 - Relative valuation with EV/Revenue, EV/EBITDA, EV/EBIT, P/E and P/B, peer means, selectable methods and financial-firm restrictions.
 - DCF-to-method handoff reuses identity/forward forecasts while requiring sourced dividends and peers.
@@ -34,7 +35,7 @@ pip install -r requirements-dev.txt
 python app.py
 ```
 
-Open <http://127.0.0.1:5000>. The initial example is deliberately synthetic and works without keys or internet. On the form, **5 means 5%**. Financial amounts and diluted shares use **absolute units**, not millions. JSON and CLI rates use decimals: `0.05` means 5%.
+Open <http://127.0.0.1:5000>. The initial form starts with ticker loading. Choose **Offline example** to run without keys or internet. On the form, **5 means 5%**. Financial amounts and diluted shares use **absolute units**, not millions. JSON and CLI rates use decimals: `0.05` means 5%.
 
 ```bash
 python run_dcf.py
@@ -47,6 +48,8 @@ node --check static/js/app.js
 The old FMP/Yahoo/edgartools loader and console scraping have been replaced. No FMP key or Yahoo access is required for sample/manual mode. Local hosting uses Flask, requests and Gunicorn. Cloudflare hosting uses the Python Workers runtime and WSGI adapter; provider requests use bounded Workers fetch.
 
 ## Data providers
+
+**Automatic / Yahoo:** No key required. Current USD equity snapshots populate financials and compute weekly-return beta, Treasury yield, CAPM cost of equity, debt cost and WACC. Annual common dividends populate DDM; a starter peer set populates RV. Default equity risk premium (5%), credit spread (1.5%) and forecast growth (5%) are visible assumptions. ROE is an inspectable accounting ratio, not a required return. Yahoo endpoints are unofficial and can change or rate-limit; data coverage is not guaranteed. Automatic historical point-in-time loading is rejected. Missing critical observations produce actionable errors rather than invented zeros.
 
 **Manual / sample:** Enter financials from your own annual reports. Missing input is rejected; zero is accepted only as an explicit numerical input. Import a `dcf-financials-v1` JSON document using the form. Downloads can be re-used as inputs by importing the `financials` object from a complete valuation export.
 
@@ -63,14 +66,16 @@ Environment variables are read directly. `.env.example` documents names, but the
 Read [DCF alignment](docs/cuig-alignment.md) and [DDM/relative alignment](docs/ddm-relative-alignment.md) for exact worksheet references, formula reconciliation and intentional differences.
 
 - End-of-year cash-flow discounting. Forecast periods start one year from the valuation date; fiscal-year stubs are not modeled.
-- WACC is an explicit assumption in the browser, as in CUIG. The Python interface also retains CAPM/WACC calculation for complete inputs. No dated default is portrayed as a fetched market rate.
+- Automatic WACC combines sourced market/financial inputs with explicit premium/spread assumptions and remains editable, as required by CUIG. Latest missing interest expense uses Treasury yield plus credit spread; older expense is not silently carried forward.
 - Template terminal FCFF is year-five FCFF × (1 + g). Normalized mode uses terminal NOPAT × (1 − g / terminal ROIC). Terminal FCFF must be positive; terminal growth must be below WACC.
 - 12-month target excludes year-one FCFF and discounts remaining flows one fewer year. Current debt/cash/claims/shares carry forward unless overridden. This is an assumption-dependent valuation scenario, not a stock-price forecast.
 - Loss-period tax benefits follow the CUIG formula. Assess actual tax-loss utilization. Negative common equity is exposed; per-share value is floored at zero.
-- USD operating companies only. Banks, insurers, REITs, funds and partnerships need other models. Sector metadata and user confirmation are required for eligibility; this is not an automated sector classifier.
+- USD operating companies only. Banks, insurers, REITs, funds and partnerships need other models. Automatic loading checks SEC SIC classification when available; unavailable classification needs user review. Starter peers also need review.
 - The sample, cases and tests establish formula behavior. They do not establish investment returns or accurate forecasts for all companies. No automatic financial recommendation is made.
 
 ## API and exports
+
+`POST /api/load/{dcf|ddm|relative}` loads a ticker and returns `{financials, form, warnings, load_summary}` without saving a valuation.
 
 `GET /api/sample`, `GET /api/search?q=AAPL`, `POST /api/financials`, `POST /api/calculate`, `POST /export/csv`, `POST /export/json`. Invalid input returns HTTP 400, provider failure HTTP 503, and rate limits HTTP 429. See [API examples](docs/provider-contract.md).
 
@@ -78,7 +83,7 @@ Exports retain full numeric precision; the UI rounds money for readability. They
 
 ## Deploy
 
-[Cloudflare deployment guide](docs/deployment.md). The public Worker supports sample/manual calculations, SEC statement loading and private D1 persistence. Optional Zion integration remains unconfigured. Docker and `render.yaml` are alternative hosting recipes.
+[Cloudflare deployment guide](docs/deployment.md). The public Worker supports ticker-first DCF/DDM/RV, sample/manual calculations, SEC statement loading and private D1 persistence. Optional Zion integration remains unconfigured. Docker and `render.yaml` are alternative hosting recipes.
 
 ```bash
 gunicorn --bind 0.0.0.0:5000 --workers 2 --threads 2 --timeout 35 app:app

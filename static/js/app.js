@@ -24,6 +24,13 @@ if (valuationForm) {
     message.className = error ? 'notice error' : 'notice';
     message.hidden = !text;
   };
+  const showNotes = notes => {
+    const details=document.getElementById('provider-notes');
+    const list=document.getElementById('provider-notes-list');list.replaceChildren();
+    for(const note of notes){const item=document.createElement('li');item.textContent=note;list.append(item);}
+    details.hidden=!notes.length;details.open=false;
+    details.querySelector('summary').textContent=`${notes.length} data notes · review sources and estimates`;
+  };
   const preview = () => {
     try {
       const doc = JSON.parse(document.getElementById('base-document').value);
@@ -62,7 +69,7 @@ if (valuationForm) {
       event.preventDefault(); selected = (selected + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
       buttons[selected].focus();
     }
-    // Enter without a selected suggestion submits the form normally.
+    if(event.key==='Enter'){event.preventDefault();closeSuggestions();document.getElementById('load-data').click();}
   });
   suggestions.addEventListener('keydown', event => {
     const buttons = Array.from(suggestions.querySelectorAll('button'));
@@ -89,17 +96,32 @@ if (valuationForm) {
   document.getElementById('load-data').addEventListener('click', async event => {
     const button = event.currentTarget;
     const provider = valuationForm.elements.mode.value;
-    button.disabled = true;button.textContent = 'Loading…';notify('');
+    const start = Date.now();
+    button.disabled = true; button.textContent = 'Loading…';
+    notify('Loading company statements, market inputs and starting assumptions…');
+    const timer = setInterval(() => notify(`Loading company data… ${Math.floor((Date.now()-start)/1000)}s elapsed.`), 1000);
     try {
-      const response = await fetch('/api/financials', {method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({provider,ticker:input.value,valuation_date:valuationForm.elements.valuation_date.value})});
+      const automatic = provider === 'auto';
+      const payload = {provider,ticker:input.value,valuation_date:valuationForm.elements.valuation_date.value,
+        equity_risk_premium:Number(document.getElementById('equity-risk-premium').value)/100,
+        credit_spread:Number(document.getElementById('credit-spread').value)/100};
+      const response = await fetch(automatic ? '/api/load/dcf' : '/api/financials', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Data source unavailable.');
       fillForm(data.form); setField('mode',provider);
-      const missing = data.financials.historical.flatMap(row => Object.entries(row).filter(([key,value]) => value === null).map(([key]) => `${row.period_end}: ${key}`));
-      notify(provider === 'sample' ? 'Loaded synthetic example data. It is not a real security.' :
-        `Loaded ${data.financials.source.name}. Confirm eligibility, market inputs and capital claims.${missing.length ? ' Missing historical fields: '+missing.join(', ')+'.' : ''}`);
-    } catch(error) {notify(error.message, true);}
-    finally {button.disabled = false;button.textContent = 'Load source data';}
+      const source = data.financials?.source || {};
+      const costs = source.capital_costs;
+      document.getElementById('capital-cost-summary').textContent = costs ? 'Starting WACC estimated from loaded capital-cost inputs; review and edit it below.' : 'Review the WACC assumption; this source did not provide a capital-cost calculation.';
+      document.getElementById('capital-cost-details').textContent = 'Cost of equity = risk-free rate + beta × equity risk premium. WACC weights equity and after-tax debt costs.';
+      if (costs) {
+        document.getElementById('capital-cost-summary').textContent = 'Starting WACC estimated from loaded capital-cost inputs. Review the calculation and edit WACC as needed.';
+        document.getElementById('capital-cost-details').textContent = 'Cost of equity = risk-free rate + beta × equity risk premium. WACC weights equity and after-tax debt costs.\n\n' + JSON.stringify(costs,null,2);
+      }
+      clearInterval(timer);
+      const warnings = (data.warnings || []).map(item => typeof item === 'string' ? item : JSON.stringify(item));
+      showNotes(warnings.concat(source.retrieved_at ? ['Data retrieved: '+source.retrieved_at] : []));
+      notify(provider === 'sample' ? 'Loaded synthetic example data. It is not a real security.' : `Loaded ${data.financials?.company?.name || input.value} in ${((Date.now()-start)/1000).toFixed(1)}s. Review and edit the assumptions.${warnings.length ? ' '+warnings.length+' data notes.' : ''}`);
+    } catch(error) {clearInterval(timer);notify(error.message, true);}
+    finally {clearInterval(timer);button.disabled = false;button.textContent = 'Load company';}
   });
   document.getElementById('derive-drivers').addEventListener('click', () => {
     const fields = {ebit_margin:'ebit',da_margin:'d_and_a',capex_margin:'capex',nwc_margin:'nwc',net_income_margin:'net_income',book_value_margin:'book_value'};
@@ -133,6 +155,9 @@ if (valuationForm) {
       fillForm(values); document.getElementById('derive-drivers').click();notify('Imported financial document. Review all forecast assumptions before calculating.');
     } catch(error) {notify(error.message || 'Invalid financial JSON.',true);}
   });
+  valuationForm.addEventListener('invalid', event => {
+    for (let parent=event.target.parentElement; parent; parent=parent.parentElement) if(parent.tagName==='DETAILS') parent.open=true;
+  }, true);
   valuationForm.addEventListener('submit', event => {
     if (Number(valuationForm.elements.terminal_growth.value) >= Number(valuationForm.elements.wacc.value)) {
       event.preventDefault();notify('Terminal growth must be lower than WACC.',true);valuationForm.elements.terminal_growth.focus();return;

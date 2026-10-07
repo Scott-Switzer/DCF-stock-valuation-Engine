@@ -2,12 +2,13 @@
 
 from copy import deepcopy
 from dataclasses import asdict, fields, replace
-from datetime import date
+from datetime import datetime, timezone
 from functools import lru_cache
 import csv
 import io
 import json
 import logging
+import math
 import os
 import re
 from pathlib import Path
@@ -123,7 +124,7 @@ def default_form(doc):
         "shares_basis": market.get("shares_basis", ""),
         "bridge_as_of": bridge.get("as_of"),
         "mode": "sample" if d["source"]["kind"] == "synthetic" else "manual",
-        "wacc": 6.5,
+        "wacc": d["source"].get("capital_costs", {}).get("wacc", 0.065) * 100,
         "terminal_growth": 2.0,
         "terminal_mode": "template",
         "terminal_roic": 10.0,
@@ -207,7 +208,12 @@ def form_payload(form):
             val = number(form.get(f"h_{k}_{i}"), f"{row['period_end']} {k}") / (
                 100 if k == "tax_rate" else 1
             )
-            if val != original["historical"][i].get(k):
+            prior = original["historical"][i].get(k)
+            if isinstance(prior, (int, float)) and math.isclose(
+                val, prior, rel_tol=1e-14, abs_tol=0
+            ):
+                val = prior
+            if val != prior:
                 changes.append(f"{row['period_end']}: {k}")
                 row.setdefault("provenance", {})[k] = {"source": "User override"}
             row[k] = val
@@ -351,7 +357,9 @@ def limit_expensive_work():
         env = request.environ["workers.env"]
         ip = request.headers.get("CF-Connecting-IP", "unknown")
         client_hash = hmac.new(
-            str(env.RECORD_SALT).encode(), f"{date.today()}:{ip}".encode(), hashlib.sha256
+            str(env.RECORD_SALT).encode(),
+            f"{datetime.now(timezone.utc).date()}:{ip}".encode(),
+            hashlib.sha256,
         ).hexdigest()
         request.environ["dcf.client_hash"] = client_hash
         if request.method == "POST":
@@ -370,7 +378,7 @@ def limit_expensive_work():
         return None
     if request.method == "POST" and (
         request.path in {"/", "/ddm", "/relative"}
-        or request.path.startswith(("/api/financials", "/api/calculate", "/export/"))
+        or request.path.startswith(("/api/financials", "/api/load/", "/api/calculate", "/export/"))
     ):
         if not Store(app.config.get("STATE_PATH")).allow(
             f"{request.remote_addr}:{request.path}", maximum=10
@@ -394,10 +402,18 @@ def security_headers(response):
     return response
 
 
+def live_form():
+    doc = load_document("manual", "AAPL", datetime.now(timezone.utc).date().isoformat())
+    doc["company"].update(ticker="", name="")
+    form = default_form(doc)
+    form.update(ticker="", mode="auto", equity_risk_premium=5, credit_spread=1.5)
+    return form
+
+
 def render_inputs(form=None, error=None, status=200):
     return render_template(
         "index.html",
-        form=form or default_form(demo_document()),
+        form=form or live_form(),
         error=error,
         history_fields=HISTORY_FIELDS,
         history_labels=HISTORY_LABELS,
@@ -448,16 +464,43 @@ def calculate_api():
         return jsonify(error=str(e)), 400
 
 
+@app.post("/api/load/<method>")
+def load_company_api(method):
+    try:
+        from auto_loading import load_method
+
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict):
+            raise ValueError("Send a ticker and valuation date in a JSON object.")
+        return jsonify(
+            load_method(
+                method,
+                raw.get("ticker"),
+                raw.get("valuation_date"),
+                raw.get("equity_risk_premium", 0.05),
+                raw.get("credit_spread", 0.015),
+            )
+        )
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+    except ProviderError as e:
+        return jsonify(error=str(e)), 503
+
+
 @app.post("/api/financials")
 def financials_api():
     try:
         raw = request.get_json(silent=True)
         if not isinstance(raw, dict):
             raise ValueError("Send a JSON object.")
-        asof = raw.get("valuation_date", date.today().isoformat())
+        asof = raw.get("valuation_date", datetime.now(timezone.utc).date().isoformat())
         iso_date(asof, "Valuation date")
-        if asof > date.today().isoformat():
+        if asof > datetime.now(timezone.utc).date().isoformat():
             raise ValueError("Valuation date cannot be in the future.")
+        if raw.get("provider") in {"auto", "yahoo"}:
+            from auto_loading import load_method
+
+            return jsonify(load_method("dcf", raw.get("ticker"), asof))
         doc = load_document(raw.get("provider"), raw.get("ticker"), asof)
         return jsonify(financials=doc, form=default_form(doc))
     except ValueError as e:

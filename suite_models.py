@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from dataclasses import dataclass, asdict
-from datetime import date
+from datetime import datetime, timezone
 import statistics
 from dcf_code import number
 from dcf_loader import demo_document, iso_date, ticker_symbol, BRIDGE_FIELDS, typed_number
@@ -29,7 +29,7 @@ def suite_identity(doc, method):
     if not isinstance(market.get("shares_basis"), str) or not market["shares_basis"].strip():
         raise ValueError("A diluted share-count basis is required.")
     asof = iso_date(doc.get("valuation_date"), "Valuation date")
-    if asof > date.today():
+    if asof > datetime.now(timezone.utc).date():
         raise ValueError("Valuation date cannot be in the future.")
     if (
         doc.get("units") != "absolute"
@@ -122,11 +122,14 @@ def suite_sample(method, blank=False):
     else:
         raise ValueError("Choose ddm or relative valuation.")
     if blank:
-        doc["valuation_date"] = date.today().isoformat()
+        doc["valuation_date"] = datetime.now(timezone.utc).date().isoformat()
         doc["company"].update(ticker="", name="", sector="", eligible=False)
         doc["source"] = {"kind": "manual", "name": "User-entered financials", "warnings": []}
         doc["market"].update(
-            price=None, diluted_shares=None, price_as_of=date.today().isoformat(), shares_basis=""
+            price=None,
+            diluted_shares=None,
+            price_as_of=datetime.now(timezone.utc).date().isoformat(),
+            shares_basis="",
         )
         if method == "ddm":
             doc["base_common_dividends"] = None

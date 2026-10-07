@@ -102,6 +102,13 @@ def suite_form_payload(method, form):
     ):
         raise ValueError("Load this method’s sample or a matching financial document.")
     original = deepcopy(doc)
+    if (
+        doc["source"].get("kind") in ("api", "sec", "zion")
+        or doc["source"].get("origin_kind") in ("api", "sec", "zion")
+    ) and ticker_symbol(form.get("ticker")) != ticker_symbol(doc["company"].get("ticker")):
+        raise ValueError(
+            "Load data for the new ticker before calculating; financials cannot be reused for another security."
+        )
     doc["valuation_date"] = form.get("valuation_date")
     doc["company"].update(
         ticker=ticker_symbol(form.get("ticker")),
@@ -109,7 +116,9 @@ def suite_form_payload(method, form):
         sector=form.get("sector", ""),
         eligible=form.get("eligible") == "yes",
     )
-    if method == "relative":
+    if method == "relative" and (
+        "is_financial" in doc["company"] or form.get("financial_company") == "yes"
+    ):
         doc["company"]["is_financial"] = form.get("financial_company") == "yes"
     doc["market"].update(
         price=number(form.get("price"), "Market price", 0.000001),
@@ -205,7 +214,7 @@ def register_suite(app):
     def page(method):
         if method not in TITLES:
             return "Not found", 404
-        form = suite_form(method)
+        form = suite_form(method, suite_sample(method, blank=True))
         if request.method == "POST":
             try:
                 doc, a = suite_payload(method)

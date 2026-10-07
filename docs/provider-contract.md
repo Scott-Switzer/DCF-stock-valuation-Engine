@@ -120,7 +120,7 @@ Common sections: `company` (ticker, name, USD currency, suitability confirmation
 {"dividend_growth_rates":[0.05,0.05,0.05,0.05,0.05],"required_return":0.07,"terminal_growth_rate":0.02}
 ```
 
-Optional `future_shares` sets 12-month diluted shares. Results contain present/12-month equity values, projected dividends, PVs, terminal equity value, sensitivity and warnings. Dividends and peer multiples are currently manual/imported; the live SEC loader remains a DCF statement loader. A future Zion dividend adapter must provide verified common distributions, not fabricated inferred dividends.
+Optional `future_shares` sets 12-month diluted shares. Results contain present/12-month equity values, projected dividends, PVs, terminal equity value, sensitivity and warnings. Automatic Yahoo loading supplies reported annual common dividends and starter peer multiples. Manual/import inputs remain available; the standalone SEC loader remains a DCF statement loader. A future Zion dividend adapter must provide verified common distributions, not fabricated inferred dividends.
 
 **Relative** uses `schema_version: "relative-financials-v1"`, `target.historical_as_of`, `target.historical` and `target.forward`, each with revenue, EBITDA, EBIT, common net income and common book equity. Unused metrics may be null. It uses the same explicit `bridge` claims as DCF and `comparables` containing unique ticker/name, USD currency, `as_of`, source reference and a `multiples` object. Multiple keys: `ev_revenue`, `ev_ebitda`, `ev_ebit`, `pe`, `pb`. Missing/nonpositive multiples are unsuitable observations and excluded; selected methods must remain computable. Browser supports four peers; API supports twenty. Set `company.is_financial: true` for financial firms; sector/industry metadata also enforces equity-only methods.
 
@@ -131,3 +131,14 @@ Optional `future_shares` sets 12-month diluted shares. Results contain present/1
 Relative results have `intrinsic_value: null` and `upside: null`, plus the forward `target_price_12m`/`upside_12m`, per-metric mean/range/count, observable target market multiples, explicit claims and active selection. A forward peer-implied price is not mislabeled as a present intrinsic value.
 
 `POST /api/from-dcf/{method}` accepts a complete DCF financials/assumptions payload and returns editor defaults. It carries company identity, sources, market inputs and RV year-one forecasts. It leaves DDM dividends and RV peers blank, and clears suitability confirmation for the new method. These routes provide a clean future API integration boundary independent of UI code.
+
+
+## Ticker-first automatic loading
+
+`POST /api/load/{dcf|ddm|relative}` accepts `{ "ticker":"AAPL", "valuation_date":"YYYY-MM-DD", "equity_risk_premium":0.05, "credit_spread":0.015 }`. The date must be today in UTC. It returns normalized `financials`, editable browser `form`, `warnings` and `load_summary`; loading does not persist a valuation. Calculation uses the existing method-specific API.
+
+Yahoo public chart/time-series endpoints are unofficial. Current snapshots use retrieval availability dates, not historical filing dates. Fiscal dates are standardized to month ends. Annual diluted-average shares and current-price market equity weights have different stated bases. Missing reported tax provision can use observed annual TaxRateForCalcs with a warning; it is not replaced by a generic tax rate. Explicit preferred/minority claims or provable equity identities are required. Other nonoperating assets default to an explicitly disclosed adjustment assumption of zero.
+
+Beta uses at least 104 matched weekly total-return observations against SPY. Cost of equity = Treasury yield + beta × equity risk premium. Debt cost uses latest annual interest/debt if available, otherwise Treasury yield + credit spread. WACC uses market equity and book debt, after-tax debt cost and any supported preferred cost. ROE uses annual common net income / ending common equity and is diagnostic only.
+
+RV starter peers are editable suggestions, not a claim of complete industry comparability. Negative/missing denominators are excluded; source dates and coverage warnings remain in the result. Automatic sector support is presently USD operating companies. Zion/MiniBloomberg remains an optional, unconfigured replacement behind the normalized provider boundary.
