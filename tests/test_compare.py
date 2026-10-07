@@ -60,6 +60,28 @@ def test_compare_demo_snapshot(monkeypatch):
     assert b"Bear $" in response.data
 
 
+def test_driver_impacts_and_method_notes():
+    from copy import deepcopy
+    from compare import driver_impacts, method_notes, baseline_dcf_assumptions
+    from dcf_loader import demo_document
+
+    doc = demo_document()
+    impacts = driver_impacts(doc, baseline_dcf_assumptions(doc, 0.065))
+    assert len(impacts) == 3
+    assert all({"label", "delta"} <= set(i) for i in impacts)
+    assert abs(impacts[0]["delta"]) >= abs(impacts[-1]["delta"])
+    lanes = [
+        {"method": "dcf", "label": "DCF intrinsic (today)", "value": 100.0},
+        {"method": "ddm", "label": "DDM intrinsic (today)", "value": 50.0},
+        {"method": "ddm", "label": "DDM", "value": None},
+    ]
+    notes = method_notes(doc, lanes)
+    assert any("DDM sits" in n for n in notes)
+    bank = deepcopy(doc)
+    bank["company"]["sector"] = "Commercial Bank"
+    assert any("financial" in n for n in method_notes(bank, lanes))
+
+
 def test_compare_accepts_workspace_assumptions(monkeypatch):
     import json
     from dcf_loader import demo_document

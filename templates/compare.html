@@ -67,6 +67,22 @@
 {% endfor %}
 <p class="help">Bisection over the model range; a single uniform driver, so treat it as a hurdle check, not a forecast.</p></section>
 {% endif %}
+{% if packet and packet.drivers %}
+<section class="panel"><div class="panel-heading"><div><p class="eyebrow">What moves the needle</p><h2>Biggest drivers</h2></div><span class="unit">Per-share impact of +1pt moves</span></div>
+<ul class="limitations">
+{% for d in packet.drivers %}
+<li><strong>{{ d.label }}:</strong> {{ '%+.2f'|format(d.delta) }}/share</li>
+{% endfor %}
+</ul></section>
+{% endif %}
+{% if packet and packet.method_notes %}
+<section class="panel"><div class="panel-heading"><div><p class="eyebrow">Reading the gap</p><h2>Why methods disagree</h2></div></div>
+<ul class="limitations">
+{% for note in packet.method_notes %}
+<li>{{ note }}</li>
+{% endfor %}
+</ul></section>
+{% endif %}
 {% if history %}
 <section class="panel"><div class="panel-heading"><div><p class="eyebrow">Your research</p><h2>Saved {{ packet.ticker if packet else ticker }} valuations</h2></div></div>
 <div class="table-wrap"><table class="value-table"><thead><tr><th>Saved</th><th>Method</th><th>Intrinsic</th><th>12-month target</th><th>Market</th><th></th></tr></thead><tbody>

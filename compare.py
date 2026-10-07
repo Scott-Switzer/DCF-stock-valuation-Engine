@@ -190,6 +190,8 @@ def football_field(ticker, asof=None, dcf_assumptions=None):
             }
         )
     packet = _packet(doc, lanes, bundle, custom)
+    packet["drivers"] = driver_impacts(doc, dcf_assumptions)
+    packet["method_notes"] = method_notes(doc, lanes)
     try:
         from reverse_dcf import solve
 
@@ -206,6 +208,75 @@ def football_field(ticker, asof=None, dcf_assumptions=None):
     except ValueError as exc:
         packet["reverse"] = {"status": "unsolvable", "detail": str(exc)}
     return packet
+
+
+def driver_impacts(doc, base):
+    """One-at-a-time +1pt moves, ranked by per-share impact."""
+    from dataclasses import replace
+    from app import evaluate
+
+    candidates = [
+        ("Revenue growth (+1pt all years)",
+         replace(base, revenue_growth_rates=[g + 0.01 for g in base.revenue_growth_rates])),
+        ("EBIT margin (+1pt all years)",
+         replace(base, ebit_margins=[m + 0.01 for m in base.ebit_margins])),
+        ("WACC (+1pt)",
+         replace(base, wacc_override=(base.wacc_override or 0.065) + 0.01)),
+        ("Terminal growth (+1pt)",
+         replace(base, terminal_growth_rate=base.terminal_growth_rate + 0.01)),
+        ("Tax rate (+1pt all years)",
+         replace(base, tax_rates=[t + 0.01 for t in base.tax_rates])),
+    ]
+    try:
+        anchor = evaluate(deepcopy(doc), deepcopy(base))["intrinsic_value"]
+    except ValueError:
+        return []
+    impacts = []
+    for label, variant in candidates:
+        try:
+            moved = evaluate(deepcopy(doc), variant)["intrinsic_value"]
+            impacts.append({"label": label, "delta": moved - anchor})
+        except ValueError:
+            continue
+    impacts.sort(key=lambda r: abs(r["delta"]), reverse=True)
+    return impacts[:3]
+
+
+def method_notes(doc, lanes):
+    """Explain gaps between computed lanes and flag unsuitable methods."""
+    notes = []
+    by_label = {lane["label"]: lane["value"] for lane in lanes}
+    dcf = by_label.get("DCF intrinsic (today)")
+    ddm = by_label.get("DDM intrinsic (today)")
+    if isinstance(dcf, (int, float)) and isinstance(ddm, (int, float)) and dcf:
+        gap = (ddm - dcf) / abs(dcf)
+        if abs(gap) > 0.25:
+            notes.append(
+                f"DDM sits {gap:+.0%} from DCF: dividends capture only part of "
+                "the cash the firm generates. Trust DCF when retention funds "
+                "growth; trust DDM when payouts are the sustainable distribution."
+            )
+    text = " ".join(
+        str(doc["company"].get(k, "")) for k in ("sector", "industry", "security_type")
+    ).lower()
+    financial = any(
+        t in text for t in ("bank", "insurance", "financial service", "reit")
+    ) or doc["company"].get("is_financial") is True
+    if financial:
+        notes.append(
+            "This looks like a financial or real-estate issuer: enterprise-value "
+            "methods mislead here. Use equity multiples (P/E, P/B) on the "
+            "relative page instead of DCF."
+        )
+    dividend = doc["source"].get("common_dividends", {})
+    if (dividend.get("value") or 0) <= 0 and any(
+        lane["method"] == "ddm" and lane["value"] is None for lane in lanes
+    ):
+        notes.append(
+            "No verified common dividend in this snapshot, so DDM is parked. "
+            "Use DCF or relative valuation for non-payers."
+        )
+    return notes
 
 
 def _packet(doc, lanes, bundle, custom):
