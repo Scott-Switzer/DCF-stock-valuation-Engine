@@ -169,3 +169,63 @@ def test_workers_library_reads_d1_result_envelope(tmp_path, monkeypatch, proxied
     monkeypatch.setitem(app.config, "CLOUDFLARE", True)
     with app.test_request_context("/api/templates", environ_overrides={"workers.env": SimpleNamespace(DB=db)}):
         assert library._fetchall("SELECT id,name FROM templates WHERE client_hash=?", ("owner",)) == [{"id": "fixture", "name": "Bull"}]
+
+
+def test_workers_cookie_signing_uses_request_secret(monkeypatch):
+    from types import SimpleNamespace
+    import library
+    monkeypatch.setitem(app.config, "CLOUDFLARE", True)
+    monkeypatch.delenv("LIBRARY_SECRET", raising=False)
+    with app.test_request_context("/api/templates", environ_overrides={"workers.env": SimpleNamespace(LIBRARY_SECRET="fixture-server-secret")}):
+        assert library._secret() == b"fixture-server-secret"
+
+
+def test_first_calculation_mints_library_identity(tmp_path):
+    import library
+    with app.test_request_context("/api/calculate"):
+        library.ensure_identity()
+        assert library.caller_hash().startswith("lib:")
+
+
+def test_worker_saved_valuation_uses_library_owner(monkeypatch):
+    import sys
+    from types import ModuleType, SimpleNamespace
+    import library
+    from valuation_records import save_valuation
+    from app import assumptions_from_json, evaluate
+    from dcf_loader import demo_document
+    values = []
+
+    class Statement:
+        def bind(self, *args):
+            values.append(args)
+            return self
+
+        def run(self):
+            return None
+
+        def first(self):
+            return SimpleNamespace(id="saved-fixture")
+
+    ffi = ModuleType("pyodide.ffi")
+    ffi.run_sync = lambda value: value
+    monkeypatch.setitem(sys.modules, "pyodide.ffi", ffi)
+    monkeypatch.setitem(app.config, "CLOUDFLARE", True)
+    env = SimpleNamespace(DB=SimpleNamespace(prepare=lambda sql: Statement()))
+    doc=demo_document()
+    a=assumptions_from_json(ASSUMPTIONS)
+    with app.test_request_context("/api/calculate", environ_overrides={"workers.env": env, "dcf.client_hash": "daily-network", "lib.new_identity": "persistent-browser"}):
+        assert save_valuation(doc,a,evaluate(doc,a)) == "saved-fixture"
+        assert values[0][-2] == library.caller_hash() == "lib:persistent-browser"
+
+
+def test_workers_cookie_secret_derives_from_private_binding(monkeypatch):
+    from types import SimpleNamespace
+    import library
+    monkeypatch.setitem(app.config, "CLOUDFLARE", True)
+    with app.test_request_context("/api/templates", environ_overrides={"workers.env": SimpleNamespace(RECORD_SALT="fixture-private-key")}):
+        assert len(library._secret()) == 32
+        assert library._secret() != b"dev-only-library-secret"
+    with app.test_request_context("/api/templates", environ_overrides={"workers.env": SimpleNamespace()}):
+        with pytest.raises(RuntimeError, match="production library signing secret"):
+            library._secret()

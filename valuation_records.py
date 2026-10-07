@@ -73,7 +73,9 @@ def save_valuation(doc, assumptions, result):
         return None
     from pyodide.ffi import run_sync
 
-    values = record_values(doc, assumptions, result, request.environ["dcf.client_hash"])
+    from library import caller_hash
+
+    values = record_values(doc, assumptions, result, caller_hash())
     db = request.environ["workers.env"].DB
     run_sync(db.prepare(INSERT_SQL).bind(*values).run())
     row = run_sync(

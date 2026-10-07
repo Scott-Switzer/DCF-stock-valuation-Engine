@@ -41,6 +41,18 @@ COOKIE = "lib_id"
 
 
 def _secret():
+    from flask import current_app, request, has_request_context
+
+    if has_request_context() and current_app.config.get("CLOUDFLARE"):
+        env = request.environ["workers.env"]
+        configured = getattr(env, "LIBRARY_SECRET", None)
+        if configured:
+            return str(configured).encode()
+        # Derive a separate signing key from the existing private Worker secret.
+        salt = getattr(env, "RECORD_SALT", None)
+        if not salt:
+            raise RuntimeError("A production library signing secret is required.")
+        return hmac.new(str(salt).encode(), b"valuation-library-cookie-v1", hashlib.sha256).digest()
     return os.getenv("LIBRARY_SECRET", "dev-only-library-secret").encode()
 
 
@@ -50,7 +62,7 @@ def _sign(value):
 
 LIBRARY_PATHS = (
     "/api/templates", "/api/history", "/api/share", "/api/watchlist",
-    "/watchlist", "/compare",
+    "/watchlist", "/compare", "/api/calculate", "/ddm", "/relative",
 )
 
 
@@ -77,7 +89,7 @@ def ensure_identity():
     """Mint the owner identity before the request so reads and writes share a scope."""
     from flask import request
 
-    if not request.path.startswith(LIBRARY_PATHS):
+    if request.path != "/" and not request.path.startswith(LIBRARY_PATHS):
         return
     raw = request.cookies.get(COOKIE, "")
     if raw and "." in raw:
