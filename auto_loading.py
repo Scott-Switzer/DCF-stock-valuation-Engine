@@ -1,5 +1,6 @@
 """Ticker-to-model assembly. Forecasts and peer selections remain explicit assumptions."""
 
+from ppe_provider import prefer_ppe
 from copy import deepcopy
 from datetime import datetime, timezone
 import time
@@ -187,6 +188,7 @@ def load_method(
             include_capital_costs=method != "relative",
             require_wacc=method == "dcf",
         )
+        dcf = prefer_ppe(dcf, ticker, asof)
         dcf["source"]["revenue_growth_reference"] = historical_growth(dcf["historical"], "revenue")
         dividend_rows = dcf["source"]["common_dividends"]["historical"]
         dcf["source"]["dividend_growth_reference"] = historical_growth(dividend_rows, "value")
@@ -328,7 +330,7 @@ def load_method(
                 }
             )
             try:
-                peer = load_company_metrics(symbol, asof, http)
+                peer = prefer_ppe(load_company_metrics(symbol, asof, http), symbol, asof)
                 suggestions[-1].update(name=peer["company"]["name"], available=True)
                 doc["comparables"].append(
                     {
@@ -337,7 +339,7 @@ def load_method(
                         "as_of": peer["market"]["price_as_of"],
                         "available_at": asof,
                         "currency": "USD",
-                        "source": f"Yahoo current price / latest annual fundamentals {peer['historical'][-1]['period_end']}",
+                        "source": f"{peer['source']['name']} / fiscal {peer['historical'][-1]['period_end']}",
                         "multiples": relative_metrics(peer),
                         "fit": peer_fit(
                             ticker,

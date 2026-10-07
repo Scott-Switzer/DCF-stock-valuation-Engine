@@ -22,6 +22,8 @@ for name in [
     "dcf_loader.py",
     "storage.py",
     "provider_cache.py",
+    "ppe_packets.py",
+    "ppe_provider.py",
     "yahoo_provider.py",
     "auto_loading.py",
     "decision_support.py",

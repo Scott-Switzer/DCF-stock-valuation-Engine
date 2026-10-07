@@ -350,7 +350,7 @@ def rate_limit_response():
 def limit_expensive_work():
     preview_request = request.method == "POST" and request.path.startswith("/api/preview/")
     reference_request = request.method == "GET" and request.path.startswith(
-        ("/api/references/", "/api/guidance/")
+        ("/api/references/", "/api/guidance/", "/api/company/")
     )
     if app.config.get("CLOUDFLARE"):
         import hashlib
@@ -367,11 +367,21 @@ def limit_expensive_work():
         request.environ["dcf.client_hash"] = client_hash
         if request.method == "POST" or reference_request:
             # Edge-local abuse protection keeps interactive previews off D1.
-            binding = env.PREVIEW_LIMIT if preview_request else env.REFERENCE_LIMIT if reference_request else env.WRITE_LIMIT
+            binding = (
+                env.PREVIEW_LIMIT
+                if preview_request
+                else env.REFERENCE_LIMIT
+                if reference_request
+                else env.WRITE_LIMIT
+            )
             from pyodide.ffi import to_js
             from js import Object
 
-            result = run_sync(binding.limit(to_js({"key": "dcf:" + client_hash}, dict_converter=Object.fromEntries)))
+            result = run_sync(
+                binding.limit(
+                    to_js({"key": "dcf:" + client_hash}, dict_converter=Object.fromEntries)
+                )
+            )
             if not result.success:
                 return rate_limit_response()
         return None
@@ -490,6 +500,20 @@ def calculate_api():
         return jsonify(error=str(e)), 400
 
 
+@app.get("/api/company/<ticker>")
+def company_packet(ticker):
+    """Public SEC-derived financial packet; no warehouse prices or raw objects."""
+    from ppe_provider import load_packet
+
+    try:
+        packet = load_packet(ticker, request.args.get("as_of"))
+        if packet is None:
+            return jsonify(error="No published PPE valuation packet for this ticker."), 404
+        return jsonify(packet)
+    except (ProviderError, ValueError) as exc:
+        return jsonify(error=str(exc)), 503 if isinstance(exc, ProviderError) else 400
+
+
 @app.post("/api/preview/<method>")
 def preview_api(method):
     if method not in {"dcf", "ddm", "relative"}:
@@ -543,14 +567,16 @@ def peer_api():
             raise ValueError("Provide a peer ticker.")
         symbol = ticker_symbol(raw.get("ticker"))
         asof = datetime.now(timezone.utc).date().isoformat()
-        doc = load_company_metrics(symbol, asof, JsonHTTP(budget=12))
+        from ppe_provider import prefer_ppe
+
+        doc = prefer_ppe(load_company_metrics(symbol, asof, JsonHTTP(budget=12)), symbol, asof)
         return jsonify(
             ticker=symbol,
             name=doc["company"]["name"],
             as_of=doc["market"]["price_as_of"],
             available_at=asof,
             currency="USD",
-            source="Yahoo latest annual fundamentals / current price",
+            source=doc["source"]["name"],
             multiples=relative_metrics(doc),
             provenance={
                 "financials": doc["historical"][-1],
@@ -801,6 +827,11 @@ def ready():
                 if app.config.get("CLOUDFLARE")
                 else os.getenv("EDGAR_IDENTITY", "")
             ),
+            ppe_binding_configured=bool(
+                getattr(request.environ.get("workers.env"), "PPE_DATA", None)
+            )
+            if app.config.get("CLOUDFLARE")
+            else False,
             zion_configured=bool(os.getenv("ZION_API_BASE_URL")),
             custom_api_configured=bool(os.getenv("DCF_API_BASE_URL")),
         )

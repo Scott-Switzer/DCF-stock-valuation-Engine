@@ -46,14 +46,43 @@
         else if(name.startsWith('historical_')) dated=`Fiscal period ${doc.target?.historical_as_of||'unavailable'}`;
         else if(['diluted_shares','shares_basis'].includes(name)) dated=doc.market?.shares_basis||'Share basis unavailable';
         else if(['bridge_as_of','short_term_debt','long_term_debt','cash','preferred_equity','minority_interest','other_nonoperating_assets'].includes(name)) dated=`Balance-sheet period ${doc.bridge?.as_of||'unavailable'}`;
+        const coverage=doc.source?.field_coverage||[];
+        let fieldPath;
+        if(name.startsWith('h_')&&yearMatch) {
+          const metric=name.slice(2).replace(/_\d$/,'');
+          const end=doc.historical?.[Number(yearMatch[1])]?.period_end;
+          fieldPath=coverage.find(x=>x.field.startsWith('historical.')&&x.field.endsWith('.'+metric)&&end&&Math.abs(Date.parse(x.period_end)-Date.parse(end))<=7*86400000);
+        } else {
+          const paths={price:'market.price',price_as_of:'market.price_as_of',diluted_shares:'market.diluted_shares',base_common_dividends:'common_dividends'};
+          const key=paths[name]||('bridge.'+name);
+          fieldPath=coverage.find(x=>x.field===key);
+          if(name.startsWith('historical_')) fieldPath=coverage.filter(x=>x.field.startsWith('historical.')&&x.field.endsWith('.'+name.slice(11))).at(-1);
+        }
+        if(fieldPath) {
+          origin=fieldPath.status==='PPE'?fieldPath.provider:`Fallback: ${fieldPath.provider}`;
+          dated=`Fiscal / observation date ${fieldPath.period_end||'unavailable'}; ${fieldPath.status==='PPE'?'available '+fieldPath.available_at:'fallback snapshot observed '+(fieldPath.available_at||'unknown')+'; historical availability unverified'}`;
+        }
         input.title=`${origin} · ${dated}. Full metric provenance is in Source document and provenance. ${unlocked?'Editing enabled.':'Unlock sourced inputs to override.'}`;
       }
       document.getElementById('sourced-origin').textContent=blank?'Manual model: enter verified financials.':`${doc.source.name} · retrieved ${doc.source.retrieved_at||doc.source.available_at||doc.valuation_date}. ${unlocked?'Overrides enabled; changes remain distinct from provider observations.':'Financials are locked; forecast assumptions stay editable.'}`;
     };
+    document.getElementById('ppe-coverage')?.remove();
+    if(doc.source?.field_coverage?.length) {
+      const details=document.createElement('details');details.id='ppe-coverage';details.className='data-notes';
+      const sourced=doc.source.field_coverage.filter(x=>x.status==='PPE').length;
+      add(details,'summary',`PPE & fallback coverage · ${sourced} PPE · ${doc.source.field_coverage.length-sourced} fallback`);
+      add(details,'p','Snapshot sources and exact observation dates. Manual overrides remain identified in calculation details.','help');
+      const wrap=add(details,'div','','table-wrap');const table=add(wrap,'table','');const head=add(table,'tr','');
+      for(const label of ['Input','Source','Period'])add(head,'th',label);
+      for(const item of doc.source.field_coverage) {
+        const row=add(table,'tr','');add(row,'td',item.field.replace('historical.','').replaceAll('_',' '));add(row,'td',`${item.status==='PPE'?'PPE':'Fallback'} · ${item.provider}`);add(row,'td',item.period_end||'Unavailable');
+      }
+      document.getElementById('sourced-origin').after(details);
+    }
     checkbox.onchange=apply;apply();
   }
   async function references(doc, parent, isResult, token) {
-    if(doc.source?.kind==='synthetic'||doc.source?.origin_kind==='synthetic'||!doc.source?.name?.startsWith('Yahoo')) {
+    if(doc.source?.kind==='synthetic'||doc.source?.origin_kind==='synthetic'||(!doc.source?.name?.startsWith('Yahoo')&&!doc.source?.ppe_release)) {
       add(parent,'p','Analyst consensus is available for automatically loaded real-company snapshots.','help');return;
     }
     const status=add(parent,'p','Loading analyst references…','help');

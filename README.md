@@ -93,7 +93,7 @@ Exports retain full numeric precision; the UI rounds money for readability. They
 
 ## Deploy
 
-[Cloudflare deployment guide](docs/deployment.md). The public Worker supports ticker-first DCF/DDM/RV, sample/manual calculations, SEC statement loading and private D1 persistence. Optional Zion integration remains unconfigured. Docker and `render.yaml` are alternative hosting recipes.
+[Cloudflare deployment guide](docs/deployment.md). The public Worker supports ticker-first DCF/DDM/RV, sample/manual calculations, SEC statement loading and private D1 persistence. PPE financial snapshots are available through the R2-backed company API; the separate Zion HTTP adapter remains unconfigured. Docker and `render.yaml` are alternative hosting recipes.
 
 ```bash
 gunicorn --bind 0.0.0.0:5000 --workers 2 --threads 2 --timeout 35 app:app
@@ -106,3 +106,9 @@ The company workspace calculates live previews without storing them. Explicit Sa
 The normalized company document, pure calculation engine and structured API outputs are the foundation for additional methods. DCF, DDM and trading comparables are implemented. A combined football-field view and additional sector-specific methods remain future work. They will need their own assumptions, suitability checks and reconciliation tests rather than reusing FCFF for every sector.
 
 MIT licensed. The CUIG workbook is a user-supplied reference and is not redistributed or modified. Public provider data remains subject to each provider's terms and access policies.
+
+### PPE snapshot autofill
+
+Ticker loading prefers compatible public SEC financials from PPE compact packets. AAPL has three years of SEC-backed operating inputs, capex, D&A, operating working capital, effective tax rates and diluted weighted-average shares. Current prices, beta/risk-free inputs and unsupported common-dividend/common-equity fields retain explicitly labeled Yahoo fallbacks. The same overlay applies to RV peers. Inspect Advanced → PPE & fallback coverage for dates and sources.
+
+The server endpoint `/api/company/AAPL` serves only a bounded public SEC valuation packet. It does not expose warehouse price objects or credentials. [Packet contract and publication](docs/ppe-packets.md) describes cutoff selection, coverage, caching and refresh.
