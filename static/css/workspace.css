@@ -290,3 +290,7 @@ body.embedded-editor .assumption-fields small {
 body.embedded-editor details[open] .peer-table {
   display: table;
 }
+
+body.embedded-editor .forecasts {
+  min-width: 570px;
+}
