@@ -146,3 +146,42 @@ def test_percentage_roundtrip_keeps_source_provenance(client):
     rebuilt, _ = form_payload(MultiDict({k: str(v) for k, v in form.items()}))
     assert not any("tax_rate" in v for v in rebuilt["source"]["manual_overrides"])
     assert rebuilt["historical"][1]["provenance"] == doc["historical"][1]["provenance"]
+
+
+def test_blank_ticker_can_load_offline_example(client):
+    r = client.post("/api/financials", json={"provider": "sample", "ticker": ""})
+    assert r.status_code == 200
+    assert r.get_json()["financials"]["source"]["kind"] == "synthetic"
+
+
+@pytest.mark.parametrize("scenario", ["short_returns", "preferred_equity"])
+def test_relative_load_needs_no_capital_cost_observations(client, monkeypatch, scenario):
+    http = auto_loading.JsonHTTP()
+    if scenario == "preferred_equity":
+        for metric in http.financials["timeseries"]["result"]:
+            for key, rows in metric.items():
+                if key in {"annualStockholdersEquity", "annualTotalEquityGrossMinorityInterest"}:
+                    for row in rows:
+                        row["reportedValue"]["raw"] = 440
+                elif key == "annualTotalAssets":
+                    for row in rows:
+                        row["reportedValue"]["raw"] = 740
+    real_get = http.get
+
+    def get(url, **kwargs):
+        data = real_get(url, **kwargs)
+        if scenario == "short_returns" and "/chart/" in url:
+            chart = data["chart"]["result"][0]
+            chart["timestamp"] = chart["timestamp"][:2]
+            chart["indicators"]["adjclose"][0]["adjclose"] = chart["indicators"]["adjclose"][0][
+                "adjclose"
+            ][:2]
+        return data
+
+    http.get = get
+    monkeypatch.setattr(auto_loading, "JsonHTTP", lambda **kwargs: http)
+    r = client.post("/api/load/relative", json={"ticker": "TEST"})
+    assert r.status_code == 200, r.get_json()
+    assert r.get_json()["load_summary"]["capital_costs"] == {}
+    if scenario == "preferred_equity":
+        assert r.get_json()["financials"]["bridge"]["preferred_equity"] == 40

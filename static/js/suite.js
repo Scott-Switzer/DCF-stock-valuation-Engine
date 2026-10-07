@@ -24,10 +24,10 @@ if (suiteForm) {
   const fill=values=>{
     for (const field of suiteForm.elements) {
       if (!field.name) continue;
+      if (field.type==='checkbox') {field.checked=values[field.name]==='yes';continue;}
       if (!Object.prototype.hasOwnProperty.call(values,field.name)) continue;
       const value=values[field.name];
-      if (field.type==='checkbox') field.checked=value==='yes';
-      else if (field.type!=='file' && field.type!=='submit') field.value=value==null?'':value;
+      if (field.type!=='file' && field.type!=='submit') field.value=value==null?'':value;
     }
     preview();
   };

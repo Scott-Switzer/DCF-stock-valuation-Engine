@@ -711,10 +711,10 @@ def configured_url(name):
 
 
 def load_document(source, ticker, asof):
-    ticker = ticker_symbol(ticker)
     iso_date(asof, "Valuation date")
     if source == "sample":
         return demo_document()
+    ticker = ticker_symbol(ticker)
     if source == "manual":
         doc = blank_document(ticker, ticker, asof, "manual")
         year = date.fromisoformat(asof).year

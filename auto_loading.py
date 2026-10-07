@@ -124,7 +124,7 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
     asof = asof or datetime.now(timezone.utc).date().isoformat()
     ticker = ticker_symbol(ticker)
     http = JsonHTTP(budget=40)
-    dcf = load_yahoo(ticker, asof, http)
+    dcf = load_yahoo(ticker, asof, http, include_capital_costs=method != "relative")
     try:
         classification = company_classification(ticker, http)
     except ProviderError:
@@ -146,14 +146,16 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
         dcf["source"]["warnings"].append(
             "SEC industry classification was unavailable; review the operating-company suitability confirmation."
         )
-    costs = recalculate_costs(dcf, equity_risk_premium, credit_spread)
+    costs = (
+        recalculate_costs(dcf, equity_risk_premium, credit_spread) if method != "relative" else {}
+    )
     from app import default_form
     from suite_views import suite_form, suite_assumptions, suite_evaluate
 
     form = default_form(dcf)
     form.update(
         mode="auto",
-        wacc=costs["wacc"] * 100,
+        wacc=costs.get("wacc", 0.065) * 100,
         equity_risk_premium=equity_risk_premium * 100,
         credit_spread=credit_spread * 100,
     )
@@ -191,11 +193,8 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
             ),
         )
     elif method == "relative":
-        a = DCFAssumptions(
-            revenue_growth_rates=[0.05] * 5, terminal_growth_rate=0.02, wacc_override=costs["wacc"]
-        )
+        a = DCFAssumptions(revenue_growth_rates=[0.05] * 5, terminal_growth_rate=0.02)
         forecast_model = DCFModel(parse_document(dcf), a)
-        forecast_model.wacc = costs["wacc"]
         first = forecast_model.forecast_cash_flows()[0]
         latest = dcf["historical"][-1]
         common = dcf["source"]["common_book_equity"]["value"]
