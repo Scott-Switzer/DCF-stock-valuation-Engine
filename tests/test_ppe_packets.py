@@ -238,3 +238,31 @@ def test_served_numeric_strings_are_rejected():
     p["historical"][-1]["fields"]["revenue"]["value"] = "120"
     with pytest.raises(ProviderError, match="numeric"):
         validate_packet(p, "AAPL", "2026-10-07")
+
+
+def test_overlay_retains_common_earnings_for_pe_and_ordinary_market_equity_for_wacc():
+    d = demo_document()
+    d["company"]["ticker"] = "AAPL"
+    p = packet()
+    for row, h in zip(d["historical"], p["historical"]):
+        row["period_end"] = h["period_end"]
+    d["bridge"]["as_of"] = p["historical"][-1]["period_end"]
+    f = deepcopy(p["historical"][-1]["fields"]["revenue"])
+    f["value"] = 999
+    p["historical"][-1]["fields"]["net_income"] = f
+    shares = deepcopy(f)
+    shares.update(value=200, unit="shares")
+    p["diluted_shares"] = shares
+    d["source"]["capital_costs"] = {
+        "market_equity_value": 5000,
+        "equity_market_value": 5000,
+        "equity_shares_as_of": "2025-09-30",
+        "debt": 200,
+        "reported_cost_of_debt": 0.04,
+    }
+    updated = apply_packet(d, p, "2026-10-07")
+    assert updated["historical"][-1]["net_income"] == d["historical"][-1]["net_income"]
+    assert updated["market"]["diluted_shares"] == 200
+    assert updated["source"]["capital_costs"]["market_equity_value"] == 5000
+    assert updated["source"]["capital_costs"]["equity_market_value"] == 5000
+    assert updated["source"]["capital_costs"]["equity_shares_as_of"] == "2025-09-30"

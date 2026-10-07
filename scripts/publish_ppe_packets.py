@@ -83,10 +83,11 @@ def main():
         raw = Path(path).read_bytes()
         digest = hashlib.sha256(raw).hexdigest()
         sec[ticker_symbol(ticker)] = (json.loads(raw), raw, digest)
-    r2 = R2(args.config)
+    r2 = None
     cutoff = datetime.now(timezone.utc).date().isoformat()
     report = {"cutoff_date": cutoff, "companies": [], "published": False}
     try:
+        r2 = R2(args.config)
         pointer = r2.get("gold/serving/coverage25/CURRENT.json")
         manifest = r2.get(pointer["manifest_key"], pointer["manifest_sha256"])
         base = "gold/serving/releases/" + manifest["serving_release_id"] + "/"
@@ -237,8 +238,14 @@ def main():
             report["published"] = True
         report["producer_release"] = manifest["serving_release_id"]
         Path(args.report).write_text(json.dumps(report, indent=2) + "\n")
+    except BaseException as exc:
+        report["failure"] = str(exc) if isinstance(exc, ProviderError) else type(exc).__name__
+        raise
     finally:
-        r2.close()
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.report).write_text(json.dumps(report, indent=2) + "\n")
+        if r2 is not None:
+            r2.close()
 
 
 if __name__ == "__main__":

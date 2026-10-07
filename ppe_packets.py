@@ -388,16 +388,20 @@ def apply_packet(document, packet, asof):
             matched.append(p)
         row.setdefault("provenance", {})
         original_end = row["period_end"]
+        used_fields = {}
         for key in HISTORY_FIELDS:
-            f = p["fields"].get(key) if p else None
+            # The canonical metric and NetIncomeLoss/ProfitLoss do not verify
+            # income available to common shareholders (preferred dividends).
+            f = p["fields"].get(key) if p and key != "net_income" else None
             row[key] = choose(f"historical.{original_end}.{key}", row.get(key), f)
             if f:
+                used_fields[key] = f
                 row["provenance"][key] = {
                     **f["provenance"],
                     "period_end": f["period_end"],
                     "available_at": f["available_at"],
                 }
-        if p and all(p["fields"].get(k) for k in HISTORY_FIELDS):
+        if p and len(used_fields) == len(HISTORY_FIELDS):
             row["period_end"] = p["period_end"]
             row["available_at"] = max(p["fields"][k]["available_at"] for k in HISTORY_FIELDS)
         # Partial fiscal-year matches retain exact dates in each field's provenance.
@@ -470,8 +474,6 @@ def apply_packet(document, packet, asof):
         debt = doc["bridge"]["short_term_debt"] + doc["bridge"]["long_term_debt"]
         costs.update(
             debt=debt,
-            market_equity_value=doc["market"]["price"] * doc["market"]["diluted_shares"],
-            equity_market_value=doc["market"]["price"] * doc["market"]["diluted_shares"],
             debt_book_value=debt,
             tax_rate=doc["historical"][-1]["tax_rate"],
         )
@@ -493,7 +495,6 @@ def apply_packet(document, packet, asof):
             choose("capital_costs.risk_free_rate", costs["risk_free_rate"], None)
         if "beta" in costs:
             choose("capital_costs.beta", costs["beta"], None)
-        costs["equity_shares_as_of"] = latest if shares else costs.get("equity_shares_as_of")
     doc["source"].update(
         kind="api",
         name="PPE / SEC financials + labeled market fallbacks"
@@ -504,6 +505,6 @@ def apply_packet(document, packet, asof):
         field_coverage=coverage,
     )
     doc["source"].setdefault("warnings", []).append(
-        "PPE annual periods match the baseline fiscal end within seven days; actual observation dates and fallback sources are retained per field. Missing PPE fields use the labeled baseline source."
+        "PPE annual periods match the baseline fiscal end within seven days; actual observation dates and fallback sources are retained per field. Missing PPE fields and common-stockholder income use the labeled baseline source. Ordinary-share market equity remains the WACC weight basis; diluted weighted-average shares are used for per-share valuation."
     )
     return doc
