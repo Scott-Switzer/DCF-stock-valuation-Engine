@@ -231,3 +231,10 @@ def test_conflicts_outside_packet_periods_do_not_poison_current_packet():
     )
     p = build_packet("AAPL", "0000320193", rows, None, "2026-10-07", {})
     assert [r["period_end"] for r in p["historical"]] == ["2023-09-27", "2024-09-27", "2025-09-27"]
+
+
+def test_served_numeric_strings_are_rejected():
+    p = packet()
+    p["historical"][-1]["fields"]["revenue"]["value"] = "120"
+    with pytest.raises(ProviderError, match="numeric"):
+        validate_packet(p, "AAPL", "2026-10-07")

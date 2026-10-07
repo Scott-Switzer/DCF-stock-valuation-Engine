@@ -119,7 +119,16 @@ def prefer_ppe(document, ticker, asof):
     try:
         packet = load_packet(ticker, asof)
         if packet:
-            return apply_packet(document, packet, asof)
+            candidate = apply_packet(document, packet, asof)
+            from dcf_loader import parse_document
+
+            try:
+                parse_document(candidate)
+            except ValueError:
+                raise ProviderError(
+                    "PPE fields do not meet the valuation model's input requirements."
+                ) from None
+            return candidate
         document["source"]["ppe_status"] = (
             "No published PPE valuation packet for this ticker; Yahoo fallback."
         )

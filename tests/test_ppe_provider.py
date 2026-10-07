@@ -109,3 +109,20 @@ def test_body_read_failure_is_a_provider_error(monkeypatch):
     obj = SimpleNamespace(size=2, text=lambda: (_ for _ in ()).throw(RuntimeError("body failed")))
     with __import__("pytest").raises(ProviderError, match="body"):
         _object_json(SimpleNamespace(get=lambda key: obj), "key", maximum=100)
+
+
+def test_incompatible_merged_model_uses_baseline_instead_of_500():
+    from copy import deepcopy
+    from dcf_loader import demo_document
+    from ppe_provider import prefer_ppe
+
+    baseline = demo_document()
+    candidate = deepcopy(baseline)
+    candidate["historical"][-1]["tax_rate"] = 2
+    with (
+        patch("ppe_provider.load_packet", return_value={"published": True}),
+        patch("ppe_packets.apply_packet", return_value=candidate),
+    ):
+        result = prefer_ppe(baseline, "DEMO", baseline["valuation_date"])
+    assert result["historical"][-1]["tax_rate"] == baseline["historical"][-1]["tax_rate"]
+    assert "input requirements" in result["source"]["ppe_status"]

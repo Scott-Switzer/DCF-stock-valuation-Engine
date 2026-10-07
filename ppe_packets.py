@@ -289,6 +289,8 @@ def validate_packet(packet, ticker, asof):
             return
         if not isinstance(f, dict):
             raise ProviderError("Invalid PPE field shape.")
+        if not isinstance(f.get("value"), (int, float)):
+            raise ProviderError("Invalid PPE numeric field type.")
         value = _number(f.get("value"))
         expected = (
             "shares" if metric == "diluted_shares" else "pure" if metric == "tax_rate" else "USD"
