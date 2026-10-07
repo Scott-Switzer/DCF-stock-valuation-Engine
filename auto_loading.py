@@ -21,6 +21,8 @@ PEER_GROUPS = (
 
 
 def starter_peers(ticker, http):
+    from decision_support import BUSINESSES
+
     if ticker == "AMZN":
         return "Retail and cloud segment candidates; different segment mixes", [
             "WMT",
@@ -31,7 +33,16 @@ def starter_peers(ticker, http):
     for label, members in PEER_GROUPS:
         if ticker in members:
             return label, [
-                s for s in members if s != ticker and not ({s, ticker} <= {"GOOG", "GOOGL"})
+                s
+                for s in members
+                if s != ticker
+                and not ({s, ticker} <= {"GOOG", "GOOGL"})
+                and (
+                    s not in BUSINESSES
+                    or ticker not in BUSINESSES
+                    or BUSINESSES[s][0] == BUSINESSES[ticker][0]
+                    or BUSINESSES[s][1] & BUSINESSES[ticker][1]
+                )
             ][:4]
     raw = http.get(
         f"{BASE}/v6/finance/recommendationsbysymbol/{ticker}",

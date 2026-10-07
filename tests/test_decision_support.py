@@ -170,3 +170,11 @@ def test_nullable_modules_and_trend_entries_are_safe():
     assert parse_analysts(page(packet), "TEST")["target"]["mean"] == 120
     packet["earningsTrend"] = {"trend": [None, 5, {"period": "+1y", "revenueEstimate": None}]}
     assert parse_analysts(page(packet), "TEST")["revenue"] == []
+
+
+def test_known_peer_candidates_require_business_overlap_and_avoid_duplicate_issuer():
+    from auto_loading import starter_peers
+
+    assert starter_peers("AAPL", None)[1] == ["DELL", "HPQ"]
+    assert "GOOG" not in starter_peers("GOOGL", None)[1]
+    assert {"MSFT", "WMT"} <= set(starter_peers("AMZN", None)[1])
