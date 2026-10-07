@@ -80,3 +80,29 @@ def test_failure_preserves_exclusions_after_last_checkpoint(tmp_path, monkeypatc
     assert saved["published"] is False
     assert [x["ticker"] for x in saved["companies"]] == symbols[:4]
     assert all(x["status"] == "NO_ANNUAL_ARTIFACT" for x in saved["companies"])
+
+
+def test_report_write_failure_closes_r2_and_preserves_original_error(tmp_path, monkeypatch):
+    closed = []
+
+    class BrokenR2:
+        def __init__(self, config):
+            pass
+
+        def get(self, *args):
+            raise ProviderError("Original acquisition failure.")
+
+        def close(self):
+            closed.append(True)
+
+    def failed_write(*args, **kwargs):
+        raise OSError("Disk full")
+
+    monkeypatch.setattr(publisher, "R2", BrokenR2)
+    monkeypatch.setattr(publisher.Path, "write_text", failed_write)
+    monkeypatch.setattr(
+        "sys.argv", ["publisher", "--config", "fixture", "--report", str(tmp_path / "report.json")]
+    )
+    with pytest.raises(ProviderError, match="Original acquisition failure"):
+        publisher.main()
+    assert closed == [True]

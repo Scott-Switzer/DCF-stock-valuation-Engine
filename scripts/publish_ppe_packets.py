@@ -242,10 +242,18 @@ def main():
         report["failure"] = str(exc) if isinstance(exc, ProviderError) else type(exc).__name__
         raise
     finally:
-        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.report).write_text(json.dumps(report, indent=2) + "\n")
-        if r2 is not None:
-            r2.close()
+        original_error = sys.exception()
+        try:
+            try:
+                Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+                Path(args.report).write_text(json.dumps(report, indent=2) + "\n")
+            except OSError:
+                if original_error is None:
+                    raise
+                print("Could not save publisher diagnostics; preserving original failure.", file=sys.stderr)
+        finally:
+            if r2 is not None:
+                r2.close()
 
 
 if __name__ == "__main__":
