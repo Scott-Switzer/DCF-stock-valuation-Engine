@@ -464,6 +464,17 @@ def calculate_api():
         return jsonify(error=str(e)), 400
 
 
+@app.get("/api/references/<ticker>")
+def analyst_references_api(ticker):
+    try:
+        from decision_support import load_analysts
+        return jsonify(load_analysts(ticker))
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+    except ProviderError as exc:
+        return jsonify(error=str(exc)), 503
+
+
 @app.post("/api/load/<method>")
 def load_company_api(method):
     try:

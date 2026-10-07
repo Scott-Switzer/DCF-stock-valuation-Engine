@@ -19,6 +19,7 @@ if (suiteForm) {
     try {const doc=JSON.parse(suiteForm.elements.base_document.value);
       document.getElementById('suite-source').textContent=JSON.stringify(doc,null,2);
       document.getElementById('suite-status').textContent=doc.source.kind==='synthetic'||doc.source.origin_kind==='synthetic'?'Synthetic example origin':doc.source.name;
+      document.dispatchEvent(new Event('financials-loaded'));
     } catch (_) { /* Server validates input. */ }
   };
   const fill=values=>{

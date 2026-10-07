@@ -240,13 +240,13 @@ class JsonHTTP:
         else:
             self.store = store or Store()
 
-    def get(self, url, *, headers=None, params=None, ttl=0, cache_key=None):
+    def get(self, url, *, headers=None, params=None, ttl=0, cache_key=None, text_response=False):
         if cache_key:
             cached = self.store.get(cache_key)
             if cached is not None:
                 return cached
         if self.edge:
-            raw = self.edge_get(url, headers=headers, params=params)
+            raw = self.edge_get(url, headers=headers, params=params, text_response=text_response)
             if cache_key and ttl:
                 self.store.set(cache_key, raw, ttl)
             return raw
@@ -281,7 +281,11 @@ class JsonHTTP:
                         if size > 20_000_000:
                             raise ProviderError("Data provider response exceeded the size limit.")
                         chunks.append(chunk)
-                    raw = json.loads(b"".join(chunks))
+                    raw = (
+                        b"".join(chunks).decode("utf-8")
+                        if text_response
+                        else json.loads(b"".join(chunks))
+                    )
                     if cache_key and ttl:
                         self.store.set(cache_key, raw, ttl)
                     return raw
@@ -292,7 +296,7 @@ class JsonHTTP:
                     ) from None
         raise ProviderError("Data provider is unavailable.")
 
-    def edge_get(self, url, headers=None, params=None):
+    def edge_get(self, url, headers=None, params=None, text_response=False):
         from pyodide.ffi import run_sync
         from workers import fetch
         from urllib.parse import urlencode
@@ -334,7 +338,7 @@ class JsonHTTP:
                             "Data provider exceeded the response size or time limit."
                         )
                     chunks.extend(chunk.value.to_bytes())
-                return json.loads(chunks)
+                return chunks.decode("utf-8") if text_response else json.loads(chunks)
             except ProviderError:
                 raise
             except Exception:

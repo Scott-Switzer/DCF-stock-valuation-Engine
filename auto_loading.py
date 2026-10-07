@@ -21,6 +21,13 @@ PEER_GROUPS = (
 
 
 def starter_peers(ticker, http):
+    if ticker == "AMZN":
+        return "Retail and cloud segment candidates; different segment mixes", [
+            "WMT",
+            "MSFT",
+            "GOOGL",
+            "COST",
+        ]
     for label, members in PEER_GROUPS:
         if ticker in members:
             return label, [
@@ -120,12 +127,29 @@ def relative_metrics(doc):
 def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spread=0.015):
     if method not in {"dcf", "ddm", "relative"}:
         raise ValueError("Choose DCF, DDM or relative valuation.")
+    from decision_support import historical_growth, peer_fit
+
     start = time.monotonic()
     asof = asof or datetime.now(timezone.utc).date().isoformat()
     ticker = ticker_symbol(ticker)
     http = JsonHTTP(budget=40)
     dcf = load_yahoo(
         ticker, asof, http, include_capital_costs=method != "relative", require_wacc=method == "dcf"
+    )
+    dcf["source"]["revenue_growth_reference"] = historical_growth(dcf["historical"], "revenue")
+    dividend_rows = dcf["source"]["common_dividends"]["historical"]
+    dcf["source"]["dividend_growth_reference"] = historical_growth(dividend_rows, "value")
+    dcf["source"]["dividend_per_share_growth_reference"] = historical_growth(
+        [
+            {
+                "period_end": row["period_end"],
+                "value": row["value"] / row["shares"]
+                if row["value"] is not None and row["shares"] and row["shares"] > 0
+                else None,
+            }
+            for row in dividend_rows
+        ],
+        "value",
     )
     try:
         classification = company_classification(ticker, http)
@@ -244,6 +268,12 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
                         "currency": "USD",
                         "source": f"Yahoo current price / latest annual fundamentals {peer['historical'][-1]['period_end']}",
                         "multiples": relative_metrics(peer),
+                        "fit": peer_fit(
+                            ticker,
+                            symbol,
+                            dcf["market"]["price"] * dcf["market"]["diluted_shares"],
+                            peer["market"]["price"] * peer["market"]["diluted_shares"],
+                        ),
                         "provenance": {
                             "financials": peer["historical"][-1],
                             "bridge": peer["bridge"],
@@ -258,6 +288,11 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
             raise ProviderError(
                 "No complete starter peer snapshots were available. Retry or import a sourced peer set."
             )
+        doc["comparables"].sort(key=lambda peer: peer["fit"]["score"], reverse=True)
+        doc["source"]["peer_suggestions"] = [
+            {"ticker": peer["ticker"], "name": peer["name"], **peer["fit"]}
+            for peer in doc["comparables"]
+        ]
         included = [
             k
             for k in ["ev_revenue", "ev_ebitda", "pe"]

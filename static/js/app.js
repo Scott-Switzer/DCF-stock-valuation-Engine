@@ -36,6 +36,7 @@ if (valuationForm) {
       const doc = JSON.parse(document.getElementById('base-document').value);
       document.getElementById('source-preview').textContent = JSON.stringify(doc, null, 2);
       document.getElementById('data-status').textContent = doc.source.kind === 'synthetic' ? 'Synthetic offline example' : `Source: ${doc.source.name}`;
+      document.dispatchEvent(new Event('financials-loaded'));
     } catch (_) { /* Server validates the document before valuation. */ }
   };
   const closeSuggestions = () => {
