@@ -234,3 +234,18 @@ def test_workspace_keeps_four_candidates_when_all_peer_snapshots_fail(client, mo
     assert len(result["financials"]["source"]["peer_suggestions"]) == 4
     assert result["financials"]["comparables"] == []
     assert all(not x["available"] for x in result["financials"]["source"]["peer_suggestions"])
+
+
+def test_relative_multiples_use_diluted_equity_without_reusing_wacc_weights():
+    from dcf_loader import demo_document
+    from auto_loading import relative_metrics
+
+    doc = demo_document()
+    doc["source"]["common_book_equity"] = {"value": 500}
+    doc["source"]["capital_costs"] = {"market_equity_value": 5000}
+    actual = relative_metrics(doc)
+    assert actual["pe"] == pytest.approx(
+        doc["market"]["price"]
+        * doc["market"]["diluted_shares"]
+        / doc["historical"][-1]["net_income"]
+    )

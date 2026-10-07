@@ -1,5 +1,6 @@
 """Ticker-to-model assembly. Forecasts and peer selections remain explicit assumptions."""
 
+from ppe_provider import prefer_ppe
 from copy import deepcopy
 from datetime import datetime, timezone
 import time
@@ -115,13 +116,12 @@ def company_classification(ticker, http):
 def relative_metrics(doc):
     latest = doc["historical"][-1]
     shares = doc["market"]["diluted_shares"]
-    ordinary_equity = doc["source"].get("capital_costs", {}).get("market_equity_value")
-    if ordinary_equity is None:
-        # This is the same diluted-share market-equity convention used by RelativeModel.
-        ordinary_equity = doc["market"]["price"] * shares
+    # RelativeModel prices each diluted share; keep every peer multiple on
+    # that same basis. Ordinary-share market equity is only a WACC weight.
+    diluted_equity = doc["market"]["price"] * shares
     b = doc["bridge"]
     ev = (
-        ordinary_equity
+        diluted_equity
         + b["short_term_debt"]
         + b["long_term_debt"]
         + b["preferred_equity"]
@@ -138,7 +138,7 @@ def relative_metrics(doc):
         "pb": common,
     }
     return {
-        key: (ev if key.startswith("ev_") else ordinary_equity) / value
+        key: (ev if key.startswith("ev_") else diluted_equity) / value
         if value is not None and value > 0
         else None
         for key, value in denoms.items()
@@ -187,6 +187,7 @@ def load_method(
             include_capital_costs=method != "relative",
             require_wacc=method == "dcf",
         )
+        dcf = prefer_ppe(dcf, ticker, asof)
         dcf["source"]["revenue_growth_reference"] = historical_growth(dcf["historical"], "revenue")
         dividend_rows = dcf["source"]["common_dividends"]["historical"]
         dcf["source"]["dividend_growth_reference"] = historical_growth(dividend_rows, "value")
@@ -328,7 +329,7 @@ def load_method(
                 }
             )
             try:
-                peer = load_company_metrics(symbol, asof, http)
+                peer = prefer_ppe(load_company_metrics(symbol, asof, http), symbol, asof)
                 suggestions[-1].update(name=peer["company"]["name"], available=True)
                 doc["comparables"].append(
                     {
@@ -337,7 +338,7 @@ def load_method(
                         "as_of": peer["market"]["price_as_of"],
                         "available_at": asof,
                         "currency": "USD",
-                        "source": f"Yahoo current price / latest annual fundamentals {peer['historical'][-1]['period_end']}",
+                        "source": f"{peer['source']['name']} / fiscal {peer['historical'][-1]['period_end']}",
                         "multiples": relative_metrics(peer),
                         "fit": peer_fit(
                             ticker,
