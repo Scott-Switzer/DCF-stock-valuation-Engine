@@ -196,3 +196,14 @@ def test_dividend_overlay_with_missing_sec_shares_keeps_missing_history():
     updated = apply_packet(d, p, "2026-10-07")
     assert updated["source"]["common_dividends"]["historical"][0]["shares"] is None
     assert updated["market"]["diluted_shares"] == d["market"]["diluted_shares"]
+
+
+def test_untrusted_quality_and_wrong_canonical_issuer_are_rejected():
+    row = observation("revenue", 100)
+    row["quality_status"] = "REJECTED"
+    with pytest.raises(ProviderError, match="eligible"):
+        build_packet("AAPL", "0000320193", [row], None, "2026-10-07", {})
+    row["quality_status"] = "REPORTED"
+    row["entity_id"] = "entity:sec:cik:0000789019"
+    with pytest.raises(ProviderError, match="issuer"):
+        build_packet("AAPL", "0000320193", [row], None, "2026-10-07", {})

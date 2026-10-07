@@ -10,6 +10,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -162,7 +163,10 @@ def main():
                 continue
             rows = prefetched[path]
             rows = rows if isinstance(rows, list) else rows.get("rows", [])
-            cik = entity.get("cik") or entity["artifact_path"].split("_cik_")[-1]
+            issuer = re.search(r"entity_sec_cik_([0-9]{10})(?:_[A-Z-]+)?$", entity["artifact_path"])
+            if not issuer:
+                raise ProviderError("Unsupported SEC issuer path.")
+            cik = issuer.group(1)
             source = {
                 "release_id": manifest["serving_release_id"],
                 "artifact": entry.get("storage_key", base + path),
@@ -212,6 +216,7 @@ def main():
             }
             report["companies"].append(item)
             print(json.dumps(item), flush=True)
+            Path(args.report).write_text(json.dumps(report, indent=2) + "\n")
         if args.publish:
             if pending_writes:
                 r2.call("batch", items=pending_writes)

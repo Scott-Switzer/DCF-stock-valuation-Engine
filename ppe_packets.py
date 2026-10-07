@@ -3,6 +3,7 @@
 from copy import deepcopy
 from datetime import date, datetime, timezone
 import math
+import re
 from dcf_loader import HISTORY_FIELDS, BRIDGE_FIELDS, TAGS, DURATION, ProviderError, ticker_symbol
 
 SCHEMA = "ppe-valuation-packet-v1"
@@ -115,6 +116,13 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
         metric = inverse.get(row.get("metric_id"))
         if not metric or row.get("source_id") != "SEC" or row.get("period_type") != "annual":
             continue
+        if row.get("quality_status") not in {"REPORTED", "CALCULATED", "VERIFIED"}:
+            continue
+        entity = row.get("entity_id")
+        if entity:
+            identity = re.match(r"entity:sec:cik:([0-9]{10})(?:$|[:_])", entity)
+            if not identity or identity.group(1) != cik:
+                raise ProviderError("PPE observation issuer mismatch.")
         end = row.get("period_end")
         available = row.get("available_at", "")
         if not available or not end or end > cutoff or available[:10] > cutoff:
@@ -386,7 +394,13 @@ def apply_packet(document, packet, asof):
         # Partial fiscal-year matches retain exact dates in each field's provenance.
     latest = packet["historical"][-1]["period_end"]
     aligned = bool(
-        matched
+        any(p["period_end"] == latest for p in matched)
+        and abs(
+            (
+                date.fromisoformat(doc["historical"][-1]["period_end"]) - date.fromisoformat(latest)
+            ).days
+        )
+        <= 7
         and abs((date.fromisoformat(doc["bridge"]["as_of"]) - date.fromisoformat(latest)).days) <= 7
     )
     for key in BRIDGE_FIELDS:
@@ -448,6 +462,8 @@ def apply_packet(document, packet, asof):
         costs.update(
             debt=debt,
             market_equity_value=doc["market"]["price"] * doc["market"]["diluted_shares"],
+            equity_market_value=doc["market"]["price"] * doc["market"]["diluted_shares"],
+            debt_book_value=debt,
             tax_rate=doc["historical"][-1]["tax_rate"],
         )
         interest = packet.get("interest_expense") if aligned else None
@@ -471,7 +487,9 @@ def apply_packet(document, packet, asof):
         costs["equity_shares_as_of"] = latest if shares else costs.get("equity_shares_as_of")
     doc["source"].update(
         kind="api",
-        name="PPE / SEC financials + labeled market fallbacks",
+        name="PPE / SEC financials + labeled market fallbacks"
+        if any(x["status"] == "PPE" for x in coverage)
+        else fallback + " (PPE fiscal periods unmatched)",
         ppe_release=packet["source"],
         ppe_cutoff=packet["cutoff_date"],
         field_coverage=coverage,

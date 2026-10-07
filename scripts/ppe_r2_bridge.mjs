@@ -5,7 +5,7 @@ import { createInterface } from 'node:readline';
 const require = createRequire(import.meta.url);
 const { getPlatformProxy } = require(process.env.WRANGLER_MODULE || 'wrangler');
 const platform = await getPlatformProxy({ configPath: process.argv[2], persist: false });
-const readAllowed = key => key === 'gold/serving/coverage25/CURRENT.json' || key === 'control/valuation/CURRENT.json' || (/^gold\/serving\/releases\/[a-f0-9]+\/(manifest\.json|identity\/resolver_index\.json|entities\/entity_sec_cik_[0-9]+\/fundamentals\/annual\.json)$/.test(key));
+const readAllowed = key => key === 'gold/serving/coverage25/CURRENT.json' || key === 'control/valuation/CURRENT.json' || (/^gold\/serving\/releases\/[a-f0-9]+\/(manifest\.json|identity\/resolver_index\.json|entities\/entity_sec_cik_[0-9]+(?:_[A-Z-]+)?\/fundamentals\/annual\.json)$/.test(key));
 const writeAllowed = key => /^gold\/valuation\/releases\/[a-f0-9]{64}\/companies\/[A-Z-]+\.json$/.test(key) || key === 'control/valuation/CURRENT.json' || /^raw\/valuation-sec\/[a-f0-9]{64}\/companyfacts\.json$/.test(key);
 async function execute(cmd) {
    let result;
