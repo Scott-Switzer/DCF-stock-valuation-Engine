@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Watchlist · price alerts{% endblock %}
+{% block content %}
+<section class="result-intro">
+<p class="eyebrow">Watchlist</p>
+<h1>Price alerts</h1>
+<p class="lead">Tickers are re-priced on every view against live snapshots. An alert fires when the market crosses your target.</p>
+</section>
+<section class="panel">
+<form action="/api/watchlist" method="post" id="watch-form" class="ticker-form">
+<div class="field"><label for="watch-ticker">Ticker</label><input id="watch-ticker" name="ticker" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="AAPL"></div>
+<div class="field"><label for="watch-target">Target (USD)</label><input id="watch-target" name="target" inputmode="decimal" placeholder="200.00"></div>
+<div class="field"><label for="watch-direction">Direction</label><select id="watch-direction" name="direction"><option value="above">At or above</option><option value="below">At or below</option></select></div>
+<div class="field action-field"><button class="primary" type="submit">Watch</button></div>
+</form>
+<p class="form-error" id="watch-error" role="alert" hidden></p>
+</section>
+<section class="panel"><div class="panel-heading"><div><p class="eyebrow">Tracked tickers</p><h2>Alerts</h2></div></div>
+<div class="table-wrap"><table class="value-table"><thead><tr><th>Ticker</th><th>Target</th><th>Market</th><th>Status</th><th></th></tr></thead><tbody>
+{% for s in states %}
+<tr class="{{ 'total' if s.breached else '' }}">
+<th>{{ s.ticker }}</th>
+<td>{{ s.direction }} ${{ '{:,.2f}'.format(s.target) }}</td>
+<td>{% if s.price is not none %}${{ '{:,.2f}'.format(s.price) }} <small>{{ s.price_as_of }}</small>{% else %}—{% endif %}</td>
+<td>{% if s.breached %}<strong>Alert</strong>{% elif s.price is none %}{{ s.error }}{% else %}Watching{% endif %}</td>
+<td><button class="secondary unwatch" data-ticker="{{ s.ticker }}" type="button">Remove</button></td>
+</tr>
+{% else %}
+<tr><td colspan="5">Nothing watched yet. Add a ticker above.</td></tr>
+{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

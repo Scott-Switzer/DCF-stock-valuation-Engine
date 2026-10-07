@@ -112,6 +112,7 @@
     createEditor(key);
     const item = results.get(key);
     render(item);
+    if ($("template-box")?.open) loadTemplates();
     if (baseline) assemble(key, generation);
   }
   for (const button of document.querySelectorAll(".workspace-tabs button"))
@@ -586,8 +587,12 @@
       for (const value of row.values) {
         const td = document.createElement("td");
         td.textContent = money(value);
-        if (Number.isFinite(value))
-          td.style.background = `rgba(23,103,84,${Math.min(0.3, Math.max(0.03, (value / Math.max(r.target_price_12m, 1)) * 0.1))})`;
+        if (Number.isFinite(value) && Number.isFinite(r.current_price) && r.current_price > 0) {
+          const spread = (value - r.current_price) / r.current_price;
+          const strength = Math.min(0.35, Math.max(0.04, Math.abs(spread) * 1.2));
+          td.style.background = spread >= 0 ? `rgba(23,103,84,${strength})` : `rgba(154,52,52,${strength})`;
+          td.style.color = spread >= 0 ? "#0e654e" : "#943d35";
+        }
         tr.append(td);
       }
       table.append(tr);
@@ -649,6 +654,102 @@
   $("export-xlsx").addEventListener("click", () => download("xlsx"));
   $("export-json").addEventListener("click", () => download("json"));
   $("export-csv").addEventListener("click", () => download("csv"));
+  const DCF_TEMPLATE_FIELDS = [
+    ["growth", "revenue_growth_rates"],
+    ["ebit_margin", "ebit_margins"],
+    ["da_margin", "da_margins"],
+    ["capex_margin", "capex_margins"],
+    ["nwc_margin", "nwc_margins"],
+    ["tax_rate", "tax_rates"],
+    ["net_income_margin", "net_income_margins"],
+    ["book_value_margin", "book_value_margins"],
+  ];
+  function templateToForm(key, assumptions) {
+    const source = results.get(key)?.data?.form || baseline?.form || {};
+    const form = { ...source };
+    if (key === "dcf") {
+      for (const [field, name] of DCF_TEMPLATE_FIELDS)
+        (assumptions[name] || []).forEach((v, i) => {
+          if (Number.isFinite(v)) form[`${field}_${i}`] = String(v * 100);
+        });
+      if (Number.isFinite(assumptions.wacc_override))
+        form.wacc = String(assumptions.wacc_override * 100);
+      if (Number.isFinite(assumptions.terminal_growth_rate))
+        form.terminal_growth = String(assumptions.terminal_growth_rate * 100);
+      if (Number.isFinite(assumptions.terminal_roic))
+        form.terminal_roic = String(assumptions.terminal_roic * 100);
+      if (assumptions.terminal_mode) form.terminal_mode = assumptions.terminal_mode;
+      for (const name of ["future_debt", "future_cash", "future_shares", "future_preferred", "future_minority", "future_other_assets"])
+        if (assumptions[name] !== undefined && assumptions[name] !== null && assumptions[name] !== "")
+          form[name] = String(assumptions[name]);
+    } else if (key === "ddm") {
+      (assumptions.dividend_growth_rates || []).forEach((v, i) => {
+        if (Number.isFinite(v)) form[`dividend_growth_${i}`] = String(v * 100);
+      });
+      if (Number.isFinite(assumptions.required_return))
+        form.required_return = String(assumptions.required_return * 100);
+      if (Number.isFinite(assumptions.terminal_growth_rate))
+        form.terminal_growth = String(assumptions.terminal_growth_rate * 100);
+      if (assumptions.future_shares) form.future_shares = String(assumptions.future_shares);
+    } else {
+      for (const name of ["ev_revenue", "ev_ebitda", "ev_ebit", "pe", "pb"])
+        form[`include_${name}`] = (assumptions.included_methods || []).includes(name) ? "yes" : "";
+    }
+    return form;
+  }
+  async function loadTemplates() {
+    const list = $("template-list");
+    list.replaceChildren();
+    try {
+      const r = await fetch(`/api/templates?method=${method}`);
+      const data = await r.json();
+      for (const t of data || []) {
+        const li = document.createElement("li");
+        const apply = document.createElement("button");
+        apply.type = "button";
+        apply.className = "secondary";
+        apply.textContent = `Apply ${t.name}`;
+        apply.addEventListener("click", () => {
+          const data = results.get(method)?.data || baseline;
+          if (!data) return;
+          send(method, { financials: data.financials, form: templateToForm(method, t.assumptions) });
+          $("template-status").textContent = `Applied ${t.name}.`;
+        });
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "text-button";
+        del.textContent = "Delete";
+        del.addEventListener("click", async () => {
+          await fetch(`/api/templates/${t.id}`, { method: "DELETE" });
+          loadTemplates();
+        });
+        li.append(apply, " ", del);
+        list.append(li);
+      }
+      if (!list.children.length) list.textContent = "No saved templates yet.";
+    } catch {
+      list.textContent = "Templates unavailable.";
+    }
+  }
+  $("template-save").addEventListener("click", async () => {
+    const name = $("template-name").value.trim();
+    const assumptions = results.get(method)?.result?.assumptions;
+    if (!name || !assumptions) {
+      $("template-status").textContent = "Name the template and load a company first.";
+      return;
+    }
+    const r = await fetch("/api/templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, method, assumptions }),
+    });
+    const data = await r.json();
+    $("template-status").textContent = r.ok ? `Saved ${name}.` : data.error || "Save failed.";
+    if (r.ok) { $("template-name").value = ""; loadTemplates(); }
+  });
+  document.getElementById("template-box")?.addEventListener("toggle", (e) => {
+    if (e.target.open) loadTemplates();
+  });
   $("management-guidance")
     .querySelector("details")
     .addEventListener("toggle", (event) => {

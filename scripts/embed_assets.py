@@ -31,6 +31,7 @@ for name in [
     "valuation_records.py",
     "xlsx_export.py",
     "compare.py",
+    "library.py",
     "suite_models.py",
     "suite_views.py",
     "embedded_assets.py",

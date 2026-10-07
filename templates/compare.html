@@ -54,4 +54,12 @@
 <tr><th>Snapshot load</th><td>{{ packet.load_summary.elapsed_seconds }}s · {{ packet.load_summary.peer_count }} peers</td></tr>
 </tbody></table></div></section>
 {% endif %}
+{% if history %}
+<section class="panel"><div class="panel-heading"><div><p class="eyebrow">Your research</p><h2>Saved {{ packet.ticker if packet else ticker }} valuations</h2></div></div>
+<div class="table-wrap"><table class="value-table"><thead><tr><th>Saved</th><th>Method</th><th>Intrinsic</th><th>12-month target</th><th>Market</th><th></th></tr></thead><tbody>
+{% for h in history %}
+<tr><th>{{ h.created_at[:10] }}</th><td>{{ h.method }}</td><td>{% if h.intrinsic_value is not none %}${{ '{:,.2f}'.format(h.intrinsic_value) }}{% else %}—{% endif %}</td><td>${{ '{:,.2f}'.format(h.target_price_12m) }}</td><td>${{ '{:,.2f}'.format(h.market_price) }}</td><td><button class="secondary share-one" data-id="{{ h.id }}" type="button">Share</button></td></tr>
+{% endfor %}
+</tbody></table></div><p class="help" id="share-status" role="status">Sharing creates a read-only link to a frozen calculation.</p></section>
+{% endif %}
 {% endblock %}

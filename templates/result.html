@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}{{ doc.company.ticker }} · DCF valuation{% endblock %}
 {% block content %}
+{% if shared %}<div class="notice">Shared read-only valuation. Figures are frozen from the original calculation.</div>{% endif %}
 <div class="result-top"><a href="/" id="edit-assumptions" class="text-link">← Edit assumptions</a><span class="tag">{{ doc.valuation_date }} · USD</span></div>
 {% if r.saved_record_id %}<div class="notice">Valuation saved privately for research. Reference: {{ r.saved_record_id }}. <a href="/privacy">Privacy details</a></div>{% endif %}
 <section class="result-intro"><p class="eyebrow">{% if r.metadata.is_demo %}Synthetic example · {% endif %}{{ doc.company.ticker }} · CUIG DCF–GGM</p><h1>{{ doc.company.name }}</h1><p class="lead">Five-year FCFF valuation. Terminal method: {{ 'CUIG year-five growth' if r.assumptions.terminal_mode=='template' else 'ROIC-normalized reinvestment' }}.</p></section>

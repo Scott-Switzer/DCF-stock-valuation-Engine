@@ -29,6 +29,7 @@ from storage import Store
 from valuation_records import save_valuation
 from xlsx_export import dcf_workbook
 from compare import football_field
+import library
 
 logger = logging.getLogger(__name__)
 app = Flask(__name__)
@@ -348,6 +349,7 @@ def rate_limit_response():
                     "compare.html",
                     ticker=dict(request.form).get("ticker", ""),
                     packet=None,
+                    history=[],
                     error=message,
                 ),
                 429,
@@ -411,6 +413,27 @@ def limit_expensive_work():
         ):
             return rate_limit_response()
         return None
+    if request.path == "/watchlist" and request.method == "GET":
+        if app.config.get("CLOUDFLARE"):
+            from pyodide.ffi import run_sync, to_js
+            from js import Object
+            from library import caller_hash
+
+            result = run_sync(
+                request.environ["workers.env"].WRITE_LIMIT.limit(
+                    to_js({"key": "dcf:" + caller_hash()}, dict_converter=Object.fromEntries)
+                )
+            )
+            if not result.success:
+                return rate_limit_response()
+            return None
+        from library import caller_hash
+
+        if not Store(app.config.get("STATE_PATH")).allow(
+            f"{caller_hash()}:watchlist", maximum=10
+        ):
+            return rate_limit_response()
+        return None
     if request.method == "POST" and (
         request.path in {"/", "/ddm", "/relative", "/compare"}
         or request.path.startswith(
@@ -420,6 +443,9 @@ def limit_expensive_work():
                 "/api/assemble/",
                 "/api/peer",
                 "/api/calculate",
+                "/api/share",
+                "/api/templates",
+                "/api/watchlist",
                 "/export/",
             )
         )
@@ -525,7 +551,9 @@ def index():
 @app.route("/compare", methods=["GET", "POST"])
 def compare_methods():
     if request.method == "GET":
-        return render_template("compare.html", ticker="", packet=None, error=None)
+        return render_template(
+            "compare.html", ticker="", packet=None, history=[], error=None
+        )
     try:
         packet = football_field(
             (request.form.get("ticker") or "").strip(),
@@ -540,6 +568,7 @@ def compare_methods():
             ticker=packet["ticker"],
             packet=packet,
             market_share=market_share,
+            history=library.history(packet["ticker"], 10),
             error=None,
         )
     except (ValueError, ProviderError) as e:
@@ -547,6 +576,7 @@ def compare_methods():
             "compare.html",
             ticker=(request.form.get("ticker") or "").strip().upper(),
             packet=None,
+            history=[],
             error=str(e),
         ), 400 if isinstance(e, ValueError) else 503
 
@@ -867,6 +897,129 @@ def export(format):
         )
     except (ValueError, TypeError) as e:
         return jsonify(error=str(e)), 400
+
+
+@app.route("/api/templates", methods=["GET", "POST"])
+def template_library():
+    try:
+        if request.method == "GET":
+            return jsonify(library.list_templates(request.args.get("method")))
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict):
+            raise ValueError("Send a template name, method and assumptions.")
+        identity = library.save_template(
+            raw.get("name"), raw.get("method"), raw.get("assumptions")
+        )
+        return jsonify(id=identity)
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.delete("/api/templates/<identity>")
+def delete_library_template(identity):
+    library.delete_template(identity)
+    return jsonify(deleted=True)
+
+
+@app.get("/api/history")
+def valuation_history():
+    return jsonify(
+        library.history(
+            (request.args.get("ticker") or "").strip().upper() or None,
+            request.args.get("limit", 20),
+        )
+    )
+
+
+@app.post("/api/share")
+def share_valuation():
+    try:
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict):
+            raise ValueError("Send a valuation id to share.")
+        token = library.create_share(raw.get("valuation_id"))
+        return jsonify(token=token, url=f"/v/{token}")
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.get("/v/<token>")
+def shared_view(token):
+    bundle = library.shared_valuation(token)
+    if bundle is None:
+        return render_template(
+            "compare.html", ticker="", packet=None, error="This shared link is unknown."
+        ), 404
+    doc, result = bundle["financials"], bundle["result"]
+    result["saved_record_id"] = None
+    payload = json.dumps(
+        {"financials": doc, "assumptions": bundle["assumptions"]}, allow_nan=False
+    )
+    if result.get("method") == "relative":
+        from suite_models import MULTIPLES
+        from suite_views import CLAIMS
+
+        return render_template(
+            "suite_result.html",
+            method="relative",
+            title="Relative valuation",
+            r=result,
+            doc=doc,
+            payload_json=payload,
+            form_json="{}",
+            multiples=MULTIPLES,
+            claims=CLAIMS,
+            shared=True,
+        )
+    if result.get("method") == "ddm":
+        from suite_models import MULTIPLES
+        from suite_views import CLAIMS
+
+        return render_template(
+            "suite_result.html",
+            method="ddm",
+            title="Dividend discount model",
+            r=result,
+            doc=doc,
+            payload_json=payload,
+            form_json="{}",
+            multiples=MULTIPLES,
+            claims=CLAIMS,
+            shared=True,
+        )
+    return render_template(
+        "result.html",
+        r=result,
+        doc=doc,
+        payload_json=payload,
+        history_fields=HISTORY_FIELDS,
+        history_labels=HISTORY_LABELS,
+        bridge_labels=BRIDGE_LABELS,
+        form_json="{}",
+        shared=True,
+    )
+
+
+@app.route("/api/watchlist", methods=["GET", "POST", "DELETE"])
+def watchlist_api():
+    try:
+        if request.method == "GET":
+            return jsonify(library.list_watch())
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict):
+            raise ValueError("Send a ticker, target and direction.")
+        if request.method == "DELETE":
+            library.remove_watch(raw.get("ticker"))
+            return jsonify(deleted=True)
+        symbol = library.set_watch(raw.get("ticker"), raw.get("target"), raw.get("direction"))
+        return jsonify(ticker=symbol)
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.get("/watchlist")
+def watchlist_page():
+    return render_template("watchlist.html", states=library.check_watch())
 
 
 @app.get("/health")
