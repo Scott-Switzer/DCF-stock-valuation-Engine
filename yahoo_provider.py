@@ -367,6 +367,16 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc
         warnings=warnings,
         capital_costs=costs,
         common_dividends={
+            "historical": [
+                {
+                    "period_end": d,
+                    "value": abs(get(d, "CommonStockDividendPaid", True))
+                    if get(d, "CommonStockDividendPaid", True) is not None
+                    else None,
+                    "shares": get(d, "DilutedAverageShares", True),
+                }
+                for d in ends
+            ],
             "value": dividends,
             "per_share": dividends / diluted if dividends is not None else None,
             "period_end": end,
