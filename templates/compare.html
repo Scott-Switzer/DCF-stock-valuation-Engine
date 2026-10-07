@@ -41,7 +41,7 @@
 <strong class="field-value">—</strong>
 {% endif %}
 </div>
-<p class="help">{{ lane.detail }}</p>
+<p class="help">{{ lane.detail }}{% if lane.band %} · Bear ${{ '{:,.2f}'.format(lane.band.Bear) if lane.band.Bear is not none else 'n/a' }} / Base ${{ '{:,.2f}'.format(lane.band.Base) if lane.band.Base is not none else 'n/a' }} / Bull ${{ '{:,.2f}'.format(lane.band.Bull) if lane.band.Bull is not none else 'n/a' }}{% endif %}</p>
 {% endfor %}
 </div>
 <p class="help">Vertical marker: dated market price ({{ '${:,.2f}'.format(packet.market_price) }}). Baselines: 5% growth, 2% terminal growth, historical-average margins, loaded capital costs.</p>
@@ -53,6 +53,19 @@
 <tr><th>Terminal growth</th><td>{{ '{:.2%}'.format(packet.assumptions.terminal_growth_rate) }}</td></tr>
 <tr><th>Snapshot load</th><td>{{ packet.load_summary.elapsed_seconds }}s · {{ packet.load_summary.peer_count }} peers</td></tr>
 </tbody></table></div></section>
+{% endif %}
+{% if packet and packet.reverse %}
+<section class="panel"><div class="panel-heading"><div><p class="eyebrow">Reverse DCF</p><h2>What the market price implies</h2></div><span class="unit">Holding other assumptions fixed</span></div>
+{% for key in ['revenue_growth', 'ebit_margin'] %}
+{% set entry = packet.reverse[key] %}
+<p><strong>{{ 'Revenue growth' if key == 'revenue_growth' else 'EBIT margin' }}:</strong>
+{% if entry.status == 'solved' %}
+{{ '{:.1%}'.format(entry.implied) }} implied vs {{ '{:.1%}'.format(entry.historical_mean) }} historical mean.
+{% else %}
+{{ entry.detail }}
+{% endif %}</p>
+{% endfor %}
+<p class="help">Bisection over the model range; a single uniform driver, so treat it as a hurdle check, not a forecast.</p></section>
 {% endif %}
 {% if history %}
 <section class="panel"><div class="panel-heading"><div><p class="eyebrow">Your research</p><h2>Saved {{ packet.ticker if packet else ticker }} valuations</h2></div></div>

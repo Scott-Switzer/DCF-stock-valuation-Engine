@@ -37,7 +37,29 @@ def baseline_dcf_assumptions(doc, wacc):
     )
 
 
-def football_field(ticker, asof=None):
+def coerce_dcf_assumptions(doc, raw, wacc):
+    """Validate user-supplied DCF assumptions; fall back to baselines."""
+    from app import assumptions_from_json
+
+    if not isinstance(raw, dict) or not raw:
+        return baseline_dcf_assumptions(doc, wacc), False
+    merged = asdict(baseline_dcf_assumptions(doc, wacc))
+    merged.update({k: v for k, v in raw.items() if v is not None})
+    return assumptions_from_json(merged), True
+
+
+def scenario_band(doc, base, delta):
+    """Bear/base/bull variant: shift growth and EBIT margins together."""
+    from dataclasses import replace
+
+    return replace(
+        base,
+        revenue_growth_rates=[g + delta for g in base.revenue_growth_rates],
+        ebit_margins=[m + delta for m in base.ebit_margins],
+    )
+
+
+def football_field(ticker, asof=None, dcf_assumptions=None):
     from auto_loading import load_method
     from app import evaluate
 
@@ -46,10 +68,18 @@ def football_field(ticker, asof=None):
     doc = bundle["financials"]
     costs = bundle["load_summary"].get("capital_costs", {})
     wacc = costs.get("wacc") or 0.065
-    dcf_assumptions = baseline_dcf_assumptions(doc, wacc)
+    dcf_assumptions, custom = coerce_dcf_assumptions(doc, dcf_assumptions, wacc)
     lanes = []
+    band_results = {}
     try:
         result = evaluate(deepcopy(doc), deepcopy(dcf_assumptions))
+        for name, delta in [("Bear", -0.02), ("Base", 0.0), ("Bull", 0.02)]:
+            try:
+                band_results[name] = evaluate(
+                    deepcopy(doc), scenario_band(doc, deepcopy(dcf_assumptions), delta)
+                )["target_price_12m"]
+            except ValueError:
+                band_results[name] = None
         lanes.append(
             {
                 "method": "dcf",
@@ -62,16 +92,17 @@ def football_field(ticker, asof=None):
         lanes.append(
             {
                 "method": "dcf",
-                "label": "DCF 12-month target",
+                "label": "DCF 12-month target" + (" (your scenario)" if custom else ""),
                 "value": result["target_price_12m"],
                 "detail": "Scenario with year-one overrides",
                 "warnings": [],
+                "band": band_results,
             }
         )
     except ValueError as exc:
         lanes.append({"method": "dcf", "label": "DCF", "value": None,
                       "detail": str(exc), "warnings": []})
-        return _packet(doc, lanes, bundle)
+        return _packet(doc, lanes, bundle, custom)
     try:
         ddm_bundle = load_method("ddm", symbol, doc["valuation_date"], snapshot=doc)
         ddm_doc = ddm_bundle["financials"]
@@ -158,10 +189,26 @@ def football_field(ticker, asof=None):
                 "warnings": [],
             }
         )
-    return _packet(doc, lanes, bundle)
+    packet = _packet(doc, lanes, bundle, custom)
+    try:
+        from reverse_dcf import solve
+
+        packet["reverse"] = {
+            "revenue_growth": solve(
+                doc, deepcopy(dcf_assumptions), doc["market"]["price"],
+                "revenue_growth",
+            ),
+            "ebit_margin": solve(
+                doc, deepcopy(dcf_assumptions), doc["market"]["price"],
+                "ebit_margin",
+            ),
+        }
+    except ValueError as exc:
+        packet["reverse"] = {"status": "unsolvable", "detail": str(exc)}
+    return packet
 
 
-def _packet(doc, lanes, bundle):
+def _packet(doc, lanes, bundle, custom):
     values = [lane["value"] for lane in lanes
               if isinstance(lane["value"], (int, float))]
     peak = max(values + [doc["market"]["price"], 0.01])
@@ -172,6 +219,7 @@ def _packet(doc, lanes, bundle):
         else:
             lane["upside"] = None
     return {
+        "custom": custom,
         "ticker": doc["company"]["ticker"],
         "company_name": doc["company"]["name"],
         "valuation_date": doc["valuation_date"],

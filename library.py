@@ -5,7 +5,10 @@ otherwise (same file as the rate-limit store). Rows are scoped by a
 caller hash so one browser cannot enumerate another's library.
 """
 
+import hashlib
+import hmac
 import json
+import os
 import secrets
 import sqlite3
 import uuid
@@ -34,14 +37,71 @@ CREATE TABLE IF NOT EXISTS watchlist (
 """
 
 
+COOKIE = "lib_id"
+
+
+def _secret():
+    return os.getenv("LIBRARY_SECRET", "dev-only-library-secret").encode()
+
+
+def _sign(value):
+    return hmac.new(_secret(), value.encode(), hashlib.sha256).hexdigest()
+
+
+LIBRARY_PATHS = (
+    "/api/templates", "/api/history", "/api/share", "/api/watchlist",
+    "/watchlist", "/compare",
+)
+
+
 def caller_hash():
+    """Stable per-browser library owner; falls back to the legacy scope."""
     from flask import request, current_app
 
+    fresh = request.environ.get("lib.new_identity")
+    if fresh:
+        return f"lib:{fresh}"
+    raw = request.cookies.get(COOKIE, "")
+    if raw and "." in raw:
+        identity, signature = raw.split(".", 1)
+        if hmac.compare_digest(signature, _sign(identity)):
+            return f"lib:{identity}"
     if current_app.config.get("CLOUDFLARE"):
         return request.environ["dcf.client_hash"]
     from datetime import date
 
     return f"local:{request.remote_addr}:{date.today().isoformat()}"
+
+
+def ensure_identity():
+    """Mint the owner identity before the request so reads and writes share a scope."""
+    from flask import request
+
+    if not request.path.startswith(LIBRARY_PATHS):
+        return
+    raw = request.cookies.get(COOKIE, "")
+    if raw and "." in raw:
+        identity, signature = raw.split(".", 1)
+        if hmac.compare_digest(signature, _sign(identity)):
+            return
+    request.environ["lib.new_identity"] = secrets.token_urlsafe(16)
+
+
+def persist_identity(response):
+    """Set the minted owner cookie on the way out."""
+    from flask import request
+
+    fresh = request.environ.get("lib.new_identity")
+    if fresh:
+        response.set_cookie(
+            COOKIE,
+            f"{fresh}.{_sign(fresh)}",
+            max_age=5 * 365 * 24 * 3600,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+        )
+    return response
 
 
 def _local():

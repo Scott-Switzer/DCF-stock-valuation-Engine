@@ -48,6 +48,25 @@ def test_templates_crud(tmp_path):
     assert bad.status_code == 400
 
 
+def test_cookie_identity_persists_across_days(tmp_path):
+    c = client(tmp_path)
+    c.post(
+        "/api/templates",
+        json={"name": "Keep", "method": "dcf", "assumptions": ASSUMPTIONS},
+    )
+    cookie = c.get_cookie("lib_id")
+    assert cookie is not None
+    # A second client presenting the same cookie sees the same library.
+    other = app.test_client()
+    other.set_cookie("lib_id", cookie.value)
+    names = [t["name"] for t in other.get("/api/templates").get_json()]
+    assert names == ["Keep"]
+    # A tampered cookie is rejected and mints a fresh, empty scope.
+    forged = app.test_client()
+    forged.set_cookie("lib_id", cookie.value[:-2] + "xx")
+    assert forged.get("/api/templates").get_json() == []
+
+
 def test_share_requires_owned_valuation(tmp_path):
     c = client(tmp_path)
     missing = c.post("/api/share", json={"valuation_id": "nope"})
@@ -91,8 +110,15 @@ def test_shared_view_renders_saved_record(tmp_path):
     result = evaluate(doc, a)
     from valuation_records import record_values
 
+    c.get("/api/history")  # mints the signed owner cookie
+    cookie = c.get_cookie("lib_id")
+    assert cookie is not None
     with app.test_request_context(
-        "/", environ_overrides={"REMOTE_ADDR": "127.0.0.1"}
+        "/",
+        environ_overrides={
+            "REMOTE_ADDR": "127.0.0.1",
+            "HTTP_COOKIE": f"lib_id={cookie.value}",
+        },
     ):
         values = record_values(doc, a, result, library.caller_hash())
         library.history()

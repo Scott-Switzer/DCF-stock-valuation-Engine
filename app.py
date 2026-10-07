@@ -363,6 +363,13 @@ def rate_limit_response():
 
 
 @app.before_request
+def assign_library_identity():
+    from library import ensure_identity
+
+    ensure_identity()
+
+
+@app.before_request
 def limit_expensive_work():
     preview_request = request.method == "POST" and request.path.startswith("/api/preview/")
     reference_request = request.method == "GET" and request.path.startswith(
@@ -443,6 +450,8 @@ def limit_expensive_work():
                 "/api/assemble/",
                 "/api/peer",
                 "/api/calculate",
+                "/api/compare",
+                "/api/reverse",
                 "/api/share",
                 "/api/templates",
                 "/api/watchlist",
@@ -490,6 +499,9 @@ def security_headers(response):
         )
     elif request.path.startswith(("/api/", "/export/")) or request.method == "POST":
         response.headers["Cache-Control"] = "no-store"
+    from library import persist_identity
+
+    persist_identity(response)
     return response
 
 
@@ -555,9 +567,16 @@ def compare_methods():
             "compare.html", ticker="", packet=None, history=[], error=None
         )
     try:
+        posted_assumptions = None
+        if request.form.get("assumptions"):
+            try:
+                posted_assumptions = json.loads(request.form["assumptions"])
+            except ValueError:
+                raise ValueError("Workspace assumptions were invalid.") from None
         packet = football_field(
             (request.form.get("ticker") or "").strip(),
             datetime.now(timezone.utc).date().isoformat(),
+            dcf_assumptions=posted_assumptions,
         )
         market_share = packet["market_price"] / max(
             [lane["value"] for lane in packet["lanes"]
@@ -579,6 +598,53 @@ def compare_methods():
             history=[],
             error=str(e),
         ), 400 if isinstance(e, ValueError) else 503
+
+
+@app.post("/api/compare")
+def compare_api():
+    """Football field from the workspace's live snapshot and assumptions."""
+    try:
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict):
+            raise ValueError("Send a ticker and the workspace DCF assumptions.")
+        packet = football_field(
+            raw.get("ticker"),
+            datetime.now(timezone.utc).date().isoformat(),
+            dcf_assumptions=raw.get("assumptions"),
+        )
+        return jsonify(packet)
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+    except ProviderError as e:
+        return jsonify(error=str(e)), 503
+
+
+@app.post("/api/reverse")
+def reverse_api():
+    """Implied growth/margin for the market price, holding the rest fixed."""
+    try:
+        from reverse_dcf import solve
+
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict):
+            raise ValueError("Send financials, assumptions and a market price.")
+        doc, a = raw.get("financials"), assumptions_from_json(raw.get("assumptions"))
+        from dcf_loader import parse_document
+
+        parse_document(doc)
+        price = raw.get("market_price")
+        try:
+            price = float(price)
+        except (TypeError, ValueError):
+            raise ValueError("A positive market price is required.") from None
+        return jsonify(
+            {
+                "revenue_growth": solve(doc, a, price, "revenue_growth"),
+                "ebit_margin": solve(doc, a, price, "ebit_margin"),
+            }
+        )
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
 
 
 @app.post("/api/calculate")

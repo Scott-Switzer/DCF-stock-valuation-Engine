@@ -260,6 +260,7 @@
         $("live-result").hidden = true;
         $("save-valuation").disabled = true;
         $("export-xlsx").disabled = true;
+        $("compare-scenario").disabled = true;
         $("export-json").disabled = true;
         $("export-csv").disabled = true;
         $("preview-status").textContent = "Updating company inputs…";
@@ -316,6 +317,7 @@
     $("export-xlsx").disabled = !item?.valid;
     $("export-json").disabled = !item?.valid;
     $("export-csv").disabled = !item?.valid;
+    $("compare-scenario").disabled = !item?.valid;
     $("save-status").textContent = item?.saved ? "Valuation saved." : "";
     if (!item?.result) {
       $("live-result").hidden = true;
@@ -651,6 +653,25 @@
     exportForm.requestSubmit();
     exportForm.remove();
   }
+  $("compare-scenario").addEventListener("click", async () => {
+    const item = results.get(method);
+    if (!item?.valid) return;
+    const form = new FormData();
+    form.set("ticker", baseline.financials.company.ticker);
+    form.set("assumptions", JSON.stringify(item.result.assumptions));
+    const target = document.createElement("form");
+    target.method = "POST";
+    target.action = "/compare";
+    for (const [k, v] of form.entries()) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = k;
+      input.value = v;
+      target.append(input);
+    }
+    document.body.append(target);
+    target.requestSubmit();
+  });
   $("export-xlsx").addEventListener("click", () => download("xlsx"));
   $("export-json").addEventListener("click", () => download("json"));
   $("export-csv").addEventListener("click", () => download("csv"));
