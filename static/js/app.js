@@ -203,5 +203,28 @@ if (valuationForm) {
     document.getElementById('calculate-button').disabled = true;
     document.getElementById('calculate-button').textContent = 'Calculating…';
   });
+  const modeSelect = document.getElementById('mode');
+  const sourceHelp = document.getElementById('source-description');
+  const providerStatus = document.getElementById('provider-status');
+  const MODE_HELP = {
+    auto: 'Automatic loading combines statements, market data and starting assumptions. Review any warnings before calculating. Other sources and JSON import remain available.',
+    sample: 'Offline synthetic example. No keys or internet required.',
+    manual: 'Enter financials from your own annual reports. Missing input is rejected; zero only when verified.',
+    sec: 'SEC companyfacts adapter. Set EDGAR_IDENTITY on the server; missing fields stay blank for manual completion.',
+    zion: 'Custom private company API (Zion-compatible). Requires server-side ZION_API_BASE_URL (HTTPS) plus optional ZION_API_TOKEN. This is not a public Zion product; unconfigured servers return HTTP 503.',
+    api: 'Configured normalized financial API (DCF_API_BASE_URL plus optional DCF_API_TOKEN). See docs/provider-contract.md.'
+  };
+  const updateSourceHelp = () => { if (modeSelect && sourceHelp) sourceHelp.textContent = MODE_HELP[modeSelect.value] || MODE_HELP.auto; };
+  if (modeSelect) modeSelect.addEventListener('change', updateSourceHelp);
+  updateSourceHelp();
+  fetch('/api/providers').then(r => r.ok ? r.json() : null).then(data => {
+    if (!data || !providerStatus) return;
+    const zion = data.providers?.zion?.configured;
+    const api = data.providers?.api?.configured;
+    const parts = [];
+    parts.push(zion ? 'Custom company API: configured' : 'Custom company API: not configured');
+    parts.push(api ? 'Financial API: configured' : 'Financial API: not configured');
+    providerStatus.textContent = parts.join(' · ') + '.';
+  }).catch(() => { if (providerStatus) providerStatus.hidden = true; });
   preview();updateGrowth();
 }

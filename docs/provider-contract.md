@@ -77,7 +77,12 @@ Results contain present/12-month enterprise and equity values, per-share values,
 
 `POST /export/json` and `POST /export/csv` accept the same JSON body as calculation. CSV is readable in Excel; JSON contains complete financials/assumptions/results and is the lossless interchange format. Browser downloads use an escaped posted payload. Text fields in CSV are protected against spreadsheet-formula interpretation.
 
-## Zion / MiniBloomberg adapter
+## Custom company API (Zion-compatible) adapter
+
+> This is a private custom API, not a public Zion product. The UI label is
+> `Custom company API (Zion-compatible)` and `GET /api/providers` reports
+> whether `ZION_API_BASE_URL` is configured. Unconfigured deployments return
+> HTTP 503 for `provider: "zion"` loads.
 
 The adapter was based on the local owning source `zion-final/deploy/cloudflare-query/src/company_api.py` and its representative unit tests as inspected October 6, 2026. It has not yet been verified against a configured live endpoint.
 

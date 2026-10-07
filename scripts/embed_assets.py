@@ -33,6 +33,7 @@ for name in [
     "compare.py",
     "library.py",
     "reverse_dcf.py",
+    "mcp.py",
     "suite_models.py",
     "suite_views.py",
     "embedded_assets.py",

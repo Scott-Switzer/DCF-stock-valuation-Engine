@@ -373,7 +373,7 @@ def assign_library_identity():
 def limit_expensive_work():
     preview_request = request.method == "POST" and request.path.startswith("/api/preview/")
     reference_request = request.method == "GET" and request.path.startswith(
-        ("/api/references/", "/api/guidance/", "/api/company/")
+        ("/api/references/", "/api/guidance/", "/api/company/", "/api/providers")
     )
     if app.config.get("CLOUDFLARE"):
         import hashlib
@@ -452,6 +452,7 @@ def limit_expensive_work():
                 "/api/calculate",
                 "/api/compare",
                 "/api/reverse",
+                "/mcp",
                 "/api/share",
                 "/api/templates",
                 "/api/watchlist",
@@ -617,6 +618,25 @@ def compare_api():
         return jsonify(error=str(e)), 400
     except ProviderError as e:
         return jsonify(error=str(e)), 503
+
+
+@app.route("/mcp", methods=["GET", "POST"])
+def mcp_endpoint():
+    """Model Context Protocol endpoint so LLMs can value companies."""
+    from mcp import handle
+
+    if request.method == "GET":
+        response = jsonify(error="POST a JSON-RPC 2.0 message to use the MCP tools.")
+        response.status_code = 405
+        response.headers["Allow"] = "POST"
+        return response
+    raw = request.get_json(silent=True, force=True)
+    if isinstance(raw, list):
+        return jsonify([r for r in (handle(m) for m in raw) if r is not None])
+    result = handle(raw)
+    if result is None:
+        return ("", 202)
+    return jsonify(result)
 
 
 @app.post("/api/reverse")
@@ -1119,11 +1139,54 @@ def ready():
             )
             if app.config.get("CLOUDFLARE")
             else False,
-            zion_configured=bool(os.getenv("ZION_API_BASE_URL")),
-            custom_api_configured=bool(os.getenv("DCF_API_BASE_URL")),
+            zion_configured=bool(provider_value("ZION_API_BASE_URL")),
+            custom_api_configured=bool(provider_value("DCF_API_BASE_URL")),
         )
     except Exception:
         return jsonify(status="unavailable"), 503
+
+
+def provider_value(name):
+    """Server-side provider config that works locally and on Cloudflare."""
+    if app.config.get("CLOUDFLARE"):
+        try:
+            from flask import has_request_context
+
+            if has_request_context():
+                return str(getattr(request.environ.get("workers.env"), name, ""))
+        except Exception:
+            pass
+    return os.getenv(name, "")
+
+
+@app.get("/api/providers")
+def providers():
+    """Public provider status: which adapters are configured, without secrets."""
+    zion_base = provider_value("ZION_API_BASE_URL").rstrip("/")
+    api_base = provider_value("DCF_API_BASE_URL").rstrip("/")
+    return jsonify(
+        providers={
+            "auto": {"configured": True, "label": "Automatic company data"},
+            "sample": {"configured": True, "label": "Offline example"},
+            "manual": {"configured": True, "label": "Manual financials"},
+            "sec": {"configured": True, "label": "SEC company facts"},
+            "zion": {
+                "configured": bool(zion_base),
+                "label": "Custom company API (Zion-compatible)",
+                "kind": "custom_private_api",
+                "note": (
+                    "A private Zion-compatible company API. Not a public product: "
+                    "configure ZION_API_BASE_URL as an HTTPS base URL plus optional "
+                    "ZION_API_TOKEN on the server. Unconfigured deployments return HTTP 503."
+                ),
+            },
+            "api": {
+                "configured": bool(api_base),
+                "label": "Configured financial API",
+                "note": "Server-side DCF_API_BASE_URL plus optional DCF_API_TOKEN.",
+            },
+        }
+    )
 
 
 @app.errorhandler(413)

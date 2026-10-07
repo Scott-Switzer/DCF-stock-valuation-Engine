@@ -179,13 +179,14 @@ def football_field(ticker, asof=None, dcf_assumptions=None):
                 "warnings": [],
             }
         )
-    except (ProviderError, ValueError) as exc:
+    except (ProviderError, ValueError, KeyError) as exc:
         lanes.append(
             {
                 "method": "relative",
                 "label": "Relative",
                 "value": None,
-                "detail": str(exc),
+                "detail": (str(exc) if isinstance(exc, (ProviderError, ValueError))
+                             else "Peer snapshot was incomplete; reload the ticker."),
                 "warnings": [],
             }
         )
