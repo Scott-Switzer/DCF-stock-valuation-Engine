@@ -60,7 +60,7 @@
       height:
         Math.ceil(
           document.querySelector("main").getBoundingClientRect().height,
-        ) + 8,
+        ) + 24,
     });
   }
   new ResizeObserver(height).observe(document.body);
