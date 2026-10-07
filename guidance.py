@@ -70,13 +70,16 @@ class Paragraphs(HTMLParser):
             self.parts.append(data)
 
 
-def forward_period(text, filed):
-    period = re.search(
+def forward_period(text, filed, expectation_position):
+    periods = list(re.finditer(
         r"\b(next|coming)\s+(quarter|fiscal year|year)\b|\b(fiscal(?:\s+year)?|full.year|first quarter|second quarter|third quarter|fourth quarter|Q[1-4])\s*(20\d{2})\b",
         text, re.I,
-    )
-    if not period:
+    ))
+    if not periods:
         return False
+    period = min(periods, key=lambda match: min(
+        abs(match.start() - expectation_position), abs(match.end() - expectation_position)
+    ))
     if period.group(1):
         return True
     year = int(period.group(4))
@@ -94,15 +97,15 @@ def guidance_excerpt(html, filed=None):
     parser.feed(html[:1_500_000])
     for paragraph in "".join(parser.parts).split("\n"):
         text = " ".join(paragraph.split())
+        expectation = re.search(
+            r"\b(we|our company|the company)\s+(expect|expects|anticipate|anticipates|project|projects)\b",
+            text, re.I,
+        )
         if (
             40 <= len(text) <= 700
             and re.search(r"\b(revenue|sales)\b", text, re.I)
-            and re.search(
-                r"\b(we|our company|the company)\s+(expect|expects|anticipate|anticipates|project|projects)\b",
-                text,
-                re.I,
-            )
-            and forward_period(text, filed)
+            and expectation
+            and forward_period(text, filed, expectation.start())
             and not re.search(r"forward.looking|safe.harbor|risks and uncertainties", text, re.I)
         ):
             return text

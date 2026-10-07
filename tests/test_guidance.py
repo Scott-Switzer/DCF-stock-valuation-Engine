@@ -53,3 +53,8 @@ def test_guidance_rejects_past_tense_and_past_explicit_periods():
         assert guidance_excerpt('<p>' + text + '</p>', '2026-07-30') is None
     text = 'For fiscal year 2027, we expect revenue between $10 and $12 billion.'
     assert guidance_excerpt('<p>' + text + '</p>', '2026-07-30') == text
+
+
+def test_future_outlook_after_historical_comparison_is_retained():
+    text = 'During fiscal 2025 revenue grew strongly; for fiscal year 2027, we expect revenue between $10 and $12 billion.'
+    assert guidance_excerpt('<p>' + text + '</p>', '2026-07-30') == text

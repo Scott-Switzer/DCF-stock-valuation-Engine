@@ -595,13 +595,13 @@
     schedule();
     height();
   }
-  document.addEventListener("financials-loaded", () => {
+  document.addEventListener("financials-loaded", (event) => {
     if (filling) return;
     try {
       const loaded = JSON.parse(field("base_document").value);
       doc = loaded;
       analysts = null;
-      preciseRates.clear();
+      if (!event.detail?.preserveRates) preciseRates.clear();
       scaledInputs.clear();
       version++;
       if (request) request.abort();
