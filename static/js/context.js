@@ -34,8 +34,19 @@
         input.readOnly=!unlocked;
         input.classList.toggle('sourced-input',!unlocked);
         const yearMatch=name.match(/_(\d)$/);
-        const period=name.startsWith('h_')&&yearMatch ? doc.historical?.[Number(yearMatch[1])]?.period_end : doc.market?.price_as_of;
-        input.title=`${doc.source?.name||'Manual input'}${period?' · '+period:''}. Full metric provenance is in Source document and provenance. ${unlocked?'Editing enabled.':'Unlock sourced inputs to override.'}`;
+        let origin=doc.source?.name||'Manual input';
+        let dated=`Retrieved ${doc.source?.retrieved_at||doc.source?.available_at||doc.valuation_date}`;
+        if((name.startsWith('h_')||name.startsWith('period_'))&&yearMatch) dated=`Fiscal period ${doc.historical?.[Number(yearMatch[1])]?.period_end||'unavailable'}`;
+        else if(name.startsWith('peer_')&&yearMatch) {
+          const peer=doc.comparables?.[Number(yearMatch[1])];
+          origin=peer?.source||origin;
+          dated=`Peer observation ${peer?.as_of||'unavailable'}`;
+        } else if(['price','price_as_of'].includes(name)) dated=`Market observation ${doc.market?.price_as_of||'unavailable'}`;
+        else if(['base_common_dividends','dividend_as_of'].includes(name)) dated=`Dividend fiscal period ${doc.source?.common_dividends?.period_end||doc.dividend_as_of||'unavailable'}`;
+        else if(name.startsWith('historical_')) dated=`Fiscal period ${doc.target?.historical_as_of||'unavailable'}`;
+        else if(['diluted_shares','shares_basis'].includes(name)) dated=doc.market?.shares_basis||'Share basis unavailable';
+        else if(['bridge_as_of','short_term_debt','long_term_debt','cash','preferred_equity','minority_interest','other_nonoperating_assets'].includes(name)) dated=`Balance-sheet period ${doc.bridge?.as_of||'unavailable'}`;
+        input.title=`${origin} · ${dated}. Full metric provenance is in Source document and provenance. ${unlocked?'Editing enabled.':'Unlock sourced inputs to override.'}`;
       }
       document.getElementById('sourced-origin').textContent=blank?'Manual model: enter verified financials.':`${doc.source.name} · retrieved ${doc.source.retrieved_at||doc.source.available_at||doc.valuation_date}. ${unlocked?'Overrides enabled; changes remain distinct from provider observations.':'Financials are locked; forecast assumptions stay editable.'}`;
     };
