@@ -8,6 +8,11 @@
     "python_workers"
   ],
   "workers_dev": true,
+  "ratelimits": [
+    {"name": "PREVIEW_LIMIT", "namespace_id": "1946100601", "simple": {"limit": 120, "period": 60}},
+    {"name": "REFERENCE_LIMIT", "namespace_id": "1946100602", "simple": {"limit": 20, "period": 60}},
+    {"name": "WRITE_LIMIT", "namespace_id": "1946100603", "simple": {"limit": 10, "period": 60}}
+  ],
   "d1_databases": [
     {
       "binding": "DB",
