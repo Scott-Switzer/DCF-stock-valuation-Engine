@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: dcf-stock-valuation-engine
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-local.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 35 --access-logfile - app:app
+    healthCheckPath: /ready
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DCF_STATE_PATH
+        value: /tmp/dcf-state.sqlite3
+      - key: TRUSTED_PROXY_HOPS
+        value: "0"

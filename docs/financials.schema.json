@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/dcf-financials-v1",
+  "title": "DCF financials v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "units",
+    "valuation_date",
+    "company",
+    "market",
+    "bridge",
+    "historical",
+    "source"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "dcf-financials-v1"
+    },
+    "units": {
+      "const": "absolute"
+    },
+    "valuation_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "company": {
+      "type": "object",
+      "required": [
+        "ticker",
+        "name",
+        "currency",
+        "eligible"
+      ],
+      "properties": {
+        "ticker": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "currency": {
+          "const": "USD"
+        },
+        "eligible": {
+          "const": true
+        },
+        "sector": {
+          "type": "string"
+        }
+      }
+    },
+    "market": {
+      "type": "object",
+      "required": [
+        "price",
+        "price_as_of",
+        "currency",
+        "diluted_shares",
+        "shares_basis"
+      ],
+      "properties": {
+        "price": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "diluted_shares": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "price_as_of": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency": {
+          "const": "USD"
+        },
+        "shares_basis": {
+          "type": "string"
+        }
+      }
+    },
+    "bridge": {
+      "type": "object",
+      "required": [
+        "short_term_debt",
+        "long_term_debt",
+        "cash",
+        "preferred_equity",
+        "minority_interest",
+        "other_nonoperating_assets",
+        "as_of"
+      ],
+      "properties": {
+        "short_term_debt": {
+          "type": "number",
+          "minimum": 0
+        },
+        "long_term_debt": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cash": {
+          "type": "number",
+          "minimum": 0
+        },
+        "preferred_equity": {
+          "type": "number",
+          "minimum": 0
+        },
+        "minority_interest": {
+          "type": "number",
+          "minimum": 0
+        },
+        "other_nonoperating_assets": {
+          "type": "number",
+          "minimum": 0
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "historical": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": [
+          "period_end",
+          "revenue",
+          "ebit",
+          "net_income",
+          "capex",
+          "d_and_a",
+          "nwc",
+          "book_value",
+          "tax_rate"
+        ],
+        "properties": {
+          "period_end": {
+            "type": "string",
+            "format": "date"
+          },
+          "available_at": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "object"
+          },
+          "revenue": {
+            "type": "number"
+          },
+          "ebit": {
+            "type": "number"
+          },
+          "net_income": {
+            "type": "number"
+          },
+          "capex": {
+            "type": "number"
+          },
+          "d_and_a": {
+            "type": "number"
+          },
+          "nwc": {
+            "type": "number"
+          },
+          "book_value": {
+            "type": "number"
+          },
+          "tax_rate": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "name",
+        "kind"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "synthetic",
+            "manual",
+            "sec",
+            "zion",
+            "api"
+          ]
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Runtime additionally validates chronological fiscal years, availability cutoffs, sector suitability, positive revenue, nonnegative outflows and finite outputs."
+}

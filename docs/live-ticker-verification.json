@@ -1,0 +1,38 @@
+{
+  "deployment_version": "a39ac700-f003-431c-8325-9c221ec2c782",
+  "checks": [
+    {
+      "method": "dcf",
+      "ticker": "AAPL",
+      "load_http": 200,
+      "calculate_http": 200,
+      "seconds": 4.21,
+      "peers": 0,
+      "saved_reference": null,
+      "intrinsic_value": 91.51882245427454,
+      "target_price_12m": 94.51053478001634
+    },
+    {
+      "method": "ddm",
+      "ticker": "AAPL",
+      "load_http": 200,
+      "calculate_http": 200,
+      "seconds": 2.3,
+      "peers": 0,
+      "saved_reference": null,
+      "intrinsic_value": 13.161976709518806,
+      "target_price_12m": 13.532719480411217
+    },
+    {
+      "method": "relative",
+      "ticker": "AAPL",
+      "load_http": 200,
+      "calculate_http": 200,
+      "seconds": 4.85,
+      "peers": 3,
+      "saved_reference": null,
+      "intrinsic_value": null,
+      "target_price_12m": 193.7240975916935
+    }
+  ]
+}

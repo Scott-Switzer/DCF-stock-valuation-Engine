@@ -1,125 +1,98 @@
-# DCF Valuation Engine
+# CUIG Valuation Suite
 
-A web-based Discounted Cash Flow (DCF) valuation tool that calculates 12-month target prices for publicly traded companies.
+A valuation suite with five-year unlevered discounted cash flow, dividend discount and trading-comparable models based on the **CUIG Valuation Template Fall 2026**. It shows intrinsic value today and a separate 12-month target scenario, with editable operating drivers, auditable financial sources and a replaceable data provider.
+
+**Public demo:** https://dcf-valuation-engine.scswitzer.workers.dev
+
+![Live Apple DCF](docs/screenshots/ticker-aapl-desktop.jpg)
 
 ## Features
 
-- **Interactive DCF Calculator**: Input ticker symbol and growth assumptions
-- **Real-Time Financial Data**: Fetches live data from Financial Modeling Prep API
-- **Transparent Calculations**: View detailed calculation logs for every valuation
-- **Professional Interface**: Clean, financial-themed design optimized for analysis
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- Enter a ticker to load three annual periods, market price, diluted shares, capital claims and estimated capital costs. Review the source notes, then edit your forecast assumptions.
+- DDM based on common-dividend forecasts, equity-return discounting and separate present/12-month values.
+- Relative valuation with EV/Revenue, EV/EBITDA, EV/EBIT, P/E and P/B, peer means, selectable methods and financial-firm restrictions.
+- DCF-to-method handoff reuses identity/forward forecasts while requiring sourced dividends and peers.
 
-## Technology Stack
+- Three historical fiscal years and five years of individually editable revenue growth, EBIT, net-income, book-value, D&A, CapEx, working-capital and tax assumptions.
+- Present and 12-month enterprise-to-common-equity bridges, including preferred claims, noncontrolling interests, other nonoperating assets and diluted shares.
+- CUIG Gordon-growth terminal convention, plus optional ROIC-based terminal reinvestment normalization.
+- WACC/terminal-growth sensitivity and explicitly defined bear/base/bull cases.
+- Offline synthetic example, manual entry, JSON import, SEC companyfacts adapter, and an optional Zion/MiniBloomberg company-packet adapter.
+- CSV export for Excel and complete JSON export containing inputs, assumptions, results and source provenance.
+- Local ticker autocomplete, accessible input labels, mobile layouts and preserved inputs on errors.
+- Pure Python calculation engine, Flask API, public Cloudflare Python Worker, private D1 valuation records, shared edge rate limits, regression tests and GitHub Actions.
 
-- **Backend**: Flask (Python)
-- **Frontend**: HTML, CSS, JavaScript
-- **Data Source**: Financial Modeling Prep API
-- **Hosting**: Render (free tier)
+## Run locally
 
-## Local Development
+Python 3.12 or 3.13 and Node.js (only for JavaScript syntax validation in development).
 
-### Prerequisites
-
-- Python 3.9 or higher
-- pip (Python package manager)
-
-### Setup
-
-1. Clone the repository:
 ```bash
-git clone <your-repo-url>
-cd dcf_webapp
-```
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-3. Run the application:
-```bash
+git clone https://github.com/Scott-Switzer/DCF-stock-valuation-Engine.git
+cd DCF-stock-valuation-Engine
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
 python app.py
 ```
 
-4. Open your browser and navigate to `http://localhost:5000`
+Open <http://127.0.0.1:5000>. The initial form starts with ticker loading. Choose **Offline example** to run without keys or internet. On the form, **5 means 5%**. Financial amounts and diluted shares use **absolute units**, not millions. JSON and CLI rates use decimals: `0.05` means 5%.
 
-## Deployment to Render
-
-### Step 1: Prepare Your Repository
-
-1. Create a GitHub account if you don't have one
-2. Create a new repository on GitHub
-3. Initialize git in your project folder and push:
 ```bash
-cd dcf_webapp
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin <your-github-repo-url>
-git push -u origin main
+python run_dcf.py
+python run_dcf.py --financials data/demo.json --wacc 0.065 --growth 0.05 0.05 0.05 0.05 0.05
+pytest -q
+ruff check .
+node --check static/js/app.js
 ```
 
-### Step 2: Deploy on Render
+The old FMP/Yahoo/edgartools loader and console scraping have been replaced. No FMP key or Yahoo access is required for sample/manual mode. Local hosting uses Flask, requests and Gunicorn. Cloudflare hosting uses the Python Workers runtime and WSGI adapter; provider requests use bounded Workers fetch.
 
-1. Go to [render.com](https://render.com) and sign up (free)
-2. Click "New +" and select "Web Service"
-3. Connect your GitHub account and select your repository
-4. Configure the service:
-   - **Name**: dcf-valuation-engine (or your preferred name)
-   - **Environment**: Python 3
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `gunicorn app:app`
-   - **Plan**: Free
+## Data providers
 
-5. Add Environment Variable (optional, recommended for production):
-   - Key: `FMP_API_KEY`
-   - Value: Your Financial Modeling Prep API key
+**Automatic / Yahoo:** No key required. Current USD equity snapshots populate financials and compute weekly-return beta, Treasury yield, CAPM cost of equity, debt cost and WACC. Annual common dividends populate DDM; a starter peer set populates RV. Default equity risk premium (5%), credit spread (1.5%) and forecast growth (5%) are visible assumptions. ROE is an inspectable accounting ratio, not a required return. Yahoo endpoints are unofficial and can change or rate-limit; data coverage is not guaranteed. Automatic historical point-in-time loading is rejected. Missing critical observations produce actionable errors rather than invented zeros.
 
-6. Click "Create Web Service"
+**Manual / sample:** Enter financials from your own annual reports. Missing input is rejected; zero is accepted only as an explicit numerical input. Import a `dcf-financials-v1` JSON document using the form. Downloads can be re-used as inputs by importing the `financials` object from a complete valuation export.
 
-Your app will be live at: `https://your-app-name.onrender.com`
+**SEC:** Set `EDGAR_IDENTITY` to your name and contact email in your shell or deployment environment. The app calls SEC's documented companyfacts API directly, selects annual USD facts available by the valuation date, and preserves tag/accession/filing provenance. No SEC key is required. Confirm company eligibility, enter a dated market price, and review diluted shares. Missing taxonomy fields remain blank for manual completion. SEC annual weighted-average diluted shares may need adjustments for current dilution. Debt classification, leases and D&A coverage require filing review.
 
-**Note**: The free tier may have cold starts (takes ~30 seconds to wake up after inactivity).
+**Zion / MiniBloomberg:** Optional server-side `ZION_API_BASE_URL` and `ZION_API_TOKEN`. The adapter reads `/v1/company/{ticker}` with an explicit point-in-time cutoff, maps annual metric observations, preserves release/observation provenance, and uses a dated price when present. Neither the endpoint nor credentials are embedded in frontend code. Configuration and a live integration acceptance check are required before claiming a connected deployment. Partial coverage remains incomplete rather than becoming zeros.
 
-## Usage
+**Custom normalized API:** Optional server-side `DCF_API_BASE_URL` and `DCF_API_TOKEN`, exposing `/v1/valuation/financials/{ticker}`. See [the provider contract](docs/provider-contract.md) and [JSON schema](docs/financials.schema.json). This makes future provider changes independent of the model.
 
-1. Enter a stock ticker symbol (e.g., AAPL, MSFT, GOOGL)
-2. Input revenue growth rates for the next 5 years (as decimals, e.g., 0.05 for 5%)
-3. Enter the terminal growth rate (typically 2-3%)
-4. Click "Calculate Valuation"
-5. Review the 12-month target price and detailed metrics
-6. Click "View Detailed Calculations" to see the full DCF breakdown
+Environment variables are read directly. `.env.example` documents names, but the app does not automatically load a populated `.env` file. Do not commit keys or licensed datasets.
 
-## API Rate Limits
+## Methodology and limits
 
-The application uses the Financial Modeling Prep API with the following considerations:
-- Free tier has rate limits (typically 250 requests/day)
-- Market return and risk-free rate are set to defaults due to API limitations
-- Historical data is limited to the last 5 years
+Read [DCF alignment](docs/cuig-alignment.md) and [DDM/relative alignment](docs/ddm-relative-alignment.md) for exact worksheet references, formula reconciliation and intentional differences.
 
-## Future Enhancements
+- End-of-year cash-flow discounting. Forecast periods start one year from the valuation date; fiscal-year stubs are not modeled.
+- Automatic WACC combines sourced market/financial inputs with explicit premium/spread assumptions and remains editable, as required by CUIG. Latest missing interest expense uses Treasury yield plus credit spread; older expense is not silently carried forward.
+- Template terminal FCFF is year-five FCFF × (1 + g). Normalized mode uses terminal NOPAT × (1 − g / terminal ROIC). Terminal FCFF must be positive; terminal growth must be below WACC.
+- 12-month target excludes year-one FCFF and discounts remaining flows one fewer year. Current debt/cash/claims/shares carry forward unless overridden. This is an assumption-dependent valuation scenario, not a stock-price forecast.
+- Loss-period tax benefits follow the CUIG formula. Assess actual tax-loss utilization. Negative common equity is exposed; per-share value is floored at zero.
+- USD operating companies only. Banks, insurers, REITs, funds and partnerships need other models. Automatic loading checks SEC SIC classification when available; unavailable classification needs user review. Starter peers also need review.
+- The sample, cases and tests establish formula behavior. They do not establish investment returns or accurate forecasts for all companies. No automatic financial recommendation is made.
 
-Potential features to add:
-- User authentication and saved valuations
-- Multiple valuation models (DDM, Comparable Company Analysis, etc.)
-- Scenario analysis and sensitivity tables
-- Excel export functionality
-- Portfolio tracking
-- Comparison with analyst estimates
+## API and exports
 
-## Data Sources & Disclaimer
+`POST /api/load/{dcf|ddm|relative}` loads a ticker and returns `{financials, form, warnings, load_summary}` without saving a valuation.
 
-- Financial data provided by Financial Modeling Prep API
-- Market data and calculations are for educational purposes only
-- This tool does not constitute financial advice
-- Always conduct thorough research before making investment decisions
+`GET /api/sample`, `GET /api/search?q=AAPL`, `POST /api/financials`, `POST /api/calculate`, `POST /export/csv`, `POST /export/json`. Invalid input returns HTTP 400, provider failure HTTP 503, and rate limits HTTP 429. See [API examples](docs/provider-contract.md).
 
-## License
+Exports retain full numeric precision; the UI rounds money for readability. They include the active assumptions and warnings. CSV opens in Excel; it is not a formula-driven `.xlsx` replica of the supplied workbook.
 
-MIT License - Feel free to modify and use for your own projects
+## Deploy
 
-## Support
+[Cloudflare deployment guide](docs/deployment.md). The public Worker supports ticker-first DCF/DDM/RV, sample/manual calculations, SEC statement loading and private D1 persistence. Optional Zion integration remains unconfigured. Docker and `render.yaml` are alternative hosting recipes.
 
-For issues or questions, please open an issue on GitHub or contact the maintainer.
+```bash
+gunicorn --bind 0.0.0.0:5000 --workers 2 --threads 2 --timeout 35 app:app
+```
+
+Public calculations save inputs, assumptions, model version and results to private D1 storage with a visible privacy notice. Synthetic origins are flagged and repeat submissions are deduplicated. Raw IP addresses are not stored in valuation records. See [research limitations](docs/valuation-research.md). The historical suspended Render service has been replaced as the advertised demo.
+
+## Future valuation suite
+
+The normalized company document, pure calculation engine and structured API outputs are the foundation for additional methods. DCF, DDM and trading comparables are implemented. A combined football-field view and additional sector-specific methods remain future work. They will need their own assumptions, suitability checks and reconciliation tests rather than reusing FCFF for every sector.
+
+MIT licensed. The CUIG workbook is a user-supplied reference and is not redistributed or modified. Public provider data remains subject to each provider's terms and access policies.

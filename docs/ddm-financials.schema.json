@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ddm-financials-v1",
+  "title": "CUIG ddm financials v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "units",
+    "valuation_date",
+    "company",
+    "market",
+    "source",
+    "base_common_dividends",
+    "dividend_as_of"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ddm-financials-v1"
+    },
+    "units": {
+      "const": "absolute"
+    },
+    "valuation_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "company": {
+      "type": "object",
+      "required": [
+        "ticker",
+        "name",
+        "currency",
+        "eligible"
+      ],
+      "properties": {
+        "ticker": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "currency": {
+          "const": "USD"
+        },
+        "eligible": {
+          "const": true
+        },
+        "sector": {
+          "type": "string"
+        }
+      }
+    },
+    "market": {
+      "type": "object",
+      "required": [
+        "price",
+        "price_as_of",
+        "currency",
+        "diluted_shares",
+        "shares_basis"
+      ],
+      "properties": {
+        "price": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "diluted_shares": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "price_as_of": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency": {
+          "const": "USD"
+        },
+        "shares_basis": {
+          "type": "string"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "name",
+        "kind"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "synthetic",
+            "manual",
+            "sec",
+            "zion",
+            "api"
+          ]
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "available_at": {
+          "type": "string",
+          "description": "Information availability date or timestamp; must not follow valuation_date."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "sec",
+                  "zion",
+                  "api"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "available_at"
+            ]
+          }
+        }
+      ]
+    },
+    "base_common_dividends": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "dividend_as_of": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "$comment": "Runtime additionally checks method suitability, finite numbers, dates, selected forward denominators and duplicate peers."
+}
