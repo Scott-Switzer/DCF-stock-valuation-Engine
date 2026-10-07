@@ -85,7 +85,7 @@ The workspace keeps the existing audited forms in same-origin editors, isolating
 
 ## API and exports
 
-`POST /api/load/{dcf|ddm|relative}` loads a ticker and returns `{financials, form, warnings, load_summary}` without saving a valuation.
+`POST /api/load/{dcf|ddm|relative}` loads a ticker and returns `{financials, form, warnings, load_summary}` without saving a valuation. `POST /api/compare/batch` values up to 8 tickers per call. LLM assistants use `POST /mcp` (see `GET /.well-known/mcp.json`); the full guide is [docs/workflow.md](docs/workflow.md). Provider status is at `/providers` and `GET /api/providers`.
 
 `GET /api/sample`, `GET /api/search?q=AAPL`, `POST /api/financials`, `POST /api/calculate`, `POST /export/csv`, `POST /export/json`. Invalid input returns HTTP 400, provider failure HTTP 503, and rate limits HTTP 429. See [API examples](docs/provider-contract.md).
 

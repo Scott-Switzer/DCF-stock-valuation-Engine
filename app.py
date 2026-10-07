@@ -601,6 +601,45 @@ def compare_methods():
         ), 400 if isinstance(e, ValueError) else 503
 
 
+@app.post("/api/compare/batch")
+def compare_batch_api():
+    """Football-field summaries for up to 8 tickers in one call."""
+    from dcf_loader import ProviderError, ticker_symbol
+
+    raw = request.get_json(silent=True)
+    if not isinstance(raw, dict):
+        return jsonify(error="Send a JSON object with a tickers array."), 400
+    tickers = raw.get("tickers")
+    if not isinstance(tickers, list) or not 1 <= len(tickers) <= 8:
+        return jsonify(error="Send 1 to 8 tickers."), 400
+    asof = datetime.now(timezone.utc).date().isoformat()
+    results = []
+    for entry in tickers:
+        try:
+            symbol = ticker_symbol(entry)
+        except ValueError as e:
+            results.append({"ticker": str(entry)[:12], "error": str(e)})
+            continue
+        try:
+            packet = football_field(symbol, asof)
+        except (ProviderError, ValueError, KeyError) as e:
+            results.append({"ticker": symbol, "error": str(e)})
+            continue
+        results.append(
+            {
+                "ticker": packet["ticker"],
+                "company_name": packet.get("company_name"),
+                "market_price": packet.get("market_price"),
+                "lanes": [
+                    {"label": lane["label"], "value": lane["value"],
+                     "upside": lane.get("upside")}
+                    for lane in packet["lanes"]
+                ],
+            }
+        )
+    return jsonify(asof=asof, results=results)
+
+
 @app.post("/api/compare")
 def compare_api():
     """Football field from the workspace's live snapshot and assumptions."""
@@ -1186,6 +1225,31 @@ def providers():
                 "note": "Server-side DCF_API_BASE_URL plus optional DCF_API_TOKEN.",
             },
         }
+    )
+
+
+@app.get("/providers")
+def providers_page():
+    """Server-rendered provider status; no secrets are exposed."""
+    return render_template(
+        "providers.html",
+        zion_configured=bool(provider_value("ZION_API_BASE_URL")),
+        custom_api_configured=bool(provider_value("DCF_API_BASE_URL")),
+    )
+
+
+@app.get("/.well-known/mcp.json")
+def mcp_manifest():
+    """MCP discovery manifest so LLM clients can find the tools endpoint."""
+    from mcp import PROTOCOL_VERSION, SERVER_INFO, TOOLS
+
+    return jsonify(
+        name=SERVER_INFO["name"],
+        version=SERVER_INFO["version"],
+        protocolVersion=PROTOCOL_VERSION,
+        endpoint="/mcp",
+        transport="streamable-http",
+        tools=TOOLS,
     )
 
 

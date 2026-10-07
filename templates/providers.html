@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Data providers · DCF Valuation Engine{% endblock %}
+{% block content %}
+<section class="intro"><div><p class="eyebrow">Data &amp; provenance</p><h1>Data providers.</h1><p class="lead">Which adapters are configured on this deployment, and what each one needs.</p></div></section>
+<section class="panel">
+<div class="panel-heading"><div><p class="eyebrow">01 · Status</p><h2>Provider status</h2></div><span class="tag">Server-side configuration · no secrets exposed</span></div>
+<div class="table-wrap"><table class="input-table">
+<thead><tr><th scope="col">Provider</th><th scope="col">Status</th><th scope="col">What it needs</th></tr></thead>
+<tbody>
+<tr><th scope="row">Automatic company data</th><td>Available</td><td>No key. Unofficial endpoints; coverage not guaranteed.</td></tr>
+<tr><th scope="row">Offline example</th><td>Available</td><td>Nothing. Synthetic data, not a real security.</td></tr>
+<tr><th scope="row">Manual financials</th><td>Available</td><td>Your own annual reports.</td></tr>
+<tr><th scope="row">SEC company facts</th><td>Available</td><td>Server-side <code>EDGAR_IDENTITY</code> contact identity.</td></tr>
+<tr><th scope="row">Custom company API (Zion-compatible)</th><td>{% if zion_configured %}Configured{% else %}Not configured{% endif %}</td><td>Server-side <code>ZION_API_BASE_URL</code> (HTTPS) plus optional <code>ZION_API_TOKEN</code>. A private custom API, not a public Zion product. Unconfigured deployments return HTTP 503.</td></tr>
+<tr><th scope="row">Configured financial API</th><td>{% if custom_api_configured %}Configured{% else %}Not configured{% endif %}</td><td>Server-side <code>DCF_API_BASE_URL</code> plus optional <code>DCF_API_TOKEN</code>. See the provider contract.</td></tr>
+</tbody>
+</table></div>
+<p class="help">Machine-readable status: <code>GET /api/providers</code>. Full adapter contract: <a href="https://github.com/Scott-Switzer/DCF-stock-valuation-Engine/blob/main/docs/provider-contract.md">docs/provider-contract.md</a>. Workflow guide: <a href="https://github.com/Scott-Switzer/DCF-stock-valuation-Engine/blob/main/docs/workflow.md">docs/workflow.md</a>.</p>
+</section>
+{% endblock %}
