@@ -134,7 +134,7 @@ def test_forms_remove_collection_banner_keep_privacy_and_explicit_unlock():
     from app import app
 
     with app.test_client() as client:
-        for route in ["/", "/ddm", "/relative"]:
+        for route in ["/?embedded=1", "/ddm?embedded=1", "/relative?embedded=1"]:
             response = client.get(route)
             html = response.get_data(as_text=True)
             assert response.status_code == 200
@@ -172,10 +172,10 @@ def test_nullable_modules_and_trend_entries_are_safe():
     assert parse_analysts(page(packet), "TEST")["revenue"] == []
 
 
-def test_known_peer_candidates_require_business_overlap_and_avoid_duplicate_issuer():
+def test_four_peer_candidates_include_imperfect_fits_and_avoid_duplicate_issuer():
     from auto_loading import starter_peers
 
-    assert starter_peers("AAPL", None)[1] == ["DELL", "HPQ"]
+    assert starter_peers("AAPL", None)[1] == ["DELL", "HPQ", "HPE", "MSFT"]
     assert "GOOG" not in starter_peers("GOOGL", None)[1]
     assert {"MSFT", "WMT"} <= set(starter_peers("AMZN", None)[1])
 

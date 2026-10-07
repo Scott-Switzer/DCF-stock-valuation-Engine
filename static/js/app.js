@@ -82,6 +82,7 @@ if (valuationForm) {
   });
   document.addEventListener('click', event => {if (!input.contains(event.target) && !suggestions.contains(event.target)) closeSuggestions();});
   const fillForm = values => {for (const [name,value] of Object.entries(values)) setField(name,value); preview(); updateGrowth();};
+  document.addEventListener('workspace-fill',event=>fillForm(event.detail));
   const remembered = sessionStorage.getItem('dcf-form');
   if (remembered && !document.querySelector('.notice.error')) {
     try {fillForm(JSON.parse(remembered));} catch (_) {sessionStorage.removeItem('dcf-form');}

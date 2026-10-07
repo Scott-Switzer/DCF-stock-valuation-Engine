@@ -25,6 +25,7 @@ for name in [
     "yahoo_provider.py",
     "auto_loading.py",
     "decision_support.py",
+    "guidance.py",
     "valuation_records.py",
     "suite_models.py",
     "suite_views.py",

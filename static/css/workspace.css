@@ -1,0 +1,292 @@
+.workspace-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  margin: 1.5rem 0;
+}
+.workspace-heading h1 {
+  font-size: 2rem;
+  margin: 0.3rem 0;
+}
+.ticker-entry {
+  display: flex;
+  gap: 0.6rem;
+}
+.ticker-entry input {
+  max-width: 180px;
+  text-transform: uppercase;
+}
+.company-strip {
+  display: flex;
+  gap: 1.3rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 1rem 0;
+}
+.workspace-tabs {
+  display: flex;
+  gap: 0.4rem;
+  border-bottom: 1px solid var(--border, #dbe2e9);
+  margin-bottom: 1.2rem;
+}
+.workspace-tabs button {
+  border: 0;
+  background: transparent;
+  padding: 1rem;
+  color: inherit;
+  border-bottom: 3px solid transparent;
+}
+.workspace-tabs button[aria-selected="true"] {
+  border-bottom-color: #176754;
+  color: #176754;
+  font-weight: 700;
+}
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr);
+  gap: 1.4rem;
+  align-items: start;
+}
+.workspace-editor iframe {
+  width: 100%;
+  border: 0;
+  min-height: 300px;
+  display: block;
+}
+.workspace-result {
+  position: sticky;
+  top: 1rem;
+  border: 1px solid #dce4df;
+  border-radius: 16px;
+  background: #fff;
+  padding: 1.4rem;
+}
+.workspace-result h2 {
+  font-size: 2.7rem;
+  margin: 0.6rem 0;
+}
+.workspace-save {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+}
+.price-bar-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 75px;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.84rem;
+  margin: 0.75rem 0;
+}
+.price-track {
+  height: 12px;
+  background: #edf2ef;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.price-fill {
+  height: 100%;
+  background: #176754;
+  border-radius: 6px;
+}
+.price-bar-row.analyst .price-fill {
+  background: #839baa;
+}
+.price-bar-row.market .price-fill {
+  background: #aaa;
+}
+.workspace-result svg {
+  width: 100%;
+  height: auto;
+}
+.chart-caption {
+  font-size: 0.8rem;
+  color: #64726d;
+}
+.heatmap td {
+  font-size: 0.75rem;
+  padding: 0.3rem;
+}
+.workspace-result pre {
+  max-height: 240px;
+  overflow: auto;
+}
+.workspace-editor {
+  min-width: 0;
+}
+.workspace-editor iframe[hidden] {
+  display: none;
+}
+.workspace-result details {
+  margin-top: 1rem;
+}
+.guidance-item {
+  padding: 0.8rem 0;
+  border-bottom: 1px solid #e5ebe7;
+}
+.guidance-item p {
+  margin: 0.4rem 0;
+}
+@media (max-width: 900px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+  .workspace-result {
+    position: static;
+    grid-row: 1;
+  }
+  .workspace-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .workspace-result h2 {
+    font-size: 2rem;
+  }
+  .workspace-tabs button {
+    padding: 0.8rem 0.6rem;
+  }
+  .workspace-heading h1 {
+    font-size: 1.6rem;
+  }
+}
+/* Embedded editors retain the audited forms but shed navigation and explanatory clutter. */
+body.embedded-editor .site-header,
+body.embedded-editor footer,
+body.embedded-editor .intro,
+body.embedded-editor .submit-row,
+body.embedded-editor #decision-context {
+  display: none !important;
+}
+body.embedded-editor main {
+  max-width: none;
+  padding: 0;
+  margin: 0;
+}
+body.embedded-editor .source-control {
+  margin: 0 0 0.7rem;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+}
+body.embedded-editor .source-control .help {
+  display: none;
+}
+body.embedded-editor .panel {
+  padding: 1rem;
+  margin-bottom: 0.8rem;
+}
+body.embedded-editor .eyebrow {
+  display: none;
+}
+body.embedded-editor .panel h2 {
+  font-size: 1.15rem;
+}
+body.embedded-editor .help,
+body.embedded-editor small {
+  font-size: 0.77rem;
+}
+body.embedded-editor .fields.four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+body.embedded-editor .input-table input {
+  padding: 0.4rem;
+  min-width: 58px;
+}
+body.embedded-editor .input-table th {
+  font-size: 0.8rem;
+}
+body.embedded-editor .input-table td {
+  padding: 0.3rem;
+}
+body.embedded-editor .peer-table {
+  display: none;
+}
+body.embedded-editor .compact-reference {
+  background: #f5f8f6;
+  border-radius: 10px;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+}
+body.embedded-editor .compact-reference table {
+  font-size: 0.8rem;
+  width: 100%;
+}
+body.embedded-editor .compact-reference td,
+body.embedded-editor .compact-reference th {
+  padding: 0.3rem;
+  text-align: left;
+}
+body.embedded-editor .compact-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+body.embedded-editor .compact-actions button {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.65rem;
+}
+body.embedded-editor .peer-card {
+  border: 1px solid #dce4df;
+  border-radius: 10px;
+  padding: 0.7rem;
+  margin: 0.5rem 0;
+}
+body.embedded-editor .peer-card p {
+  font-size: 0.8rem;
+  margin: 0.4rem 0;
+}
+body.embedded-editor .peer-card .peer-change {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+body.embedded-editor .peer-card .peer-change input {
+  max-width: 100px;
+}
+body.embedded-editor .peer-card button {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+}
+body.embedded-editor .sourced-settings {
+  font-size: 0.8rem;
+  margin: 0.7rem 0;
+}
+body.embedded-editor .routine-copy {
+  display: none;
+}
+body.embedded-editor .sourced-settings .help {
+  display: block;
+}
+body.embedded-editor .data-notes {
+  font-size: 0.8rem;
+}
+body.embedded-editor .reference-source {
+  font-size: 0.74rem;
+  color: #65746e;
+}
+body.embedded-editor .assumption-fields small {
+  display: none;
+}
+@media (max-width: 550px) {
+  body.embedded-editor .fields.three {
+    grid-template-columns: 1fr;
+  }
+  body.embedded-editor .forecasts th:first-child {
+    min-width: 90px;
+  }
+  body.embedded-editor .input-table input {
+    min-width: 45px;
+    width: 100%;
+    font-size: 0.8rem;
+  }
+  body.embedded-editor .table-wrap {
+    overflow: auto;
+  }
+}
+
+body.embedded-editor details[open] .peer-table {
+  display: table;
+}

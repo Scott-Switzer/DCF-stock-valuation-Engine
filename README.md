@@ -73,6 +73,16 @@ Read [DCF alignment](docs/cuig-alignment.md) and [DDM/relative alignment](docs/d
 - USD operating companies only. Banks, insurers, REITs, funds and partnerships need other models. Automatic loading checks SEC SIC classification when available; unavailable classification needs user review. Starter peers also need review.
 - The sample, cases and tests establish formula behavior. They do not establish investment returns or accurate forecasts for all companies. No automatic financial recommendation is made.
 
+## Company workspace
+
+Enter a ticker once and switch DCF, dividend discount and relative valuation while preserving each method’s assumptions. Results update after a 350 ms input debounce; saving is a separate action. Historical/analyst growth references are compact and consensus applies only to matching future fiscal periods. Rates display two decimals while retaining provider precision until edited. The result compares market price, current intrinsic value where defined, 12-month model target and analyst consensus. SVG projections, a bridge view and sensitivity support inspection. Mobile charts are collapsed initially.
+
+Four distinct RV candidates are always supplied, including imperfect or unverified fallback fits with caveats. Missing snapshots remain visible and excluded; replacement fetches actual data, and selection or manual overrides on other peers persist. RV initially carries the current valid DCF year-one forecast, then remains independently editable. Company data is reused across methods; peers load only when RV is opened. SEC research loads only when its disclosure opens. Recent earnings-release outlook excerpts are optional, dated and linked; ambiguous guidance is not turned into an annual forecast. Existing CSV/JSON exports use the exact preview inputs. No Excel-template export is provided.
+
+`POST /api/preview/{dcf|ddm|relative}` accepts the same JSON/form payloads as calculation APIs but never saves. `POST /api/assemble/{method}` reuses a validated DCF financial document and optional DCF assumptions. `POST /api/peer` loads one replacement ticker. `GET /api/guidance/{ticker}` returns issuer-bound dated SEC filing links and optional outlook prose. Preview requests have a separate 120/minute client budget; analyst/guidance references share 20/minute, other expensive operations retain 10/minute.
+
+The workspace keeps the existing audited forms in same-origin editors, isolating their field names and allowing independent model state. Only embedded editors permit same-origin framing; other pages retain framing protection. Message handlers validate both origin and the expected window. Generation guards discard old company and preview responses. Invalid previews disable saving/exporting and clearly mark the last valid result.
+
 ## API and exports
 
 `POST /api/load/{dcf|ddm|relative}` loads a ticker and returns `{financials, form, warnings, load_summary}` without saving a valuation.
@@ -89,7 +99,7 @@ Exports retain full numeric precision; the UI rounds money for readability. They
 gunicorn --bind 0.0.0.0:5000 --workers 2 --threads 2 --timeout 35 app:app
 ```
 
-Public calculations save inputs, assumptions, model version and results to private D1 storage with a visible privacy notice. Synthetic origins are flagged and repeat submissions are deduplicated. Raw IP addresses are not stored in valuation records. See [research limitations](docs/valuation-research.md). The historical suspended Render service has been replaced as the advertised demo.
+The company workspace calculates live previews without storing them. Explicit Save valuation actions and legacy calculation endpoints save inputs, assumptions, model version and results to private D1 storage. A privacy link explains collection. Synthetic origins are flagged and repeat submissions are deduplicated. Raw IP addresses are not stored in valuation records. See [research limitations](docs/valuation-research.md). The historical suspended Render service has been replaced as the advertised demo.
 
 ## Future valuation suite
 

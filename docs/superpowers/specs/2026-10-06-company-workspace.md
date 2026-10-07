@@ -1,0 +1,3 @@
+# Company workspace
+User-approved scope: ticker once; persistent DCF/DDM/RV assumptions; live calculations with explicit saving; compact historical/consensus/forecast references and charts; four replaceable/excludable peer candidates; dated management/SEC guidance when supported; concise source inspection and rounded displayed rates. Keep existing detailed forecast controls and CSV/JSON exports. No workbook export.
+Preserve server-side CUIG calculations and sourced-input locking. Optional references must not block valuations. Guidance must identify issuer, source, date and period; no inferred numerical growth assumption from ambiguous prose. Candidate availability and weak fit must be explicit.

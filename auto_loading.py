@@ -3,6 +3,7 @@
 from copy import deepcopy
 from datetime import datetime, timezone
 import time
+from dataclasses import asdict
 from dcf_code import DCFAssumptions, DCFModel
 from dcf_loader import JsonHTTP, ProviderError, parse_document, ticker_symbol, provider_setting
 from yahoo_provider import load_yahoo, load_company_metrics, recalculate_costs, BASE, HEADERS
@@ -21,8 +22,7 @@ PEER_GROUPS = (
 
 
 def starter_peers(ticker, http):
-    from decision_support import BUSINESSES
-
+    """Four candidates, including clearly marked imperfect/fallback fits."""
     if ticker == "AMZN":
         return "Retail and cloud segment candidates; different segment mixes", [
             "WMT",
@@ -30,37 +30,47 @@ def starter_peers(ticker, http):
             "GOOGL",
             "COST",
         ]
-    for label, members in PEER_GROUPS:
+    candidates = []
+    label = "Yahoo suggestions; industry comparability unverified"
+    for group, members in PEER_GROUPS:
         if ticker in members:
-            return label, [
-                s
-                for s in members
-                if s != ticker
-                and not ({s, ticker} <= {"GOOG", "GOOGL"})
-                and (
-                    s not in BUSINESSES
-                    or ticker not in BUSINESSES
-                    or BUSINESSES[s][0] == BUSINESSES[ticker][0]
-                    or BUSINESSES[s][1] & BUSINESSES[ticker][1]
-                )
-            ][:4]
-    raw = http.get(
-        f"{BASE}/v6/finance/recommendationsbysymbol/{ticker}",
-        headers=HEADERS,
-        ttl=3600,
-        cache_key=f"yahoo-peer-suggestions-v1-{ticker}",
-    )
-    results = raw.get("finance", {}).get("result") or []
-    peers = results[0].get("recommendedSymbols", []) if results else []
-    symbols = []
-    for peer in peers:
+            label = group + "; review segment and competitive fit"
+            candidates.extend(members)
+            break
+    if not candidates:
         try:
-            symbol = ticker_symbol(peer.get("symbol"))
+            raw = http.get(
+                f"{BASE}/v6/finance/recommendationsbysymbol/{ticker}",
+                headers=HEADERS,
+                ttl=3600,
+                cache_key=f"yahoo-peer-suggestions-v1-{ticker}",
+            )
+            results = raw.get("finance", {}).get("result") or []
+            candidates = [
+                p.get("symbol")
+                for p in (results[0].get("recommendedSymbols", []) if results else [])
+            ]
+        except ProviderError:
+            pass
+    # Fallbacks are suggestions, never a claim of comparable business models.
+    candidates.extend(["MSFT", "IBM", "WMT", "JNJ", "XOM"])
+    symbols = []
+    for value in candidates:
+        try:
+            symbol = ticker_symbol(value)
         except ValueError:
             continue
-        if symbol != ticker and symbol not in symbols:
-            symbols.append(symbol)
-    return "Yahoo suggestions; industry comparability unverified", symbols[:4]
+        if (
+            symbol == ticker
+            or symbol in symbols
+            or ({symbol, ticker} <= {"GOOG", "GOOGL"})
+            or (symbol in {"GOOG", "GOOGL"} and set(symbols) & {"GOOG", "GOOGL"})
+        ):
+            continue
+        symbols.append(symbol)
+        if len(symbols) == 4:
+            break
+    return label, symbols
 
 
 def company_classification(ticker, http):
@@ -135,7 +145,15 @@ def relative_metrics(doc):
     }
 
 
-def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spread=0.015):
+def load_method(
+    method,
+    ticker,
+    asof=None,
+    equity_risk_premium=0.05,
+    credit_spread=0.015,
+    snapshot=None,
+    forecast_assumptions=None,
+):
     if method not in {"dcf", "ddm", "relative"}:
         raise ValueError("Choose DCF, DDM or relative valuation.")
     from decision_support import historical_growth, peer_fit
@@ -144,48 +162,62 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
     asof = asof or datetime.now(timezone.utc).date().isoformat()
     ticker = ticker_symbol(ticker)
     http = JsonHTTP(budget=40)
-    dcf = load_yahoo(
-        ticker, asof, http, include_capital_costs=method != "relative", require_wacc=method == "dcf"
-    )
-    dcf["source"]["revenue_growth_reference"] = historical_growth(dcf["historical"], "revenue")
-    dividend_rows = dcf["source"]["common_dividends"]["historical"]
-    dcf["source"]["dividend_growth_reference"] = historical_growth(dividend_rows, "value")
-    dcf["source"]["dividend_per_share_growth_reference"] = historical_growth(
-        [
-            {
-                "period_end": row["period_end"],
-                "value": row["value"] / row["shares"]
-                if row["value"] is not None and row["shares"] and row["shares"] > 0
-                else None,
-            }
-            for row in dividend_rows
-        ],
-        "value",
-    )
-    try:
-        classification = company_classification(ticker, http)
-    except ProviderError:
-        classification = None
-    if classification:
-        dcf["source"]["classification"] = classification
-        dcf["company"]["sector"] = classification["description"]
-        sic = int(classification["sic"])
-        if 6000 <= sic <= 6999:
-            raise ProviderError(
-                "Automatic loading currently supports operating companies. This SEC industry needs sector-specific financial-firm or real-estate inputs."
-            )
-        dcf["source"]["warnings"] = [
-            w
-            for w in dcf["source"]["warnings"]
-            if not w.startswith("Sector and industry are unavailable")
-        ]
+    if snapshot is not None:
+        parse_document(snapshot)
+        dcf = deepcopy(snapshot)
+        if dcf["company"]["ticker"] != ticker:
+            raise ValueError("Company snapshot ticker does not match.")
+        asof = dcf["valuation_date"]
+        costs = dcf["source"].get("capital_costs", {})
     else:
-        dcf["source"]["warnings"].append(
-            "SEC industry classification was unavailable; review the operating-company suitability confirmation."
+        dcf = load_yahoo(
+            ticker,
+            asof,
+            http,
+            include_capital_costs=method != "relative",
+            require_wacc=method == "dcf",
         )
-    costs = (
-        recalculate_costs(dcf, equity_risk_premium, credit_spread) if method != "relative" else {}
-    )
+        dcf["source"]["revenue_growth_reference"] = historical_growth(dcf["historical"], "revenue")
+        dividend_rows = dcf["source"]["common_dividends"]["historical"]
+        dcf["source"]["dividend_growth_reference"] = historical_growth(dividend_rows, "value")
+        dcf["source"]["dividend_per_share_growth_reference"] = historical_growth(
+            [
+                {
+                    "period_end": row["period_end"],
+                    "value": row["value"] / row["shares"]
+                    if row["value"] is not None and row["shares"] and row["shares"] > 0
+                    else None,
+                }
+                for row in dividend_rows
+            ],
+            "value",
+        )
+        try:
+            classification = company_classification(ticker, http)
+        except ProviderError:
+            classification = None
+        if classification:
+            dcf["source"]["classification"] = classification
+            dcf["company"]["sector"] = classification["description"]
+            sic = int(classification["sic"])
+            if 6000 <= sic <= 6999:
+                raise ProviderError(
+                    "Automatic loading currently supports operating companies. This SEC industry needs sector-specific financial-firm or real-estate inputs."
+                )
+            dcf["source"]["warnings"] = [
+                w
+                for w in dcf["source"]["warnings"]
+                if not w.startswith("Sector and industry are unavailable")
+            ]
+        else:
+            dcf["source"]["warnings"].append(
+                "SEC industry classification was unavailable; review the operating-company suitability confirmation."
+            )
+        costs = (
+            recalculate_costs(dcf, equity_risk_premium, credit_spread)
+            if method != "relative"
+            else {}
+        )
     from app import default_form
     from suite_views import suite_form, suite_assumptions, suite_evaluate
 
@@ -213,7 +245,7 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
         )
         form = suite_form(method, doc)
         form.update(
-            required_return=costs["cost_of_equity"] * 100,
+            required_return=costs.get("cost_of_equity", 0.07) * 100,
             equity_risk_premium=equity_risk_premium * 100,
             credit_spread=credit_spread * 100,
         )
@@ -224,13 +256,15 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
                 method,
                 {
                     "dividend_growth_rates": [0.05] * 5,
-                    "required_return": costs["cost_of_equity"],
+                    "required_return": costs.get("cost_of_equity", 0.07),
                     "terminal_growth_rate": 0.02,
                 },
             ),
         )
     elif method == "relative":
-        a = DCFAssumptions(revenue_growth_rates=[0.05] * 5, terminal_growth_rate=0.02)
+        a = forecast_assumptions or DCFAssumptions(
+            revenue_growth_rates=[0.05] * 5, terminal_growth_rate=0.02
+        )
         forecast_model = DCFModel(parse_document(dcf), a)
         first = forecast_model.forecast_cash_flows()[0]
         latest = dcf["historical"][-1]
@@ -239,6 +273,7 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
             k: deepcopy(dcf[k])
             for k in ["valuation_date", "units", "company", "market", "source", "bridge"]
         }
+        doc["source"]["forward_forecast_assumptions"] = asdict(a)
         doc.update(
             schema_version="relative-financials-v1",
             target={
@@ -265,11 +300,26 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
             f"Starter peer set: {label}. Review or replace peers; equal weighting does not establish business comparability."
         )
         doc["source"]["warnings"].append(
-            "Forward target metrics use a 5% revenue-growth starter forecast and historical operating ratios; common book equity starts at 5% growth. These are editable forecast assumptions."
+            "Forward target metrics use the current DCF forecast when carried from the workspace, otherwise a 5% revenue-growth starter forecast and historical operating ratios. Common book equity starts at 5% growth. These are editable assumptions."
         )
+        suggestions = []
         for symbol in symbols:
+            suggestions.append(
+                {
+                    "ticker": symbol,
+                    "name": symbol,
+                    **peer_fit(
+                        ticker,
+                        symbol,
+                        dcf["market"]["price"] * dcf["market"]["diluted_shares"],
+                        None,
+                    ),
+                    "available": False,
+                }
+            )
             try:
                 peer = load_company_metrics(symbol, asof, http)
+                suggestions[-1].update(name=peer["company"]["name"], available=True)
                 doc["comparables"].append(
                     {
                         "ticker": symbol,
@@ -296,14 +346,16 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
             except (ProviderError, ValueError) as exc:
                 doc["source"]["warnings"].append(f"Peer {symbol} unavailable: {exc}")
         if not doc["comparables"]:
-            raise ProviderError(
-                "No complete starter peer snapshots were available. Retry or import a sourced peer set."
+            doc["source"]["warnings"].append(
+                "No complete starter snapshots are available. Four candidates remain visible; replace a peer to calculate."
             )
         doc["comparables"].sort(key=lambda peer: peer["fit"]["score"], reverse=True)
-        doc["source"]["peer_suggestions"] = [
-            {"ticker": peer["ticker"], "name": peer["name"], **peer["fit"]}
-            for peer in doc["comparables"]
-        ]
+        fitted = {peer["ticker"]: peer for peer in doc["comparables"]}
+        for suggestion in suggestions:
+            if suggestion["ticker"] in fitted:
+                suggestion.update(fitted[suggestion["ticker"]]["fit"])
+        suggestions.sort(key=lambda peer: peer["score"], reverse=True)
+        doc["source"]["peer_suggestions"] = suggestions
         included = [
             k
             for k in ["ev_revenue", "ev_ebitda", "pe"]
@@ -322,7 +374,8 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
                 for key in ["ev_revenue", "ev_ebitda", "ev_ebit", "pe", "pb"]
             }
         )
-        suite_evaluate(method, doc, suite_assumptions(method, {"included_methods": included}))
+        if included:
+            suite_evaluate(method, doc, suite_assumptions(method, {"included_methods": included}))
     return {
         "financials": doc,
         "form": form,
