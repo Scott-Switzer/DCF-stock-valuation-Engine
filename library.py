@@ -62,8 +62,11 @@ def _fetchall(sql, params=()):
         result = run_sync(
             request.environ["workers.env"].DB.prepare(sql).bind(*params).all()
         )
-        # D1 returns a result envelope; Pyodide converts its rows through JsProxy.
-        return result.results.to_py()
+        # D1 returns an envelope. Workers may already convert its row array.
+        rows = result.results
+        if hasattr(rows, "to_py"):
+            rows = rows.to_py()
+        return [dict(row.to_py()) if hasattr(row, "to_py") else dict(row) for row in rows]
     db = _local()
     try:
         return [dict(r) for r in db.execute(sql, params).fetchall()]

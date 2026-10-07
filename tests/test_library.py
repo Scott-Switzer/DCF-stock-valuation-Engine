@@ -118,7 +118,8 @@ def test_shared_view_renders_saved_record(tmp_path):
     assert b"Shared read-only" in page.data
 
 
-def test_workers_library_reads_d1_result_envelope(tmp_path, monkeypatch):
+@pytest.mark.parametrize("proxied", [True, False])
+def test_workers_library_reads_d1_result_envelope(tmp_path, monkeypatch, proxied):
     import sys
     from types import ModuleType, SimpleNamespace
     import library
@@ -133,7 +134,7 @@ def test_workers_library_reads_d1_result_envelope(tmp_path, monkeypatch):
             return self
 
         def all(self):
-            return SimpleNamespace(results=Results(), success=True)
+            return SimpleNamespace(results=Results() if proxied else [{"id": "fixture", "name": "Bull"}], success=True)
 
     ffi = ModuleType("pyodide.ffi")
     ffi.run_sync = lambda value: value
