@@ -148,7 +148,10 @@
     version++;
     if (request) request.abort();
     emit({ type: "preview-pending" });
-    timer = setTimeout(preview, 350);
+    // Reduced from 350ms to 50ms for instant responsiveness
+    // Research shows 50ms is threshold for "instant" feel
+    // Financial calculations benefit from immediate feedback
+    timer = setTimeout(preview, 50);
   }
   async function preview() {
     if (!doc) return;

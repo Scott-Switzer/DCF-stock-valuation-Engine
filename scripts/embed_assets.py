@@ -29,6 +29,8 @@ for name in [
     "decision_support.py",
     "guidance.py",
     "valuation_records.py",
+    "xlsx_export.py",
+    "compare.py",
     "suite_models.py",
     "suite_views.py",
     "embedded_assets.py",

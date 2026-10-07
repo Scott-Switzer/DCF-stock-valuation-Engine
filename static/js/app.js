@@ -81,7 +81,7 @@ if (valuationForm) {
     if (event.key === 'Escape') {closeSuggestions(); input.focus();}
   });
   document.addEventListener('click', event => {if (!input.contains(event.target) && !suggestions.contains(event.target)) closeSuggestions();});
-  const fillForm = (values, notifySource = true) => {for (const [name,value] of Object.entries(values)) setField(name,value); if (notifySource) preview(); updateGrowth();};
+  const fillForm = (values, notifySource = true) => {for (const [name,value] of Object.entries(values)) setField(name,value); if (notifySource) preview(); updateGrowth(); updateHistoricalSummaries();};
   document.addEventListener('workspace-fill',event=>fillForm(event.detail));
   const remembered = sessionStorage.getItem('dcf-form');
   if (remembered && !document.querySelector('.notice.error')) {
@@ -95,6 +95,41 @@ if (valuationForm) {
   }
   valuationForm.elements.terminal_growth.addEventListener('input', updateGrowth);
   valuationForm.elements.terminal_mode.addEventListener('change', updateGrowth);
+  
+  function updateHistoricalSummaries() {
+    // Calculate 3-year average and trend for growth
+    const revenues = [];
+    for (let i = 0; i < 3; i++) {
+      const rev = valuationForm.elements[`h_revenue_${i}`].value;
+      if (rev !== '') revenues.push(Number(rev));
+    }
+    
+    if (revenues.length === 3) {
+      const avg = (revenues[0] + revenues[1] + revenues[2]) / 3;
+      const growth1 = (revenues[1] - revenues[0]) / revenues[0];
+      const growth2 = (revenues[2] - revenues[1]) / revenues[1];
+      const avgGrowth = (growth1 + growth2) / 2;
+      
+      const summaryEl = document.getElementById('historical-growth');
+      if (summaryEl) {
+        summaryEl.hidden = false;
+        summaryEl.querySelector('.historical-avg').textContent = `3-yr avg: $${avg.toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+        
+        const trendEl = summaryEl.querySelector('.historical-trend');
+        trendEl.className = 'historical-trend';
+        if (avgGrowth > 0.01) {
+          trendEl.classList.add('up');
+          trendEl.textContent = `↑ ${(avgGrowth * 100).toFixed(1)}%`;
+        } else if (avgGrowth < -0.01) {
+          trendEl.classList.add('down');
+          trendEl.textContent = `↓ ${(Math.abs(avgGrowth) * 100).toFixed(1)}%`;
+        } else {
+          trendEl.classList.add('flat');
+          trendEl.textContent = '→ flat';
+        }
+      }
+    }
+  }
   document.getElementById('load-data').addEventListener('click', async event => {
     const button = event.currentTarget;
     const provider = valuationForm.elements.mode.value;

@@ -18,6 +18,7 @@ from suite_models import (
     from_dcf_document,
 )
 from valuation_records import save_valuation
+from xlsx_export import ddm_workbook, relative_workbook
 
 TITLES = {"ddm": "Dividend discount model", "relative": "Relative valuation"}
 CLAIMS = {
@@ -394,8 +395,15 @@ def register_suite(app):
                         row([sr["rate"], *sr["values"]])
                 body = stream.getvalue()
                 mime = "text/csv"
+            elif format == "xlsx":
+                builder = ddm_workbook if method == "ddm" else relative_workbook
+                body = builder(doc, asdict(a), r)
+                mime = (
+                    "application/vnd.openxmlformats-officedocument."
+                    "spreadsheetml.sheet"
+                )
             else:
-                raise ValueError("Choose json or csv export.")
+                raise ValueError("Choose json, csv or xlsx export.")
             return Response(
                 body,
                 mimetype=mime,

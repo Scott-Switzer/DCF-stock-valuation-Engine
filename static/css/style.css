@@ -13,3 +13,7 @@
 .reference-card strong {font-size:1.1rem;}
 .sourced-input {background:#eef1f3;color:#495866;cursor:default;}
 .source-control {margin:1rem 0;padding:.8rem 1rem;border:1px solid #d9dfe3;border-radius:8px;}
+
+.ticker-form{display:flex;gap:12px;align-items:end;max-width:520px}.ticker-form .primary{min-width:0}.ticker-form input{text-transform:uppercase}.form-error{color:var(--red);font-size:13px}
+.field{display:grid;gap:4px;margin:6px 0}.field-row{display:grid;grid-template-columns:220px 1fr 110px 80px;align-items:center;gap:12px;font-variant-numeric:tabular-nums}.field-label{font-size:13px}.field-track{position:relative;height:16px;background:#edf2ef;border-radius:8px}.field-bar{height:100%;border-radius:8px;background:var(--green)}.field-bar.field-ddm{background:var(--blue)}.field-bar.field-relative{background:#7a6a2e}.field-missing{display:grid;place-items:center;height:100%;font-size:11px;color:var(--muted)}.field-market{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}.field-value{text-align:right}.field-row small.up{color:var(--green)}.field-row small.down{color:var(--red)}
+@media(max-width:600px){.field-row{grid-template-columns:1fr 90px;}.field-track{grid-column:1/-1;order:3}}

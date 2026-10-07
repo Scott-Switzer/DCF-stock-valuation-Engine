@@ -30,7 +30,7 @@
     "EDGAR_IDENTITY": "Scott Switzer scswitzer@chapman.edu"
   },
   "build": {
-    "command": "python scripts/embed_assets.py"
+    "command": "python3 scripts/embed_assets.py"
   },
   "preview_urls": false
 }

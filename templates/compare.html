@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Football field · {{ packet.ticker if packet else 'Compare methods' }}{% endblock %}
+{% block content %}
+<section class="result-intro">
+<p class="eyebrow">Football field · all methods, one snapshot</p>
+<h1>DCF vs DDM vs relative</h1>
+<p class="lead">Every lane below is computed from the same loaded snapshot, so differences come from method economics — not mismatched inputs.</p>
+</section>
+<section class="panel">
+<form action="/compare" method="post" class="ticker-form">
+<label for="ticker">Ticker</label>
+<input id="ticker" name="ticker" value="{{ ticker }}" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="AAPL">
+<button class="primary" type="submit">Compare</button>
+</form>
+{% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+</section>
+{% if packet %}
+<section class="result-intro">
+<p class="eyebrow">{% if packet.is_demo %}Synthetic example · {% endif %}{{ packet.ticker }} · {{ packet.source }}</p>
+<h2>{{ packet.company_name }}</h2>
+<p class="lead">Market {{ '${:,.2f}'.format(packet.market_price) }} as of {{ packet.price_as_of }} · valuation {{ packet.valuation_date }}</p>
+</section>
+{% if packet.is_demo %}<div class="notice warning">Offline synthetic example. These financials and prices do not describe a real company.</div>{% endif %}
+<section class="panel"><div class="panel-heading"><div><p class="eyebrow">Valuation range</p><h2>Football field</h2></div><span class="unit">USD per share</span></div>
+<div class="field">
+{% for lane in packet.lanes %}
+<div class="field-row">
+<span class="field-label">{{ lane.label }}</span>
+<div class="field-track">
+{% if lane.value is not none %}
+<div class="field-bar field-{{ lane.method }}" style="width:{{ '{:.1%}'.format(lane.share) }}"></div>
+{% else %}
+<div class="field-missing">Unavailable</div>
+{% endif %}
+<span class="field-market" style="left:{{ '{:.1%}'.format(market_share) }}" title="Market price"></span>
+</div>
+{% if lane.value is not none %}
+<strong class="field-value">${{ '{:,.2f}'.format(lane.value) }}</strong>
+<small class="{{ 'up' if lane.upside >= 0 else 'down' }}">{{ '{:+.1%}'.format(lane.upside) }}</small>
+{% else %}
+<strong class="field-value">—</strong>
+{% endif %}
+</div>
+<p class="help">{{ lane.detail }}</p>
+{% endfor %}
+</div>
+<p class="help">Vertical marker: dated market price ({{ '${:,.2f}'.format(packet.market_price) }}). Baselines: 5% growth, 2% terminal growth, historical-average margins, loaded capital costs.</p>
+</section>
+<section class="panel"><div class="panel-heading"><div><p class="eyebrow">Assumptions</p><h2>Shared baselines</h2></div></div>
+<div class="table-wrap"><table class="value-table"><thead><tr><th>Baseline</th><th>Value</th></tr></thead><tbody>
+<tr><th>Revenue growth (5 yrs)</th><td>{{ packet.assumptions.revenue_growth_rates }}</td></tr>
+<tr><th>WACC override</th><td>{{ '{:.2%}'.format(packet.assumptions.wacc_override) }}</td></tr>
+<tr><th>Terminal growth</th><td>{{ '{:.2%}'.format(packet.assumptions.terminal_growth_rate) }}</td></tr>
+<tr><th>Snapshot load</th><td>{{ packet.load_summary.elapsed_seconds }}s · {{ packet.load_summary.peer_count }} peers</td></tr>
+</tbody></table></div></section>
+{% endif %}
+{% endblock %}

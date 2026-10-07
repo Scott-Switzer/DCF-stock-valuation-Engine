@@ -27,6 +27,8 @@ from dcf_loader import (
 )
 from storage import Store
 from valuation_records import save_valuation
+from xlsx_export import dcf_workbook
+from compare import football_field
 
 logger = logging.getLogger(__name__)
 app = Flask(__name__)
@@ -339,6 +341,18 @@ def rate_limit_response():
         )
     elif request.path == "/" and not request.is_json:
         response = app.make_response(render_inputs(dict(request.form), message, 429))
+    elif request.path == "/compare" and not request.is_json:
+        response = app.make_response(
+            (
+                render_template(
+                    "compare.html",
+                    ticker=dict(request.form).get("ticker", ""),
+                    packet=None,
+                    error=message,
+                ),
+                429,
+            )
+        )
     else:
         response = jsonify(error=message)
         response.status_code = 429
@@ -398,7 +412,7 @@ def limit_expensive_work():
             return rate_limit_response()
         return None
     if request.method == "POST" and (
-        request.path in {"/", "/ddm", "/relative"}
+        request.path in {"/", "/ddm", "/relative", "/compare"}
         or request.path.startswith(
             (
                 "/api/financials",
@@ -429,7 +443,26 @@ def security_headers(response):
             + "; base-uri 'self'; form-action 'self'",
         }
     )
-    if request.path.startswith(("/api/", "/export/")) or request.method == "POST":
+    if (
+        request.method == "GET"
+        and response.status_code == 200
+        and request.path.startswith(
+            (
+                "/api/sample",
+                "/api/search",
+                "/api/tickers",
+                "/api/company/",
+                "/api/guidance/",
+                "/api/references/",
+            )
+        )
+    ):
+        # Public provider reference data is already TTL-cached server-side;
+        # a short edge TTL absorbs repeat ticker lookups without stale risk.
+        response.headers["Cache-Control"] = (
+            "public, max-age=300, stale-while-revalidate=600"
+        )
+    elif request.path.startswith(("/api/", "/export/")) or request.method == "POST":
         response.headers["Cache-Control"] = "no-store"
     return response
 
@@ -487,6 +520,35 @@ def index():
             "The valuation could not be completed. Please review the inputs.",
             500,
         )
+
+
+@app.route("/compare", methods=["GET", "POST"])
+def compare_methods():
+    if request.method == "GET":
+        return render_template("compare.html", ticker="", packet=None, error=None)
+    try:
+        packet = football_field(
+            (request.form.get("ticker") or "").strip(),
+            datetime.now(timezone.utc).date().isoformat(),
+        )
+        market_share = packet["market_price"] / max(
+            [lane["value"] for lane in packet["lanes"]
+             if isinstance(lane["value"], (int, float))] + [packet["market_price"]]
+        )
+        return render_template(
+            "compare.html",
+            ticker=packet["ticker"],
+            packet=packet,
+            market_share=market_share,
+            error=None,
+        )
+    except (ValueError, ProviderError) as e:
+        return render_template(
+            "compare.html",
+            ticker=(request.form.get("ticker") or "").strip().upper(),
+            packet=None,
+            error=str(e),
+        ), 400 if isinstance(e, ValueError) else 503
 
 
 @app.post("/api/calculate")
@@ -717,6 +779,12 @@ def export(format):
                 allow_nan=False,
             )
             mime = "application/json"
+        elif format == "xlsx":
+            body = dcf_workbook(doc, asdict(a), result)
+            mime = (
+                "application/vnd.openxmlformats-officedocument."
+                "spreadsheetml.sheet"
+            )
         elif format == "csv":
             stream = io.StringIO()
             writer = csv.writer(stream)
@@ -789,7 +857,7 @@ def export(format):
             body = stream.getvalue()
             mime = "text/csv"
         else:
-            return jsonify(error="Choose json or csv export."), 400
+            return jsonify(error="Choose json, csv or xlsx export."), 400
         return Response(
             body,
             mimetype=mime,

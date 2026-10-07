@@ -258,6 +258,7 @@
         results.clear();
         $("live-result").hidden = true;
         $("save-valuation").disabled = true;
+        $("export-xlsx").disabled = true;
         $("export-json").disabled = true;
         $("export-csv").disabled = true;
         $("preview-status").textContent = "Updating company inputs…";
@@ -311,6 +312,7 @@
   });
   function render(item) {
     $("save-valuation").disabled = !item?.valid || !!item?.saving;
+    $("export-xlsx").disabled = !item?.valid;
     $("export-json").disabled = !item?.valid;
     $("export-csv").disabled = !item?.valid;
     $("save-status").textContent = item?.saved ? "Valuation saved." : "";
@@ -422,6 +424,21 @@
     const box = $("projection-chart");
     box.replaceChildren();
     if (!baseline) return;
+
+    // Use new interactive charts module
+    if (window.financialCharts) {
+      const historical = (r.input_financials || baseline.financials).historical;
+      const forecast = r.projections || [];
+      window.financialCharts.renderProjectionChart(
+        "projection-chart",
+        historical,
+        forecast,
+        r.method
+      );
+      return;
+    }
+
+    // Fallback to original SVG if charts module not loaded
     let rows, caption;
     if (r.method === "dcf") {
       rows = (r.input_financials || baseline.financials).historical
@@ -540,6 +557,18 @@
       box.textContent = "Sensitivity is available for DCF and DDM.";
       return;
     }
+
+    // Use new interactive charts module
+    if (window.financialCharts) {
+      window.financialCharts.renderSensitivityChart(
+        "live-sensitivity",
+        r.sensitivity,
+        r.target_price_12m
+      );
+      return;
+    }
+
+    // Fallback to original implementation
     const table = document.createElement("table");
     table.className = "heatmap";
     const header = document.createElement("tr");
@@ -617,6 +646,7 @@
     exportForm.requestSubmit();
     exportForm.remove();
   }
+  $("export-xlsx").addEventListener("click", () => download("xlsx"));
   $("export-json").addEventListener("click", () => download("json"));
   $("export-csv").addEventListener("click", () => download("csv"));
   $("management-guidance")
