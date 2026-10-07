@@ -124,7 +124,7 @@ def default_form(doc):
         "shares_basis": market.get("shares_basis", ""),
         "bridge_as_of": bridge.get("as_of"),
         "mode": "sample" if d["source"]["kind"] == "synthetic" else "manual",
-        "wacc": d["source"].get("capital_costs", {}).get("wacc", 0.065) * 100,
+        "wacc": (d["source"].get("capital_costs", {}).get("wacc") or 0.065) * 100,
         "terminal_growth": 2.0,
         "terminal_mode": "template",
         "terminal_roic": 10.0,

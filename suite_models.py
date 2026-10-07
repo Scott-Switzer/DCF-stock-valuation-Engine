@@ -425,7 +425,7 @@ class RelativeModel:
         targetprice = statistics.mean(r["implied_price"] for r in rows if r["included"])
         warnings += [
             "Arithmetic peer mean and equal weighting across selected methods match CUIG. This is a forward year-one relative target, not a discounted intrinsic value.",
-            "Choose comparable operations, leverage, accounting and growth; use consistent trailing/forward peer denominator conventions. Multiples are user supplied, not fetched market data.",
+            "Choose comparable operations, leverage, accounting and growth; use consistent trailing/forward peer denominator conventions. Review the source and dates of automatically loaded or manually entered multiples.",
             "P/E and P/B already imply common equity: debt is not deducted again. Enterprise multiples use the explicit common-equity bridge.",
             "Current bridge and diluted shares carry into the forward target; review projected capital structure before relying on it.",
         ]

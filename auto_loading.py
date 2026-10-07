@@ -124,7 +124,9 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
     asof = asof or datetime.now(timezone.utc).date().isoformat()
     ticker = ticker_symbol(ticker)
     http = JsonHTTP(budget=40)
-    dcf = load_yahoo(ticker, asof, http, include_capital_costs=method != "relative")
+    dcf = load_yahoo(
+        ticker, asof, http, include_capital_costs=method != "relative", require_wacc=method == "dcf"
+    )
     try:
         classification = company_classification(ticker, http)
     except ProviderError:
@@ -155,7 +157,7 @@ def load_method(method, ticker, asof=None, equity_risk_premium=0.05, credit_spre
     form = default_form(dcf)
     form.update(
         mode="auto",
-        wacc=costs.get("wacc", 0.065) * 100,
+        wacc=(costs.get("wacc") or 0.065) * 100,
         equity_risk_premium=equity_risk_premium * 100,
         credit_spread=credit_spread * 100,
     )

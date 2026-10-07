@@ -154,8 +154,11 @@ def test_blank_ticker_can_load_offline_example(client):
     assert r.get_json()["financials"]["source"]["kind"] == "synthetic"
 
 
-@pytest.mark.parametrize("scenario", ["short_returns", "preferred_equity"])
-def test_relative_load_needs_no_capital_cost_observations(client, monkeypatch, scenario):
+@pytest.mark.parametrize(
+    "method,scenario",
+    [("relative", "short_returns"), ("relative", "preferred_equity"), ("ddm", "preferred_equity")],
+)
+def test_loading_only_requires_method_capital_costs(client, monkeypatch, method, scenario):
     http = auto_loading.JsonHTTP()
     if scenario == "preferred_equity":
         for metric in http.financials["timeseries"]["result"]:
@@ -180,8 +183,14 @@ def test_relative_load_needs_no_capital_cost_observations(client, monkeypatch, s
 
     http.get = get
     monkeypatch.setattr(auto_loading, "JsonHTTP", lambda **kwargs: http)
-    r = client.post("/api/load/relative", json={"ticker": "TEST"})
+    r = client.post("/api/load/" + method, json={"ticker": "TEST"})
     assert r.status_code == 200, r.get_json()
-    assert r.get_json()["load_summary"]["capital_costs"] == {}
-    if scenario == "preferred_equity":
-        assert r.get_json()["financials"]["bridge"]["preferred_equity"] == 40
+    if method == "relative":
+        assert r.get_json()["load_summary"]["capital_costs"] == {}
+        if scenario == "preferred_equity":
+            assert r.get_json()["financials"]["bridge"]["preferred_equity"] == 40
+    else:
+        costs = r.get_json()["load_summary"]["capital_costs"]
+        assert costs["cost_of_equity"] > 0
+        assert costs["wacc"] is None
+        assert costs["preferred_equity"] == 40

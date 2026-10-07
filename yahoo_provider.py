@@ -116,7 +116,7 @@ def annual_facts(packet, ticker, asof):
     return facts
 
 
-def load_yahoo(ticker, asof, http=None, include_capital_costs=True):
+def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc=True):
     ticker = ticker_symbol(ticker)
     now = datetime.now(timezone.utc)
     if asof != now.date().isoformat():
@@ -164,8 +164,6 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True):
         "Yahoo normalizes fiscal dates to month ends; verify fiscal-period coverage against company filings.",
         "Sector and industry are unavailable from this endpoint; confirm operating-company eligibility.",
         "Other nonoperating assets are explicitly assumed to be zero; review excess investments and other adjustments.",
-        "Equity weights use latest annual ordinary shares at the current price; diluted shares use latest annual weighted-average shares.",
-        "Equity risk premium 5% and credit spread 1.5% are explicit valuation assumptions.",
     ]
 
     def get(end, metric, optional=False):
@@ -265,7 +263,7 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True):
         warnings.append(
             "Minority interest is inferred as total equity including minority interest minus stockholders equity."
         )
-    if preferred != 0 and include_capital_costs:
+    if preferred != 0 and include_capital_costs and require_wacc:
         raise ProviderError(
             "Nonzero preferred equity requires an explicit preferred cost assumption; Yahoo WACC cannot be completed."
         )
@@ -289,6 +287,12 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True):
     )
     costs = {}
     if include_capital_costs:
+        warnings.extend(
+            [
+                "Capital costs use dated market inputs and explicit equity risk premium and credit spread assumptions.",
+                "Market equity weights use annual ordinary shares; valuation shares use annual weighted-average dilution.",
+            ]
+        )
         benchmark, treasury = chart(http, "SPY"), chart(http, "^TNX")
         beta, n = market_beta(stock, benchmark)
         tm = treasury.get("meta", {})
@@ -330,7 +334,10 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True):
             "credit_spread": 0.015,
             "cost_of_debt": cost_debt,
             "cost_of_equity": cost_equity,
-            "wacc": (equity * cost_equity + debt * cost_debt * (1 - tax)) / (equity + debt),
+            "wacc": (equity * cost_equity + debt * cost_debt * (1 - tax)) / (equity + debt)
+            if require_wacc
+            else None,
+            "capital_cost_method": "wacc" if require_wacc else "equity",
             "debt_cost_basis": basis,
             "equity_market_value": equity,
             "market_equity_value": equity,
@@ -424,6 +431,14 @@ def recalculate_costs(doc, equity_risk_premium=0.05, credit_spread=0.015):
     )
     equity, debt = costs["market_equity_value"], costs["debt"]
     costs["wacc"] = (
-        equity * costs["cost_of_equity"] + debt * costs["cost_of_debt"] * (1 - costs["tax_rate"])
-    ) / (equity + debt)
+        (
+            (
+                equity * costs["cost_of_equity"]
+                + debt * costs["cost_of_debt"] * (1 - costs["tax_rate"])
+            )
+            / (equity + debt)
+        )
+        if costs.get("capital_cost_method", "wacc") == "wacc"
+        else None
+    )
     return costs
