@@ -116,13 +116,12 @@ def company_classification(ticker, http):
 def relative_metrics(doc):
     latest = doc["historical"][-1]
     shares = doc["market"]["diluted_shares"]
-    ordinary_equity = doc["source"].get("capital_costs", {}).get("market_equity_value")
-    if ordinary_equity is None:
-        # This is the same diluted-share market-equity convention used by RelativeModel.
-        ordinary_equity = doc["market"]["price"] * shares
+    # RelativeModel prices each diluted share; keep every peer multiple on
+    # that same basis. Ordinary-share market equity is only a WACC weight.
+    diluted_equity = doc["market"]["price"] * shares
     b = doc["bridge"]
     ev = (
-        ordinary_equity
+        diluted_equity
         + b["short_term_debt"]
         + b["long_term_debt"]
         + b["preferred_equity"]
@@ -139,7 +138,7 @@ def relative_metrics(doc):
         "pb": common,
     }
     return {
-        key: (ev if key.startswith("ev_") else ordinary_equity) / value
+        key: (ev if key.startswith("ev_") else diluted_equity) / value
         if value is not None and value > 0
         else None
         for key, value in denoms.items()
