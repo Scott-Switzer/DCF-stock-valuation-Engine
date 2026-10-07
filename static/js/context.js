@@ -2,13 +2,14 @@
 (() => {
   const pct = value => Number.isFinite(value) ? `${(value * 100).toFixed(1)}%` : 'Unavailable';
   const usd = value => Number.isFinite(value) ? value.toLocaleString('en-US', {style:'currency',currency:'USD',maximumFractionDigits:2}) : 'Unavailable';
+  const compactUsd = value => Number.isFinite(value) ? value.toLocaleString('en-US', {style:'currency',currency:'USD',notation:'compact',maximumFractionDigits:2}) : 'Unavailable';
   const add = (parent, tag, text, className='') => {const node=document.createElement(tag);node.textContent=text;node.className=className;parent.append(node);return node;};
   let request;
   let generation=0;
   const form=document.getElementById('valuation-form')||document.getElementById('suite-form');
   const result=document.getElementById('price-comparison');
   const box=document.getElementById('decision-context');
-  function history(parent, reference, title, money=usd) {
+  function history(parent, reference, title, money=compactUsd) {
     if(!reference?.annual?.length)return;
     add(parent,'h3',title);
     const list=add(parent,'div','','reference-grid');
@@ -67,14 +68,15 @@
         for(const row of data.revenue) {
           const card=add(grid,'article','','reference-card');
           add(card,'small',`${row.period==='0y'?'Current fiscal year':'Next fiscal year'} · ends ${row.period_end}`);
-          add(card,'strong',pct(row.growth));add(card,'span',`Revenue consensus ${usd(row.average)} · ${row.analysts??'Unknown'} analysts`);
-          add(card,'span',`Revenue range ${usd(row.low)} – ${usd(row.high)}`);
+          add(card,'strong',pct(row.growth));add(card,'span',`Revenue consensus ${compactUsd(row.average)} · ${row.analysts??'Unknown'} analysts`);
+          add(card,'span',`Revenue range ${compactUsd(row.low)} – ${compactUsd(row.high)}`);
+          if(row.year_ago_revenue>0)add(card,'span',`Growth range: ${pct(row.low!=null?row.low/row.year_ago_revenue-1:null)} – ${pct(row.high!=null?row.high/row.year_ago_revenue-1:null)} vs. provider prior-year revenue baseline`);
         }
         if(!data.revenue.length)add(parent,'p','Annual revenue consensus unavailable.','help');
         add(parent,'p','Consensus periods may differ from forecast years. Current-year consensus can refer to a completed fiscal year awaiting results. Use the dates; forecasts are not automatically copied or extended into years 3–5.','help');
       }
       if(!isResult && doc.source?.peer_suggestions?.length && Number.isFinite(data.market_cap) && data.market_cap>0) {
-        add(parent,'p',`Target current reported market cap: ${usd(data.market_cap)}. Peer sizes below load independently; annual-share proxies above remain the basis of the trading multiples.`,'help');
+        add(parent,'p',`Target current reported market cap: ${compactUsd(data.market_cap)}. Peer sizes below load independently; annual-share proxies above remain the basis of the trading multiples.`,'help');
         const peerGrid=add(parent,'div','','reference-grid');
         await Promise.all(doc.source.peer_suggestions.map(async peer=>{
           const card=add(peerGrid,'article',`${peer.ticker} · loading current market cap…`,'reference-card');
@@ -82,7 +84,7 @@
             const response=await fetch(`/api/references/${encodeURIComponent(peer.ticker)}`,{signal:request.signal});
             const packet=await response.json();if(!response.ok)throw new Error();
             if(token!==generation)return;
-            card.textContent=Number.isFinite(packet.market_cap)&&packet.market_cap>0?`${peer.ticker}: ${usd(packet.market_cap)} · ${(packet.market_cap/data.market_cap).toFixed(2)}× target current market cap · retrieved ${packet.retrieved_at}`:`${peer.ticker}: current reported market cap unavailable; review the dated annual-share proxy.`;
+            card.textContent=Number.isFinite(packet.market_cap)&&packet.market_cap>0?`${peer.ticker}: ${compactUsd(packet.market_cap)} · ${(packet.market_cap/data.market_cap).toFixed(2)}× target current market cap · retrieved ${packet.retrieved_at}`:`${peer.ticker}: current reported market cap unavailable; review the dated annual-share proxy.`;
           } catch(_) {if(token===generation)card.textContent=`${peer.ticker}: current reported market cap unavailable; review the dated annual-share proxy.`;}
         }));
       }
@@ -105,7 +107,7 @@
       if(form.dataset.method==='ddm') {
         history(parent,doc.source?.dividend_growth_reference,'Historical common dividends paid');
         add(parent,'p','Growth uses total annual common cash dividends, matching this DDM’s forecast basis. Repurchases and preferred dividends are excluded; total-payout growth differs from dividend-per-share growth.','help');
-        history(parent,doc.source?.dividend_per_share_growth_reference,'Historical dividend-per-share proxy');
+        history(parent,doc.source?.dividend_per_share_growth_reference,'Historical dividend-per-share proxy',usd);
         add(parent,'p','Per-share proxy = common dividends paid / annual diluted weighted-average shares. This is not split-adjusted declared dividend per share.','help');
       } else history(parent,doc.source?.revenue_growth_reference,'Historical revenue growth');
       for(const peer of doc.source?.peer_suggestions||[]) {
@@ -121,7 +123,7 @@
       add(parent,'p',`Model 12-month target: ${usd(Number(result.dataset.target))} · current loaded market price: ${usd(doc.market.price)} (${doc.market.price_as_of}) · ${pct(Number(result.dataset.target)/doc.market.price-1)} implied price upside / downside.`);
       add(parent,'p','The intrinsic value today and 12-month model scenario have different horizons. This comparison uses the model’s 12-month scenario and excludes dividends. Market price may be delayed.','help');
     }
-    references(doc,parent,!form,token);
+    if(form?.dataset.method!=='ddm')references(doc,parent,!form,token);
   }
   document.addEventListener('financials-loaded',refresh);
   document.addEventListener('DOMContentLoaded',()=>{if(form||result)refresh();});
