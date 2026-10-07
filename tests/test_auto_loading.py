@@ -194,3 +194,43 @@ def test_loading_only_requires_method_capital_costs(client, monkeypatch, method,
         assert costs["cost_of_equity"] > 0
         assert costs["wacc"] is None
         assert costs["preferred_equity"] == 40
+
+
+def test_workspace_relative_uses_current_dcf_year_one_assumptions(client):
+    from app import form_payload
+
+    loaded = client.post("/api/load/dcf", json={"ticker": "TEST"}).get_json()
+    form = loaded["form"]
+    form["growth_0"] = 17
+    doc, assumptions = form_payload(
+        MultiDict({k: str(v) if v is not None else "" for k, v in form.items()})
+    )
+    from dataclasses import asdict
+
+    response = client.post(
+        "/api/assemble/relative", json={"financials": doc, "assumptions": asdict(assumptions)}
+    )
+    assert response.status_code == 200, response.get_json()
+    assert response.get_json()["financials"]["target"]["forward"]["revenue"] == pytest.approx(
+        doc["historical"][-1]["revenue"] * 1.17
+    )
+
+
+def test_workspace_keeps_four_candidates_when_all_peer_snapshots_fail(client, monkeypatch):
+    loaded = client.post("/api/load/dcf", json={"ticker": "TEST"}).get_json()
+    monkeypatch.setattr(
+        auto_loading,
+        "starter_peers",
+        lambda *args: ("Unverified candidates", ["AAPL", "MSFT", "WMT", "JNJ"]),
+    )
+
+    def missing(*args, **kwargs):
+        raise auto_loading.ProviderError("Missing required peer financials")
+
+    monkeypatch.setattr(auto_loading, "load_company_metrics", missing)
+    response = client.post("/api/assemble/relative", json={"financials": loaded["financials"]})
+    assert response.status_code == 200, response.get_json()
+    result = response.get_json()
+    assert len(result["financials"]["source"]["peer_suggestions"]) == 4
+    assert result["financials"]["comparables"] == []
+    assert all(not x["available"] for x in result["financials"]["source"]["peer_suggestions"])

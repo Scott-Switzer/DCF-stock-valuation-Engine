@@ -23,3 +23,6 @@ jobs:
       - run: pytest -q
       - run: node --check static/js/app.js
       - run: node --check static/js/suite.js
+      - run: node --check static/js/context.js
+      - run: node --check static/js/editor.js
+      - run: node --check static/js/workspace.js

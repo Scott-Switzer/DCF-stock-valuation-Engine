@@ -160,6 +160,8 @@ def suite_form_payload(method, form):
         original_peers = {ticker_symbol(p.get("ticker")): p for p in source_peers}
         doc["comparables"] = []
         for i in range(4):
+            if form.get("peer_selection") == "explicit" and form.get(f"peer_include_{i}") != "yes":
+                continue
             ticker = form.get(f"peer_ticker_{i}", "").strip()
             values = {
                 k: None

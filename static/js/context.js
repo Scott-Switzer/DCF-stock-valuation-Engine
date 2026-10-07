@@ -111,6 +111,7 @@
     try {doc=JSON.parse(form ? form.elements.base_document.value : result.dataset.document);}catch(_){return;}
     if(request)request.abort();const token=++generation;
     if(form)lock(doc);
+    if(document.body.classList.contains("embedded-editor"))return;
     const parent=form?box:result;if(!parent)return;
     parent.replaceChildren();parent.hidden=false;
     if(form) {

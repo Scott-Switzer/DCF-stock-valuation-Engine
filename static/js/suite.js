@@ -32,6 +32,7 @@ if (suiteForm) {
     }
     preview();
   };
+  document.addEventListener('workspace-fill',event=>fill(event.detail));
   const remembered=sessionStorage.getItem('suite-form');
   if (remembered&&!document.querySelector('.notice.error')) {
     try {const values=JSON.parse(remembered);const doc=JSON.parse(values.base_document);

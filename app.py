@@ -348,7 +348,10 @@ def rate_limit_response():
 
 @app.before_request
 def limit_expensive_work():
-    reference_request = request.method == "GET" and request.path.startswith("/api/references/")
+    preview_request = request.method == "POST" and request.path.startswith("/api/preview/")
+    reference_request = request.method == "GET" and request.path.startswith(
+        ("/api/references/", "/api/guidance/")
+    )
     if app.config.get("CLOUDFLARE"):
         import hashlib
         import hmac
@@ -366,7 +369,9 @@ def limit_expensive_work():
         if request.method == "POST" or reference_request:
             now = int(time.time())
             key = (
-                f"references:{client_hash}:{now // 60}"
+                f"preview:{client_hash}:{now // 60}"
+                if preview_request
+                else f"references:{client_hash}:{now // 60}"
                 if reference_request
                 else f"{client_hash}:{now // 60}"
             )
@@ -377,9 +382,15 @@ def limit_expensive_work():
                 .bind(key, now + 120)
                 .first()
             )
-            if row.count > (20 if reference_request else 10):
+            if row.count > (120 if preview_request else 20 if reference_request else 10):
                 return rate_limit_response()
             run_sync(env.DB.prepare("DELETE FROM request_limits WHERE reset<?").bind(now).run())
+        return None
+    if preview_request:
+        if not Store(app.config.get("STATE_PATH")).allow(
+            f"{request.remote_addr}:preview", maximum=120
+        ):
+            return rate_limit_response()
         return None
     if reference_request:
         if not Store(app.config.get("STATE_PATH")).allow(
@@ -389,7 +400,16 @@ def limit_expensive_work():
         return None
     if request.method == "POST" and (
         request.path in {"/", "/ddm", "/relative"}
-        or request.path.startswith(("/api/financials", "/api/load/", "/api/calculate", "/export/"))
+        or request.path.startswith(
+            (
+                "/api/financials",
+                "/api/load/",
+                "/api/assemble/",
+                "/api/peer",
+                "/api/calculate",
+                "/export/",
+            )
+        )
     ):
         if not Store(app.config.get("STATE_PATH")).allow(
             f"{request.remote_addr}:{request.path}", maximum=10
@@ -402,10 +422,12 @@ def security_headers(response):
     response.headers.update(
         {
             "X-Content-Type-Options": "nosniff",
-            "X-Frame-Options": "DENY",
+            "X-Frame-Options": "SAMEORIGIN" if request.args.get("embedded") == "1" else "DENY",
             "Referrer-Policy": "strict-origin-when-cross-origin",
             "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
-            "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+            "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; frame-ancestors "
+            + ("'self'" if request.args.get("embedded") == "1" else "'none'")
+            + "; base-uri 'self'; form-action 'self'",
         }
     )
     if request.path.startswith(("/api/", "/export/")) or request.method == "POST":
@@ -438,7 +460,11 @@ def render_inputs(form=None, error=None, status=200):
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "GET":
-        return render_inputs()
+        return (
+            render_inputs()
+            if request.args.get("embedded") == "1"
+            else render_template("workspace.html")
+        )
     try:
         doc, a = payload()
         r = evaluate(doc, a)
@@ -473,6 +499,93 @@ def calculate_api():
         return jsonify(r)
     except ValueError as e:
         return jsonify(error=str(e)), 400
+
+
+@app.post("/api/preview/<method>")
+def preview_api(method):
+    if method not in {"dcf", "ddm", "relative"}:
+        return jsonify(error="Unknown method."), 404
+    try:
+        from suite_views import suite_payload, suite_evaluate
+
+        doc, a = payload() if method == "dcf" else suite_payload(method)
+        result = evaluate(doc, a) if method == "dcf" else suite_evaluate(method, doc, a)
+        result["input_financials"] = doc
+        return jsonify(result)
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+
+
+@app.post("/api/assemble/<method>")
+def assemble_api(method):
+    try:
+        from auto_loading import load_method
+
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict) or not isinstance(raw.get("financials"), dict):
+            raise ValueError("Provide a loaded company snapshot.")
+        doc = raw["financials"]
+        parse_document(doc)
+        return jsonify(
+            load_method(
+                method,
+                doc["company"]["ticker"],
+                snapshot=doc,
+                forecast_assumptions=assumptions_from_json(raw["assumptions"])
+                if "assumptions" in raw
+                else None,
+            )
+        )
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+    except ProviderError as exc:
+        return jsonify(error=str(exc)), 503
+
+
+@app.post("/api/peer")
+def peer_api():
+    try:
+        from auto_loading import relative_metrics
+        from yahoo_provider import load_company_metrics
+        from dcf_loader import JsonHTTP
+
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict):
+            raise ValueError("Provide a peer ticker.")
+        symbol = ticker_symbol(raw.get("ticker"))
+        asof = datetime.now(timezone.utc).date().isoformat()
+        doc = load_company_metrics(symbol, asof, JsonHTTP(budget=12))
+        return jsonify(
+            ticker=symbol,
+            name=doc["company"]["name"],
+            as_of=doc["market"]["price_as_of"],
+            available_at=asof,
+            currency="USD",
+            source="Yahoo latest annual fundamentals / current price",
+            multiples=relative_metrics(doc),
+            provenance={
+                "financials": doc["historical"][-1],
+                "bridge": doc["bridge"],
+                "market": doc["market"],
+                "common_book_equity": doc["source"]["common_book_equity"],
+            },
+        )
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+    except ProviderError as exc:
+        return jsonify(error=str(exc)), 503
+
+
+@app.get("/api/guidance/<ticker>")
+def guidance_api(ticker):
+    try:
+        from guidance import load_guidance
+
+        return jsonify(load_guidance(ticker))
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+    except ProviderError as exc:
+        return jsonify(error=str(exc)), 503
 
 
 @app.get("/api/references/<ticker>")
