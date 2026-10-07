@@ -182,3 +182,8 @@ A local 1,000-iteration pure DCF benchmark (including sensitivity and scenarios)
 measured 1.76 ms median and 5.90 ms p95 on the development machine. This excludes
 network, Worker cold start and database overhead. It does not justify a native
 language rewrite or establish production throughput.
+
+Static script and stylesheet URLs now include a content fingerprint. Matching
+Cloudflare responses permit immutable one-year public caching; unversioned or
+mismatched URLs require revalidation. A new release changes URLs when content
+changes, so repeat visits can reuse assets without keeping stale UI code.

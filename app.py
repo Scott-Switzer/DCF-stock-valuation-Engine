@@ -828,6 +828,26 @@ def privacy():
     return render_template("privacy.html")
 
 
+@lru_cache(maxsize=32)
+def asset_version(filename):
+    """Content fingerprints cache public code across requests without stale releases."""
+    import hashlib
+
+    if app.config.get("CLOUDFLARE"):
+        from embedded_assets import ASSETS
+
+        content = ASSETS.get("static/" + filename, "").encode()
+    else:
+        content = (Path(app.static_folder) / filename).read_bytes()
+    return hashlib.sha256(content).hexdigest()[:16]
+
+
+@app.url_defaults
+def version_static_urls(endpoint, values):
+    if endpoint in {"static", "edge_static"} and "filename" in values:
+        values.setdefault("v", asset_version(values["filename"]))
+
+
 @app.get("/static/<path:filename>", endpoint="edge_static")
 def edge_static(filename):
     if not app.config.get("CLOUDFLARE"):
@@ -838,7 +858,13 @@ def edge_static(filename):
     key = f"static/{filename}"
     if key not in ASSETS:
         return "Not found", 404
-    return Response(ASSETS[key], mimetype=mimetypes.guess_type(filename)[0] or "text/plain")
+    response = Response(ASSETS[key], mimetype=mimetypes.guess_type(filename)[0] or "text/plain")
+    response.headers["Cache-Control"] = (
+        "public, max-age=31536000, immutable"
+        if request.args.get("v") == asset_version(filename)
+        else "no-cache"
+    )
+    return response
 
 
 app.view_functions["static"] = edge_static

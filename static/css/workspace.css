@@ -300,7 +300,7 @@ body.embedded-editor .forecasts {
 .input-legend span {padding:.35rem .6rem;border-radius:6px}
 .editable-key {background:#fff3cc;color:#59430a;border:1px solid #c69e37}
 .sourced-key {background:#e8eef4;color:#3e5266;border:1px solid #a9bacb}
-body.embedded-editor input:not([type=hidden]):not([type=checkbox]):not([type=file]):not([readonly]),
+body.embedded-editor input:not([type=hidden]):not([type=checkbox]):not([type=file]):not([readonly]):not(:disabled),
 body.embedded-editor select {background:#fff7dc;border-color:#c69e37;box-shadow:inset 3px 0 #c69e37}
 body.embedded-editor input[readonly],body.embedded-editor .sourced-input {background:#e8eef4;color:#3e5266;border-color:#a9bacb;box-shadow:inset 3px 0 #8fa5b9}
 body.embedded-editor input:focus-visible,body.embedded-editor select:focus-visible {outline:3px solid #176754;outline-offset:2px}
