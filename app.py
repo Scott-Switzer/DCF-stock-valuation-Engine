@@ -12,7 +12,7 @@ import math
 import os
 import re
 from pathlib import Path
-from flask import Flask, Response, jsonify, render_template, request
+from flask import Flask, Response, jsonify, redirect, render_template, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dcf_code import DCFModel, DCFAssumptions, number
 from dcf_loader import (
@@ -369,9 +369,27 @@ def assign_library_identity():
     ensure_identity()
 
 
+COOKIE_WRITE_PATHS = ("/api/templates", "/api/share", "/api/watchlist", "/api/account", "/account")
+
+
+@app.before_request
+def reject_cross_site_cookie_writes():
+    """Defense in depth beside SameSite=Lax: cookie-bearing writes must be same-origin."""
+    from library import same_origin_request
+
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"} and request.path.startswith(
+        COOKIE_WRITE_PATHS
+    ):
+        if not same_origin_request():
+            return jsonify(error="Cross-site writes are not allowed."), 403
+    return None
+
+
 @app.before_request
 def limit_expensive_work():
     preview_request = request.method == "POST" and request.path.startswith("/api/preview/")
+    mcp_request = request.method == "POST" and request.path == "/mcp"
+    mutation = request.method in {"POST", "PUT", "PATCH", "DELETE"}
     reference_request = request.method == "GET" and request.path.startswith(
         ("/api/references/", "/api/guidance/", "/api/company/", "/api/providers")
     )
@@ -388,10 +406,12 @@ def limit_expensive_work():
             hashlib.sha256,
         ).hexdigest()
         request.environ["dcf.client_hash"] = client_hash
-        if request.method == "POST" or reference_request:
+        if mutation or reference_request or mcp_request:
             # Edge-local abuse protection keeps interactive previews off D1.
             binding = (
-                env.PREVIEW_LIMIT
+                env.MCP_LIMIT
+                if mcp_request
+                else env.PREVIEW_LIMIT
                 if preview_request
                 else env.REFERENCE_LIMIT
                 if reference_request
@@ -407,6 +427,12 @@ def limit_expensive_work():
             )
             if not result.success:
                 return rate_limit_response()
+        return None
+    if mcp_request:
+        if not Store(app.config.get("STATE_PATH")).allow(
+            f"{request.remote_addr}:mcp", maximum=60
+        ):
+            return rate_limit_response()
         return None
     if preview_request:
         if not Store(app.config.get("STATE_PATH")).allow(
@@ -456,6 +482,8 @@ def limit_expensive_work():
                 "/api/share",
                 "/api/templates",
                 "/api/watchlist",
+                "/api/account",
+                "/account/",
                 "/export/",
             )
         )
@@ -659,23 +687,35 @@ def compare_api():
         return jsonify(error=str(e)), 503
 
 
-@app.route("/mcp", methods=["GET", "POST"])
+@app.route("/mcp", methods=["GET", "POST", "DELETE"])
 def mcp_endpoint():
-    """Model Context Protocol endpoint so LLMs can value companies."""
-    from mcp import handle
+    """Model Context Protocol endpoint (2026-07-28 stateless and 2025-06-18 legacy)."""
+    from mcp import serve
 
-    if request.method == "GET":
+    if request.method != "POST":
         response = jsonify(error="POST a JSON-RPC 2.0 message to use the MCP tools.")
         response.status_code = 405
         response.headers["Allow"] = "POST"
         return response
     raw = request.get_json(silent=True, force=True)
     if isinstance(raw, list):
-        return jsonify([r for r in (handle(m) for m in raw) if r is not None])
-    result = handle(raw)
-    if result is None:
+        # JSON-RPC batches were removed in MCP 2025-06-18; reject explicitly.
+        return jsonify(error="JSON-RPC batch requests are not supported."), 400
+    headers = {k.lower(): v for k, v in request.headers.items()}
+    allowed = (provider_value("MCP_ALLOWED_ORIGINS") or "").split(",")
+    status, body = serve(
+        raw,
+        headers,
+        origin=request.headers.get("Origin"),
+        host_origin=request.host_url.rstrip("/"),
+        allowed_origins=allowed,
+    )
+    if body is None:
         return ("", 202)
-    return jsonify(result)
+    response = jsonify(body)
+    response.status_code = status
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.post("/api/reverse")
@@ -1251,6 +1291,140 @@ def mcp_manifest():
         transport="streamable-http",
         tools=TOOLS,
     )
+
+
+def _account_form_or_json():
+    if request.is_json:
+        data = request.get_json(silent=True)
+        return data if isinstance(data, dict) else {}
+    return request.form.to_dict()
+
+
+def _account_action(action, *, html):
+    """Shared signup/login/logout for JSON clients and the /account form."""
+    import accounts
+
+    if action == "password" and accounts.current_user() is None:
+        message = "Sign in to change your password."
+        if html:
+            response = app.make_response((render_template("account.html", user=None, error=message), 401))
+        else:
+            response = jsonify(error=message)
+            response.status_code = 401
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
+
+    anonymous = library.anonymous_hash()
+    token = None
+    email = None
+    try:
+        if action == "logout":
+            accounts.end_session()
+        elif action == "password":
+            data = _account_form_or_json()
+            accounts.change_password(
+                accounts.current_user()["id"],
+                data.get("current_password"),
+                data.get("new_password"),
+            )
+        else:
+            data = _account_form_or_json()
+            if action == "signup":
+                user_id, email = accounts.signup(data.get("email"), data.get("password"), anonymous)
+            else:
+                user_id, email = accounts.login(data.get("email"), data.get("password"), anonymous)
+            token = accounts.start_session(user_id)
+    except ValueError as exc:
+        if html:
+            response = app.make_response((
+                render_template("account.html", user=accounts.current_user(), error=str(exc)),
+                400,
+            ))
+        else:
+            response = jsonify(error=str(exc))
+            response.status_code = 400
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
+    if html:
+        response = redirect("/account", code=303)
+    elif action == "logout":
+        response = jsonify(signed_in=False)
+    elif action == "password":
+        if html:
+            response = redirect("/account", code=303)
+        else:
+            response = jsonify(changed=True, signed_in=True)
+    else:
+        response = jsonify(email=email, signed_in=True)
+    if token:
+        accounts.set_session_cookie(response, token)
+    if action == "logout":
+        accounts.clear_session_cookie(response)
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
+@app.get("/account")
+def account_page():
+    import accounts
+
+    response = app.make_response(render_template("account.html", user=accounts.current_user(), error=None))
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
+@app.post("/account/signup")
+def account_signup_form():
+    return _account_action("signup", html=True)
+
+
+@app.post("/account/login")
+def account_login_form():
+    return _account_action("login", html=True)
+
+
+@app.post("/account/logout")
+def account_logout_form():
+    return _account_action("logout", html=True)
+
+
+@app.post("/account/password")
+def account_password_form():
+    return _account_action("password", html=True)
+
+
+@app.post("/api/account/password")
+def account_password_api():
+    return _account_action("password", html=False)
+
+
+@app.post("/api/account/signup")
+def account_signup_api():
+    return _account_action("signup", html=False)
+
+
+@app.post("/api/account/login")
+def account_login_api():
+    return _account_action("login", html=False)
+
+
+@app.post("/api/account/logout")
+def account_logout_api():
+    return _account_action("logout", html=False)
+
+
+@app.get("/api/account/me")
+def account_me():
+    import accounts
+
+    user = accounts.current_user()
+    if user is None:
+        response = jsonify(error="Sign in to view your account.")
+        response.status_code = 401
+    else:
+        response = jsonify(email=user["email"], created_at=user["created_at"])
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
 
 
 @app.errorhandler(413)

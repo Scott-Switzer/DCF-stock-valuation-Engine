@@ -17,9 +17,10 @@ A valuation suite with five-year unlevered discounted cash flow, dividend discou
 - Present and 12-month enterprise-to-common-equity bridges, including preferred claims, noncontrolling interests, other nonoperating assets and diluted shares.
 - CUIG Gordon-growth terminal convention, plus optional ROIC-based terminal reinvestment normalization.
 - WACC/terminal-growth sensitivity and explicitly defined bear/base/bull cases.
-- Offline synthetic example, manual entry, JSON import, SEC companyfacts adapter, and an optional Zion/MiniBloomberg company-packet adapter.
+- Offline synthetic example, manual entry, JSON import, SEC companyfacts adapter, and an optional custom company API (Zion-compatible) adapter.
 - CSV export for Excel and complete JSON export containing inputs, assumptions, results and source provenance.
 - Local ticker autocomplete, accessible input labels, mobile layouts and preserved inputs on errors.
+- Optional email-and-password accounts (PBKDF2 hashes, server-side sessions in HttpOnly cookies) keep saved templates, history, watchlists and shares across browsers. Password change signs out other sessions; there is no email reset yet.
 - Pure Python calculation engine, Flask API, public Cloudflare Python Worker, private D1 valuation records, shared edge rate limits, regression tests and GitHub Actions.
 
 ## Run locally

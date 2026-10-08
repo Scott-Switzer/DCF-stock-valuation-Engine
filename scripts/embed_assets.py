@@ -32,6 +32,7 @@ for name in [
     "xlsx_export.py",
     "compare.py",
     "library.py",
+    "accounts.py",
     "reverse_dcf.py",
     "mcp.py",
     "suite_models.py",

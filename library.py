@@ -34,10 +34,30 @@ CREATE TABLE IF NOT EXISTS watchlist (
  client_hash TEXT NOT NULL, ticker TEXT NOT NULL, target REAL NOT NULL,
  direction TEXT NOT NULL CHECK(direction IN ('above','below')),
  created_at TEXT NOT NULL, PRIMARY KEY (client_hash, ticker));
+CREATE TABLE IF NOT EXISTS users (
+ id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL,
+ created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS sessions (
+ token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, created_at TEXT NOT NULL,
+ expires_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);
+CREATE INDEX IF NOT EXISTS valuations_owner_created ON valuations(client_hash, created_at);
 """
 
 
 COOKIE = "lib_id"
+WATCH_LIMIT = 25
+WATCH_BUDGET_SECONDS = 12
+
+
+def same_origin_request():
+    """Browser writes must come from this origin; non-browser clients send no Origin."""
+    from flask import request
+
+    origin = request.headers.get("Origin")
+    if origin is not None:
+        return origin.lower() == request.host_url.rstrip("/").lower()
+    return request.headers.get("Sec-Fetch-Site") in {None, "same-origin", "same-site", "none"}
 
 
 def _secret():
@@ -66,18 +86,32 @@ LIBRARY_PATHS = (
 )
 
 
-def caller_hash():
-    """Stable per-browser library owner; falls back to the legacy scope."""
-    from flask import request, current_app
+def anonymous_hash():
+    """The signed browser library owner, or None when no valid cookie is present."""
+    from flask import request
 
-    fresh = request.environ.get("lib.new_identity")
-    if fresh:
-        return f"lib:{fresh}"
     raw = request.cookies.get(COOKIE, "")
     if raw and "." in raw:
         identity, signature = raw.split(".", 1)
         if hmac.compare_digest(signature, _sign(identity)):
             return f"lib:{identity}"
+    return None
+
+
+def caller_hash():
+    """Stable library owner: a signed-in account, else the browser library."""
+    from flask import request, current_app
+    from accounts import owner_hash
+
+    account = owner_hash()
+    if account:
+        return account
+    fresh = request.environ.get("lib.new_identity")
+    if fresh:
+        return f"lib:{fresh}"
+    anonymous = anonymous_hash()
+    if anonymous:
+        return anonymous
     if current_app.config.get("CLOUDFLARE"):
         return request.environ["dcf.client_hash"]
     from datetime import date
@@ -261,6 +295,12 @@ def set_watch(ticker, target, direction):
         raise ValueError("Alert target must be a number.") from None
     if direction not in {"above", "below"}:
         raise ValueError("Direction is above or below.")
+    current = {row["ticker"] for row in _fetchall(
+        "SELECT ticker FROM watchlist WHERE client_hash=?", (caller_hash(),))}
+    if symbol not in current and len(current) >= WATCH_LIMIT:
+        raise ValueError(
+            f"Watchlists hold up to {WATCH_LIMIT} tickers. Remove one before adding another."
+        )
     _run(
         "INSERT OR REPLACE INTO watchlist"
         "(client_hash,ticker,target,direction,created_at) VALUES (?,?,?,?,?)",
@@ -287,14 +327,28 @@ def remove_watch(ticker):
 
 
 def check_watch():
-    """Lazily re-price every watched ticker; never raises per-ticker."""
+    """Lazily re-price watched tickers within a bounded time budget.
+
+    Each ticker can fan out into several provider calls, so a refresh stops
+    re-pricing once WATCH_BUDGET_SECONDS elapse and marks the rest unchecked.
+    """
+    import time
     from auto_loading import load_method
     from dcf_loader import ProviderError
 
     asof = datetime.now(timezone.utc).date().isoformat()
+    started = time.monotonic()
     states = []
     for entry in list_watch():
         state = dict(entry)
+        if time.monotonic() - started > WATCH_BUDGET_SECONDS:
+            state.update(
+                price=None,
+                breached=False,
+                error="Not re-priced in this refresh. Reload to check the rest.",
+            )
+            states.append(state)
+            continue
         try:
             bundle = load_method("dcf", entry["ticker"], asof)
             price = bundle["financials"]["market"]["price"]

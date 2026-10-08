@@ -27,6 +27,10 @@ October 6 local evidence: current result, restored inputs and working autocomple
 
 Python Workers local smoke checks cover pages, static files, calculations and D1 insertion. Public production checks cover readiness, sample calculation, saved-reference lookup through authenticated D1, duplicate suppression, invalid input, exports, autocomplete and browser console errors. SEC AAPL annual statement loading succeeded in the Workers runtime; this is coverage evidence, not a completed real-company valuation. Zion remains unconfigured. D1 record tests bound serialization and avoid duplicate source documents.
 
+## Accounts (local workerd)
+
+Tests in `tests/test_accounts.py` cover hashing, session cookies, expiry, logout, password change revoking other sessions, library claim on signup and per-account isolation. Local `wrangler dev` against a locally migrated D1 also passed: signed-out 401, foreign-Origin 403 on sign-up and password change, two-account template isolation, logout revocation, wrong-password 400, password change and session revocation, the old password rejected, and `/account` 200. Local writes are limited to ten per minute, so repeated scripted runs need a pause. Email reset and remote D1 behaviour are not yet verified.
+
 ## DDM and relative valuation
 
 The suite tests independently interpret the corresponding worksheet formulas, exercise method-specific suitability and missing/nonfinite input, verify JSON/CSV round trips, DCF handoff, and method-aware D1 migration preserving existing DCF records. Relative valuation deliberately returns no present intrinsic value. DDM and peer inputs are explicit/manual; only DCF SEC statement loading has a live provider acceptance check.

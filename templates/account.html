@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Account · DCF Valuation Engine{% endblock %}
+{% block content %}
+<section class="panel" aria-labelledby="account-title">
+  <h1 id="account-title">Account</h1>
+  {% if error %}<p class="notice error" role="alert">{{ error }}</p>{% endif %}
+  {% if user %}
+    <p>Signed in as <strong>{{ user.email }}</strong>. Saved templates, history, watchlist and shares follow this account on any browser.</p>
+    <form method="post" action="/account/password">
+      <h2>Change password</h2>
+      <p class="help">Changing your password signs out every other browser.</p>
+      <label for="current-password">Current password</label>
+      <input id="current-password" name="current_password" type="password" autocomplete="current-password" required maxlength="256">
+      <label for="new-password">New password (at least 12 characters)</label>
+      <input id="new-password" name="new_password" type="password" autocomplete="new-password" required minlength="12" maxlength="256">
+      <button type="submit">Change password</button>
+    </form>
+    <form method="post" action="/account/logout">
+      <button type="submit" class="secondary">Sign out</button>
+    </form>
+  {% else %}
+    <p class="help">Sign in to keep your library across browsers. Without an account, the library stays in this browser. Passwords are never stored in readable form. No email is sent yet, so password reset is not available.</p>
+    <div class="account-forms">
+      <form method="post" action="/account/login">
+        <h2>Sign in</h2>
+        <label for="login-email">Email</label>
+        <input id="login-email" name="email" type="email" autocomplete="username" required maxlength="254">
+        <label for="login-password">Password</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required maxlength="256">
+        <button type="submit">Sign in</button>
+      </form>
+      <form method="post" action="/account/signup">
+        <h2>Create account</h2>
+        <label for="signup-email">Email</label>
+        <input id="signup-email" name="email" type="email" autocomplete="username" required maxlength="254">
+        <label for="signup-password">Password (at least 12 characters)</label>
+        <input id="signup-password" name="password" type="password" autocomplete="new-password" required minlength="12" maxlength="256">
+        <button type="submit">Create account</button>
+      </form>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

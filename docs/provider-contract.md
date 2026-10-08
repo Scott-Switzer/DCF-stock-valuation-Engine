@@ -86,7 +86,7 @@ Results contain present/12-month enterprise and equity values, per-share values,
 
 The adapter was based on the local owning source `zion-final/deploy/cloudflare-query/src/company_api.py` and its representative unit tests as inspected October 6, 2026. It has not yet been verified against a configured live endpoint.
 
-Configure `ZION_API_BASE_URL` (HTTPS base URL) and optional server-side `ZION_API_TOKEN`. It calls:
+Configure `ZION_API_BASE_URL` (HTTPS base URL) and optional server-side `ZION_API_TOKEN`. Acceptance probe, read-only and secret-free in output: `ZION_API_BASE_URL=https://... python scripts/check_company_api.py AAPL 2026-10-06` prints period, mapping and blank-field coverage and exits 0 only when three annual revenue periods map at the valuation date. It calls:
 
 ```text
 GET /v1/company/{ticker}?as_of=YYYY-MM-DDT23:59:59Z&limit=1000
@@ -146,11 +146,11 @@ Yahoo public chart/time-series endpoints are unofficial. Current snapshots use r
 
 Beta uses at least 104 matched weekly total-return observations against SPY. Cost of equity = Treasury yield + beta × equity risk premium. Debt cost uses latest annual interest/debt if available, otherwise Treasury yield + credit spread. WACC uses market equity and book debt, after-tax debt cost and any supported preferred cost. ROE uses annual common net income / ending common equity and is diagnostic only.
 
-RV starter peers are editable suggestions, not a claim of complete industry comparability. Negative/missing denominators are excluded; source dates and coverage warnings remain in the result. Automatic sector support is presently USD operating companies. Zion/MiniBloomberg remains an optional, unconfigured replacement behind the normalized provider boundary.
+RV starter peers are editable suggestions, not a claim of complete industry comparability. Negative/missing denominators are excluded; source dates and coverage warnings remain in the result. Automatic sector support is presently USD operating companies. The custom company API (Zion-compatible) remains an optional, unconfigured adapter behind the normalized provider boundary.
 
 Method loading requires only the applicable capital costs: DCF estimates full WACC; DDM estimates the common-equity return without requiring preferred-stock cost; RV does not require beta, Treasury or WACC observations. Restoring the peer editor preserves excluded-method checkbox states. The offline example can load with an empty ticker.
 
-### Live Zion / MiniBloomberg check — October 6, 2026
+### Live custom company API (Zion-compatible) check — October 6, 2026
 
 The deployed `zion-financial-query-staging.scswitzer.workers.dev` responds to
 `/healthz`, but `/v1/company/AAPL` returns 404. The GitHub default branch likewise
