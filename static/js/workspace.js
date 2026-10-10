@@ -427,10 +427,14 @@
     const box = $("projection-chart");
     box.replaceChildren();
     if (!baseline) return;
+    if (!["dcf", "ddm"].includes(r.method)) return;
 
     // Use new interactive charts module
     if (window.financialCharts) {
-      const historical = (r.input_financials || baseline.financials).historical;
+      const doc = r.input_financials || baseline.financials;
+      const historical = r.method === "ddm"
+        ? doc.source.common_dividends?.historical || []
+        : doc.historical || [];
       const forecast = r.projections || [];
       window.financialCharts.renderProjectionChart(
         "projection-chart",
