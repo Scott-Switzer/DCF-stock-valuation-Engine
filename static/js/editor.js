@@ -342,15 +342,17 @@
       original.before(details);
       details.append(original);
     }
-    const marker = document.createElement("input");
+    const marker = field("peer_selection") || document.createElement("input");
     marker.type = "hidden";
     marker.name = "peer_selection";
     marker.value = "explicit";
     form.append(marker);
     for (let i = 0; i < 4; i++) {
-      const include = document.createElement("input");
+      const include = field(`peer_include_${i}`) || document.createElement("input");
+      const selected = include.type === "checkbox" ? include.checked : include.value === "yes";
       include.type = "hidden";
       include.name = `peer_include_${i}`;
+      include.value = selected ? "yes" : "";
       form.append(include);
     }
   }

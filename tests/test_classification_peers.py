@@ -144,3 +144,20 @@ def test_reliable_peers_drop_candidates_and_excluded_but_keep_manual_rows():
         {"ticker": "D", "multiples": {"pe": 1.0}},
     ]
     assert [p["ticker"] for p in reliable_peers(peers)] == ["A", "D"]
+
+
+def test_standalone_relative_form_requires_candidate_peer_selection():
+    from suite_models import suite_sample
+    from suite_views import suite_form, suite_form_payload
+    from werkzeug.datastructures import MultiDict
+
+    doc = suite_sample("relative")
+    for i, peer in enumerate(doc["comparables"]):
+        peer["review_status"] = "reviewed" if i == 0 else "candidate"
+    form = suite_form("relative", doc)
+    selected, _ = suite_form_payload("relative", MultiDict(form))
+    assert len(selected["comparables"]) == 1
+    form["peer_include_1"] = "yes"
+    selected, _ = suite_form_payload("relative", MultiDict(form))
+    assert len(selected["comparables"]) == 2
+    assert selected["comparables"][1]["review_status"] == "user_confirmed"

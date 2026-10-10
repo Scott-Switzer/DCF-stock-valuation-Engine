@@ -84,6 +84,10 @@ def suite_form(method, doc=None):
             f[f"include_{k}"] = "yes" if k in ["ev_revenue", "ev_ebitda", "pe"] else ""
         for i in range(4):
             p = d["comparables"][i] if i < len(d["comparables"]) else {}
+            f["peer_selection"] = "explicit"
+            f[f"peer_include_{i}"] = (
+                "yes" if p and p.get("review_status") not in {"candidate", "excluded"} else ""
+            )
             for key in ["ticker", "name", "as_of", "source"]:
                 f[f"peer_{key}_{i}"] = p.get(key, "")
             for key in MULTIPLES:
@@ -185,6 +189,10 @@ def suite_form_payload(method, form):
                     "currency": "USD",
                     "source": form.get(f"peer_source_{i}", ""),
                     "multiples": values,
+                    **({"review_status": "user_confirmed"}
+                       if form.get("peer_selection") == "explicit"
+                       and original_peers.get(ticker_symbol(ticker), {}).get("review_status")
+                       in {"candidate", "excluded"} else {}),
                 }
             )
         raw = {"included_methods": [k for k in MULTIPLES if form.get(f"include_{k}") == "yes"]}
