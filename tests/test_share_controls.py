@@ -150,3 +150,24 @@ def test_account_page_shows_share_panel_only_when_signed_in(monkeypatch):
     )
     page = client.get("/account").data
     assert b'id="share-list"' in page and b"js/shares.js" in page
+
+
+def test_old_share_links_remain_reachable_and_revocable():
+    owner = app.test_client()
+    valuation_id = saved_valuation(owner)
+    # Insert directly so request rate limits do not mask pagination behavior.
+    cookie = owner.get_cookie('lib_id')
+    with app.test_request_context('/', environ_overrides={'HTTP_COOKIE': f'lib_id={cookie.value}'}):
+        owner_hash = library.caller_hash()
+    db = sqlite3.connect(Store().path)
+    with db:
+        for i in range(51):
+            db.execute('INSERT INTO share_links(token,valuation_id,created_at,client_hash) VALUES (?,?,?,?)',
+                       (f'page-{i:02}', valuation_id, f'2026-01-01T00:00:{i:02}+00:00', owner_hash))
+    db.close()
+    first = owner.get('/api/shares').get_json()
+    second = owner.get('/api/shares?offset=50').get_json()
+    assert len(first) == 50 and len(second) == 1
+    assert second[0]['token'] == 'page-00'
+    assert owner.delete('/api/share/page-00').status_code == 200
+    assert owner.get('/api/shares?offset=-1').status_code == 400

@@ -108,8 +108,9 @@ def test_readiness_does_not_mutate_the_document():
 
 
 def test_residual_income_is_sufficient_on_demo_and_blocked_by_senior_claims():
-    assert method_readiness(demo_document())["residual"]["state"] == "sufficient"
     doc = demo_document()
+    doc["source"]["capital_costs"] = {"cost_of_equity": 0.07}
+    assert method_readiness(doc)["residual"]["state"] == "sufficient"
     doc["bridge"]["preferred_equity"] = 5.0
     residual = method_readiness(doc)["residual"]
     assert residual["state"] == "unavailable"
@@ -191,6 +192,7 @@ def test_missing_values_are_never_zero_filled():
 
 def test_financial_firm_blocks_industrial_dcf_but_keeps_residual_and_relative():
     doc = with_peer(demo_document())
+    doc["source"]["capital_costs"] = {"cost_of_equity": 0.07}
     doc["source"]["classification"] = {"sic": "6022", "description": "State commercial banks"}
     states = method_readiness(doc)
     assert states["dcf"]["state"] == "unavailable"
@@ -205,3 +207,26 @@ def test_unused_source_metric_is_named_when_diluted_shares_missing():
     doc["source"]["excluded_metrics"] = {"shares_outstanding": "basic count, not diluted"}
     reasons = method_readiness(doc)["dcf"]["reasons"]
     assert any("shares_outstanding" in r and "not used" in r for r in reasons)
+
+
+def test_residual_requires_explicit_cost_of_equity():
+    doc = demo_document()
+    doc['source'].pop('capital_costs', None)
+    state = method_readiness(doc)['residual']
+    assert state['state'] == 'unavailable'
+    assert 'missing_cost_of_equity' in state['codes']
+
+
+def test_bank_ev_only_peers_are_not_ready():
+    doc = demo_document()
+    doc['company']['is_financial'] = True
+    doc['comparables'] = [{'ticker': 'PEER', 'multiples': {'ev_revenue': 3.0}}]
+    assert method_readiness(doc)['relative']['state'] == 'unavailable'
+
+
+def test_relative_requires_positive_matching_target_metric():
+    from suite_models import suite_sample
+    doc = demo_document()
+    rel = suite_sample('relative')
+    rel['target']['forward'].update(revenue=-1, ebitda=-1, net_income=-1)
+    assert method_readiness(doc, rel)['relative']['state'] == 'unavailable'

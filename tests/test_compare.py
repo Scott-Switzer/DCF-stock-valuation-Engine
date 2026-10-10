@@ -272,3 +272,19 @@ def test_compare_does_not_value_residual_income_with_unmodeled_claims(monkeypatc
     lane = next(lane for lane in packet["lanes"] if lane["method"] == "residual")
     assert lane["value"] is None
     assert "not modeled" in lane["detail"]
+
+
+def test_financial_firm_residual_forecast_does_not_require_fcff(monkeypatch):
+    import auto_loading
+    from compare import football_field
+    from dcf_loader import demo_document
+
+    doc = demo_document()
+    doc['company']['is_financial'] = True
+    doc['source']['capital_costs'] = {'cost_of_equity': 0.07}
+    monkeypatch.setattr(auto_loading, 'load_method', _fake_loader([], doc))
+    packet = football_field('DEMO')
+    dcf = next(x for x in packet['lanes'] if x['method'] == 'dcf')
+    residual = next(x for x in packet['lanes'] if x['method'] == 'residual')
+    assert dcf['value'] is None
+    assert isinstance(residual['value'], float)

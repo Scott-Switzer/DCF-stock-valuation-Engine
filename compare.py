@@ -10,7 +10,7 @@ the whole page.
 from copy import deepcopy
 from dataclasses import asdict
 
-from dcf_code import DCFAssumptions
+from dcf_code import DCFAssumptions, DCFModel
 from dcf_loader import ProviderError, ticker_symbol
 from readiness import method_readiness, reliable_peers
 from residual_income import residual_income_value
@@ -166,8 +166,11 @@ def football_field(ticker, asof=None, dcf_assumptions=None, snapshot=None, http=
         residual_readiness = method_readiness(doc)["residual"]
         if residual_readiness["state"] == "unavailable":
             raise ValueError(" ".join(residual_readiness["reasons"]))
-        if result is None:
-            raise ValueError("Residual income uses the DCF forecast, which is unavailable for this snapshot.")
+        # Earnings projections do not require an FCFF enterprise valuation.
+        # In particular, financial firms can use residual income while DCF is blocked.
+        projections = DCFModel(
+            parse_document(doc, minority_may_be_negative=True), deepcopy(dcf_assumptions)
+        ).forecast_cash_flows()
         cost_of_equity = costs.get("cost_of_equity")
         if not isinstance(cost_of_equity, (int, float)):
             raise ValueError("Cost of equity is unavailable from the loaded capital-cost inputs.")
@@ -177,7 +180,7 @@ def football_field(ticker, asof=None, dcf_assumptions=None, snapshot=None, http=
         if isinstance(dividend, (int, float)) and dividend > 0 and last_net_income > 0:
             payout = min(1.0, max(0.0, dividend / last_net_income))
         residual = residual_income_value(
-            net_income=[row["Net Income"] for row in result["projections"]],
+            net_income=[row["Net Income"] for row in projections],
             opening_book=doc["historical"][-1]["book_value"],
             cost_of_equity=cost_of_equity,
             terminal_growth=dcf_assumptions.terminal_growth_rate,

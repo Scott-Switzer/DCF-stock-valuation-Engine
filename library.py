@@ -296,12 +296,12 @@ def create_share(valuation_id, expires_in_days=None):
     return token
 
 
-def list_shares():
+def list_shares(offset=0):
     """The caller's own share links, newest first, with their status fields."""
     return _fetchall(
         "SELECT token,valuation_id,created_at,expires_at,revoked_at FROM share_links"
-        " WHERE client_hash=? ORDER BY created_at DESC LIMIT ?",
-        (caller_hash(), SHARE_LIST_LIMIT),
+        " WHERE client_hash=? ORDER BY created_at DESC,token DESC LIMIT ? OFFSET ?",
+        (caller_hash(), SHARE_LIST_LIMIT, offset),
     )
 
 

@@ -861,7 +861,8 @@ def peer_api():
         asof = datetime.now(timezone.utc).date().isoformat()
         from ppe_provider import prefer_ppe
 
-        doc = prefer_ppe(load_company_metrics(symbol, asof, JsonHTTP(budget=12)), symbol, asof)
+        http = JsonHTTP(budget=12)
+        doc = prefer_ppe(load_company_metrics(symbol, asof, http), symbol, asof, deadline=http.deadline)
         return jsonify(
             ticker=symbol,
             name=doc["company"]["name"],
@@ -1147,7 +1148,13 @@ def share_valuation():
 
 @app.get("/api/shares")
 def list_shares_api():
-    return jsonify(library.list_shares())
+    try:
+        offset = int(request.args.get("offset", "0"))
+        if not 0 <= offset <= 9223372036854775807:
+            raise ValueError
+    except ValueError:
+        return jsonify(error="Share offset must be a nonnegative integer."), 400
+    return jsonify(library.list_shares(offset))
 
 
 @app.delete("/api/share/<token>")

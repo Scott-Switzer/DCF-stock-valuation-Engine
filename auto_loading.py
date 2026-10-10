@@ -191,7 +191,7 @@ def load_method(
             include_capital_costs=method != "relative",
             require_wacc=method == "dcf",
         )
-        dcf = prefer_ppe(dcf, ticker, asof)
+        dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None))
         dcf["source"]["revenue_growth_reference"] = historical_growth(dcf["historical"], "revenue")
         dividend_rows = dcf["source"]["common_dividends"]["historical"]
         dcf["source"]["dividend_growth_reference"] = historical_growth(dividend_rows, "value")
@@ -338,7 +338,7 @@ def load_method(
                 }
             )
             try:
-                peer = prefer_ppe(load_company_metrics(symbol, asof, http), symbol, asof)
+                peer = prefer_ppe(load_company_metrics(symbol, asof, http), symbol, asof, deadline=getattr(http, "deadline", None))
                 suggestions[-1].update(name=peer["company"]["name"], available=True)
                 fit = peer_fit(
                     ticker,

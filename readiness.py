@@ -17,6 +17,7 @@ present, missing or fallback. Missing values are never converted to zero.
 """
 
 from datetime import date
+import math
 
 from dcf_loader import BRIDGE_FIELDS, HISTORY_FIELDS
 from issuer_classification import financial_block_reason, is_confirmed
@@ -220,11 +221,28 @@ def method_readiness(doc, relative_doc=None):
 
     peer_source = relative_doc if relative_doc is not None else doc
     peers = peer_source.get("comparables") or []
+    ev_blocked = bool(financial_block_reason(peer_source)) or (
+        peer_source.get("bridge", {}).get("minority_interest", 0) or 0
+    ) < 0
+    allowed = {"pe": "net_income"}
+    if not ev_blocked:
+        allowed.update(ev_revenue="revenue", ev_ebitda="ebitda")
+    forward = peer_source.get("target", {}).get("forward")
+    if forward is None:
+        latest = (doc.get("historical") or [{}])[-1]
+        forward = dict(latest)
+        ebit, da = latest.get("ebit"), latest.get("d_and_a")
+        forward["ebitda"] = ebit + da if ebit is not None and da is not None else None
+
+    def positive(value):
+        return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value > 0
+
     usable_peers = [
         peer
         for peer in reliable_peers(peers)
         if any(
-            isinstance(v, (int, float)) and v > 0 for v in (peer.get("multiples") or {}).values()
+            positive((peer.get("multiples") or {}).get(key)) and positive(forward.get(metric))
+            for key, metric in allowed.items()
         )
     ]
     candidates = [p["ticker"] for p in peers if p.get("review_status") in BLOCKED_PEER_STATUSES]
@@ -241,10 +259,16 @@ def method_readiness(doc, relative_doc=None):
         )
     elif not usable_peers:
         relative_blocking.append(
-            {"code": "no_usable_peers", "reason": "No peers with usable multiples in this snapshot."}
+            {"code": "no_usable_peers", "reason": "No peers with allowed multiples and positive matching target figures in this snapshot."}
         )
 
     residual_blocking = []
+    ke = doc.get("source", {}).get("capital_costs", {}).get("cost_of_equity")
+    if not positive(ke) or ke >= 1:
+        residual_blocking.append({
+            "code": "missing_cost_of_equity",
+            "reason": "Residual income requires a verified cost of equity between 0% and 100%.",
+        })
     for key, label in [
         ("preferred_equity", "Preferred equity"),
         ("minority_interest", "Noncontrolling interest"),

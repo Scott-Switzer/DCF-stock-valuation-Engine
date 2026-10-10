@@ -659,7 +659,9 @@
     const form = new FormData();
     form.set("ticker", baseline.financials.company.ticker);
     form.set("assumptions", JSON.stringify(item.result.assumptions));
-    form.set("base_document", JSON.stringify(baseline.financials));
+    form.set("base_document", JSON.stringify(
+      method === "dcf" ? item.result.input_financials : baseline.financials
+    ));
     const target = document.createElement("form");
     target.method = "POST";
     target.action = "/compare";

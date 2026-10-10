@@ -3,6 +3,14 @@
   var list = document.getElementById("share-list");
   if (!list) return;
   var message = document.getElementById("share-message");
+  var offset = 0;
+  var pageSize = 50;
+  var paging = document.createElement("div");
+  var previous = button("Previous links", function () { offset = Math.max(0, offset - pageSize); load(); });
+  var next = button("Older links", function () { offset += pageSize; load(); });
+  paging.appendChild(previous);
+  paging.appendChild(next);
+  list.parentNode.insertBefore(paging, list.nextSibling);
 
   function status(text, isError) {
     message.textContent = text;
@@ -51,10 +59,12 @@
   }
 
   function render(shares) {
+    previous.disabled = offset === 0;
+    next.disabled = shares.length < pageSize;
     list.textContent = "";
     if (!shares.length) {
       var empty = document.createElement("li");
-      empty.textContent = "No shared links yet.";
+      empty.textContent = offset ? "No older links. Use Previous links to go back." : "No shared links yet.";
       list.appendChild(empty);
       return;
     }
@@ -73,7 +83,7 @@
   }
 
   function load() {
-    fetch("/api/shares", { credentials: "same-origin", headers: { Accept: "application/json" } })
+    fetch("/api/shares?offset=" + offset, { credentials: "same-origin", headers: { Accept: "application/json" } })
       .then(function (response) {
         if (!response.ok) throw new Error("load");
         return response.json();
