@@ -262,6 +262,11 @@ def form_payload(form):
 
 
 def evaluate(doc, a):
+    from issuer_classification import financial_block_reason
+
+    blocked = financial_block_reason(doc)
+    if blocked:
+        raise ValueError(blocked)
     d = parse_document(doc)
     model = DCFModel(d, a)
     result = model.calculate()
@@ -602,10 +607,17 @@ def compare_methods():
                 posted_assumptions = json.loads(request.form["assumptions"])
             except ValueError:
                 raise ValueError("Workspace assumptions were invalid.") from None
+        posted_snapshot = None
+        if request.form.get("base_document"):
+            try:
+                posted_snapshot = json.loads(request.form["base_document"])
+            except ValueError:
+                raise ValueError("Workspace financial snapshot was invalid.") from None
         packet = football_field(
             (request.form.get("ticker") or "").strip(),
             datetime.now(timezone.utc).date().isoformat(),
             dcf_assumptions=posted_assumptions,
+            snapshot=posted_snapshot,
         )
         market_share = packet["market_price"] / max(
             [lane["value"] for lane in packet["lanes"]
@@ -629,6 +641,9 @@ def compare_methods():
         ), 400 if isinstance(e, ValueError) else 503
 
 
+BATCH_BUDGET_SECONDS = 20
+
+
 @app.post("/api/compare/batch")
 def compare_batch_api():
     """Football-field summaries for up to 8 tickers in one call."""
@@ -640,31 +655,50 @@ def compare_batch_api():
     tickers = raw.get("tickers")
     if not isinstance(tickers, list) or not 1 <= len(tickers) <= 8:
         return jsonify(error="Send 1 to 8 tickers."), 400
+    from dcf_loader import JsonHTTP
+
     asof = datetime.now(timezone.utc).date().isoformat()
+    # One deadline for the whole batch: later tickers wait for budget, not for
+    # every provider call. Repeated tickers reuse the first result.
+    http = JsonHTTP(budget=BATCH_BUDGET_SECONDS)
+    computed = {}
     results = []
     for entry in tickers:
         try:
             symbol = ticker_symbol(entry)
         except ValueError as e:
-            results.append({"ticker": str(entry)[:12], "error": str(e)})
+            results.append({"ticker": str(entry)[:12], "status": "error", "error": str(e)})
             continue
-        try:
-            packet = football_field(symbol, asof)
-        except (ProviderError, ValueError, KeyError) as e:
-            results.append({"ticker": symbol, "error": str(e)})
+        if symbol in computed:
+            results.append(dict(computed[symbol]))
             continue
-        results.append(
-            {
-                "ticker": packet["ticker"],
-                "company_name": packet.get("company_name"),
-                "market_price": packet.get("market_price"),
-                "lanes": [
-                    {"label": lane["label"], "value": lane["value"],
-                     "upside": lane.get("upside")}
-                    for lane in packet["lanes"]
-                ],
+        if http.expired():
+            outcome = {
+                "ticker": symbol,
+                "status": "not_started",
+                "error": "Not computed: the batch deadline was reached first.",
             }
-        )
+        else:
+            try:
+                packet = football_field(symbol, asof, http=http)
+            except (ProviderError, ValueError, KeyError) as e:
+                status = "timed_out" if http.expired() else "error"
+                outcome = {"ticker": symbol, "status": status, "error": str(e)}
+            else:
+                outcome = {
+                    "ticker": packet["ticker"],
+                    # A deadline hit inside this ticker leaves some lanes unavailable.
+                    "status": "partial" if http.timed_out else "complete",
+                    "company_name": packet.get("company_name"),
+                    "market_price": packet.get("market_price"),
+                    "lanes": [
+                        {"label": lane["label"], "value": lane["value"],
+                         "upside": lane.get("upside")}
+                        for lane in packet["lanes"]
+                    ],
+                }
+        computed[symbol] = outcome
+        results.append(dict(outcome))
     return jsonify(asof=asof, results=results)
 
 
@@ -679,6 +713,7 @@ def compare_api():
             raw.get("ticker"),
             datetime.now(timezone.utc).date().isoformat(),
             dcf_assumptions=raw.get("assumptions"),
+            snapshot=raw.get("snapshot"),
         )
         return jsonify(packet)
     except ValueError as e:
@@ -795,7 +830,7 @@ def assemble_api(method):
         if not isinstance(raw, dict) or not isinstance(raw.get("financials"), dict):
             raise ValueError("Provide a loaded company snapshot.")
         doc = raw["financials"]
-        parse_document(doc)
+        parse_document(doc, minority_may_be_negative=method in {"ddm", "relative"})
         return jsonify(
             load_method(
                 method,
@@ -826,7 +861,8 @@ def peer_api():
         asof = datetime.now(timezone.utc).date().isoformat()
         from ppe_provider import prefer_ppe
 
-        doc = prefer_ppe(load_company_metrics(symbol, asof, JsonHTTP(budget=12)), symbol, asof)
+        http = JsonHTTP(budget=12)
+        doc = prefer_ppe(load_company_metrics(symbol, asof, http), symbol, asof, deadline=http.deadline)
         return jsonify(
             ticker=symbol,
             name=doc["company"]["name"],
@@ -1102,10 +1138,32 @@ def share_valuation():
         raw = request.get_json(silent=True)
         if not isinstance(raw, dict):
             raise ValueError("Send a valuation id to share.")
-        token = library.create_share(raw.get("valuation_id"))
+        token = library.create_share(
+            raw.get("valuation_id"), raw.get("expires_in_days")
+        )
         return jsonify(token=token, url=f"/v/{token}")
     except ValueError as e:
         return jsonify(error=str(e)), 400
+
+
+@app.get("/api/shares")
+def list_shares_api():
+    try:
+        offset = int(request.args.get("offset", "0"))
+        if not 0 <= offset <= 9223372036854775807:
+            raise ValueError
+    except ValueError:
+        return jsonify(error="Share offset must be a nonnegative integer."), 400
+    return jsonify(library.list_shares(offset))
+
+
+@app.delete("/api/share/<token>")
+def revoke_share_api(token):
+    try:
+        library.revoke_share(token)
+        return jsonify(revoked=True)
+    except ValueError as e:
+        return jsonify(error=str(e)), 404
 
 
 @app.get("/v/<token>")
@@ -1113,7 +1171,10 @@ def shared_view(token):
     bundle = library.shared_valuation(token)
     if bundle is None:
         return render_template(
-            "compare.html", ticker="", packet=None, error="This shared link is unknown."
+            "compare.html",
+            ticker="",
+            packet=None,
+            error="This shared link is unknown, expired or revoked.",
         ), 404
     doc, result = bundle["financials"], bundle["result"]
     result["saved_record_id"] = None

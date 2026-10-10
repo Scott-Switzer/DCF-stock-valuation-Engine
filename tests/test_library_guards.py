@@ -59,27 +59,59 @@ def test_watchlist_is_capped_per_owner(tmp_path, monkeypatch):
     assert again.status_code == 200
 
 
-def test_watch_refresh_stops_after_time_budget(monkeypatch):
-    monkeypatch.setattr(library, "list_watch", lambda: [
-        {"ticker": "AAA", "target": 1, "direction": "above", "created_at": "x"},
-        {"ticker": "BBB", "target": 1, "direction": "above", "created_at": "x"},
-    ])
+WATCH_ENTRIES = [
+    {"ticker": "AAA", "target": 1, "direction": "above", "created_at": "x"},
+    {"ticker": "BBB", "target": 1, "direction": "above", "created_at": "x"},
+    {"ticker": "CCC", "target": 1, "direction": "above", "created_at": "x"},
+]
+
+
+def test_watch_refresh_uses_quotes_and_never_loads_statements(monkeypatch):
     import auto_loading
-    import time as time_module
+    import yahoo_provider
 
-    clock = iter([0.0, 0.5, 100.0, 100.0])
-    monkeypatch.setattr(time_module, "monotonic", lambda: next(clock))
-    calls = []
+    monkeypatch.setattr(library, "list_watch", lambda: WATCH_ENTRIES[:2])
 
-    def fake_load(method, ticker, asof):
-        calls.append(ticker)
-        return {"financials": {"market": {"price": 5.0, "price_as_of": "2026-10-06"}}}
+    def full_load(*args, **kwargs):
+        raise AssertionError("watch refresh must not load statements or peers")
 
-    monkeypatch.setattr(auto_loading, "load_method", fake_load)
+    monkeypatch.setattr(auto_loading, "load_method", full_load)
+    quotes = []
+
+    def fake_quote(ticker, asof, http=None):
+        quotes.append(ticker)
+        return {"ticker": ticker, "price": 5.0, "price_as_of": "2026-10-06"}
+
+    monkeypatch.setattr(yahoo_provider, "latest_quote", fake_quote)
     states = library.check_watch()
-    assert calls == ["AAA"]
+    assert quotes == ["AAA", "BBB"]
     assert states[0]["price"] == 5.0
-    assert states[1]["price"] is None and "Reload" in states[1]["error"]
+    assert states[0]["price_as_of"] == "2026-10-06"
+    assert states[0]["breached"] is True
+
+
+def test_watch_refresh_stops_at_shared_budget(monkeypatch):
+    import dcf_loader
+    import yahoo_provider
+    from fake_clock import FakeClock
+
+    clock = FakeClock()
+    monkeypatch.setattr(dcf_loader, "time", clock.module())
+    monkeypatch.setattr(library, "list_watch", lambda: WATCH_ENTRIES)
+    # Each quote advances the fake clock 0.3 s against a 0.45 s budget, so the
+    # third ticker finds the deadline passed. No wall-clock timing is involved.
+    monkeypatch.setattr(library, "WATCH_BUDGET_SECONDS", 0.45)
+    quotes = []
+
+    def slow_quote(ticker, asof, http=None):
+        quotes.append(ticker)
+        clock.advance(0.3)
+        return {"ticker": ticker, "price": 5.0, "price_as_of": "2026-10-06"}
+
+    monkeypatch.setattr(yahoo_provider, "latest_quote", slow_quote)
+    states = library.check_watch()
+    assert quotes == ["AAA", "BBB"]
+    assert states[2]["price"] is None and "Reload" in states[2]["error"]
 
 
 @pytest.mark.parametrize("method,path,binding", [

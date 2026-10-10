@@ -191,6 +191,22 @@ def test_zion_retains_provenance_and_normalizes_capex_outflow():
     parse_document(doc).validate()
 
 
+def test_zion_unmapped_packet_metrics_are_recorded_not_mapped():
+    packet = zion_packet()
+    annual = packet["fundamentals"]["annual"]
+    template = dict(next(o for o in annual if o["metric_id"] == "revenue"))
+    packet["fundamentals"]["annual"] = annual + [
+        {**template, "metric_id": "shares_outstanding", "unit": "shares"},
+        {**template, "metric_id": "cash", "unit": "USD"},
+    ]
+    doc = zion_document(packet, "TEST", "2026-10-06")
+    excluded = doc["source"]["excluded_metrics"]
+    assert "shares_outstanding" in excluded and "cash" in excluded
+    assert "weighted_average_diluted_shares" not in excluded
+    # The basic share count must never become diluted shares.
+    assert doc["market"]["diluted_shares"] == 100
+
+
 def test_zion_currency_is_not_silently_converted():
     packet = zion_packet()
     packet["fundamentals"]["annual"][0]["unit"] = "EUR"
@@ -329,3 +345,43 @@ def test_edge_provider_cache_reuses_public_response_before_fetch(monkeypatch):
         "price": 123
     }
     assert len(calls) == 2
+
+
+def test_expired_budget_is_recorded_as_timeout(tmp_path, monkeypatch):
+    monkeypatch.setenv("DCF_STATE_PATH", str(tmp_path / "state.sqlite3"))
+    http = JsonHTTP(budget=0)
+    assert http.expired()
+    with pytest.raises(ProviderError):
+        http.get("https://provider.example/anything")
+    assert http.timed_out is True
+
+
+def test_latest_quote_reads_one_day_metadata_only(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+
+    import yahoo_provider
+
+    monkeypatch.setenv("DCF_STATE_PATH", str(tmp_path / "state.sqlite3"))
+    stamp = datetime(2026, 10, 6, 12, tzinfo=timezone.utc).timestamp()
+
+    class FakeHTTP:
+        def __init__(self, meta):
+            self.calls = []
+            self.meta = meta
+
+        def get(self, url, **kwargs):
+            self.calls.append(kwargs.get("params"))
+            return {"chart": {"result": [{"meta": self.meta}], "error": None}}
+
+    meta = {
+        "symbol": "DEMO", "instrumentType": "EQUITY", "currency": "USD",
+        "regularMarketPrice": 20.0, "regularMarketTime": stamp,
+    }
+    http = FakeHTTP(meta)
+    quote = yahoo_provider.latest_quote("DEMO", "2026-10-08", http)
+    assert quote == {"ticker": "DEMO", "price": 20.0, "price_as_of": "2026-10-06"}
+    assert http.calls == [{"range": "5d", "interval": "1d"}]
+    with pytest.raises(ProviderError):
+        yahoo_provider.latest_quote("DEMO", "2026-10-05", FakeHTTP(meta))
+    with pytest.raises(ProviderError):
+        yahoo_provider.latest_quote("DEMO", "2026-10-08", FakeHTTP({**meta, "currency": "EUR"}))

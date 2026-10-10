@@ -20,9 +20,11 @@ jobs:
           cache: pip
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
+      - name: Build the shipped Worker bundle before testing
+        run: python scripts/embed_assets.py
       - run: pytest -q
-      - run: node --check static/js/app.js
-      - run: node --check static/js/suite.js
-      - run: node --check static/js/context.js
-      - run: node --check static/js/editor.js
-      - run: node --check static/js/workspace.js
+      - name: Syntax-check every shipped script
+        run: |
+          for f in static/js/*.js; do
+            node --check "$f"
+          done

@@ -128,3 +128,30 @@ def test_incompatible_merged_model_uses_baseline_instead_of_500():
         result = prefer_ppe(baseline, "DEMO", baseline["valuation_date"])
     assert result["historical"][-1]["tax_rate"] == baseline["historical"][-1]["tax_rate"]
     assert "input requirements" in result["source"]["ppe_status"]
+
+
+def test_slow_ppe_promise_is_bounded_by_shared_deadline(monkeypatch):
+    import asyncio
+    import sys
+    import time
+    from types import SimpleNamespace
+    from ppe_provider import _wait
+
+    monkeypatch.setitem(sys.modules, 'pyodide.ffi', SimpleNamespace(run_sync=asyncio.run))
+    async def slow():
+        await asyncio.sleep(5)
+    start = time.monotonic()
+    with __import__('pytest').raises(ProviderError, match='shared request deadline'):
+        _wait(slow(), start + 0.02)
+    assert time.monotonic() - start < 0.5
+
+
+def test_ppe_pointer_and_body_receive_same_deadline(monkeypatch):
+    from types import SimpleNamespace
+    import ppe_provider
+    calls = []
+    monkeypatch.setattr(ppe_provider, '_object_json', lambda bucket, key, **kw: calls.append(kw['deadline']))
+    with app.test_request_context('/', environ_overrides={'workers.env': SimpleNamespace(PPE_DATA=object())}):
+        monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
+        assert ppe_provider.load_packet('AAPL', '2026-10-10', deadline=123.0) is None
+    assert calls == [123.0]

@@ -69,6 +69,7 @@ def test_excluding_peer_leaves_other_peers_sourced(client):
     doc = suite_sample("relative")
     form = suite_form("relative", doc)
     form.update(peer_selection="explicit", peer_include_0="yes")
+    form.update({f"peer_include_{i}": "" for i in range(1, 4)})
     response = client.post("/api/preview/relative", data=form)
     assert response.status_code == 200, response.get_json()
     assert len(response.get_json()["input_financials"]["comparables"]) == 1

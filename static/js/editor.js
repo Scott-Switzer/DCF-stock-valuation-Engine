@@ -342,15 +342,17 @@
       original.before(details);
       details.append(original);
     }
-    const marker = document.createElement("input");
+    const marker = field("peer_selection") || document.createElement("input");
     marker.type = "hidden";
     marker.name = "peer_selection";
     marker.value = "explicit";
     form.append(marker);
     for (let i = 0; i < 4; i++) {
-      const include = document.createElement("input");
+      const include = field(`peer_include_${i}`) || document.createElement("input");
+      const selected = include.type === "checkbox" ? include.checked : include.value === "yes";
       include.type = "hidden";
       include.name = `peer_include_${i}`;
+      include.value = selected ? "yes" : "";
       form.append(include);
     }
   }
@@ -359,7 +361,8 @@
       set(`peer_${key}_${index}`, peer?.[key] || "");
     for (const key of ["ev_revenue", "ev_ebitda", "ev_ebit", "pe", "pb"])
       set(`peer_${key}_${index}`, peer?.multiples?.[key] ?? "");
-    set(`peer_include_${index}`, peer ? "yes" : "");
+    const reviewed = peer && !["candidate", "excluded"].includes(peer.review_status);
+    set(`peer_include_${index}`, reviewed ? "yes" : "");
   }
   function peerStats(index) {
     const element = peerBox?.querySelector(`[data-peer-stats="${index}"]`);

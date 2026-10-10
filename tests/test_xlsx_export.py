@@ -109,6 +109,21 @@ def test_export_endpoints_serve_xlsx():
     assert xlsx.data[:2] == b"PK"
 
 
+def test_relative_implied_price_formulas_are_well_formed():
+    rc = suite_sample("relative")
+    ca = RelativeAssumptions(included_methods=["ev_revenue", "ev_ebitda", "pe"])
+    sheets = cells(relative_workbook(rc, asdict(ca), suite_evaluate("relative", rc, ca)))
+    model = sheets["xl/worksheets/sheet4.xml"]
+    prices = [
+        e for addr, e, _ in model
+        if e and addr[0] == "D" and addr[1:].isdigit() and 2 <= int(addr[1:]) <= 6
+    ]
+    assert len(prices) == 5
+    for expr in prices:
+        # A nested "=" inside a function call is an invalid Excel formula.
+        assert not re.search(r"[(,]=", expr), expr
+
+
 def test_suite_export_xlsx():
     client = app.test_client()
     dd = suite_sample("ddm")

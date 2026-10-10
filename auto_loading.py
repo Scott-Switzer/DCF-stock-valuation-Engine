@@ -8,6 +8,8 @@ from dataclasses import asdict
 from dcf_code import DCFAssumptions, DCFModel
 from dcf_loader import JsonHTTP, ProviderError, parse_document, ticker_symbol, provider_setting
 from yahoo_provider import load_yahoo, load_company_metrics, recalculate_costs, BASE, HEADERS
+from issuer_classification import financial_block_reason, is_financial_sic, resolve_classification
+from readiness import reliable_peers
 
 # Starter sets are visible and editable, not a claim that all businesses are identical.
 PEER_GROUPS = (
@@ -153,17 +155,19 @@ def load_method(
     credit_spread=0.015,
     snapshot=None,
     forecast_assumptions=None,
+    http=None,
 ):
+    """Load one method. ``http`` lets a caller share one request-wide deadline."""
     if method not in {"dcf", "ddm", "relative"}:
         raise ValueError("Choose DCF, DDM or relative valuation.")
-    from decision_support import historical_growth, peer_fit
+    from decision_support import historical_growth, peer_fit, peer_review_status
 
     start = time.monotonic()
     asof = asof or datetime.now(timezone.utc).date().isoformat()
     ticker = ticker_symbol(ticker)
-    http = JsonHTTP(budget=40)
+    http = http or JsonHTTP(budget=40)
     if snapshot is not None:
-        parse_document(snapshot)
+        parse_document(snapshot, minority_may_be_negative=True)
         dcf = deepcopy(snapshot)
         if dcf["company"]["ticker"] != ticker:
             raise ValueError("Company snapshot ticker does not match.")
@@ -187,7 +191,7 @@ def load_method(
             include_capital_costs=method != "relative",
             require_wacc=method == "dcf",
         )
-        dcf = prefer_ppe(dcf, ticker, asof)
+        dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None))
         dcf["source"]["revenue_growth_reference"] = historical_growth(dcf["historical"], "revenue")
         dividend_rows = dcf["source"]["common_dividends"]["historical"]
         dcf["source"]["dividend_growth_reference"] = historical_growth(dividend_rows, "value")
@@ -204,25 +208,29 @@ def load_method(
             "value",
         )
         try:
-            classification = company_classification(ticker, http)
+            sec = company_classification(ticker, http)
         except ProviderError:
-            classification = None
-        if classification:
-            dcf["source"]["classification"] = classification
-            dcf["company"]["sector"] = classification["description"]
-            sic = int(classification["sic"])
-            if 6000 <= sic <= 6999:
-                raise ProviderError(
-                    "Automatic loading currently supports operating companies. This SEC industry needs sector-specific financial-firm or real-estate inputs."
-                )
+            sec = None
+        # Financial firms still load: the DCF is blocked by classification, and P/E and P/B stay available.
+        classification = resolve_classification(ticker, sec)
+        dcf["source"]["classification"] = classification
+        if classification["status"] == "confirmed":
+            dcf["company"]["sector"] = classification["description"] or dcf["company"].get("sector", "")
+            dcf["company"]["is_financial"] = is_financial_sic(classification["sic"])
             dcf["source"]["warnings"] = [
                 w
                 for w in dcf["source"]["warnings"]
                 if not w.startswith("Sector and industry are unavailable")
             ]
+            if classification["source"] != "SEC submissions":
+                dcf["source"]["warnings"].append(
+                    f"SEC submissions were unavailable; SIC {classification['sic']} comes from the reviewed "
+                    f"classification registry v{classification['registry_version']} "
+                    f"({classification['source']}, source {classification['source_url']})."
+                )
         else:
             dcf["source"]["warnings"].append(
-                "SEC industry classification was unavailable; review the operating-company suitability confirmation."
+                "No confirmed industry classification is available; confirm operating-company suitability before relying on FCFF DCF."
             )
         costs = (
             recalculate_costs(dcf, equity_risk_premium, credit_spread)
@@ -276,7 +284,8 @@ def load_method(
         a = forecast_assumptions or DCFAssumptions(
             revenue_growth_rates=[0.05] * 5, terminal_growth_rate=0.02
         )
-        forecast_model = DCFModel(parse_document(dcf), a)
+        # The forecast feeds relative multiples only; negative minority is not used there.
+        forecast_model = DCFModel(parse_document(dcf, minority_may_be_negative=True), a)
         first = forecast_model.forecast_cash_flows()[0]
         latest = dcf["historical"][-1]
         common = dcf["source"]["common_book_equity"]["value"]
@@ -329,8 +338,14 @@ def load_method(
                 }
             )
             try:
-                peer = prefer_ppe(load_company_metrics(symbol, asof, http), symbol, asof)
+                peer = prefer_ppe(load_company_metrics(symbol, asof, http), symbol, asof, deadline=getattr(http, "deadline", None))
                 suggestions[-1].update(name=peer["company"]["name"], available=True)
+                fit = peer_fit(
+                    ticker,
+                    symbol,
+                    dcf["market"]["price"] * dcf["market"]["diluted_shares"],
+                    peer["market"]["price"] * peer["market"]["diluted_shares"],
+                )
                 doc["comparables"].append(
                     {
                         "ticker": symbol,
@@ -340,12 +355,9 @@ def load_method(
                         "currency": "USD",
                         "source": f"{peer['source']['name']} / fiscal {peer['historical'][-1]['period_end']}",
                         "multiples": relative_metrics(peer),
-                        "fit": peer_fit(
-                            ticker,
-                            symbol,
-                            dcf["market"]["price"] * dcf["market"]["diluted_shares"],
-                            peer["market"]["price"] * peer["market"]["diluted_shares"],
-                        ),
+                        "fit": fit,
+                        # Unverified candidates are shown but do not feed automatic valuations.
+                        "review_status": peer_review_status(fit),
                         "provenance": {
                             "financials": peer["historical"][-1],
                             "bridge": peer["bridge"],
@@ -367,15 +379,18 @@ def load_method(
                 suggestion.update(fitted[suggestion["ticker"]]["fit"])
         suggestions.sort(key=lambda peer: peer["score"], reverse=True)
         doc["source"]["peer_suggestions"] = suggestions
+        # Financial firms and negative noncontrolling interest block EV-based multiples only.
+        ev_blocked = doc["bridge"]["minority_interest"] < 0 or bool(financial_block_reason(doc))
         included = [
             k
-            for k in ["ev_revenue", "ev_ebitda", "pe"]
+            for k in (["pe"] if ev_blocked else ["ev_revenue", "ev_ebitda", "pe"])
             if doc["target"]["forward"][
                 {"ev_revenue": "revenue", "ev_ebitda": "ebitda", "pe": "net_income"}[k]
             ]
             > 0
             and any(
-                p["multiples"][k] is not None and p["multiples"][k] > 0 for p in doc["comparables"]
+                p["multiples"][k] is not None and p["multiples"][k] > 0
+                for p in reliable_peers(doc["comparables"])
             )
         ]
         form = suite_form(method, doc)
@@ -386,7 +401,10 @@ def load_method(
             }
         )
         if included:
-            suite_evaluate(method, doc, suite_assumptions(method, {"included_methods": included}))
+            suite_evaluate(
+                method, dict(doc, comparables=reliable_peers(doc["comparables"])),
+                suite_assumptions(method, {"included_methods": included}),
+            )
     return {
         "financials": doc,
         "form": form,

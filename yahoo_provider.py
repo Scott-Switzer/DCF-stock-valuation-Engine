@@ -33,6 +33,49 @@ def chart(http, symbol):
     return envelope["result"][0]
 
 
+def latest_chart(http, symbol):
+    """One-day chart request: current metadata only, no weekly history."""
+    packet = http.get(
+        f"{BASE}/v8/finance/chart/{quote(symbol, safe='')}",
+        headers=HEADERS,
+        params={"range": "5d", "interval": "1d"},
+        ttl=300,
+        cache_key=f"yahoo-latest-v1-{symbol}",
+    )
+    envelope = packet.get("chart", {})
+    if envelope.get("error") or not envelope.get("result"):
+        raise ProviderError(f"Yahoo quote is unavailable for {symbol}.")
+    return envelope["result"][0]
+
+
+def market_quote(meta, asof):
+    """Validated current price and its date from chart metadata."""
+    price = finite(meta.get("regularMarketPrice"), "current price")
+    price_day = (
+        datetime.fromtimestamp(
+            finite(meta.get("regularMarketTime"), "price timestamp"), timezone.utc
+        )
+        .date()
+        .isoformat()
+    )
+    if price <= 0 or price_day > asof:
+        raise ProviderError("Yahoo market price or date is invalid.")
+    return price, price_day
+
+
+def latest_quote(ticker, asof, http=None):
+    """Price for watchlist refresh. Never loads statements, peers or capital costs."""
+    symbol = ticker_symbol(ticker)
+    http = http or JsonHTTP()
+    meta = latest_chart(http, symbol).get("meta", {})
+    if meta.get("symbol") != symbol or meta.get("instrumentType") != "EQUITY":
+        raise ProviderError("Yahoo requires an operating-company equity ticker.")
+    if meta.get("currency") != "USD":
+        raise ProviderError("Yahoo market currency must be USD.")
+    price, price_day = market_quote(meta, asof)
+    return {"ticker": symbol, "price": price, "price_as_of": price_day}
+
+
 def weekly_returns(packet):
     timestamps = packet.get("timestamp", [])
     blocks = packet.get("indicators", {}).get("adjclose", [])
@@ -130,16 +173,7 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc
         raise ProviderError("Yahoo requires an operating-company equity ticker.")
     if meta.get("currency") != "USD":
         raise ProviderError("Yahoo market currency must be USD.")
-    price = finite(meta.get("regularMarketPrice"), "current price")
-    price_day = (
-        datetime.fromtimestamp(
-            finite(meta.get("regularMarketTime"), "price timestamp"), timezone.utc
-        )
-        .date()
-        .isoformat()
-    )
-    if price <= 0 or price_day > asof:
-        raise ProviderError("Yahoo market price or date is invalid.")
+    price, price_day = market_quote(meta, asof)
     raw = http.get(
         f"{BASE}/ws/fundamentals-timeseries/v1/finance/timeseries/{ticker}",
         headers=HEADERS,
@@ -262,6 +296,11 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc
             )
         warnings.append(
             "Minority interest is inferred as total equity including minority interest minus stockholders equity."
+        )
+    if minority < 0:
+        warnings.append(
+            f"Reported minority interest is negative ({minority:,.0f} USD) and is carried as reported. "
+            "FCFF DCF and EV-based multiples are blocked by it; P/E and P/B do not use it."
         )
     if preferred != 0 and include_capital_costs and require_wacc:
         raise ProviderError(
@@ -403,7 +442,7 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc
         if isinstance(value, (int, float)):
             finite(value, key)
     try:
-        parse_document(doc)
+        parse_document(doc, minority_may_be_negative=True)
     except ValueError as exc:
         raise ProviderError(f"Yahoo financial snapshot failed validation: {exc}") from None
     return doc

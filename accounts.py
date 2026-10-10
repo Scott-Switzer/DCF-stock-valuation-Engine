@@ -122,10 +122,17 @@ def signup(email_raw, password_raw, anonymous=None):
     if library._fetchall("SELECT id FROM users WHERE email=?", (email,)):
         raise ValueError("That email already has an account. Sign in instead.")
     user_id = str(uuid.uuid4())
-    library._run(
-        "INSERT INTO users(id,email,password_hash,created_at) VALUES (?,?,?,?)",
-        (user_id, email, hash_password(password), library.now()),
-    )
+    try:
+        library._run(
+            "INSERT INTO users(id,email,password_hash,created_at) VALUES (?,?,?,?)",
+            (user_id, email, hash_password(password), library.now()),
+        )
+    except Exception as exc:
+        # Two concurrent signups can both pass the SELECT above; the UNIQUE
+        # constraint then decides. Only that failure becomes the friendly message.
+        if library.is_unique_violation(exc):
+            raise ValueError("That email already has an account. Sign in instead.") from None
+        raise
     claim_anonymous(anonymous, f"user:{user_id}")
     return user_id, email
 

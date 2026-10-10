@@ -1,0 +1,59 @@
+name: Public Worker smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 16 * * *'
+  pull_request:
+    paths:
+      - 'scripts/smoke_public.py'
+      - '.github/workflows/live-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify Worker bundle imports
+        run: |
+          python scripts/embed_assets.py
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          root_modules = {p.stem for p in Path(".").glob("*.py")}
+          bundled = {p.stem for p in Path("worker_runtime").glob("*.py")}
+          missing = set()
+          for path in Path("worker_runtime").glob("*.py"):
+              for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+                  if isinstance(node, ast.ImportFrom) and node.module:
+                      name = node.module.split(".")[0]
+                      if name in root_modules and name not in bundled:
+                          missing.add(name)
+                  elif isinstance(node, ast.Import):
+                      for item in node.names:
+                          name = item.name.split(".")[0]
+                          if name in root_modules and name not in bundled:
+                              missing.add(name)
+          if missing:
+              raise SystemExit(f"Missing bundled local modules: {sorted(missing)}")
+          print(f"Bundle local-module audit: PASS ({len(bundled)} modules)")
+          PY
+      - name: Validate smoke script syntax
+        run: python -m py_compile scripts/smoke_public.py
+      - name: Probe deployed public Worker (non-saving)
+        run: python scripts/smoke_public.py --require-ppe --timeout 30 --output public-smoke.json
+      - name: Retain smoke test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-worker-smoke
+          path: public-smoke.json
+          if-no-files-found: ignore

@@ -12,10 +12,12 @@ Exit status 0 means three annual revenue periods mapped at the valuation date.
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 import requests
 
+READ_TIMEOUT_SECONDS = 30  # Measured MSFT/NVDA responses take 3-9s and 2.3-3.0 MB.
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
@@ -53,6 +55,7 @@ def summarize(packet, ticker, asof):
         "price_mapped": doc["market"]["price"] is not None,
         "diluted_shares_mapped": doc["market"]["diluted_shares"] is not None,
         "unmapped_metric_ids": sorted(m for m in seen if m and m not in mapped),
+        "excluded_metric_ids": sorted(doc["source"].get("excluded_metrics", {})),
         "blank_history_fields": blank,
         "warnings": doc["source"]["warnings"],
     }
@@ -70,21 +73,32 @@ def probe(argv):
         return 2
     token = os.getenv("ZION_API_TOKEN", "")
     headers = {"Authorization": f"Bearer {token}"} if token else {}
+    started = time.monotonic()
     try:
         response = requests.get(
             f"{base}/v1/company/{ticker}",
             headers=headers,
             params={"as_of": f"{asof}T23:59:59Z", "limit": 1000},
-            timeout=(3, 10),
+            timeout=(3, READ_TIMEOUT_SECONDS),
             allow_redirects=False,
         )
+        elapsed = time.monotonic() - started
         if response.status_code != 200:
             print(f"Provider returned HTTP {response.status_code}.", file=sys.stderr)
             return 1
         summary = summarize(response.json(), ticker, asof)
+    except requests.Timeout:
+        print(
+            f"Provider read exceeded {READ_TIMEOUT_SECONDS}s. This is a latency result, "
+            "not a contract failure.",
+            file=sys.stderr,
+        )
+        return 1
     except (requests.RequestException, ValueError, ProviderError) as exc:
         print(f"Probe failed: {type(exc).__name__}. Check the endpoint contract.", file=sys.stderr)
         return 1
+    summary["elapsed_seconds"] = round(elapsed, 2)
+    summary["response_bytes"] = len(response.content)
     print(json.dumps(summary, indent=2))
     return 0 if len(summary["periods"]) == 3 else 1
 

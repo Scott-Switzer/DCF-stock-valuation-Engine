@@ -882,19 +882,18 @@ def relative_workbook(doc, a, r):
         fwd = f"Inputs!$B${metric_rows[('forward', metric)]}"
         model.link(rr, 3, fwd, XF_LINK_US)
         if key.startswith("ev_"):
-            implied = f"=(B{rr}*{fwd}-({claims}))/{SH}"
+            implied = f"(B{rr}*{fwd}-({claims}))/{SH}"
         else:
-            implied = f"=(B{rr}*{fwd})/{SH}"
+            implied = f"(B{rr}*{fwd})/{SH}"
         model.formula(rr, 4, f"=MAX(0,{implied})", XF_US2)
         model.text(rr, 5, "yes" if key in a["included_methods"] else "no", XF_IN_TEXT)
     trow = 2 + len(keys) + 1
     model.text(trow, 1, "Net common claims", XF_LABEL)
     model.formula(trow, 2, f"=({claims})", XF_LINK_US)
     model.text(trow + 1, 1, "12-month target (mean of included)", XF_LABEL)
-    included_cells = ",".join(
-        f"D{2 + i}" for i, key in enumerate(keys) if key in a["included_methods"]
-    )
-    model.formula(trow + 1, 2, f"=AVERAGE({included_cells})", XF_LINK_US2)
+    last = 1 + len(keys)
+    target = f'=AVERAGEIF(E2:E{last},"yes",D2:D{last})'
+    model.formula(trow + 1, 2, target, XF_LINK_US2)
     model.text(trow + 2, 1, "Upside vs market")
     model.formula(trow + 2, 2, f'=IF({PR}=0,"n/a",B{trow + 1}/{PR}-1)', XF_LINK_PCT)
 
@@ -903,7 +902,7 @@ def relative_workbook(doc, a, r):
         [
             ("Net common claims", f"Model!B{trow}", f"=({claims})",
              "Debt-like claims minus cash-like assets.", XF_LINK_US),
-            ("12-month target", f"Model!B{trow + 1}", f"=AVERAGE({included_cells})",
+            ("12-month target", f"Model!B{trow + 1}", target,
              "Equal-weighted mean of included implied prices.", XF_LINK_US2),
         ],
     )
