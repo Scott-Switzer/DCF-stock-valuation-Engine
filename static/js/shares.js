@@ -5,9 +5,11 @@
   var message = document.getElementById("share-message");
   var offset = 0;
   var pageSize = 50;
+  var loading = false;
+  var hasOlder = false;
   var paging = document.createElement("div");
-  var previous = button("Previous links", function () { offset = Math.max(0, offset - pageSize); load(); });
-  var next = button("Older links", function () { offset += pageSize; load(); });
+  var previous = button("Previous links", function () { load(Math.max(0, offset - pageSize)); });
+  var next = button("Older links", function () { load(offset + pageSize); });
   paging.appendChild(previous);
   paging.appendChild(next);
   list.parentNode.insertBefore(paging, list.nextSibling);
@@ -59,8 +61,7 @@
   }
 
   function render(shares) {
-    previous.disabled = offset === 0;
-    next.disabled = shares.length < pageSize;
+    hasOlder = shares.length === pageSize;
     list.textContent = "";
     if (!shares.length) {
       var empty = document.createElement("li");
@@ -82,14 +83,24 @@
     });
   }
 
-  function load() {
-    fetch("/api/shares?offset=" + offset, { credentials: "same-origin", headers: { Accept: "application/json" } })
+  function controls() {
+    previous.disabled = loading || offset === 0;
+    next.disabled = loading || !hasOlder;
+  }
+
+  function load(requestedOffset) {
+    if (loading) return;
+    var targetOffset = requestedOffset === undefined ? offset : requestedOffset;
+    loading = true;
+    controls();
+    fetch("/api/shares?offset=" + targetOffset, { credentials: "same-origin", headers: { Accept: "application/json" } })
       .then(function (response) {
         if (!response.ok) throw new Error("load");
         return response.json();
       })
-      .then(render)
-      .catch(function () { status("Could not load shared links.", true); });
+      .then(function (shares) { offset = targetOffset; render(shares); })
+      .catch(function () { status("Could not load shared links. Retry the same page.", true); })
+      .finally(function () { loading = false; controls(); });
   }
 
   load();
