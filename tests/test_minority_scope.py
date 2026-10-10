@@ -86,3 +86,25 @@ def test_relative_assembly_accepts_signed_minority_snapshot(monkeypatch):
     response = app.test_client().post("/api/assemble/relative", json={"financials": doc})
     assert response.status_code == 200
     assert response.get_json()["assembled"] is True
+
+
+def test_browser_equity_form_preserves_negative_minority():
+    from suite_views import suite_form, suite_form_payload
+    from werkzeug.datastructures import MultiDict
+
+    doc = with_negative_minority(sample_relative())
+    form = suite_form("relative", doc)
+    for key in ["ev_revenue", "ev_ebitda", "ev_ebit"]:
+        form[f"include_{key}"] = ""
+    form.update(include_pe="yes", include_pb="yes")
+    loaded, assumptions = suite_form_payload("relative", MultiDict(form))
+    assert loaded["bridge"]["minority_interest"] == NEGATIVE_NCI
+    assert suite_evaluate("relative", loaded, assumptions)["target_price_12m"] > 0
+
+
+def test_confirmed_financial_sic_blocks_ev_without_company_flag():
+    doc = sample_relative()
+    doc["source"]["classification"] = {"sic": "6200", "status": "confirmed"}
+    doc["company"]["is_financial"] = False
+    with pytest.raises(ValueError, match="financial firms"):
+        suite_evaluate("relative", doc, RelativeAssumptions(["ev_ebitda"]))

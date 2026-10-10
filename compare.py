@@ -14,6 +14,7 @@ from dcf_code import DCFAssumptions
 from dcf_loader import ProviderError, ticker_symbol
 from readiness import method_readiness, reliable_peers
 from residual_income import residual_income_value
+from issuer_classification import financial_block_reason
 from suite_views import suite_assumptions, suite_evaluate
 
 
@@ -217,7 +218,7 @@ def football_field(ticker, asof=None, dcf_assumptions=None, snapshot=None, http=
         )
         rel_doc = rel_bundle["financials"]
         # Financial firms and a negative noncontrolling interest block EV-based multiples only.
-        ev_blocked = rel_doc["bridge"]["minority_interest"] < 0 or rel_doc["company"].get("is_financial") is True
+        ev_blocked = rel_doc["bridge"]["minority_interest"] < 0 or bool(financial_block_reason(rel_doc))
         candidates = ["pe"] if ev_blocked else ["ev_revenue", "ev_ebitda", "pe"]
         # Unreviewed candidate peers never feed an automatic relative value.
         reviewed = reliable_peers(rel_doc["comparables"])

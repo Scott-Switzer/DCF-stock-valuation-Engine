@@ -8,7 +8,7 @@ from dataclasses import asdict
 from dcf_code import DCFAssumptions, DCFModel
 from dcf_loader import JsonHTTP, ProviderError, parse_document, ticker_symbol, provider_setting
 from yahoo_provider import load_yahoo, load_company_metrics, recalculate_costs, BASE, HEADERS
-from issuer_classification import is_financial_sic, resolve_classification
+from issuer_classification import financial_block_reason, is_financial_sic, resolve_classification
 from readiness import reliable_peers
 
 # Starter sets are visible and editable, not a claim that all businesses are identical.
@@ -380,7 +380,7 @@ def load_method(
         suggestions.sort(key=lambda peer: peer["score"], reverse=True)
         doc["source"]["peer_suggestions"] = suggestions
         # Financial firms and negative noncontrolling interest block EV-based multiples only.
-        ev_blocked = doc["bridge"]["minority_interest"] < 0 or doc["company"].get("is_financial") is True
+        ev_blocked = doc["bridge"]["minority_interest"] < 0 or bool(financial_block_reason(doc))
         included = [
             k
             for k in (["pe"] if ev_blocked else ["ev_revenue", "ev_ebitda", "pe"])
@@ -401,7 +401,10 @@ def load_method(
             }
         )
         if included:
-            suite_evaluate(method, doc, suite_assumptions(method, {"included_methods": included}))
+            suite_evaluate(
+                method, dict(doc, comparables=reliable_peers(doc["comparables"])),
+                suite_assumptions(method, {"included_methods": included}),
+            )
     return {
         "financials": doc,
         "form": form,

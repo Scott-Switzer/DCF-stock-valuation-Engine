@@ -359,7 +359,8 @@
       set(`peer_${key}_${index}`, peer?.[key] || "");
     for (const key of ["ev_revenue", "ev_ebitda", "ev_ebit", "pe", "pb"])
       set(`peer_${key}_${index}`, peer?.multiples?.[key] ?? "");
-    set(`peer_include_${index}`, peer ? "yes" : "");
+    const reviewed = peer && !["candidate", "excluded"].includes(peer.review_status);
+    set(`peer_include_${index}`, reviewed ? "yes" : "");
   }
   function peerStats(index) {
     const element = peerBox?.querySelector(`[data-peer-stats="${index}"]`);

@@ -320,7 +320,9 @@ class RelativeModel:
             ).lower()
             for t in ["bank", "insurance", "financial service", "investment firm"]
         )
-        financial = financial or doc["company"].get("is_financial") is True
+        from issuer_classification import financial_block_reason
+
+        financial = financial or bool(financial_block_reason(doc))
         if financial and any(k.startswith("ev_") for k in a.included_methods):
             raise ValueError(
                 "For financial firms, use equity multiples P/E and P/B only, as in CUIG."

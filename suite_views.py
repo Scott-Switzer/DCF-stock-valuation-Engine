@@ -145,7 +145,11 @@ def suite_form_payload(method, form):
         if form.get("future_shares"):
             raw["future_shares"] = number(form["future_shares"], "Future diluted shares", 0.000001)
     else:
-        doc["bridge"] = {k: number(form.get(k), label, 0) for k, label in CLAIMS.items()}
+        # Preserve reported NCI; RelativeModel rejects it only for EV multiples.
+        doc["bridge"] = {
+            k: number(form.get(k), label, None if k == "minority_interest" else 0)
+            for k, label in CLAIMS.items()
+        }
         doc["bridge"]["as_of"] = form.get("bridge_as_of")
         doc["target"] = {"historical_as_of": form.get("historical_as_of")}
         for period in ["historical", "forward"]:

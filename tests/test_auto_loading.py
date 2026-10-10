@@ -266,3 +266,20 @@ def test_relative_multiples_use_diluted_equity_without_reusing_wacc_weights():
         * doc["market"]["diluted_shares"]
         / doc["historical"][-1]["net_income"]
     )
+
+
+def test_automatic_relative_evaluation_uses_only_reviewed_peers(client, monkeypatch):
+    import suite_views
+
+    statuses = iter(["reviewed", "excluded"])
+    monkeypatch.setattr(decision_support, "peer_review_status", lambda fit: next(statuses))
+    original = suite_views.suite_evaluate
+    evaluated = []
+    def capture(method, doc, assumptions):
+        evaluated.extend(p["review_status"] for p in doc["comparables"])
+        return original(method, doc, assumptions)
+    monkeypatch.setattr(suite_views, "suite_evaluate", capture)
+    response = client.post("/api/load/relative", json={"ticker": "TEST"})
+    assert response.status_code == 200
+    assert evaluated == ["reviewed"]
+    assert len(response.get_json()["financials"]["comparables"]) == 2
