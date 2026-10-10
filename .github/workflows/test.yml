@@ -20,6 +20,8 @@ jobs:
           cache: pip
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
+      - name: Build the shipped Worker bundle before testing
+        run: python scripts/embed_assets.py
       - run: pytest -q
       - name: Syntax-check every shipped script
         run: |
