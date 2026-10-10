@@ -240,3 +240,18 @@ def test_rv_method_change_in_workbook_changes_target(tmp_path):
         overrides={("Model", "E5"): "no"},
         effective=RelativeAssumptions(["ev_revenue", "ev_ebitda"]),
     )
+
+
+@pytest.mark.parametrize('wacc', [0.1, 0.065])
+def test_minimal_dcf_api_export_uses_effective_forecast_inputs(tmp_path, wacc):
+    from app import app
+    doc = demo_document()
+    assumptions = DCFAssumptions(revenue_growth_rates=[0.05]*5,
+                                 terminal_growth_rate=0.02, wacc_override=wacc)
+    response = app.test_client().post('/export/xlsx', json={
+        'financials': doc, 'assumptions': asdict(assumptions)})
+    assert response.status_code == 200, response.get_json()
+    got = recalc(tmp_path, response.data, [('Model','B25'),('Model','B35')])
+    result = evaluate(doc, assumptions)
+    assert_cell(got[('Model','B25')], result['intrinsic_value'])
+    assert_cell(got[('Model','B35')], result['target_price_12m'])
