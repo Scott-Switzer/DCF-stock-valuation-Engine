@@ -26,8 +26,12 @@ def fetch(base, path, *, timeout, payload=None, maximum=2_000_000):
     request = Request(
         url,
         data=data,
-        headers={"Accept": "application/json", "Content-Type": "application/json"}
-        if data is not None else {"Accept": "application/json"},
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+        },
         method="POST" if data is not None else "GET",
     )
     start = time.monotonic()
@@ -36,7 +40,12 @@ def fetch(base, path, *, timeout, payload=None, maximum=2_000_000):
             status = response.status
             body = response.read(maximum + 1)
     except HTTPError as exc:
-        raise RuntimeError(f"HTTP {exc.code} at {path}") from None
+        diagnostics = {
+            "server": exc.headers.get("Server", ""),
+            "cf-mitigated": exc.headers.get("Cf-Mitigated", ""),
+            "content-type": exc.headers.get("Content-Type", ""),
+        }
+        raise RuntimeError(f"HTTP {exc.code} at {path}; {diagnostics}") from None
     except (URLError, TimeoutError, OSError) as exc:
         raise RuntimeError(f"Network failure at {path}: {type(exc).__name__}") from None
     if len(body) > maximum:
