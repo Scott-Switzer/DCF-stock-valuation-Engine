@@ -6,12 +6,15 @@
   var offset = 0;
   var pageSize = 50;
   var loading = false;
+  var refreshPending = false;
   var hasOlder = false;
   var paging = document.createElement("div");
   var previous = button("Previous links", function () { load(Math.max(0, offset - pageSize)); });
   var next = button("Older links", function () { load(offset + pageSize); });
+  var refresh = button("Refresh links", function () { load(); });
   paging.appendChild(previous);
   paging.appendChild(next);
+  paging.appendChild(refresh);
   list.parentNode.insertBefore(paging, list.nextSibling);
 
   function status(text, isError) {
@@ -86,10 +89,14 @@
   function controls() {
     previous.disabled = loading || offset === 0;
     next.disabled = loading || !hasOlder;
+    refresh.disabled = loading;
   }
 
   function load(requestedOffset) {
-    if (loading) return;
+    if (loading) {
+      if (requestedOffset === undefined) refreshPending = true;
+      return;
+    }
     var targetOffset = requestedOffset === undefined ? offset : requestedOffset;
     loading = true;
     controls();
@@ -100,7 +107,11 @@
       })
       .then(function (shares) { offset = targetOffset; render(shares); })
       .catch(function () { status("Could not load shared links. Retry the same page.", true); })
-      .finally(function () { loading = false; controls(); });
+      .finally(function () {
+        loading = false;
+        controls();
+        if (refreshPending) { refreshPending = false; load(); }
+      });
   }
 
   load();
