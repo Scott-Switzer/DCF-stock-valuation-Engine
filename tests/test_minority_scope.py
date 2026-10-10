@@ -73,3 +73,16 @@ def test_readiness_blocks_dcf_but_keeps_equity_multiples_available():
     assert "negative_minority_interest" in readiness["dcf"]["codes"]
     assert "negative_minority_ev_blocked" in readiness["relative"]["codes"]
     assert "P/E and P/B remain available" in " ".join(readiness["relative"]["reasons"])
+
+
+def test_relative_assembly_accepts_signed_minority_snapshot(monkeypatch):
+    from app import app
+    from dcf_loader import demo_document
+    import auto_loading
+
+    doc = demo_document()
+    doc["bridge"]["minority_interest"] = -0.2
+    monkeypatch.setattr(auto_loading, "load_method", lambda *args, **kwargs: {"assembled": True})
+    response = app.test_client().post("/api/assemble/relative", json={"financials": doc})
+    assert response.status_code == 200
+    assert response.get_json()["assembled"] is True

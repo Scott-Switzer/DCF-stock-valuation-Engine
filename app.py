@@ -830,7 +830,7 @@ def assemble_api(method):
         if not isinstance(raw, dict) or not isinstance(raw.get("financials"), dict):
             raise ValueError("Provide a loaded company snapshot.")
         doc = raw["financials"]
-        parse_document(doc)
+        parse_document(doc, minority_may_be_negative=method in {"ddm", "relative"})
         return jsonify(
             load_method(
                 method,
