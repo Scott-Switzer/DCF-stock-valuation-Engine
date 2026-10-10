@@ -5,6 +5,8 @@ from suite_views import suite_form_payload, suite_evaluate
 from werkzeug.datastructures import MultiDict
 from test_yahoo_provider import MockHTTP
 import auto_loading
+import decision_support
+from decision_support import peer_review_status as real_peer_review_status
 
 
 @pytest.fixture
@@ -22,6 +24,9 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(
         auto_loading, "starter_peers", lambda ticker, http: ("Fixture peer set", ["CMPA", "CMPB"])
     )
+    # Fixture peers are treated as reviewed so these tests exercise method selection.
+    # Unverified peers are covered by test_loaded_candidate_peers_are_not_preselected.
+    monkeypatch.setattr(decision_support, "peer_review_status", lambda fit: "reviewed")
     app.config.update(TESTING=True, STATE_PATH=str(tmp_path / "state.sqlite3"))
     return app.test_client()
 
@@ -130,6 +135,18 @@ def test_rv_loading_does_not_require_valid_dcf_terminal_value_or_positive_earnin
     if metric == "net_income":
         assert r.get_json()["form"]["include_pe"] == ""
     assert r.get_json()["form"]["include_ev_revenue"] == "yes"
+
+
+def test_loaded_candidate_peers_are_not_preselected(client, monkeypatch):
+    # Restore the real fit classification, undoing the fixture's reviewed override.
+    monkeypatch.setattr(decision_support, "peer_review_status", real_peer_review_status)
+    r = client.post("/api/load/relative", json={"ticker": "TEST"})
+    assert r.status_code == 200, r.get_json()
+    payload = r.get_json()
+    statuses = {p["ticker"]: p["review_status"] for p in payload["financials"]["comparables"]}
+    assert statuses and set(statuses.values()) == {"candidate"}
+    form = payload["form"]
+    assert all(form.get(f"include_{k}") in ("", None) for k in ["ev_revenue", "ev_ebitda", "pe"])
 
 
 def test_percentage_roundtrip_keeps_source_provenance(client):

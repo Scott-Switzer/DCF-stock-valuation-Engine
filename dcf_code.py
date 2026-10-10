@@ -19,7 +19,11 @@ def number(value, label, minimum=None, maximum=None):
     if not math.isfinite(result):
         raise ValueError(f"{label} must be a finite number.")
     if minimum is not None and result < minimum or maximum is not None and result > maximum:
-        raise ValueError(f"{label} must be between {minimum} and {maximum}.")
+        if minimum is not None and maximum is not None:
+            raise ValueError(f"{label} must be between {minimum} and {maximum}.")
+        if minimum is not None:
+            raise ValueError(f"{label} must be at least {minimum}.")
+        raise ValueError(f"{label} must be at most {maximum}.")
     return result
 
 
@@ -132,6 +136,8 @@ class FinancialData:
     minority_interest: float = 0.0
     other_nonoperating_assets: float = 0.0
     metadata: dict = field(default_factory=dict)
+    # Set only by loaders for equity-only methods. FCFF DCF keeps the strict default.
+    minority_may_be_negative: bool = False
 
     @property
     def nwc(self):
@@ -205,8 +211,12 @@ class FinancialData:
         self.stock_price = number(self.stock_price, "Current price", 0)
         if self.stock_price <= 0:
             raise ValueError("Current price must be positive.")
-        for name in ["minority_interest", "other_nonoperating_assets"]:
-            number(getattr(self, name), name, 0)
+        number(
+            self.minority_interest,
+            "minority_interest",
+            None if self.minority_may_be_negative else 0,
+        )
+        number(self.other_nonoperating_assets, "other_nonoperating_assets", 0)
 
 
 class DCFModel:

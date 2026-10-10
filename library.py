@@ -12,7 +12,7 @@ import os
 import secrets
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS valuations (
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS templates (
  UNIQUE(client_hash, name));
 CREATE TABLE IF NOT EXISTS share_links (
  token TEXT PRIMARY KEY, valuation_id TEXT NOT NULL, created_at TEXT NOT NULL,
- client_hash TEXT NOT NULL);
+ client_hash TEXT NOT NULL, expires_at TEXT, revoked_at TEXT);
 CREATE TABLE IF NOT EXISTS watchlist (
  client_hash TEXT NOT NULL, ticker TEXT NOT NULL, target REAL NOT NULL,
  direction TEXT NOT NULL CHECK(direction IN ('above','below')),
@@ -48,6 +48,8 @@ CREATE INDEX IF NOT EXISTS valuations_owner_created ON valuations(client_hash, c
 COOKIE = "lib_id"
 WATCH_LIMIT = 25
 WATCH_BUDGET_SECONDS = 12
+SHARE_MAX_DAYS = 365
+SHARE_LIST_LIMIT = 50
 
 
 def same_origin_request():
@@ -156,7 +158,17 @@ def _local():
     db = sqlite3.connect(Store().path, timeout=5)
     db.row_factory = sqlite3.Row
     db.executescript(SCHEMA)
+    # Local databases created before share controls lack these columns.
+    have = {row[1] for row in db.execute("PRAGMA table_info(share_links)")}
+    for column in ("expires_at", "revoked_at"):
+        if column not in have:
+            db.execute(f"ALTER TABLE share_links ADD COLUMN {column} TEXT")
     return db
+
+
+def is_unique_violation(exc):
+    """True for a UNIQUE constraint failure from SQLite or D1."""
+    return "UNIQUE constraint failed" in str(exc)
 
 
 def _fetchall(sql, params=()):
@@ -252,7 +264,23 @@ def history(ticker=None, limit=20):
     return _fetchall(sql, tuple(params))
 
 
-def create_share(valuation_id):
+def _share_expiry(days):
+    """ISO expiry for an optional whole-number day count; None means no expiry."""
+    if days is None or days == "":
+        return None
+    if isinstance(days, bool) or (isinstance(days, float) and not days.is_integer()):
+        raise ValueError("Expiry must be a whole number of days.")
+    try:
+        count = int(days)
+    except (TypeError, ValueError):
+        raise ValueError("Expiry must be a whole number of days.") from None
+    if not 1 <= count <= SHARE_MAX_DAYS:
+        raise ValueError(f"Expiry must be 1 to {SHARE_MAX_DAYS} days.")
+    return (datetime.now(timezone.utc) + timedelta(days=count)).isoformat()
+
+
+def create_share(valuation_id, expires_in_days=None):
+    expires_at = _share_expiry(expires_in_days)
     rows = _fetchall(
         "SELECT id FROM valuations WHERE id=? AND client_hash=?",
         (valuation_id, caller_hash()),
@@ -261,19 +289,45 @@ def create_share(valuation_id):
         raise ValueError("Valuation not found.")
     token = secrets.token_urlsafe(16)
     _run(
-        "INSERT INTO share_links(token,valuation_id,created_at,client_hash)"
-        " VALUES (?,?,?,?)",
-        (token, valuation_id, now(), caller_hash()),
+        "INSERT INTO share_links(token,valuation_id,created_at,client_hash,expires_at)"
+        " VALUES (?,?,?,?,?)",
+        (token, valuation_id, now(), caller_hash(), expires_at),
     )
     return token
 
 
+def list_shares():
+    """The caller's own share links, newest first, with their status fields."""
+    return _fetchall(
+        "SELECT token,valuation_id,created_at,expires_at,revoked_at FROM share_links"
+        " WHERE client_hash=? ORDER BY created_at DESC LIMIT ?",
+        (caller_hash(), SHARE_LIST_LIMIT),
+    )
+
+
+def revoke_share(token):
+    """Revoke one of the caller's links. Other owners' links look like missing ones."""
+    owner = caller_hash()
+    rows = _fetchall(
+        "SELECT token FROM share_links WHERE token=? AND client_hash=?", (token, owner)
+    )
+    if not rows:
+        raise ValueError("Share link not found.")
+    _run(
+        "UPDATE share_links SET revoked_at=? WHERE token=? AND client_hash=?"
+        " AND revoked_at IS NULL",
+        (now(), token, owner),
+    )
+
+
 def shared_valuation(token):
+    """The saved valuation behind a live link; revoked or expired links return None."""
     rows = _fetchall(
         "SELECT v.assumptions_json,v.financials_json,v.result_json"
         " FROM share_links s JOIN valuations v ON v.id=s.valuation_id"
-        " WHERE s.token=?",
-        (token,),
+        " WHERE s.token=? AND s.revoked_at IS NULL"
+        " AND (s.expires_at IS NULL OR s.expires_at>?)",
+        (token, now()),
     )
     if not rows:
         return None
@@ -327,21 +381,22 @@ def remove_watch(ticker):
 
 
 def check_watch():
-    """Lazily re-price watched tickers within a bounded time budget.
+    """Re-price watched tickers with cheap quotes under one shared time budget.
 
-    Each ticker can fan out into several provider calls, so a refresh stops
-    re-pricing once WATCH_BUDGET_SECONDS elapse and marks the rest unchecked.
+    Quotes come from the provider's one-day chart metadata, so a refresh never
+    loads statements, peers or capital costs. The budget is one JsonHTTP
+    deadline for the whole refresh; tickers reached after it expires are marked
+    unchecked rather than holding the page.
     """
-    import time
-    from auto_loading import load_method
-    from dcf_loader import ProviderError
+    from dcf_loader import JsonHTTP, ProviderError
+    from yahoo_provider import latest_quote
 
     asof = datetime.now(timezone.utc).date().isoformat()
-    started = time.monotonic()
+    http = JsonHTTP(budget=WATCH_BUDGET_SECONDS)
     states = []
     for entry in list_watch():
         state = dict(entry)
-        if time.monotonic() - started > WATCH_BUDGET_SECONDS:
+        if http.expired():
             state.update(
                 price=None,
                 breached=False,
@@ -350,10 +405,10 @@ def check_watch():
             states.append(state)
             continue
         try:
-            bundle = load_method("dcf", entry["ticker"], asof)
-            price = bundle["financials"]["market"]["price"]
+            quote = latest_quote(entry["ticker"], asof, http)
+            price = quote["price"]
             state["price"] = price
-            state["price_as_of"] = bundle["financials"]["market"]["price_as_of"]
+            state["price_as_of"] = quote["price_as_of"]
             state["breached"] = (
                 price >= entry["target"]
                 if entry["direction"] == "above"

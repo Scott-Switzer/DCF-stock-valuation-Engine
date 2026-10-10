@@ -15,6 +15,13 @@
       <input id="new-password" name="new_password" type="password" autocomplete="new-password" required minlength="12" maxlength="256">
       <button type="submit">Change password</button>
     </form>
+    <section aria-labelledby="shares-title">
+      <h2 id="shares-title">Shared links</h2>
+      <p class="help">Anyone with a link can read that saved valuation until you revoke it or it expires. Revoking takes effect immediately.</p>
+      <p class="notice" id="share-message" role="status" hidden></p>
+      <ul id="share-list"></ul>
+      <script src="{{ url_for('static', filename='js/shares.js') }}" defer></script>
+    </section>
     <form method="post" action="/account/logout">
       <button type="submit" class="secondary">Sign out</button>
     </form>

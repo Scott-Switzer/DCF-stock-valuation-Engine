@@ -13,6 +13,6 @@
 - [ ] Confirm rate-limit namespace `1946100604` (`MCP_LIMIT`) is not used by another binding in this account before deploying. Cloudflare namespace IDs are self-chosen integers with no creation step, and bindings sharing an ID share counters. `/mcp` depends on this binding.
 - [ ] Set `MCP_ALLOWED_ORIGINS` only if a browser-based MCP client needs an origin other than this host.
 - [ ] Reconcile completed real-company valuations to source filings, price/share assumptions and an independent spreadsheet.
-- [ ] Future suite: implement comparables, DDM and football field with their own model-suitability tests.
+- [x] Suite methods (DDM, relative valuation, football field) are implemented in `suite_models.py` and `compare.py`. Source reconciliation and workbook recalculation tests cover them (`tests/test_suite_reconciliation.py`, `tests/test_workbook_recalc.py`). Browser checks for these pages are still not recorded.
 
 The old suspended Render service is not the advertised deployment and was not changed. User-submitted valuation assumptions are self-selected research data; they are not independently validated market sentiment.

@@ -129,6 +129,26 @@ class YahooTests(unittest.TestCase):
         with self.assertRaisesRegex(ProviderError, "missing CommonStockEquity"):
             load_yahoo("TEST", TODAY, http)
 
+    def test_negative_minority_interest_is_carried_as_reported(self):
+        # Mirrors MRX 2025-12-31: reported minority interest of -200,000 USD.
+        http = MockHTTP()
+        http.financials["timeseries"]["result"].append(
+            {
+                "meta": {"symbol": ["TEST"]},
+                "annualMinorityInterest": [
+                    {
+                        "asOfDate": http.ends[-1],
+                        "periodType": "12M",
+                        "currencyCode": "USD",
+                        "reportedValue": {"raw": -200000},
+                    }
+                ],
+            }
+        )
+        doc = load_yahoo("TEST", TODAY, http)
+        self.assertEqual(doc["bridge"]["minority_interest"], -200000)
+        self.assertTrue(any("negative" in w for w in doc["source"]["warnings"]))
+
     def test_missing_latest_annual_observation_is_not_carried_forward(self):
         http = MockHTTP()
         http.financials["timeseries"]["result"].append(

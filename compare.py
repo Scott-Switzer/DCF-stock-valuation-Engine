@@ -12,6 +12,8 @@ from dataclasses import asdict
 
 from dcf_code import DCFAssumptions
 from dcf_loader import ProviderError, ticker_symbol
+from readiness import method_readiness, reliable_peers
+from residual_income import residual_income_value
 from suite_views import suite_assumptions, suite_evaluate
 
 
@@ -59,18 +61,33 @@ def scenario_band(doc, base, delta):
     )
 
 
-def football_field(ticker, asof=None, dcf_assumptions=None):
+def football_field(ticker, asof=None, dcf_assumptions=None, snapshot=None, http=None):
+    """Compare lanes for one ticker.
+
+    ``snapshot`` is an optional dcf-financials-v1 document, such as the
+    workspace's loaded financials. It is validated and reused without a
+    provider load; DDM and relative lanes derive from the same document.
+    """
     from auto_loading import load_method
     from app import evaluate
+    from dcf_loader import parse_document
 
     symbol = ticker_symbol(ticker)
-    bundle = load_method("dcf", symbol, asof)
+    if snapshot is not None:
+        parse_document(snapshot, minority_may_be_negative=True)
+        if snapshot["company"]["ticker"] != symbol:
+            raise ValueError("Workspace snapshot ticker does not match.")
+    dcf_kwargs = {"http": http}
+    if snapshot is not None:
+        dcf_kwargs["snapshot"] = snapshot
+    bundle = load_method("dcf", symbol, asof, **dcf_kwargs)
     doc = bundle["financials"]
     costs = bundle["load_summary"].get("capital_costs", {})
     wacc = costs.get("wacc") or 0.065
     dcf_assumptions, custom = coerce_dcf_assumptions(doc, dcf_assumptions, wacc)
     lanes = []
     band_results = {}
+    result = None
     try:
         result = evaluate(deepcopy(doc), deepcopy(dcf_assumptions))
         for name, delta in [("Bear", -0.02), ("Base", 0.0), ("Bull", 0.02)]:
@@ -102,9 +119,10 @@ def football_field(ticker, asof=None, dcf_assumptions=None):
     except ValueError as exc:
         lanes.append({"method": "dcf", "label": "DCF", "value": None,
                       "detail": str(exc), "warnings": []})
-        return _packet(doc, lanes, bundle, custom)
     try:
-        ddm_bundle = load_method("ddm", symbol, doc["valuation_date"], snapshot=doc)
+        ddm_bundle = load_method(
+            "ddm", symbol, doc["valuation_date"], snapshot=doc, http=http
+        )
         ddm_doc = ddm_bundle["financials"]
         ddm_a = suite_assumptions(
             "ddm",
@@ -144,30 +162,84 @@ def football_field(ticker, asof=None, dcf_assumptions=None):
             }
         )
     try:
+        residual_readiness = method_readiness(doc)["residual"]
+        if residual_readiness["state"] == "unavailable":
+            raise ValueError(" ".join(residual_readiness["reasons"]))
+        if result is None:
+            raise ValueError("Residual income uses the DCF forecast, which is unavailable for this snapshot.")
+        cost_of_equity = costs.get("cost_of_equity")
+        if not isinstance(cost_of_equity, (int, float)):
+            raise ValueError("Cost of equity is unavailable from the loaded capital-cost inputs.")
+        dividend = (doc["source"].get("common_dividends") or {}).get("value")
+        last_net_income = doc["historical"][-1]["net_income"]
+        payout = 0.0
+        if isinstance(dividend, (int, float)) and dividend > 0 and last_net_income > 0:
+            payout = min(1.0, max(0.0, dividend / last_net_income))
+        residual = residual_income_value(
+            net_income=[row["Net Income"] for row in result["projections"]],
+            opening_book=doc["historical"][-1]["book_value"],
+            cost_of_equity=cost_of_equity,
+            terminal_growth=dcf_assumptions.terminal_growth_rate,
+            shares=doc["market"]["diluted_shares"],
+            payout_ratio=payout,
+        )
+        lanes.append(
+            {
+                "method": "residual",
+                "label": "Residual income (today)",
+                "value": residual["intrinsic_value"],
+                "detail": (
+                    f"Cost of equity {cost_of_equity:.1%}, payout {payout:.0%}, "
+                    "clean-surplus book"
+                ),
+                "warnings": residual["warnings"][:1],
+            }
+        )
+    except (ValueError, KeyError, TypeError) as exc:
+        lanes.append(
+            {
+                "method": "residual",
+                "label": "Residual income",
+                "value": None,
+                "detail": str(exc),
+                "warnings": [],
+            }
+        )
+    rel_doc = None
+    try:
         rel_bundle = load_method(
             "relative",
             symbol,
             doc["valuation_date"],
             snapshot=doc,
             forecast_assumptions=deepcopy(dcf_assumptions),
+            http=http,
         )
         rel_doc = rel_bundle["financials"]
+        # Financial firms and a negative noncontrolling interest block EV-based multiples only.
+        ev_blocked = rel_doc["bridge"]["minority_interest"] < 0 or rel_doc["company"].get("is_financial") is True
+        candidates = ["pe"] if ev_blocked else ["ev_revenue", "ev_ebitda", "pe"]
+        # Unreviewed candidate peers never feed an automatic relative value.
+        reviewed = reliable_peers(rel_doc["comparables"])
         included = [
             k
-            for k in ["ev_revenue", "ev_ebitda", "pe"]
+            for k in candidates
             if rel_doc["target"]["forward"][
                 {"ev_revenue": "revenue", "ev_ebitda": "ebitda", "pe": "net_income"}[k]
             ]
             > 0
             and any(
-                p["multiples"][k] is not None and p["multiples"][k] > 0
-                for p in rel_doc["comparables"]
+                p["multiples"][k] is not None and p["multiples"][k] > 0 for p in reviewed
             )
         ]
         if not included:
-            raise ValueError("No usable peer multiples for this ticker.")
+            raise ValueError(
+                "No reviewed peer multiples for this ticker. Loaded peers are unverified candidates "
+                "unless confirmed on the relative page."
+            )
         rel_result = suite_evaluate(
-            "relative", rel_doc,
+            "relative",
+            dict(rel_doc, comparables=reviewed),
             suite_assumptions("relative", {"included_methods": included}),
         )
         lanes.append(
@@ -190,7 +262,9 @@ def football_field(ticker, asof=None, dcf_assumptions=None):
                 "warnings": [],
             }
         )
-    packet = _packet(doc, lanes, bundle, custom)
+    packet = _packet(
+        doc, lanes, bundle, dcf_assumptions, custom, snapshot is not None, relative_doc=rel_doc
+    )
     packet["drivers"] = driver_impacts(doc, dcf_assumptions)
     packet["method_notes"] = method_notes(doc, lanes)
     try:
@@ -280,7 +354,8 @@ def method_notes(doc, lanes):
     return notes
 
 
-def _packet(doc, lanes, bundle, custom):
+def _packet(doc, lanes, bundle, assumptions, custom, reused, relative_doc=None):
+    """Response packet. ``assumptions`` are the effective values the lanes used."""
     values = [lane["value"] for lane in lanes
               if isinstance(lane["value"], (int, float))]
     peak = max(values + [doc["market"]["price"], 0.01])
@@ -292,6 +367,8 @@ def _packet(doc, lanes, bundle, custom):
             lane["upside"] = None
     return {
         "custom": custom,
+        "assumptions_source": "workspace" if custom else "baseline",
+        "snapshot_reused": reused,
         "ticker": doc["company"]["ticker"],
         "company_name": doc["company"]["name"],
         "valuation_date": doc["valuation_date"],
@@ -301,7 +378,7 @@ def _packet(doc, lanes, bundle, custom):
         "is_demo": doc["source"]["kind"] == "synthetic"
         or doc["source"].get("origin_kind") == "synthetic",
         "lanes": lanes,
+        "readiness": method_readiness(doc, relative_doc=relative_doc),
         "load_summary": bundle["load_summary"],
-        "assumptions": asdict(baseline_dcf_assumptions(
-            doc, bundle["load_summary"].get("capital_costs", {}).get("wacc") or 0.065)),
+        "assumptions": asdict(assumptions),
     }

@@ -250,6 +250,17 @@ BUSINESSES = {
 BUSINESSES["GOOG"] = BUSINESSES["GOOGL"]
 
 
+def peer_review_status(fit):
+    """Reviewed only for curated same-industry fit; size outliers are excluded.
+
+    ``candidate`` peers are loaded but unverified and do not feed automatic
+    valuations. Manual comparables entered on the relative page are not tagged.
+    """
+    if any("size mismatch" in caveat for caveat in fit.get("caveats", [])):
+        return "excluded"
+    return "reviewed" if fit.get("fit_label") == "Industry and product fit" else "candidate"
+
+
 def peer_fit(target, peer, target_cap, peer_cap):
     target_business = BUSINESSES.get(target)
     business = BUSINESSES.get(peer)

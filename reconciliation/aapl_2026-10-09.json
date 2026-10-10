@@ -1,0 +1,157 @@
+{
+  "schema": "reconciliation-fixture-v1",
+  "ticker": "AAPL",
+  "valuation_date": "2026-10-09",
+  "purpose": "Independent DCF reconciliation on SEC-sourced FY2023-FY2025 annual inputs. Expected values were computed by a standalone calculation, not by dcf_code.",
+  "document": {
+    "schema_version": "dcf-financials-v1",
+    "valuation_date": "2026-10-09",
+    "units": "absolute",
+    "company": {
+      "ticker": "AAPL",
+      "name": "Apple Inc.",
+      "currency": "USD",
+      "eligible": true,
+      "sector": "Technology"
+    },
+    "market": {
+      "price": 336.64,
+      "price_as_of": "2026-10-09",
+      "currency": "USD",
+      "diluted_shares": 15004697000.0,
+      "shares_basis": "Annual weighted-average diluted shares, FY2025 10-K"
+    },
+    "bridge": {
+      "short_term_debt": 20329000000.0,
+      "long_term_debt": 78328000000.0,
+      "cash": 35934000000.0,
+      "preferred_equity": 0.0,
+      "minority_interest": 0.0,
+      "other_nonoperating_assets": 0.0,
+      "as_of": "2025-09-27"
+    },
+    "historical": [
+      {
+        "period_end": "2023-09-30",
+        "available_at": "2025-10-31",
+        "revenue": 383285000000.0,
+        "ebit": 114301000000.0,
+        "net_income": 96995000000.0,
+        "capex": 10959000000.0,
+        "d_and_a": 11519000000.0,
+        "nwc": -15900000000.0,
+        "book_value": 62146000000.0,
+        "tax_rate": 0.14719174228036858
+      },
+      {
+        "period_end": "2024-09-28",
+        "available_at": "2025-10-31",
+        "revenue": 391035000000.0,
+        "ebit": 123216000000.0,
+        "net_income": 93736000000.0,
+        "capex": 9447000000.0,
+        "d_and_a": 11445000000.0,
+        "nwc": -32469000000.0,
+        "book_value": 56950000000.0,
+        "tax_rate": 0.24091185164189982
+      },
+      {
+        "period_end": "2025-09-27",
+        "available_at": "2025-10-31",
+        "revenue": 416161000000.0,
+        "ebit": 133050000000.0,
+        "net_income": 112010000000.0,
+        "capex": 12715000000.0,
+        "d_and_a": 11698000000.0,
+        "nwc": -33279000000.0,
+        "book_value": 73733000000.0,
+        "tax_rate": 0.15610002335586043
+      }
+    ],
+    "source": {
+      "name": "SEC companyfacts (fixture)",
+      "kind": "sec",
+      "warnings": []
+    }
+  },
+  "shared_inputs": {
+    "wacc": 0.108942903172413,
+    "wacc_source": "App capital-cost WACC from Yahoo current snapshot (components dated 2026-10-09 for risk-free rate; beta and market-cap weights not independently verified)",
+    "terminal_growth": 0.02,
+    "revenue_growth": [
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05
+    ],
+    "shares_millions": 15004.697,
+    "shares_basis": "FY2025 weighted-average diluted shares, 15,004,697,000",
+    "price": 336.64,
+    "price_source": "Yahoo chart close, 2026-10-09 (America/New_York regular session)"
+  },
+  "sec_sources": {
+    "FY2023-09-30": {
+      "accession_10k": "0000320193-24-000123 (balance sheet); 0000320193-25-000079 (income and cash flow)"
+    },
+    "FY2024-09-28": {
+      "accession_10k": "0000320193-25-000079",
+      "filed": "2025-10-31"
+    },
+    "FY2025-09-27": {
+      "accession_10k": "0000320193-25-000079",
+      "filed": "2025-10-31"
+    },
+    "latest_10q_at_cutoff": {
+      "period_end": "2026-06-27",
+      "accession": "0000320193-26-000020",
+      "filed": "2026-07-31"
+    },
+    "tags": {
+      "revenue": "RevenueFromContractWithCustomerExcludingAssessedTax",
+      "ebit": "OperatingIncomeLoss",
+      "net_income": "NetIncomeLoss",
+      "d_and_a": "DepreciationDepletionAndAmortization",
+      "capex": "PaymentsToAcquirePropertyPlantAndEquipment",
+      "tax_expense": "IncomeTaxExpenseBenefit",
+      "pretax_income": "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+      "current_assets": "AssetsCurrent",
+      "current_liabilities": "LiabilitiesCurrent",
+      "cash": "CashAndCashEquivalentsAtCarryingValue",
+      "commercial_paper": "CommercialPaper",
+      "current_long_term_debt": "LongTermDebtCurrent",
+      "long_term_debt": "LongTermDebtNoncurrent",
+      "diluted_shares": "WeightedAverageNumberOfDilutedSharesOutstanding"
+    }
+  },
+  "expected": {
+    "historical_avg_drivers": {
+      "ebit_margin": 0.31100811632564057,
+      "da_margin": 0.029143715939938943,
+      "capex_margin": 0.027768114245996733,
+      "nwc_margin": -0.0681612089903725,
+      "tax_rate": 0.15610002335586043
+    },
+    "ufcf_millions": [
+      111793.21827489891,
+      122541.49044926936,
+      128668.56497173283,
+      135101.99322031945,
+      141857.09288133544
+    ],
+    "terminal_value_millions": 1626821.5852868774,
+    "enterprise_value_millions": 1438781.1060314532,
+    "equity_value_millions": 1376058.1060314532,
+    "intrinsic_value_per_share": 91.70849008356872,
+    "enterprise_value_12m_millions": 1483732.8784772363,
+    "equity_value_12m_millions": 1421009.8784772363,
+    "target_price_12m": 94.70433681381478
+  },
+  "known_gaps": [
+    "SEC loader leaves NWC and short-term debt null for Apple (CommercialPaper and DebtCurrent not mapped); the loader document is rejected by parse_document.",
+    "Bridge excludes current and noncurrent marketable securities (96,486 $M at FY2025) under the app convention of zero other nonoperating assets.",
+    "Bridge uses FY2025 annual balance sheet although a 10-Q for 2026-06-27 was on file at the cutoff.",
+    "Per-share denominator is FY2025 weighted-average diluted shares; latest cover-page count is 14,594,180,000 (2026-07-17).",
+    "WACC is an app-computed shared input, not independently verified; the DCF output is highly sensitive to it."
+  ]
+}

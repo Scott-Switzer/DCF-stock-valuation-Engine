@@ -305,9 +305,12 @@ class RelativeModel:
         ]:
             if iso_date(value, label) > asof:
                 raise ValueError(f"{label} is later than valuation date.")
+        ev_methods = any(k.startswith("ev_") for k in a.included_methods)
         for k in BRIDGE_FIELDS:
             typed_number(bridge.get(k), k)
-            number(bridge[k], k, 0)
+            # Negative noncontrolling interest changes only EV-based claims. P/E and P/B ignore it.
+            minimum = None if k == "minority_interest" and not ev_methods else 0
+            number(bridge[k], k, minimum)
         if not isinstance(peers, list) or not 1 <= len(peers) <= 20:
             raise ValueError("Enter between one and twenty comparable companies.")
         financial = any(
@@ -468,7 +471,7 @@ def from_dcf_document(method, financials, assumptions):
     from dcf_code import DCFModel
     from dcf_loader import parse_document
 
-    model = DCFModel(parse_document(financials), assumptions)
+    model = DCFModel(parse_document(financials, minority_may_be_negative=True), assumptions)
     result = model.calculate()
     doc = suite_sample(method, blank=True)
     for key in ["valuation_date", "units", "company", "market", "source"]:

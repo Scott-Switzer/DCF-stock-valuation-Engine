@@ -1,7 +1,7 @@
 from app import app
 
 
-def fake_field(ticker, asof=None, dcf_assumptions=None):
+def fake_field(ticker, asof=None, dcf_assumptions=None, http=None):
     return {
         "ticker": ticker,
         "company_name": "Demo Inc",
@@ -20,6 +20,48 @@ def test_compare_batch_demo_and_bad_ticker(monkeypatch):
     assert len(body["results"]) == 2
     assert body["results"][0]["lanes"]
     assert "error" in body["results"][1]
+
+
+def test_compare_batch_dedupes_tickers_and_keeps_order(monkeypatch):
+    calls = []
+
+    def counting_field(ticker, asof=None, dcf_assumptions=None, http=None):
+        calls.append(ticker)
+        return fake_field(ticker, asof, dcf_assumptions, http)
+
+    monkeypatch.setattr("app.football_field", counting_field)
+    body = app.test_client().post(
+        "/api/compare/batch", json={"tickers": ["DEMO", "aapl", "DEMO"]}
+    ).get_json()
+    assert [r["ticker"] for r in body["results"]] == ["DEMO", "AAPL", "DEMO"]
+    assert calls == ["DEMO", "AAPL"]
+    assert [r["status"] for r in body["results"]] == ["complete"] * 3
+
+
+def test_compare_batch_deadline_marks_unfinished_tickers(monkeypatch):
+    import app as app_module
+    import dcf_loader
+    from dcf_loader import ProviderError
+    from fake_clock import FakeClock
+
+    clock = FakeClock()
+    monkeypatch.setattr(dcf_loader, "time", clock.module())
+    # Each ticker advances the fake clock 0.3 s against a 0.45 s budget.
+    monkeypatch.setattr(app_module, "BATCH_BUDGET_SECONDS", 0.45)
+
+    def slow_field(ticker, asof=None, dcf_assumptions=None, http=None):
+        clock.advance(0.3)
+        if http.expired():
+            raise ProviderError("Data provider exceeded its request deadline.")
+        return fake_field(ticker, asof, dcf_assumptions, http)
+
+    monkeypatch.setattr("app.football_field", slow_field)
+    body = app.test_client().post(
+        "/api/compare/batch", json={"tickers": ["DEMO", "AAPL", "MSFT"]}
+    ).get_json()
+    statuses = [r["status"] for r in body["results"]]
+    assert statuses == ["complete", "timed_out", "not_started"]
+    assert "deadline" in body["results"][2]["error"]
 
 
 def test_compare_batch_rejects_bad_shape():

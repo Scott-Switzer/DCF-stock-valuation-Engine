@@ -18,7 +18,7 @@
 <section class="result-intro">
 <p class="eyebrow">{% if packet.is_demo %}Synthetic example · {% endif %}{{ packet.ticker }} · {{ packet.source }}</p>
 <h2>{{ packet.company_name }}</h2>
-<p class="lead">Market {{ '${:,.2f}'.format(packet.market_price) }} as of {{ packet.price_as_of }} · valuation {{ packet.valuation_date }}</p>
+<p class="lead">Market {{ '${:,.2f}'.format(packet.market_price) }} as of {{ packet.price_as_of }} · valuation {{ packet.valuation_date }}{% if packet.snapshot_reused %} · workspace snapshot, no reload{% endif %}</p>
 </section>
 {% if packet.is_demo %}<div class="notice warning">Offline synthetic example. These financials and prices do not describe a real company.</div>{% endif %}
 <section class="panel"><div class="panel-heading"><div><p class="eyebrow">Valuation range</p><h2>Football field</h2></div><span class="unit">USD per share</span></div>
@@ -28,11 +28,11 @@
 <span class="field-label">{{ lane.label }}</span>
 <div class="field-track">
 {% if lane.value is not none %}
-<div class="field-bar field-{{ lane.method }}" style="width:{{ '{:.1%}'.format(lane.share) }}"></div>
+<div class="field-bar field-{{ lane.method }}" data-width="{{ '{:.1%}'.format(lane.share) }}"></div>
 {% else %}
 <div class="field-missing">Unavailable</div>
 {% endif %}
-<span class="field-market" style="left:{{ '{:.1%}'.format(market_share) }}" title="Market price"></span>
+<span class="field-market" data-left="{{ '{:.1%}'.format(market_share) }}" title="Market price"></span>
 </div>
 {% if lane.value is not none %}
 <strong class="field-value">${{ '{:,.2f}'.format(lane.value) }}</strong>
@@ -41,12 +41,19 @@
 <strong class="field-value">—</strong>
 {% endif %}
 </div>
-<p class="help">{{ lane.detail }}{% if lane.band %} · Bear ${{ '{:,.2f}'.format(lane.band.Bear) if lane.band.Bear is not none else 'n/a' }} / Base ${{ '{:,.2f}'.format(lane.band.Base) if lane.band.Base is not none else 'n/a' }} / Bull ${{ '{:,.2f}'.format(lane.band.Bull) if lane.band.Bull is not none else 'n/a' }}{% endif %}</p>
+<p class="help">{{ lane.detail }}{% if lane.band %} · Illustrative stress (growth and EBIT margin moved ±2pt together, not a probability): Bear ${{ '{:,.2f}'.format(lane.band.Bear) if lane.band.Bear is not none else 'n/a' }} / Base ${{ '{:,.2f}'.format(lane.band.Base) if lane.band.Base is not none else 'n/a' }} / Bull ${{ '{:,.2f}'.format(lane.band.Bull) if lane.band.Bull is not none else 'n/a' }}{% endif %}</p>
 {% endfor %}
 </div>
 <p class="help">Vertical marker: dated market price ({{ '${:,.2f}'.format(packet.market_price) }}). Baselines: 5% growth, 2% terminal growth, historical-average margins, loaded capital costs.</p>
 </section>
-<section class="panel"><div class="panel-heading"><div><p class="eyebrow">Assumptions</p><h2>Shared baselines</h2></div></div>
+<section class="panel"><div class="panel-heading"><div><p class="eyebrow">Input readiness</p><h2>What each method can honestly compute</h2></div></div>
+<div class="table-wrap"><table class="value-table"><thead><tr><th>Method</th><th>State</th><th>Why</th></tr></thead><tbody>
+{% for key, label in [('dcf', 'DCF'), ('ddm', 'DDM'), ('residual', 'Residual income'), ('relative', 'Relative')] %}{% set r = packet.readiness[key] %}
+<tr><th>{{ label }}</th><td data-state="{{ r.state }}">{{ r.label }}</td><td>{{ r.reasons | join(' · ') if r.reasons else 'All required inputs present from their primary source.' }}</td></tr>
+{% endfor %}
+</tbody></table></div>
+</section>
+<section class="panel"><div class="panel-heading"><div><p class="eyebrow">Assumptions</p><h2>{{ 'Your workspace assumptions' if packet.assumptions_source == 'workspace' else 'Default baselines' }}</h2></div></div>
 <div class="table-wrap"><table class="value-table"><thead><tr><th>Baseline</th><th>Value</th></tr></thead><tbody>
 <tr><th>Revenue growth (5 yrs)</th><td>{{ packet.assumptions.revenue_growth_rates }}</td></tr>
 <tr><th>WACC override</th><td>{{ '{:.2%}'.format(packet.assumptions.wacc_override) }}</td></tr>

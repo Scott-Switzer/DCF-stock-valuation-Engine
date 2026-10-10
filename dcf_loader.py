@@ -93,7 +93,13 @@ def typed_number(value, label):
     return number(value, label)
 
 
-def parse_document(doc):
+def parse_document(doc, *, minority_may_be_negative=False):
+    """Validate a financial document.
+
+    The default is strict for FCFF DCF and EV-based methods. Equity-only callers
+    (P/E, P/B) pass ``minority_may_be_negative=True`` to keep a reported negative
+    noncontrolling interest unchanged.
+    """
     if not isinstance(doc, dict) or doc.get("schema_version") != SCHEMA:
         raise ValueError(f"Financial document must use {SCHEMA}.")
     for section in ["company", "market", "bridge", "source"]:
@@ -154,7 +160,8 @@ def parse_document(doc):
         raise ValueError("Three consecutive annual fiscal periods are required.")
     for name in BRIDGE_FIELDS:
         typed_number(bridge.get(name), name)
-        number(bridge.get(name), name, 0)
+        minimum = None if name == "minority_interest" and minority_may_be_negative else 0
+        number(bridge.get(name), name, minimum)
     typed_number(market.get("price"), "Current price")
     typed_number(market.get("diluted_shares"), "Diluted shares")
     if market.get("price_as_of") is None:
@@ -201,7 +208,12 @@ def parse_document(doc):
         market_return_rate=0.1,
         nwc_override=get("nwc"),
         book_value_override=get("book_value"),
-        minority_interest=number(bridge["minority_interest"], "Minority interest", 0),
+        minority_interest=number(
+            bridge["minority_interest"],
+            "Minority interest",
+            None if minority_may_be_negative else 0,
+        ),
+        minority_may_be_negative=minority_may_be_negative,
         other_nonoperating_assets=number(
             bridge["other_nonoperating_assets"], "Other nonoperating assets", 0
         ),
@@ -232,6 +244,7 @@ class JsonHTTP:
         except ImportError:
             self.edge = False
         self.deadline = time.monotonic() + budget
+        self.timed_out = False
         self.session = None if self.edge else session or requests.Session()
         if self.edge:
             from provider_cache import EdgeStore
@@ -239,6 +252,14 @@ class JsonHTTP:
             self.store = store or EdgeStore()
         else:
             self.store = store or Store()
+
+    def expired(self):
+        return time.monotonic() >= self.deadline
+
+    def _timed_out(self, message="Data provider exceeded its request deadline."):
+        """Record that the shared budget ran out and return the error to raise."""
+        self.timed_out = True
+        return ProviderError(message)
 
     def get(self, url, *, headers=None, params=None, ttl=0, cache_key=None, text_response=False):
         if cache_key:
@@ -253,7 +274,7 @@ class JsonHTTP:
         for attempt in range(2):
             remaining = self.deadline - time.monotonic()
             if remaining <= 0:
-                raise ProviderError(
+                raise self._timed_out(
                     "Data provider exceeded its request deadline. Retry or enter financials manually."
                 )
             try:
@@ -276,7 +297,7 @@ class JsonHTTP:
                     size = 0
                     for chunk in response.iter_content(65536):
                         if time.monotonic() > self.deadline:
-                            raise ProviderError("Data provider exceeded its request deadline.")
+                            raise self._timed_out()
                         size += len(chunk)
                         if size > 20_000_000:
                             raise ProviderError("Data provider response exceeded the size limit.")
@@ -307,7 +328,7 @@ class JsonHTTP:
         for attempt in range(2):
             remaining = self.deadline - time.monotonic()
             if remaining <= 0:
-                raise ProviderError("Data provider exceeded its request deadline.")
+                raise self._timed_out()
             try:
                 response = run_sync(
                     fetch(
@@ -334,8 +355,10 @@ class JsonHTTP:
                         or len(chunks) + chunk.value.byteLength > 20_000_000
                     ):
                         run_sync(reader.cancel())
-                        raise ProviderError(
-                            "Data provider exceeded the response size or time limit."
+                        raise (
+                            self._timed_out("Data provider exceeded the response size or time limit.")
+                            if self.expired()
+                            else ProviderError("Data provider exceeded the response size or time limit.")
                         )
                     chunks.extend(chunk.value.to_bytes())
                 return chunks.decode("utf-8") if text_response else json.loads(chunks)
@@ -598,6 +621,15 @@ ZION_METRICS = {
 }
 
 
+# Packet metrics that are present but have no verified valuation meaning. They are
+# recorded in source.excluded_metrics and are never mapped silently.
+ZION_EXCLUDED_METRICS = {
+    "shares_outstanding": "basic or outstanding share count, not weighted-average diluted shares",
+    "cash": "cash definition (cash alone or with short-term investments) is unverified",
+    "total_debt": "aggregate debt without a verified short-term and long-term split",
+}
+
+
 def zion_document(packet, ticker, asof):
     if not isinstance(packet, dict) or packet.get("symbol") != ticker:
         raise ProviderError("Zion returned a mismatched company packet.")
@@ -639,6 +671,15 @@ def zion_document(packet, ticker, asof):
                 f"Zion has conflicting {metric} observations for {end}. Resolve revisions before valuation."
             )
         record[metric] = (value, deepcopy(obs))
+    unmapped = {
+        obs.get("metric_id")
+        for obs in annual
+        if isinstance(obs, dict) and obs.get("metric_id") and obs.get("metric_id") not in inverse
+    }
+    doc["source"]["excluded_metrics"] = {
+        metric: ZION_EXCLUDED_METRICS.get(metric, "no verified mapping; not used")
+        for metric in sorted(unmapped)
+    }
     ends = sorted(k for k, v in groups.items() if "revenue" in v)[-3:]
     if len(ends) != 3:
         raise ProviderError(

@@ -59,6 +59,7 @@ def test_probe_success_prints_coverage_without_token(monkeypatch, capsys):
 
     class Response:
         status_code = 200
+        content = b"{}"
 
         def json(self):
             return packet()
