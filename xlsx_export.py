@@ -367,6 +367,18 @@ def _assumption_block(sheet, rows):
 
 
 def dcf_workbook(doc, a, r):
+    # The API permits omitted vectors, which the engine resolves from history.
+    # Export those exact effective drivers so formulas reproduce the result.
+    a = dict(a)
+    for field, driver in {
+        "ebit_margins": "ebit", "da_margins": "da", "capex_margins": "capex",
+        "nwc_margins": "nwc", "tax_rates": "tax",
+        "net_income_margins": "net_income", "book_value_margins": "book_value",
+    }.items():
+        if a.get(field) is None:
+            a[field] = list(r["drivers"][driver])
+    if a.get("wacc_override") is None:
+        a["wacc_override"] = r["wacc"]
     hist = doc["historical"]
     periods = [h["period_end"] for h in hist]
 
