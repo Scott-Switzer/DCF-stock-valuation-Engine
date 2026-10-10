@@ -144,4 +144,3 @@ def test_reliable_peers_drop_candidates_and_excluded_but_keep_manual_rows():
         {"ticker": "D", "multiples": {"pe": 1.0}},
     ]
     assert [p["ticker"] for p in reliable_peers(peers)] == ["A", "D"]
-
