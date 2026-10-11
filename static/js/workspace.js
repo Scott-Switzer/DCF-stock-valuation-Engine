@@ -244,7 +244,7 @@
     if (message.type === "editor-company") {
       window.researchWorkspace?.setContext(null);
       if (key !== "dcf") {
-        results.delete(key);
+        results.set(key, {loaded:true, data:{financials:message.financials, form:message.form}});
         if (key === method) render(null);
         status(
           "This method’s imported company inputs are active. Load a ticker above for a shared company workspace.",

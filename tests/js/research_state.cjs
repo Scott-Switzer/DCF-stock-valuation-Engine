@@ -48,6 +48,28 @@ const active={valid:true,result:{method:'dcf',input_financials:{company:{ticker:
  await loadingTask;
  assert.equal(restored,active);
  assert.ok(source.includes('setContext(loading ? null : item)'));
+ // Imported method inputs invalidate the result while keeping their loaded state.
+ for (const key of ['ddm','relative']) {
+   const imported={company:{ticker:'IMPORTED'}};
+   const importedForm={forecast:'custom'};
+   const importContext={key,method:key,results:new Map([[key,{loaded:true,result:active.result}]]),
+     message:{financials:imported,form:importedForm},render(){},status(){},baseline:{financials:{company:{ticker:'OLD'}}},
+     request(){throw Error('Imported inputs must not be reassembled');}};
+   vm.createContext(importContext);
+   const importStart=source.indexOf('      if (key !== "dcf") {',source.indexOf('message.type === "editor-company"'));
+   const importEnd=source.indexOf('      } else {',importStart);
+   vm.runInContext(source.slice(importStart,importEnd)+'}',importContext);
+   const state=importContext.results.get(key);
+   assert.equal(state.loaded,true);
+   assert.equal(state.result,undefined);
+   assert.equal(state.data.financials,imported);
+   assert.equal(state.data.form,importedForm);
+   const assembleStart=source.indexOf('  async function assemble(');
+   const assembleEnd=source.indexOf('  function showMethod(',assembleStart);
+   vm.runInContext(source.slice(assembleStart,assembleEnd),importContext);
+   await importContext.assemble(key,0);
+   assert.equal(importContext.results.get(key),state);
+ }
  // Opening an owned report locks the form until its asynchronous read completes.
  let resolveLoad;
  context.location.search='?research=saved';
