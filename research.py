@@ -83,6 +83,11 @@ def save_research(raw):
     doc = deepcopy(raw.get("financials"))
     if not isinstance(doc, dict):
         raise ValueError("Research needs an exact financial snapshot.")
+    company = doc.get("company")
+    if not isinstance(company, dict):
+        raise ValueError("Research needs a company identity.")
+    ticker = ticker_symbol(company.get("ticker"))
+    company["ticker"] = ticker
     assumptions = (assumptions_from_json(raw.get("assumptions")) if method == "dcf"
                    else suite_assumptions(method, raw.get("assumptions")))
     # Caller-provided results are never trusted. No provider refresh changes the snapshot.
@@ -92,7 +97,7 @@ def save_research(raw):
         if not isinstance(parent, str):
             raise ValueError("Revision reference must be text.")
         previous = get_research(parent)
-        if not previous or previous["ticker"] != doc["company"]["ticker"] or previous["method"] != method:
+        if not previous or previous["ticker"] != ticker or previous["method"] != method:
             raise ValueError("Revision must reference your research for this company and method.")
     stored_result = deepcopy(result)
     stored_result.get("metadata", {}).pop("document", None)
@@ -108,7 +113,7 @@ def save_research(raw):
     identity, created = str(uuid.uuid4()), library.now()
     library._run(
         "INSERT INTO research_documents (id,client_hash,created_at,parent_id,title,ticker,method,scenario_name,financial_hash,market_price,target_price,snapshot_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-        (identity, library.caller_hash(), created, parent, title, doc["company"]["ticker"], method,
+        (identity, library.caller_hash(), created, parent, title, ticker, method,
          scenario, financial_hash, result["current_price"], result["target_price_12m"], encoded),
     )
     return get_research(identity)

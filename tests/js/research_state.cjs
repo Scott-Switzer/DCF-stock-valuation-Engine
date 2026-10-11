@@ -11,7 +11,7 @@ form.reset=()=>fields.forEach(el=>el.value='');
 let resolveSave;
 let sent;
 const context={document:{getElementById:node,createElement:()=>({append(){}})},window:{},location:{search:''},URLSearchParams,
- fetch:async(url,opts)=>{if(opts){sent=JSON.parse(opts.body);return new Promise(resolve=>{resolveSave=()=>resolve({ok:true,json:async()=>({id:'saved',ticker:'AAPL',scenario_name:'Base'})});});}return {ok:true,json:async()=>[]};}};
+ fetch:async(url,opts)=>{if(opts){sent=JSON.parse(opts.body);return new Promise(resolve=>{resolveSave=()=>resolve({ok:true,json:async()=>({id:'saved',ticker:'AAPL',scenario_name:'Base',snapshot:{result:active.result,financials:active.result.input_financials,assumptions:{}}})});});}return {ok:true,json:async()=>[]};}};
 vm.createContext(context);
 vm.runInContext(fs.readFileSync('static/js/research.js','utf8'),context);
 const active={valid:true,result:{method:'dcf',input_financials:{company:{ticker:'AAPL'},valuation_date:'2026-10-10'},target_price_12m:100,assumptions:{}}};
@@ -48,4 +48,22 @@ const active={valid:true,result:{method:'dcf',input_financials:{company:{ticker:
  await loadingTask;
  assert.equal(restored,active);
  assert.ok(source.includes('setContext(loading ? null : item)'));
+ // Opening an owned report locks the form until its asynchronous read completes.
+ let resolveLoad;
+ context.location.search='?research=saved';
+ node('title').value='Unchanged while loading';
+ context.fetch=async url=>url==='/api/research/saved'?new Promise(resolve=>{
+   resolveLoad=()=>resolve({ok:true,json:async()=>({id:'saved',ticker:'AAPL',title:'Saved title',scenario_name:'Base',
+     snapshot:{thesis:{thesis:'Saved notes'},result:active.result,financials:active.result.input_financials,assumptions:{}}})});
+ }):{ok:true,json:async()=>[]};
+ vm.runInContext(fs.readFileSync('static/js/research.js','utf8'),context);
+ assert.equal(node('title').disabled,true);
+ assert.equal(node('research-new').disabled,true);
+ node('research-new').events.click();
+ assert.equal(node('title').value,'Unchanged while loading');
+ resolveLoad(); await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(node('title').value,'Saved title');
+ assert.equal(node('thesis').value,'Saved notes');
+ assert.equal(node('title').disabled,false);
+ assert.equal(node('research-save').disabled,false);
 })().catch(error=>{console.error(error);process.exitCode=1;});

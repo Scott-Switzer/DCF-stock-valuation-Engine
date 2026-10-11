@@ -209,3 +209,19 @@ def test_shipped_research_state_guards():
     import subprocess
 
     subprocess.run(['node', 'tests/js/research_state.cjs'], check=True, timeout=10)
+
+
+@pytest.mark.parametrize("submitted,canonical", [("aapl", "AAPL"), ("BRK.B", "BRK-B")])
+def test_research_normalizes_identity_for_filtering_and_revisions(submitted, canonical):
+    client = app.test_client()
+    data = payload()
+    data['financials']['company']['ticker'] = submitted
+    first = client.post('/api/research', json=data).get_json()
+    assert first['ticker'] == canonical
+    assert first['snapshot']['financials']['company']['ticker'] == canonical
+    assert client.get('/api/research?ticker=' + submitted).get_json()[0]['id'] == first['id']
+    data['financials']['company']['ticker'] = canonical
+    data['parent_id'] = first['id']
+    second = client.post('/api/research', json=data)
+    assert second.status_code == 201
+    assert second.get_json()['financial_hash'] == first['financial_hash']

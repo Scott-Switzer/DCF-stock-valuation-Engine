@@ -6,7 +6,11 @@
   const message = document.getElementById("research-status");
   const save = document.getElementById("research-save");
   const list = document.getElementById("research-list");
-  let context = null, activeContext = null, parentId = null, draftTicker = null, pending = false, frozen = false;
+  const previous = new URLSearchParams(location.search).get("research");
+  let context = null, activeContext = null, parentId = null, draftTicker = null, pending = !!previous, frozen = false;
+  const tickerOf = item => item?.result?.input_financials?.company?.ticker?.trim().toUpperCase().replaceAll(".", "-");
+  const snapshotContext = record => ({valid:true, result:{...record.snapshot.result,
+    input_financials:record.snapshot.financials, assumptions:record.snapshot.assumptions}});
   const field = name => form.elements.namedItem(name);
   const note = text => { message.textContent = text; };
   const request = async (url, options) => {
@@ -17,7 +21,7 @@
   };
   function updateSave() {
     for (const el of form.querySelectorAll("input,textarea,button")) el.disabled = pending;
-    const ticker = context?.result?.input_financials?.company?.ticker;
+    const ticker = tickerOf(context);
     save.disabled = pending || !context?.valid || (!!draftTicker && ticker !== draftTicker);
     const result = context?.result;
     document.getElementById("research-snapshot").textContent = result
@@ -34,7 +38,7 @@
     },
   };
   form.addEventListener("input", () => {
-    draftTicker = draftTicker || context?.result?.input_financials?.company?.ticker || null;
+    draftTicker = draftTicker || tickerOf(context) || null;
     updateSave();
   });
   document.getElementById("research-new").addEventListener("click", () => {
@@ -70,23 +74,22 @@
           method:result.method, financials:result.input_financials, assumptions:result.assumptions,
           thesis, parent_id:parentId})});
       parentId = record.id; draftTicker = record.ticker;
-      frozen = true; context = {valid:true, result};
+      frozen = true; context = snapshotContext(record);
       note(`Saved ${record.ticker} ${record.scenario_name}. Earlier revisions are preserved. Further note edits use this frozen valuation; choose Use active valuation for changed assumptions.`);
       await refresh(record.ticker);
     } catch (error) { note(error.message); }
     finally { pending = false; updateSave(); }
   });
-  const previous = new URLSearchParams(location.search).get("research");
+  updateSave();
+  if (previous) note("Loading your saved research snapshot…");
   if (previous) request(`/api/research/${encodeURIComponent(previous)}`).then(record => {
     parentId = record.id; draftTicker = record.ticker;
     field("title").value = record.title; field("scenario_name").value = record.scenario_name;
     for (const [key, value] of Object.entries(record.snapshot.thesis)) if (field(key)) field(key).value = value;
     // Editing notes starts from the frozen result, not a silently refreshed company.
-    const result = {...record.snapshot.result, input_financials:record.snapshot.financials,
-      assumptions:record.snapshot.assumptions};
-    frozen = true; context = {valid:true, result}; updateSave();
+    frozen = true; context = snapshotContext(record); updateSave();
     note(`Editing ${record.ticker} notes against the saved ${record.snapshot.financials.valuation_date} snapshot. Load a company only if you intend to use new valuation inputs.`);
     document.getElementById("research-panel").open = true;
-  }).catch(error => note(error.message));
+  }).catch(error => note(error.message)).finally(() => { pending = false; updateSave(); });
   refresh().catch(() => note("Research library is unavailable right now."));
 })();
