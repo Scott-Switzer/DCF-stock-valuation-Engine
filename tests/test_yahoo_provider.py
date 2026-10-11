@@ -321,3 +321,43 @@ class YahooTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_cloud_packet_repairs_missing_capex_before_statement_validation():
+    import pytest
+    from ppe_packets import build_packet
+    http = MockHTTP()
+    http.financials['timeseries']['result'] = [r for r in http.financials['timeseries']['result'] if 'annualCapitalExpenditure' not in r]
+    with pytest.raises(ProviderError, match='CapitalExpenditure'):
+        load_yahoo('TEST', TODAY, http)
+    rows = [{'metric_id': 'revenue', 'value': 1000, 'period_start': end[:4] + '-01-01',
+        'period_end': end, 'period_type': 'annual', 'available_at': str(int(end[:4])+1) + '-02-01',
+        'unit': 'USD', 'source_id': 'SEC', 'quality_status': 'VERIFIED'} for end in http.ends]
+    p = build_packet('TEST', '0000000001', rows, None, TODAY, {})
+    for row in p['historical']:
+        row['fields']['capex'] = {'value': 45, 'period_end': row['period_end'],
+            'available_at': str(int(row['period_end'][:4])+1) + '-02-01', 'unit': 'USD',
+            'provenance': {'provider': 'SEC companyfacts', 'accession': 'fixture'}}
+    result = load_yahoo('TEST', TODAY, http, packet=p)
+    assert all(row['capex'] == 45 for row in result['historical'])
+    assert result['historical'][-1]['provenance']['CapitalExpenditure']['provider'] == 'SEC companyfacts'
+    assert result['historical'][-1]['net_income'] == 120
+
+
+def test_valid_sec_tax_rate_repairs_invalid_yahoo_ratio_without_normalized_fallback():
+    from ppe_packets import build_packet
+    http = MockHTTP()
+    for series in http.financials['timeseries']['result']:
+        for value in series.get('annualTaxProvision', []):
+            value['reportedValue']['raw'] = -40
+    rows = [{'metric_id': 'revenue', 'value': 1000, 'period_start': end[:4] + '-01-01',
+        'period_end': end, 'period_type': 'annual', 'available_at': str(int(end[:4])+1) + '-02-01',
+        'unit': 'USD', 'source_id': 'SEC', 'quality_status': 'VERIFIED'} for end in http.ends]
+    p = build_packet('TEST', '0000000001', rows, None, TODAY, {})
+    for row in p['historical']:
+        row['fields']['tax_rate'] = {'value': 0.2, 'period_end': row['period_end'],
+            'available_at': str(int(row['period_end'][:4])+1) + '-02-01', 'unit': 'pure',
+            'provenance': {'provider': 'SEC companyfacts', 'accession': 'fixture'}}
+    result = load_yahoo('TEST', TODAY, http, packet=p)
+    assert all(row['tax_rate'] == 0.2 for row in result['historical'])
+    assert result['historical'][-1]['provenance']['tax_rate']['provider'] == 'SEC companyfacts'

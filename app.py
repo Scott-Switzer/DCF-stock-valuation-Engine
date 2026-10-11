@@ -1290,6 +1290,7 @@ def ready():
             )
             if app.config.get("CLOUDFLARE")
             else False,
+            zion_valuation_configured=bool(getattr(request.environ.get("workers.env"), "ZION_VALUATIONS", None)),
             zion_configured=bool(provider_value("ZION_API_BASE_URL")),
             custom_api_configured=bool(provider_value("DCF_API_BASE_URL")),
         )
@@ -1318,6 +1319,12 @@ def providers():
     return jsonify(
         providers={
             "auto": {"configured": True, "label": "Automatic company data"},
+            "zion_valuation": {
+                "configured": bool(getattr(request.environ.get("workers.env"), "ZION_VALUATIONS", None)),
+                "label": "Zion compact valuation data",
+                "kind": "private_service_binding",
+                "note": "Published SEC financials from Cloudflare; per-field dates and fallbacks retained. Configuration does not certify ticker coverage or freshness.",
+            },
             "sample": {"configured": True, "label": "Offline example"},
             "manual": {"configured": True, "label": "Manual financials"},
             "sec": {"configured": True, "label": "SEC company facts"},
@@ -1345,6 +1352,7 @@ def providers_page():
     """Server-rendered provider status; no secrets are exposed."""
     return render_template(
         "providers.html",
+        zion_valuation_configured=bool(getattr(request.environ.get("workers.env"), "ZION_VALUATIONS", None)),
         zion_configured=bool(provider_value("ZION_API_BASE_URL")),
         custom_api_configured=bool(provider_value("DCF_API_BASE_URL")),
     )

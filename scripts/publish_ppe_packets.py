@@ -17,7 +17,7 @@ import sys
 from datetime import datetime, timezone
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from ppe_packets import build_packet
+from ppe_packets import build_packet, enrich_packet
 from dcf_loader import ProviderError, ticker_symbol
 
 
@@ -68,7 +68,10 @@ class R2:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", required=True)
+    parser.add_argument("--config")
+    parser.add_argument("--rclone-remote", help="Optional existing S3 remote; credentials never printed")
+    parser.add_argument("--sec-archive-key")
+    parser.add_argument("--sec-archive-bucket", default="financial-data-wrds-private")
     parser.add_argument("--symbols", default="AAPL")
     parser.add_argument("--all", action="store_true")
     parser.add_argument(
@@ -84,10 +87,21 @@ def main():
         digest = hashlib.sha256(raw).hexdigest()
         sec[ticker_symbol(ticker)] = (json.loads(raw), raw, digest)
     r2 = None
+    archive = None
     cutoff = datetime.now(timezone.utc).date().isoformat()
     report = {"cutoff_date": cutoff, "companies": [], "published": False}
     try:
-        r2 = R2(args.config)
+        if args.rclone_remote:
+            from scripts.ppe_cloud_source import rclone_client, S3Transport, SecArchive
+            client = rclone_client(args.rclone_remote)
+            r2 = S3Transport(client)
+            if args.sec_archive_key:
+                archive = SecArchive(client, args.sec_archive_bucket, args.sec_archive_key)
+                report["sec_archive"] = {"key": args.sec_archive_key, "etag": archive.reader.etag.strip('"')}
+        else:
+            if not args.config or args.sec_archive_key:
+                raise ProviderError("Use --config, or --rclone-remote with the optional SEC archive.")
+            r2 = R2(args.config)
         pointer = r2.get("gold/serving/coverage25/CURRENT.json")
         manifest = r2.get(pointer["manifest_key"], pointer["manifest_sha256"])
         base = "gold/serving/releases/" + manifest["serving_release_id"] + "/"
@@ -126,8 +140,10 @@ def main():
         wanted = (
             sorted(resolved) if args.all else [ticker_symbol(x) for x in args.symbols.split(",")]
         )
+        prior_index = r2.get("control/valuation/CURRENT.json") if archive is not None else None
         packet_index = {}
         prefetched = {}
+        sec_prefetched = {}
         pending_writes = []
         for position, ticker in enumerate(wanted):
             if position % 4 == 0:
@@ -135,9 +151,24 @@ def main():
                     r2.call("batch", items=pending_writes)
                     pending_writes = []
                 group = wanted[position : position + 4]
+                if archive is not None:
+                    from concurrent.futures import ThreadPoolExecutor
+                    def supplement(symbol):
+                        entry = resolved.get(symbol, {})
+                        issuer = re.search(r"entity_sec_cik_([0-9]{10})(?:_[A-Z-]+)?$", entry.get("artifact_path", ""))
+                        if not issuer or symbol in sec:
+                            return None
+                        try:
+                            return archive.facts(issuer.group(1))
+                        except (ProviderError, ValueError) as exc:
+                            return exc
+                    with ThreadPoolExecutor(max_workers=4) as executor:
+                        sec_prefetched = dict(zip(group, executor.map(supplement, group)))
                 requests = []
                 paths = []
                 for symbol in group:
+                    if symbol not in resolved:
+                        continue
                     path = resolved[symbol]["artifact_path"] + "/fundamentals/annual.json"
                     if path in entries:
                         paths.append(path)
@@ -175,6 +206,17 @@ def main():
                 "public_data_policy": "SEC fundamentals only; no warehouse market/provider prices",
             }
             facts = None
+            if archive is not None and ticker not in sec:
+                try:
+                    supplement_result = sec_prefetched[ticker]
+                    if isinstance(supplement_result, Exception):
+                        raise supplement_result
+                    facts, provenance = supplement_result
+                except (ProviderError, ValueError) as exc:
+                    report["companies"].append({"ticker": ticker, "status": "SEC_SUPPLEMENT_REJECTED", "reason": str(exc)})
+                    continue
+                if provenance:
+                    source["sec_source"] = provenance
             if ticker in sec:
                 facts, raw, digest = sec[ticker]
                 source["sec_source"] = {
@@ -186,6 +228,11 @@ def main():
                     r2.call("put", source["sec_source"]["artifact"], raw)
             try:
                 packet = build_packet(ticker, cik, rows, facts, cutoff, source)
+                old_entry = (prior_index or {}).get("companies", {}).get(ticker)
+                if old_entry:
+                    old_packet = r2.get(old_entry["key"], old_entry["sha256"])
+                    packet = enrich_packet(old_packet, packet, cutoff)
+                    packet["source"]["previous_packet_sha256"] = old_entry["sha256"]
             except ProviderError as exc:
                 if not args.all:
                     raise
@@ -221,7 +268,7 @@ def main():
         if args.publish:
             if pending_writes:
                 r2.call("batch", items=pending_writes)
-            prior = r2.get("control/valuation/CURRENT.json") or {"companies": {}}
+            prior = prior_index if prior_index is not None else (r2.get("control/valuation/CURRENT.json") or {"companies": {}})
             # Incremental publications retain previously published issuer packets.
             index = {
                 "schema_version": "ppe-valuation-index-v1",
@@ -252,6 +299,8 @@ def main():
                     raise
                 print("Could not save publisher diagnostics; preserving original failure.", file=sys.stderr)
         finally:
+            if archive is not None:
+                archive.close()
             if r2 is not None:
                 r2.close()
 

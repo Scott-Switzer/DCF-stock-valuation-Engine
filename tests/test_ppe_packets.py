@@ -266,3 +266,70 @@ def test_overlay_retains_common_earnings_for_pe_and_ordinary_market_equity_for_w
     assert updated["source"]["capital_costs"]["market_equity_value"] == 5000
     assert updated["source"]["capital_costs"]["equity_market_value"] == 5000
     assert updated["source"]["capital_costs"]["equity_shares_as_of"] == "2025-09-30"
+
+
+def test_enrichment_preserves_missing_dividends_and_newer_same_period_fields():
+    from ppe_packets import enrich_packet
+    old = packet()
+    end = old['historical'][-1]['period_end']
+    dividend = {'value': 3, 'period_end': end, 'available_at': '2026-01-01', 'unit': 'USD', 'provenance': {'provider': 'SEC'}}
+    old['dividends'] = [dividend]
+    old['historical'][-1]['fields']['ebit']['available_at'] = '2026-01-01'
+    new = packet()
+    new['historical'][-1]['fields']['ebit']['value'] = 999
+    result = enrich_packet(old, new, '2026-10-10')
+    assert result['dividends'] == [dividend]
+    assert result['historical'][-1]['fields']['ebit']['value'] == 30
+    assert new['dividends'] == []
+
+
+def test_enrichment_does_not_carry_bridge_across_fiscal_periods():
+    from ppe_packets import enrich_packet
+    old = packet()
+    new = packet()
+    # Different issuer must fail before any evidence can be mixed.
+    new['cik'] = '0000789019'
+    with pytest.raises(ProviderError, match='issuer'):
+        enrich_packet(old, new, '2026-10-10')
+
+
+def test_cloud_statement_gaps_preserve_source_and_do_not_invent_common_income():
+    from ppe_packets import supplement_statement_facts
+    p = packet()
+    old = {('2025-09-30', 'TotalRevenue'): (999, {'provider': 'baseline'})}
+    result = supplement_statement_facts(old, ['2025-09-30'], p, 'AAPL', '2026-10-10')
+    assert result['2025-09-30', 'OperatingIncome'][0] == 30
+    assert result['2025-09-30', 'OperatingIncome'][1]['period_end'] == '2025-09-27'
+    assert result['2025-09-30', 'OperatingIncome'][1]['provider'] == 'PPE SEC canonical'
+    assert result['2025-09-30', 'TotalRevenue'][0] == 999
+    assert ('2025-09-30', 'NetIncomeCommonStockholders') not in result
+    assert ('2025-09-30', 'OperatingIncome') not in old
+
+
+def test_unsupported_reported_tax_ratio_does_not_discard_other_sec_fields():
+    p = packet()
+    doc = demo_document()
+    doc['company']['ticker'] = 'AAPL'
+    doc['valuation_date'] = '2026-10-10'
+    for row, source_row in zip(doc['historical'], p['historical']):
+        row['period_end'] = source_row['period_end']
+    doc['bridge']['as_of'] = p['historical'][-1]['period_end']
+    baseline_tax = doc['historical'][-1]['tax_rate']
+    p['historical'][-1]['fields']['tax_rate'] = {'value': -0.25,
+        'period_end': p['historical'][-1]['period_end'], 'available_at': '2026-01-01',
+        'unit': 'pure', 'provenance': {'provider': 'SEC companyfacts'}}
+    result = apply_packet(doc, p, '2026-10-10')
+    assert result['historical'][-1]['ebit'] == 30
+    assert result['historical'][-1]['tax_rate'] == baseline_tax
+    coverage = next(r for r in result['source']['field_coverage'] if r['field'].endswith('2025-09-27.tax_rate'))
+    assert coverage['status'] == 'fallback'
+    assert coverage['excluded_ppe_observation']['value'] == -0.25
+    assert any('reported tax ratio' in w for w in result['source']['warnings'])
+
+
+def test_enrichment_rejects_conflicting_values_at_same_availability_date():
+    from ppe_packets import enrich_packet
+    old, new = packet(), packet()
+    new['historical'][-1]['fields']['ebit']['value'] = 999
+    with pytest.raises(ProviderError, match='Conflicting published'):
+        enrich_packet(old, new, '2026-10-10')

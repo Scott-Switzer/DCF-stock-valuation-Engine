@@ -7,7 +7,8 @@
 <div class="table-wrap"><table class="input-table">
 <thead><tr><th scope="col">Provider</th><th scope="col">Status</th><th scope="col">What it needs</th></tr></thead>
 <tbody>
-<tr><th scope="row">Automatic company data</th><td>Available</td><td>No key. Unofficial endpoints; coverage not guaranteed.</td></tr>
+<tr><th scope="row">Automatic company data</th><td>Available</td><td>Published SEC financials with dated market and statement fallbacks; coverage varies by field.</td></tr>
+<tr><th scope="row">Zion compact valuation data</th><td>{% if zion_valuation_configured %}Connected{% else %}Not configured{% endif %}</td><td>Private Cloudflare connection to published SEC packets. Source dates and missing-field fallbacks appear with each company.</td></tr>
 <tr><th scope="row">Offline example</th><td>Available</td><td>Nothing. Synthetic data, not a real security.</td></tr>
 <tr><th scope="row">Manual financials</th><td>Available</td><td>Your own annual reports.</td></tr>
 <tr><th scope="row">SEC company facts</th><td>Available</td><td>Server-side <code>EDGAR_IDENTITY</code> contact identity.</td></tr>

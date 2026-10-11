@@ -32,11 +32,12 @@ def test_loading_fallback_is_explicit(tmp_path):
     d["source"]["capital_costs"] = {}
     with (
         patch("auto_loading.load_yahoo", return_value=d),
-        patch("ppe_provider.load_packet", side_effect=ProviderError("Packet unavailable")),
+        patch("ppe_provider.load_packet", side_effect=ProviderError("Packet unavailable")) as packet_loader,
         patch("auto_loading.company_classification", return_value=None),
         patch("auto_loading.recalculate_costs", return_value={}),
     ):
         loaded = load_method("dcf", "AAPL", "2026-10-07")
+    packet_loader.assert_called_once()
     assert loaded["financials"]["source"]["ppe_status"] == "Packet unavailable"
     assert any("PPE packet unavailable" in x for x in loaded["financials"]["source"]["warnings"])
 
@@ -155,3 +156,22 @@ def test_ppe_pointer_and_body_receive_same_deadline(monkeypatch):
         monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
         assert ppe_provider.load_packet('AAPL', '2026-10-10', deadline=123.0) is None
     assert calls == [123.0]
+
+
+def test_zion_binding_is_preferred_and_failure_uses_r2(monkeypatch):
+    from types import SimpleNamespace
+    import ppe_provider
+    from tests.test_ppe_packets import packet
+    p = packet()
+    env = SimpleNamespace(ZION_VALUATIONS=object(), PPE_DATA=object())
+    monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
+    with app.test_request_context(environ_overrides={'workers.env': env}):
+        with patch('ppe_provider._service_packet', return_value=p) as service:
+            assert ppe_provider.load_packet('AAPL', '2026-10-10') == p
+            service.assert_called_once()
+        key = 'gold/valuation/releases/' + 'a' * 64 + '/companies/AAPL.json'
+        pointer = {'schema_version': 'ppe-valuation-index-v1', 'companies': {'AAPL': {'key': key, 'sha256': 'b' * 64}}}
+        with patch('ppe_provider._service_packet', side_effect=ProviderError('Unavailable')):
+            with patch('ppe_provider._object_json', side_effect=[pointer, p]):
+                result = ppe_provider.load_packet('AAPL', '2026-10-10')
+        assert result['source']['transport'] == 'Zion service unavailable; authoritative PPE R2 fallback.'

@@ -184,14 +184,22 @@ def load_method(
                     "Add verified method-specific data to the import or load a company ticker above."
                 )
     else:
+        from ppe_provider import load_packet
+        packet_error = None
+        try:
+            packet = load_packet(ticker, asof, deadline=getattr(http, "deadline", None))
+        except ProviderError as exc:
+            packet = None
+            packet_error = str(exc)
         dcf = load_yahoo(
             ticker,
             asof,
             http,
             include_capital_costs=method != "relative",
             require_wacc=method == "dcf",
+            packet=packet,
         )
-        dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None))
+        dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None), packet=packet, packet_error=packet_error)
         dcf["source"]["revenue_growth_reference"] = historical_growth(dcf["historical"], "revenue")
         dividend_rows = dcf["source"]["common_dividends"]["historical"]
         dcf["source"]["dividend_growth_reference"] = historical_growth(dividend_rows, "value")
