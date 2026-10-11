@@ -73,6 +73,7 @@ def suite_form(method, doc=None):
         )
         f.update({f"dividend_growth_{i}": 5 for i in range(5)})
     else:
+        f["valuation_basis"] = "cuig_forward"
         f["historical_as_of"] = d["target"]["historical_as_of"]
         f["bridge_as_of"] = d["bridge"]["as_of"]
         for key in BRIDGE_FIELDS:
@@ -90,6 +91,8 @@ def suite_form(method, doc=None):
             )
             for key in ["ticker", "name", "as_of", "source"]:
                 f[f"peer_{key}_{i}"] = p.get(key, "")
+            f[f"peer_basis_{i}"] = p.get("denominator_basis", "unspecified")
+            f[f"peer_period_{i}"] = p.get("financial_period_end", "")
             for key in MULTIPLES:
                 f[f"peer_{key}_{i}"] = p.get("multiples", {}).get(key)
     return f
@@ -180,6 +183,14 @@ def suite_form_payload(method, form):
             }
             if not ticker and all(v is None for v in values.values()):
                 continue
+            original_peer = original_peers.get(ticker_symbol(ticker), {})
+            basis = form.get(f"peer_basis_{i}", original_peer.get("denominator_basis", "unspecified"))
+            period = form.get(f"peer_period_{i}", original_peer.get("financial_period_end"))
+            basis_metadata = {}
+            if "denominator_basis" in original_peer or basis != "unspecified":
+                basis_metadata["denominator_basis"] = basis
+            if "financial_period_end" in original_peer or period:
+                basis_metadata["financial_period_end"] = period
             doc["comparables"].append(
                 {
                     **deepcopy(original_peers.get(ticker_symbol(ticker), {})),
@@ -189,13 +200,15 @@ def suite_form_payload(method, form):
                     "currency": "USD",
                     "source": form.get(f"peer_source_{i}", ""),
                     "multiples": values,
+                    **basis_metadata,
                     **({"review_status": "user_confirmed"}
                        if form.get("peer_selection") == "explicit"
                        and original_peers.get(ticker_symbol(ticker), {}).get("review_status")
                        in {"candidate", "excluded"} else {}),
                 }
             )
-        raw = {"included_methods": [k for k in MULTIPLES if form.get(f"include_{k}") == "yes"]}
+        raw = {"included_methods": [k for k in MULTIPLES if form.get(f"include_{k}") == "yes"],
+               "valuation_basis": form.get("valuation_basis", "cuig_forward")}
     if doc != original or form.get("source_name") != doc["source"]["name"]:
         doc["source"].setdefault("origin_kind", doc["source"]["kind"])
         doc["source"].update(
@@ -330,6 +343,7 @@ def register_suite(app):
                     {f"dividend_growth_{i}": g * 100 for i, g in enumerate(a.dividend_growth_rates)}
                 )
             else:
+                form["valuation_basis"] = a.valuation_basis
                 form.update(
                     {f"include_{k}": "yes" if k in a.included_methods else "" for k in MULTIPLES}
                 )

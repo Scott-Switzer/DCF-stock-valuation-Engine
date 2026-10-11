@@ -343,6 +343,7 @@
     chart(r);
     bridge(r);
     sensitivity(r);
+    compsAnalysis(r);
     $("live-notes").replaceChildren();
     for (const text of r.warnings || []) {
       const li = document.createElement("li");
@@ -378,6 +379,41 @@
       const metric = document.createElement("strong"); metric.textContent = value;
       const caption = document.createElement("small"); caption.textContent = note;
       card.append(title, metric, caption); box.append(card);
+    }
+  }
+  function compsAnalysis(r) {
+    const box = $("comps-analysis");
+    if (!box) return;
+    box.replaceChildren();
+    box.hidden = r.method !== "relative";
+    if (box.hidden) return;
+    const add = (parent, tag, text) => {
+      const el = document.createElement(tag); el.textContent = text;
+      parent.append(el); return el;
+    };
+    add(box, "h3", "Explain your comps");
+    add(box, "p", r.basis_convention || "Peer denominator basis not recorded in this snapshot.");
+    for (const row of (r.multiples || []).filter(x => x.included)) {
+      const details = add(box, "details", "");
+      const multiple = x => Number.isFinite(x) ? `${x.toFixed(2)}×` : "—";
+      add(details, "summary", `${row.label}: mean ${multiple(row.mean)} · median ${multiple(row.median)}`);
+      add(details, "p", `Mean-implied ${money(row.implied_price)} · median-implied ${money(row.median_implied_price)}. ${row.outlier_count || 0} flagged outliers; kept in the calculation. Peer contributions below use raw common equity; the aggregate share value is floored at zero.`);
+      const wrap = add(details, "div", ""); wrap.className = "table-wrap";
+      const table = add(wrap, "table", ""); table.className = "value-table";
+      const head = add(add(table, "thead", ""), "tr", "");
+      for (const title of ["Peer", "Multiple", "Weight", "Raw implied / contribution", "Basis / period", "Coverage"])
+        add(head, "th", title);
+      const body = add(table, "tbody", "");
+      for (const peer of row.distribution || []) {
+        const tr = add(body, "tr", "");
+        add(tr, "th", peer.ticker);
+        for (const value of [multiple(peer.multiple), pct(peer.weight), `${money(peer.raw_implied_price)} / ${money(peer.raw_price_contribution)}`,
+          `${peer.basis} · ${peer.period_end || "period not recorded"}`,
+          peer.exclusion_reason || (peer.outlier ? "Outlier · included" : "Included")])
+          add(tr, "td", value);
+        add(details, "p", `${peer.ticker}: ${peer.source || "source not recorded"} · price ${peer.price_as_of || "date not recorded"}`);
+      }
+      add(details, "p", row.outlier_rule || "No outlier rule recorded.");
     }
   }
   function priceBars(r) {
@@ -693,7 +729,7 @@
     ["book_value_margin", "book_value_margins"],
   ];
   function templateToForm(key, assumptions) {
-    const source = results.get(key)?.data?.form || baseline?.form || {};
+    const source = results.get(key)?.form || results.get(key)?.data?.form || baseline?.form || {};
     const form = { ...source };
     if (key === "dcf") {
       for (const [field, name] of DCF_TEMPLATE_FIELDS)
@@ -720,6 +756,7 @@
         form.terminal_growth = String(assumptions.terminal_growth_rate * 100);
       if (assumptions.future_shares) form.future_shares = String(assumptions.future_shares);
     } else {
+      form.valuation_basis = assumptions.valuation_basis || "cuig_forward";
       for (const name of ["ev_revenue", "ev_ebitda", "ev_ebit", "pe", "pb"])
         form[`include_${name}`] = (assumptions.included_methods || []).includes(name) ? "yes" : "";
     }

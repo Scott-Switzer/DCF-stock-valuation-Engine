@@ -355,6 +355,8 @@ def load_method(
                         "currency": "USD",
                         "source": f"{peer['source']['name']} / fiscal {peer['historical'][-1]['period_end']}",
                         "multiples": relative_metrics(peer),
+                        "denominator_basis": "latest_annual",
+                        "financial_period_end": peer["historical"][-1]["period_end"],
                         "fit": fit,
                         # Unverified candidates are shown but do not feed automatic valuations.
                         "review_status": peer_review_status(fit),

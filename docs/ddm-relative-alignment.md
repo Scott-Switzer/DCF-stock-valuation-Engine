@@ -43,3 +43,15 @@ Relative valuation supplies a year-one forward target, not a present discounted 
 Synthetic defaults: DDM today $23.2899272023 and 12-month $23.8702221065; relative target $26.8783333333. These demonstrate formula behavior, not real-company fair values. JSON and CSV preserve assumptions/results/provenance. Public calculations store `method` and model version in private D1. The migration retains prior DCF rows and allows null present value for relative valuation; sentiment research must group by method/horizon and exclude synthetic submissions.
 
 DCF handoff leaves historical and forward P/B book equity blank: the DCF total book value does not establish common-attributable equity. Enter verified common book equity separately before selecting P/B. Imported peer availability dates and provenance survive editor submissions, including valuation-date changes.
+
+## Explainable comparable-company analysis
+
+Relative results retain the CUIG arithmetic mean and equal weighting across selected methods. They also report median multiples and their alternative implied share values, individual peer weights, raw implied prices and contributions, exclusions, and outlier flags. At least four valid peers are needed for the 1.5×IQR flag (inclusive quartiles); flagged observations remain included. Raw contributions sum before the common-equity value is floored at zero. No automatic winsorization occurs.
+
+Automatically loaded ratios use the latest reported annual denominator, **not TTM and not forward analyst estimates**. Peer records preserve `denominator_basis`, `financial_period_end`, price date, financial/bridge/market provenance and source. The default `valuation_basis=cuig_forward` explicitly applies those ratios to the target's year-one forecast as a constant-multiple scenario. It is not represented as a matched forward comparison. Legacy manual peer records without basis remain `unspecified` and are disclosed.
+
+`valuation_basis=matched_forward` requires every contributing peer ratio to be declared `forward_year_one`, with a future estimate-period date and the existing required source reference. Historical, unspecified or mixed inputs are rejected. These are user-supplied estimates; declaring the basis does not independently certify the provider forecast. Review fiscal-period alignment and accounting comparability.
+
+Unreviewed `candidate` and `excluded` peers cannot contribute through the JSON calculation API or workbook. A browser inclusion marks the peer user-confirmed. Source basis controls are locked with sourced inputs; users must unlock them to override. P/E and P/B do not subtract enterprise claims; financial firms cannot contribute EV multiples. Readiness recognizes P/B and EV/EBIT as well as the three original starter metrics.
+
+The workspace and standalone result provide expandable contribution tables. JSON exports retain the complete distribution. XLSX preserves the existing formula-driven target and includes basis/period/source columns; unreviewed peers are explicitly excluded from its formulas.

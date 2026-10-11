@@ -357,6 +357,8 @@
     }
   }
   function writePeer(index, peer) {
+    set(`peer_basis_${index}`, peer?.denominator_basis || "unspecified");
+    set(`peer_period_${index}`, peer?.financial_period_end || "");
     for (const key of ["ticker", "name", "as_of", "source"])
       set(`peer_${key}_${index}`, peer?.[key] || "");
     for (const key of ["ev_revenue", "ev_ebitda", "ev_ebit", "pe", "pb"])
@@ -388,6 +390,8 @@
           "name",
           "as_of",
           "source",
+          "basis",
+          "period",
           "ev_revenue",
           "ev_ebitda",
           "ev_ebit",

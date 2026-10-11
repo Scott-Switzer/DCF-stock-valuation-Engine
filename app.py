@@ -871,6 +871,8 @@ def peer_api():
             currency="USD",
             source=doc["source"]["name"],
             multiples=relative_metrics(doc),
+            denominator_basis="latest_annual",
+            financial_period_end=doc["historical"][-1]["period_end"],
             provenance={
                 "financials": doc["historical"][-1],
                 "bridge": doc["bridge"],

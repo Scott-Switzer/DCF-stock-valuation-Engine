@@ -851,6 +851,9 @@ def relative_workbook(doc, a, r):
     peer_sheet.text(1, 2, "Name", XF_HEADER)
     for j, key in enumerate(keys):
         peer_sheet.text(1, 3 + j, MULTIPLES[key][0], XF_HEADER)
+    peer_sheet.text(1, 8, "Denominator basis", XF_HEADER)
+    peer_sheet.text(1, 9, "Financial period", XF_HEADER)
+    peer_sheet.text(1, 10, "Price date / source", XF_HEADER)
     peer_sheet.width(1, 12)
     peer_sheet.width(2, 26)
     for j in range(len(keys)):
@@ -860,10 +863,13 @@ def relative_workbook(doc, a, r):
         peer_sheet.text(2 + i, 1, p["ticker"], XF_IN_TEXT)
         peer_sheet.text(2, 2, "", XF_DEFAULT)
         peer_sheet.text(2 + i, 2, p.get("name", ""), XF_IN_TEXT)
+        peer_sheet.text(2 + i, 8, p.get("denominator_basis", "unspecified"))
+        peer_sheet.text(2 + i, 9, p.get("financial_period_end", "not recorded"))
+        peer_sheet.text(2 + i, 10, f"{p.get('as_of', '')} / {p.get('source', '')}")
         for j, key in enumerate(keys):
             val = p["multiples"].get(key)
-            if val is None:
-                peer_sheet.text(2 + i, 3 + j, "n/a", XF_IN_TEXT)
+            if val is None or p.get("review_status") in {"candidate", "excluded"}:
+                peer_sheet.text(2 + i, 3 + j, "excluded" if val is not None else "n/a", XF_IN_TEXT)
             else:
                 peer_sheet.num(2 + i, 3 + j, val, XF_IN_US2)
     last_peer = 1 + n

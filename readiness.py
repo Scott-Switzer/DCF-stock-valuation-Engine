@@ -224,9 +224,9 @@ def method_readiness(doc, relative_doc=None):
     ev_blocked = bool(financial_block_reason(peer_source)) or (
         peer_source.get("bridge", {}).get("minority_interest", 0) or 0
     ) < 0
-    allowed = {"pe": "net_income"}
+    allowed = {"pe": "net_income", "pb": "book_value"}
     if not ev_blocked:
-        allowed.update(ev_revenue="revenue", ev_ebitda="ebitda")
+        allowed.update(ev_revenue="revenue", ev_ebitda="ebitda", ev_ebit="ebit")
     forward = peer_source.get("target", {}).get("forward")
     if forward is None:
         latest = (doc.get("historical") or [{}])[-1]

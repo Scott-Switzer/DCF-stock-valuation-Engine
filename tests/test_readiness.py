@@ -228,5 +228,5 @@ def test_relative_requires_positive_matching_target_metric():
     from suite_models import suite_sample
     doc = demo_document()
     rel = suite_sample('relative')
-    rel['target']['forward'].update(revenue=-1, ebitda=-1, net_income=-1)
+    rel['target']['forward'].update(revenue=-1, ebitda=-1, ebit=-1, net_income=-1, book_value=-1)
     assert method_readiness(doc, rel)['relative']['state'] == 'unavailable'
