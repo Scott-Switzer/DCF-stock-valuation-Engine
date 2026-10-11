@@ -190,7 +190,7 @@ def suite_form_payload(method, form):
             if "denominator_basis" in original_peer or basis != "unspecified":
                 basis_metadata["denominator_basis"] = basis
             if "financial_period_end" in original_peer or period:
-                basis_metadata["financial_period_end"] = period or original_peer.get("financial_period_end")
+                basis_metadata["financial_period_end"] = period
             doc["comparables"].append(
                 {
                     **deepcopy(original_peers.get(ticker_symbol(ticker), {})),

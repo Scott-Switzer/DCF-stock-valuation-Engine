@@ -390,6 +390,8 @@
           "name",
           "as_of",
           "source",
+          "basis",
+          "period",
           "ev_revenue",
           "ev_ebitda",
           "ev_ebit",

@@ -729,7 +729,7 @@
     ["book_value_margin", "book_value_margins"],
   ];
   function templateToForm(key, assumptions) {
-    const source = results.get(key)?.data?.form || baseline?.form || {};
+    const source = results.get(key)?.form || results.get(key)?.data?.form || baseline?.form || {};
     const form = { ...source };
     if (key === "dcf") {
       for (const [field, name] of DCF_TEMPLATE_FIELDS)
@@ -756,6 +756,7 @@
         form.terminal_growth = String(assumptions.terminal_growth_rate * 100);
       if (assumptions.future_shares) form.future_shares = String(assumptions.future_shares);
     } else {
+      form.valuation_basis = assumptions.valuation_basis || "cuig_forward";
       for (const name of ["ev_revenue", "ev_ebitda", "ev_ebit", "pe", "pb"])
         form[`include_${name}`] = (assumptions.included_methods || []).includes(name) ? "yes" : "";
     }

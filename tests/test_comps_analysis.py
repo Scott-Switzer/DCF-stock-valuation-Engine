@@ -106,6 +106,19 @@ def test_locked_peer_basis_survives_form_submission_and_import():
     assert response.get_json()["form"]["valuation_basis"] == "matched_forward"
 
 
+def test_explicitly_cleared_estimate_date_is_not_restored():
+    doc = suite_sample("relative")
+    for peer in doc["comparables"]:
+        peer.update(denominator_basis="forward_year_one", financial_period_end="2027-12-31")
+    form = suite_form("relative", doc)
+    form.update(valuation_basis="matched_forward", include_ev_revenue="", include_ev_ebitda="", include_pe="yes")
+    form["peer_period_0"] = ""
+    restored, assumptions = suite_form_payload("relative", form)
+    assert restored["comparables"][0]["financial_period_end"] == ""
+    with pytest.raises(ValueError, match="Forward peer estimate period"):
+        RelativeModel(restored, assumptions).calculate()
+
+
 def test_financial_firm_has_no_ev_contributions_and_pb_readiness_is_supported():
     doc = suite_sample("relative")
     doc["source"]["classification"] = {"status": "confirmed", "sic": "6200"}

@@ -2,6 +2,10 @@
 import subprocess
 
 
+def test_comps_templates_and_replacement_preserve_basis():
+    subprocess.run(["node", "tests/js/comps_templates.cjs"], check=True, timeout=10)
+
+
 def test_share_paging_retries_without_skipping_or_overlapping():
     subprocess.run(["node", "tests/js/share_paging.cjs"], check=True, timeout=10)
 
