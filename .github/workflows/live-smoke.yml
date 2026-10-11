@@ -49,7 +49,7 @@ jobs:
       - name: Validate smoke script syntax
         run: python -m py_compile scripts/smoke_public.py
       - name: Probe deployed public Worker (non-saving)
-        run: python scripts/smoke_public.py --require-ppe --timeout 30 --output public-smoke.json
+        run: python scripts/smoke_public.py --require-ppe --real-ticker AAPL --timeout 30 --output public-smoke.json
       - name: Retain smoke test evidence
         if: always()
         uses: actions/upload-artifact@v4

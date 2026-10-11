@@ -1,6 +1,9 @@
 """Bundle templates and public data into Python for Workers' read-only filesystem."""
 
 from pathlib import Path
+import hashlib
+import json
+import subprocess
 
 root = Path(__file__).resolve().parents[1]
 paths = (
@@ -9,13 +12,20 @@ paths = (
     + [root / "data/demo.json"]
 )
 assets = {str(p.relative_to(root)): p.read_text() for p in paths if p.is_file()}
-(root / "embedded_assets.py").write_text("ASSETS = " + repr(assets) + "\n")
+try:
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+    dirty = subprocess.run(["git", "diff", "--quiet", "HEAD", "--"], cwd=root).returncode != 0
+except (OSError, subprocess.CalledProcessError):
+    commit, dirty = "unknown", True
+build = {"commit": commit, "tracked_dirty": dirty,
+         "asset_sha256": hashlib.sha256(json.dumps(assets, sort_keys=True).encode()).hexdigest()}
+(root / "embedded_assets.py").write_text("ASSETS = " + repr(assets) + "\nBUILD = " + repr(build) + "\n")
 
 import shutil
 
 bundle = root / "worker_runtime"
 bundle.mkdir(exist_ok=True)
-for name in [
+module_names = [
     "worker.py",
     "app.py",
     "dcf_code.py",
@@ -42,5 +52,10 @@ for name in [
     "comps_analysis.py",
     "suite_views.py",
     "embedded_assets.py",
-]:
+]
+# This directory contains generated modules only. Remove stale branch artifacts.
+for stale in bundle.glob("*.py"):
+    if stale.name not in module_names:
+        stale.unlink()
+for name in module_names:
     shutil.copyfile(root / name, bundle / name)
