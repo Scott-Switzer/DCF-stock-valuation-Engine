@@ -27,11 +27,12 @@
     checkbox.checked=false;
     const apply=()=>{
       const unlocked=checkbox.checked||blank;
-      for(const input of form.querySelectorAll('input[name]')) {
+      for(const input of form.querySelectorAll('input[name],select[name]')) {
         const name=input.name;
         const sourced=/^(company_name|sector|source_name|price|price_as_of|diluted_shares|shares_basis|bridge_as_of|short_term_debt|long_term_debt|cash|preferred_equity|minority_interest|other_nonoperating_assets|base_common_dividends|dividend_as_of|historical_as_of|historical_|peer_|h_|period_)/.test(name);
         if(!sourced||['checkbox','hidden','file'].includes(input.type))continue;
-        input.readOnly=!unlocked;
+        if(input.tagName==='SELECT')input.disabled=!unlocked;
+        else input.readOnly=!unlocked;
         input.classList.toggle('sourced-input',!unlocked);
         const yearMatch=name.match(/_(\d)$/);
         let origin=doc.source?.name||'Manual input';

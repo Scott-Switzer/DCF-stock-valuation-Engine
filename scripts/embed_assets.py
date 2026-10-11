@@ -39,6 +39,7 @@ for name in [
     "reverse_dcf.py",
     "mcp.py",
     "suite_models.py",
+    "comps_analysis.py",
     "suite_views.py",
     "embedded_assets.py",
 ]:

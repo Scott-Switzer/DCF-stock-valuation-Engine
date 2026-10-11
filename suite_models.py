@@ -266,8 +266,11 @@ class DDMModel:
 @dataclass
 class RelativeAssumptions:
     included_methods: list
+    valuation_basis: str = "cuig_forward"
 
     def validate(self):
+        if not isinstance(self.valuation_basis, str) or self.valuation_basis not in {"cuig_forward", "matched_forward"}:
+            raise ValueError("Choose CUIG constant-multiple scenario or matched forward multiples.")
         if (
             not isinstance(self.included_methods, (list, tuple))
             or not self.included_methods
@@ -373,14 +376,29 @@ class RelativeModel:
         rows = []
         warnings = []
         for k, (label, metric) in MULTIPLES.items():
+            from comps_analysis import distribution, peer_basis
+
+            reviewed = [p for p in peers if p.get("review_status") not in {"candidate", "excluded"}]
+            allowed = not k.startswith("ev_") or (not financial and bridge["minority_interest"] >= 0)
             values = [
                 p["multiples"][k]
-                for p in peers
-                if p["multiples"].get(k) is not None and p["multiples"][k] > 0
+                for p in reviewed
+                if p["multiples"].get(k) is not None and p["multiples"][k] > 0 and allowed
             ]
             excluded = len(peers) - len(values)
             forward = target["forward"].get(metric)
             historical = target["historical"].get(metric)
+            bases = sorted({peer_basis(p) for p in reviewed if p["multiples"].get(k) is not None and p["multiples"][k] > 0})
+            if k in a.included_methods:
+                if a.valuation_basis == "matched_forward" and bases != ["forward_year_one"]:
+                    raise ValueError(f"{label}: matched forward valuation requires every included peer multiple to use documented forward-year-one estimates.")
+                if a.valuation_basis == "matched_forward":
+                    for peer in reviewed:
+                        if peer["multiples"].get(k) is not None and peer["multiples"][k] > 0:
+                            if iso_date(peer.get("financial_period_end"), "Forward peer estimate period") <= asof:
+                                raise ValueError(f"{peer['ticker']}: forward estimate period must be after the valuation date.")
+                if a.valuation_basis == "cuig_forward" and bases != ["forward_year_one"]:
+                    warnings.append(f"{label}: {', '.join(bases) or 'no usable'} peer basis applied to target year-one forecasts. This assumes unchanged multiples across periods; it is not a matched forward comparison.")
             valid = (
                 bool(values)
                 and forward is not None
@@ -425,6 +443,8 @@ class RelativeModel:
                     "market_multiple": market_multiple,
                     "implied_price": max(0, implied) if implied is not None else None,
                     "raw_implied_price": implied,
+                    "peer_bases": bases,
+                    **distribution(peers, k, forward, claims, shares, allowed),
                 }
             )
         targetprice = statistics.mean(r["implied_price"] for r in rows if r["included"])
@@ -452,6 +472,11 @@ class RelativeModel:
                 "diluted_shares": shares,
                 "warnings": warnings,
                 "assumptions": asdict(a),
+                "basis_convention": (
+                    "Matched forward peer denominators and target year-one forecasts; verify forecast periods and sources."
+                    if a.valuation_basis == "matched_forward" else
+                    "CUIG constant-multiple scenario: peer ratios are applied to target year-one forecasts. Latest annual or unspecified peer denominators are not matched forward estimates."
+                ),
             }
         )
 
