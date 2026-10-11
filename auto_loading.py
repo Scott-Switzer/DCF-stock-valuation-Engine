@@ -185,10 +185,12 @@ def load_method(
                 )
     else:
         from ppe_provider import load_packet
+        packet_error = None
         try:
             packet = load_packet(ticker, asof, deadline=getattr(http, "deadline", None))
-        except ProviderError:
+        except ProviderError as exc:
             packet = None
+            packet_error = str(exc)
         dcf = load_yahoo(
             ticker,
             asof,
@@ -197,7 +199,7 @@ def load_method(
             require_wacc=method == "dcf",
             packet=packet,
         )
-        dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None), packet=packet)
+        dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None), packet=packet, packet_error=packet_error)
         dcf["source"]["revenue_growth_reference"] = historical_growth(dcf["historical"], "revenue")
         dividend_rows = dcf["source"]["common_dividends"]["historical"]
         dcf["source"]["dividend_growth_reference"] = historical_growth(dividend_rows, "value")

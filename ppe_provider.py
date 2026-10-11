@@ -9,6 +9,7 @@ from dcf_loader import ProviderError, ticker_symbol
 from ppe_packets import validate_packet
 
 POINTER = "control/valuation/CURRENT.json"
+_UNSET = object()
 
 
 def _wait(promise, deadline=None):
@@ -169,12 +170,15 @@ def load_packet(ticker, asof=None, *, deadline=None):
     return packet
 
 
-def prefer_ppe(document, ticker, asof, *, deadline=None, packet=None):
+def prefer_ppe(document, ticker, asof, *, deadline=None, packet=_UNSET, packet_error=None):
     """Retain an explicit baseline when the public packet cannot be used."""
     from ppe_packets import apply_packet
 
     try:
-        packet = packet or load_packet(ticker, asof, deadline=deadline)
+        if packet_error:
+            raise ProviderError(packet_error)
+        if packet is _UNSET:
+            packet = load_packet(ticker, asof, deadline=deadline)
         if packet:
             candidate = apply_packet(document, packet, asof)
             from dcf_loader import parse_document

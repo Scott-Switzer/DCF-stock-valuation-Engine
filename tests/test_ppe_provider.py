@@ -32,11 +32,12 @@ def test_loading_fallback_is_explicit(tmp_path):
     d["source"]["capital_costs"] = {}
     with (
         patch("auto_loading.load_yahoo", return_value=d),
-        patch("ppe_provider.load_packet", side_effect=ProviderError("Packet unavailable")),
+        patch("ppe_provider.load_packet", side_effect=ProviderError("Packet unavailable")) as packet_loader,
         patch("auto_loading.company_classification", return_value=None),
         patch("auto_loading.recalculate_costs", return_value={}),
     ):
         loaded = load_method("dcf", "AAPL", "2026-10-07")
+    packet_loader.assert_called_once()
     assert loaded["financials"]["source"]["ppe_status"] == "Packet unavailable"
     assert any("PPE packet unavailable" in x for x in loaded["financials"]["source"]["warnings"])
 
