@@ -1,5 +1,6 @@
 """The Workers bundle must include every local module that bundled code imports."""
 
+import ast
 import re
 from pathlib import Path
 
@@ -8,8 +9,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def bundled_names():
     source = (ROOT / "scripts" / "embed_assets.py").read_text()
-    block = source.split("for name in [", 1)[1].split("]:", 1)[0]
-    return set(re.findall(r'"([A-Za-z_]+\.py)"', block))
+    tree = ast.parse(source)
+    assignment = next(node for node in tree.body if isinstance(node, ast.Assign)
+                      and any(isinstance(target, ast.Name) and target.id == "module_names" for target in node.targets))
+    return set(ast.literal_eval(assignment.value))
 
 
 def test_every_local_import_in_bundled_code_is_bundled():

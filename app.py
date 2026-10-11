@@ -1252,7 +1252,12 @@ def watchlist_page():
 
 @app.get("/health")
 def health():
-    return jsonify(status="healthy", model="cuig-dcf-v1")
+    release = {"commit": "local", "tracked_dirty": True}
+    if app.config.get("CLOUDFLARE"):
+        from embedded_assets import BUILD
+
+        release = BUILD
+    return jsonify(status="healthy", model="cuig-dcf-v1", release=release)
 
 
 @app.get("/ready")

@@ -5,6 +5,10 @@ Preview/export POST endpoints used here do not persist valuation records.
 Green source-code tests alone do not prove the public Worker is current.
 """
 import argparse
+from datetime import date
+import io
+from pathlib import Path
+import zipfile
 import json
 import sys
 import time
@@ -67,21 +71,30 @@ def assert_true(predicate, label):
         raise RuntimeError(f"Unexpected response: {label}")
 
 
-def run(base, timeout, require_ppe=False):
+def run(base, timeout, require_ppe=False, *, real_ticker=None, expected_commit=None, max_price_age=7, max_financial_age=550):
     results = []
 
     def check(label, path, condition, *, payload=None):
+        record = {"check": label}
         try:
             body, elapsed = fetch(base, path, timeout=timeout, payload=payload)
             response = decode(body, label)
+            record["seconds"] = elapsed
+            if label == "health" and isinstance(response, dict):
+                release = response.get("release") or {}
+                record["release"] = {key: release.get(key) for key in ("commit", "tracked_dirty", "asset_sha256")}
             assert_true(condition(response), label)
         except (RuntimeError, AttributeError, TypeError, ValueError) as exc:
-            results.append({"check": label, "status": "FAIL", "detail": str(exc)})
+            record.update(status="FAIL", detail=str(exc))
+            results.append(record)
             return None
-        results.append({"check": label, "status": "PASS", "seconds": elapsed})
+        record["status"] = "PASS"
+        results.append(record)
         return response
 
-    check("health", "/health", lambda x: x.get("status") == "healthy")
+    check("health", "/health", lambda x: x.get("status") == "healthy"
+          and (not expected_commit or (x.get("release", {}).get("commit") == expected_commit
+               and x.get("release", {}).get("tracked_dirty") is False)))
     check(
         "readiness", "/ready",
         lambda x: x.get("status") == "ready"
@@ -115,6 +128,45 @@ def run(base, timeout, require_ppe=False):
     else:
         results.append({"check": "non_saving_preview", "status": "SKIP", "detail": "Sample failed"})
         results.append({"check": "json_export", "status": "SKIP", "detail": "Sample failed"})
+    if real_ticker:
+        # Only public snapshots are read. Preview and export never save valuations.
+        company = check("real_company", "/api/load/dcf",
+                        lambda x: x.get("financials", {}).get("company", {}).get("ticker") == real_ticker
+                        and x.get("financials", {}).get("source", {}).get("kind") != "synthetic",
+                        payload={"ticker":real_ticker})
+        if company is not None:
+            company = company["financials"]
+            check("repeat_company_load", "/api/load/dcf",
+                  lambda x: x.get("financials", {}).get("company", {}).get("ticker") == real_ticker
+                  and x.get("financials", {}).get("source", {}).get("kind") != "synthetic",
+                  payload={"ticker":real_ticker})
+            try:
+                today = date.today()
+                age = (today - date.fromisoformat(company["market"]["price_as_of"])).days
+                annual_age = (today - max(date.fromisoformat(r["period_end"]) for r in company["historical"])).days
+                assert_true(0 <= age <= max_price_age and 0 <= annual_age <= max_financial_age, "source freshness")
+                results.append({"check":"source_freshness", "status":"PASS", "price_age_days":age,
+                                "annual_age_days":annual_age, "source":company.get("source", {}).get("name")})
+                payload = {"financials":company, "assumptions":{**ASSUMPTIONS, "wacc_override":0.10}}
+                actual = check("real_dcf_preview", "/api/preview/dcf",
+                               lambda x: "saved_record_id" not in x and isinstance(x.get("projections"), list), payload=payload)
+                if actual is not None:
+                    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+                    from reconciliation.reference_dcf import compare_result, reference_dcf
+
+                    differences = compare_result(reference_dcf(company, payload["assumptions"]), actual)
+                    results.append({"check":"real_dcf_arithmetic", "status":"FAIL" if differences else "PASS",
+                                    "differences":differences,
+                                    "detail":"Independent arithmetic mismatch." if differences else ""})
+                body, elapsed = fetch(base, "/export/xlsx", timeout=timeout, payload=payload)
+                with zipfile.ZipFile(io.BytesIO(body)) as workbook:
+                    assert_true(workbook.testzip() is None and "xl/workbook.xml" in workbook.namelist(), "workbook integrity")
+                    formulas = sum(workbook.read(name).count(b"<f>") for name in workbook.namelist()
+                                   if name.startswith("xl/worksheets/") and name.endswith(".xml"))
+                    assert_true(formulas > 0, "formula workbook")
+                results.append({"check":"real_xlsx_export", "status":"PASS", "seconds":elapsed})
+            except (RuntimeError, ValueError, KeyError, TypeError, zipfile.BadZipFile) as exc:
+                results.append({"check":"real_company_integrity", "status":"FAIL", "detail":str(exc)})
     return results
 
 
@@ -124,12 +176,26 @@ def main(argv=None):
     parser.add_argument("--timeout", type=float, default=25.0)
     parser.add_argument("--require-ppe", action="store_true")
     parser.add_argument("--output", help="Optional JSON output path")
+    parser.add_argument("--real-ticker", help="Optional public real-company preview, freshness and XLSX checks")
+    parser.add_argument("--expected-commit", help="Require this exact clean deployed Git SHA")
+    parser.add_argument("--max-price-age", type=int, default=7)
+    parser.add_argument("--max-financial-age", type=int, default=550)
+    parser.add_argument("--max-response-seconds", type=float, default=30)
     args = parser.parse_args(argv)
     if not args.base.startswith("https://") or not 0 < args.timeout <= 120:
         parser.error("Use an HTTPS base and a 0–120 second timeout")
-    results = run(args.base, args.timeout, args.require_ppe)
+    results = run(args.base, args.timeout, args.require_ppe, real_ticker=args.real_ticker,
+                  expected_commit=args.expected_commit, max_price_age=args.max_price_age,
+                  max_financial_age=args.max_financial_age)
+    for item in results:
+        if item.get("seconds", 0) > args.max_response_seconds:
+            item.update(status="FAIL", detail="Response exceeded configured latency budget.")
     for item in results:
         print(f"{item['status']:4} {item['check']:20} {item.get('seconds', '-')}s {item.get('detail', '')}")
+        if item.get("release"):
+            print("     release " + json.dumps(item["release"], sort_keys=True))
+        if item.get("differences"):
+            print("     differences " + json.dumps(item["differences"], sort_keys=True))
     if args.output:
         with open(args.output, "w", encoding="utf-8") as file:
             json.dump({"base": args.base, "results": results}, file, indent=2)
