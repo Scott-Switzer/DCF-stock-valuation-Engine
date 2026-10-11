@@ -67,7 +67,8 @@
           method:result.method, financials:result.input_financials, assumptions:result.assumptions,
           thesis, parent_id:parentId})});
       parentId = record.id; draftTicker = record.ticker;
-      note(`Saved ${record.ticker} ${record.scenario_name}. Earlier revisions are preserved.`);
+      frozen = true; context = {valid:true, result};
+      note(`Saved ${record.ticker} ${record.scenario_name}. Earlier revisions are preserved. Further note edits use this frozen valuation; choose Use active valuation for changed assumptions.`);
       await refresh(record.ticker);
     } catch (error) { note(error.message); }
     finally { pending = false; updateSave(); }

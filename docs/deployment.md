@@ -41,3 +41,9 @@ Check `/health`, `/ready`, synthetic calculation, form validation, autocomplete,
 Before deploying the MCP and account changes, confirm that the rate-limit namespace IDs in `wrangler.jsonc` (including `MCP_LIMIT`, id `1946100604`) are not used by another binding in the Cloudflare account. Namespace IDs are self-chosen and need no creation step, and bindings that share an ID share counters. `/mcp` requires `MCP_LIMIT` on Workers. Add `/api/account/*` and `/account` to the post-deploy checks: signed-out 401, foreign-Origin 403, sign-up/sign-in/sign-out, and two-account library isolation.
 
 Use `wrangler versions list` and `wrangler rollback` to restore a prior Worker version. D1 schema/data survive code rollback; apply only backward-compatible migrations unless planning a data migration. The old suspended Render service is left untouched and is no longer the advertised deployment. `render.yaml` and Docker remain optional local/self-hosting alternatives.
+
+## Investment research migration
+
+Before deploying the research workspace release, apply pending D1 migrations with `wrangler d1 migrations apply dcf-valuations --remote`, using the project's Python Wrangler wrapper. `0008_research.sql` only creates the research table and indexes; it preserves existing account and valuation records. Confirm no pending migrations remain. Preserve existing Worker variables with `--keep-vars`. Rollback to the prior Worker is compatible with the additive table.
+
+Post-deploy: save a non-confidential test research revision, inspect its private report and JSON/XLSX exports, create a second revision and confirm the original is unchanged. A separate browser library must receive 404 for the report and exports. Confirm account sign-in still claims anonymous research and all existing library types. Notes are user-written; no source verification or email delivery is implied.

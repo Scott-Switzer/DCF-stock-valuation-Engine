@@ -158,6 +158,8 @@ def test_migration_is_additive_idempotent_and_preserves_existing_rows():
 def test_workspace_has_structured_thesis_controls_and_research_library():
     client = app.test_client()
     body = client.get("/").get_data(as_text=True)
+    assert "<title>Company workspace · Valuation Engine</title>" in body
+    assert body.count('id="research-form"') == 1
     assert 'id="research-form"' in body and 'id="research-save" disabled' in body
     assert 'name="market_disagreement"' in body and 'name="evidence"' in body
     assert client.get("/research").status_code == 200
