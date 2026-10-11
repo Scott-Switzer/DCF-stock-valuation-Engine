@@ -9,6 +9,7 @@ import io
 import json
 import re
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 
 from dcf_loader import ProviderError
 
@@ -97,8 +98,11 @@ class S3Transport:
         if op == 'batch':
             if len(items) > 4:
                 raise ProviderError('Publisher batch exceeds budget.')
-            return [self.call(item['op'], item['key'],
-                raw=base64.b64decode(item['body']) if 'body' in item else None) for item in items]
+            def execute(item):
+                return self.call(item['op'], item['key'],
+                    raw=base64.b64decode(item['body']) if 'body' in item else None)
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                return list(executor.map(execute, items))
         if op == 'get':
             if not (key in {'gold/serving/coverage25/CURRENT.json', 'control/valuation/CURRENT.json'}
                     or re.fullmatch(r'gold/valuation/releases/[a-f0-9]{64}/companies/[A-Z0-9.-]+\.json', key)

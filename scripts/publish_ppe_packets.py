@@ -143,6 +143,7 @@ def main():
         prior_index = r2.get("control/valuation/CURRENT.json") if archive is not None else None
         packet_index = {}
         prefetched = {}
+        sec_prefetched = {}
         pending_writes = []
         for position, ticker in enumerate(wanted):
             if position % 4 == 0:
@@ -150,6 +151,19 @@ def main():
                     r2.call("batch", items=pending_writes)
                     pending_writes = []
                 group = wanted[position : position + 4]
+                if archive is not None:
+                    from concurrent.futures import ThreadPoolExecutor
+                    def supplement(symbol):
+                        entry = resolved.get(symbol, {})
+                        issuer = re.search(r"entity_sec_cik_([0-9]{10})(?:_[A-Z-]+)?$", entry.get("artifact_path", ""))
+                        if not issuer or symbol in sec:
+                            return None
+                        try:
+                            return archive.facts(issuer.group(1))
+                        except (ProviderError, ValueError) as exc:
+                            return exc
+                    with ThreadPoolExecutor(max_workers=4) as executor:
+                        sec_prefetched = dict(zip(group, executor.map(supplement, group)))
                 requests = []
                 paths = []
                 for symbol in group:
@@ -194,7 +208,10 @@ def main():
             facts = None
             if archive is not None and ticker not in sec:
                 try:
-                    facts, provenance = archive.facts(cik)
+                    supplement_result = sec_prefetched[ticker]
+                    if isinstance(supplement_result, Exception):
+                        raise supplement_result
+                    facts, provenance = supplement_result
                 except (ProviderError, ValueError) as exc:
                     report["companies"].append({"ticker": ticker, "status": "SEC_SUPPLEMENT_REJECTED", "reason": str(exc)})
                     continue
