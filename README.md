@@ -115,3 +115,5 @@ Ticker loading prefers compatible public SEC financials from PPE compact packets
 The server endpoint `/api/company/AAPL` serves only a bounded public SEC valuation packet. It does not expose warehouse price objects or credentials. [Packet contract and publication](docs/ppe-packets.md) describes cutoff selection, coverage, caching and refresh.
 
 Real-company QA: [reproducible 25-company validation](docs/financial-validation.md) separates method readiness, provider coverage, independent arithmetic and source-verification limits. [Expansion progress](docs/research-expansion-progress.md) tracks the staged research-platform work.
+
+See [production monitoring and rollback](docs/production-monitoring.md) for real-company smoke checks, freshness/latency budgets, release identity and email delivery dependencies.

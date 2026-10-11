@@ -75,14 +75,21 @@ def run(base, timeout, require_ppe=False, *, real_ticker=None, expected_commit=N
     results = []
 
     def check(label, path, condition, *, payload=None):
+        record = {"check": label}
         try:
             body, elapsed = fetch(base, path, timeout=timeout, payload=payload)
             response = decode(body, label)
+            record["seconds"] = elapsed
+            if label == "health" and isinstance(response, dict):
+                release = response.get("release") or {}
+                record["release"] = {key: release.get(key) for key in ("commit", "tracked_dirty", "asset_sha256")}
             assert_true(condition(response), label)
         except (RuntimeError, AttributeError, TypeError, ValueError) as exc:
-            results.append({"check": label, "status": "FAIL", "detail": str(exc)})
+            record.update(status="FAIL", detail=str(exc))
+            results.append(record)
             return None
-        results.append({"check": label, "status": "PASS", "seconds": elapsed})
+        record["status"] = "PASS"
+        results.append(record)
         return response
 
     check("health", "/health", lambda x: x.get("status") == "healthy"
@@ -148,8 +155,9 @@ def run(base, timeout, require_ppe=False, *, real_ticker=None, expected_commit=N
                     from reconciliation.reference_dcf import compare_result, reference_dcf
 
                     differences = compare_result(reference_dcf(company, payload["assumptions"]), actual)
-                    assert_true(not differences, "independent real-company arithmetic")
-                    results.append({"check":"real_dcf_arithmetic", "status":"PASS"})
+                    results.append({"check":"real_dcf_arithmetic", "status":"FAIL" if differences else "PASS",
+                                    "differences":differences,
+                                    "detail":"Independent arithmetic mismatch." if differences else ""})
                 body, elapsed = fetch(base, "/export/xlsx", timeout=timeout, payload=payload)
                 with zipfile.ZipFile(io.BytesIO(body)) as workbook:
                     assert_true(workbook.testzip() is None and "xl/workbook.xml" in workbook.namelist(), "workbook integrity")
@@ -184,6 +192,10 @@ def main(argv=None):
             item.update(status="FAIL", detail="Response exceeded configured latency budget.")
     for item in results:
         print(f"{item['status']:4} {item['check']:20} {item.get('seconds', '-')}s {item.get('detail', '')}")
+        if item.get("release"):
+            print("     release " + json.dumps(item["release"], sort_keys=True))
+        if item.get("differences"):
+            print("     differences " + json.dumps(item["differences"], sort_keys=True))
     if args.output:
         with open(args.output, "w", encoding="utf-8") as file:
             json.dump({"base": args.base, "results": results}, file, indent=2)

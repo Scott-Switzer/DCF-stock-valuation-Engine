@@ -51,13 +51,19 @@ def test_real_company_monitor_reconciles_non_saving_preview_and_workbook(monkeyp
 def test_monitor_detects_math_regression(monkeypatch):
     mock_public(monkeypatch, corrupt=True)
     results = smoke_public.run('https://unit.invalid', 10, real_ticker='AAPL', max_financial_age=10000)
-    assert any(r['status'] == 'FAIL' and 'arithmetic' in r.get('detail', '') for r in results)
+    failed = next(r for r in results if r['check'] == 'real_dcf_arithmetic')
+    assert failed['status'] == 'FAIL'
+    mismatch = next(d for d in failed['differences'] if d['field'] == 'intrinsic_value')
+    assert mismatch['actual'] == mismatch['expected'] + 1
 
 
 def test_monitor_detects_stale_market_source_and_wrong_release(monkeypatch):
     mock_public(monkeypatch, stale=True)
     results = smoke_public.run('https://unit.invalid', 10, real_ticker='AAPL', expected_commit='wrong', max_price_age=0)
-    assert next(r for r in results if r['check'] == 'health')['status'] == 'FAIL'
+    health = next(r for r in results if r['check'] == 'health')
+    assert health['status'] == 'FAIL'
+    assert health['release']['commit'] == 'local'
+    assert health['release']['tracked_dirty'] is True
     assert any('freshness' in r.get('detail', '') for r in results)
 
 
