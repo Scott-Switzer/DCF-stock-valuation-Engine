@@ -121,6 +121,8 @@
     event.preventDefault();
     if (loading) return;
     loading = true;
+    window.researchWorkspace?.setContext(null);
+    let loaded = false;
     const token = generation;
     $("workspace-load").disabled = true;
     status("Loading statements and market data…");
@@ -131,6 +133,7 @@
       if (token !== generation) return;
       generation++;
       baseline = data;
+      loaded = true;
       analysts = null;
       results.clear();
       $("live-result").hidden = true;
@@ -159,6 +162,7 @@
       if (token === generation) status(e.message, true);
     } finally {
       loading = false;
+      if (loaded) render(results.get(method));
       $("workspace-load").disabled = false;
     }
   });
@@ -240,6 +244,7 @@
     }
     if (message.generation !== generation) return;
     if (message.type === "editor-company") {
+      window.researchWorkspace?.setContext(null);
       if (key !== "dcf") {
         status(
           "This method’s imported company inputs are active. Load a ticker above for a shared company workspace.",
@@ -313,7 +318,7 @@
       assemble("relative", generation);
   });
   function render(item) {
-    window.researchWorkspace?.setContext(item);
+    window.researchWorkspace?.setContext(loading ? null : item);
     $("save-valuation").disabled = !item?.valid || !!item?.saving;
     $("export-xlsx").disabled = !item?.valid;
     $("export-json").disabled = !item?.valid;

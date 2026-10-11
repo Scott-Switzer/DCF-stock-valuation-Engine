@@ -40,7 +40,7 @@ def get_research(identity):
     return row
 
 
-def list_research(ticker=None, financial_hash=None):
+def list_research(ticker=None, financial_hash=None, before=None):
     sql = f"SELECT {SUMMARY_COLUMNS} FROM research_documents WHERE client_hash=?"
     params = [library.caller_hash()]
     if ticker:
@@ -49,6 +49,14 @@ def list_research(ticker=None, financial_hash=None):
     if financial_hash:
         sql += " AND financial_hash=?"
         params.append(financial_hash)
+    if before:
+        cursors = library._fetchall("SELECT id,created_at FROM research_documents WHERE id=? AND client_hash=?",
+                                    (before, library.caller_hash()))
+        if not cursors:
+            raise ValueError("Research page reference not found in your library.")
+        cursor = cursors[0]
+        sql += " AND (created_at < ? OR (created_at = ? AND id < ?))"
+        params.extend((cursor["created_at"], cursor["created_at"], cursor["id"]))
     sql += " ORDER BY created_at DESC,id DESC LIMIT 50"
     return library._fetchall(sql, tuple(params))
 
@@ -111,7 +119,7 @@ def register_research(app):
     def research_api():
         try:
             if request.method == "GET":
-                return jsonify(list_research(request.args.get("ticker")))
+                return jsonify(list_research(request.args.get("ticker"), before=request.args.get("before")))
             return jsonify(save_research(request.get_json(silent=True))), 201
         except (ValueError, TypeError) as exc:
             return jsonify(error=str(exc)), 400
@@ -123,7 +131,11 @@ def register_research(app):
 
     @app.get("/research")
     def research_library():
-        return render_template("research_library.html", rows=list_research())
+        try:
+            rows = list_research(before=request.args.get("before"))
+        except ValueError:
+            return "Research page not found.", 404
+        return render_template("research_library.html", rows=rows, older=rows[-1]["id"] if len(rows) == 50 else None)
 
     @app.get("/research/<identity>")
     def research_page(identity):

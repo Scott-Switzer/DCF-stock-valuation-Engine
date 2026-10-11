@@ -16,8 +16,9 @@
     return value;
   };
   function updateSave() {
+    for (const el of form.querySelectorAll("input,textarea,button")) el.disabled = pending;
     const ticker = context?.result?.input_financials?.company?.ticker;
-    save.disabled = pending || !context?.valid || (draftTicker && ticker !== draftTicker);
+    save.disabled = pending || !context?.valid || (!!draftTicker && ticker !== draftTicker);
     const result = context?.result;
     document.getElementById("research-snapshot").textContent = result
       ? `${frozen ? "Frozen research snapshot" : "Active valuation"}: ${ticker} · ${result.method.toUpperCase()} · ${result.input_financials.valuation_date} · 12-month scenario $${result.target_price_12m.toFixed(2)}`
@@ -37,10 +38,12 @@
     updateSave();
   });
   document.getElementById("research-new").addEventListener("click", () => {
+    if (pending) return;
     form.reset(); parentId = null; draftTicker = null; frozen = false; context = activeContext;
     note("New draft. Earlier saved revisions remain in your library."); updateSave();
   });
   document.getElementById("research-active").addEventListener("click", () => {
+    if (pending) return;
     frozen = false; context = activeContext; parentId = null;
     note("Using the active valuation. Existing saved snapshots remain unchanged."); updateSave();
   });

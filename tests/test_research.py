@@ -164,3 +164,48 @@ def test_workspace_has_structured_thesis_controls_and_research_library():
     assert 'name="market_disagreement"' in body and 'name="evidence"' in body
     assert client.get("/research").status_code == 200
     assert json.dumps(payload(), allow_nan=False)
+
+
+def test_research_paging_keeps_older_revisions_browsable_and_owned(monkeypatch):
+    import library
+
+    owner, other = app.test_client(), app.test_client()
+    first = owner.post('/api/research', json=payload()).get_json()
+    # Populate exact owned revisions efficiently; immutable content is already tested.
+    with app.app_context():
+        caller = library._fetchall('SELECT client_hash FROM research_documents WHERE id=?', (first['id'],))[0]['client_hash']
+        for i in range(52):
+            library._run('INSERT INTO research_documents SELECT ?,client_hash,?,parent_id,title,ticker,method,scenario_name,financial_hash,market_price,target_price,snapshot_json FROM research_documents WHERE id=?',
+                         (f'page-{i:03}', f'2030-01-01T00:00:{i:02}', first['id']))
+        assert caller
+    newest = owner.get('/api/research').get_json()
+    assert len(newest) == 50
+    older = owner.get('/api/research?before=' + newest[-1]['id']).get_json()
+    assert len(older) == 3
+    assert first['id'] in {r['id'] for r in older}
+    assert not {r['id'] for r in older} & {r['id'] for r in newest}
+    assert 'Older research' in owner.get('/research').get_data(as_text=True)
+    assert first['title'] in owner.get('/research?before=' + newest[-1]['id']).get_data(as_text=True)
+    assert other.get('/api/research?before=' + newest[-1]['id']).status_code == 400
+    assert other.get('/research?before=' + newest[-1]['id']).status_code == 404
+
+
+def test_research_workbook_uses_existing_reference_limit(monkeypatch):
+    client = app.test_client()
+    record = client.post('/api/research', json=payload()).get_json()
+    calls = []
+
+    def deny(self, key, maximum):
+        calls.append((key, maximum))
+        return False
+
+    monkeypatch.setattr(Store, 'allow', deny)
+    assert client.get(f"/research/{record['id']}/export/xlsx").status_code == 429
+    assert calls[0][1] == 20 and 'references' in calls[0][0]
+    assert client.get(f"/research/{record['id']}/export/json").status_code == 200
+
+
+def test_shipped_research_state_guards():
+    import subprocess
+
+    subprocess.run(['node', 'tests/js/research_state.cjs'], check=True, timeout=10)

@@ -395,8 +395,9 @@ def limit_expensive_work():
     preview_request = request.method == "POST" and request.path.startswith("/api/preview/")
     mcp_request = request.method == "POST" and request.path == "/mcp"
     mutation = request.method in {"POST", "PUT", "PATCH", "DELETE"}
-    reference_request = request.method == "GET" and request.path.startswith(
-        ("/api/references/", "/api/guidance/", "/api/company/", "/api/providers")
+    reference_request = request.method == "GET" and (
+        request.path.startswith(("/api/references/", "/api/guidance/", "/api/company/", "/api/providers"))
+        or (request.path.startswith("/research/") and request.path.endswith("/export/xlsx"))
     )
     if app.config.get("CLOUDFLARE"):
         import hashlib
