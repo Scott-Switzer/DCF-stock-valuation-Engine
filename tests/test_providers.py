@@ -19,3 +19,13 @@ def test_ready_uses_server_provider_config(monkeypatch):
     monkeypatch.setenv("ZION_API_BASE_URL", "https://example.com")
     c = app.test_client()
     assert c.get("/ready").get_json()["zion_configured"] is True
+
+
+def test_zion_compact_service_status_is_separate_from_http_adapter():
+    from types import SimpleNamespace
+    from app import app
+    with app.test_client() as client:
+        response = client.get('/api/providers', environ_overrides={'workers.env': SimpleNamespace(ZION_VALUATIONS=object())})
+    providers = response.get_json()['providers']
+    assert providers['zion_valuation']['configured'] is True
+    assert providers['zion_valuation']['kind'] == 'private_service_binding'

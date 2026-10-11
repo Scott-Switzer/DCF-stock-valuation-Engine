@@ -159,7 +159,7 @@ def annual_facts(packet, ticker, asof):
     return facts
 
 
-def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc=True):
+def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc=True, packet=None):
     ticker = ticker_symbol(ticker)
     now = datetime.now(timezone.utc)
     if asof != now.date().isoformat():
@@ -187,6 +187,9 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc
     )
     facts = annual_facts(raw, ticker, asof)
     ends = sorted({end for end, metric in facts if metric == "TotalRevenue"})[-3:]
+    if packet is not None:
+        from ppe_packets import supplement_statement_facts
+        facts = supplement_statement_facts(facts, ends, packet, ticker, asof)
     if len(ends) != 3:
         raise ProviderError("Yahoo needs three aligned annual financial periods.")
     doc = blank_document(
@@ -244,6 +247,8 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc
             "unit": "pure",
             "value": tax_rate,
         }
+        if tax_rate is None and (end, "PPEEffectiveTaxRate") in facts:
+            tax_rate, tax_provenance = facts[end, "PPEEffectiveTaxRate"]
         if tax_rate is None or not 0 <= tax_rate <= 1:
             normalized = v("TaxRateForCalcs", True)
             if normalized is None or not 0 <= normalized <= 1:
@@ -267,10 +272,10 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc
             "net_income": v("NetIncomeCommonStockholders"),
             "capex": abs(v("CapitalExpenditure")),
             "d_and_a": da,
-            "nwc": v("CurrentAssets")
-            - v("CashAndCashEquivalents")
-            - v("CurrentLiabilities")
-            + v("CurrentDebt"),
+            "nwc": v("PPEOperatingNWC") if (end, "PPEOperatingNWC") in facts else (
+                v("CurrentAssets") - v("CashAndCashEquivalents")
+                - v("CurrentLiabilities") + v("CurrentDebt")
+            ),
             "book_value": v("StockholdersEquity"),
             "tax_rate": tax_rate,
             "provenance": {m: p for (d, m), (_, p) in facts.items() if d == end},

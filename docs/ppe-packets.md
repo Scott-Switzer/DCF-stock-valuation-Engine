@@ -30,3 +30,44 @@ The application validates issuer, units, finite values, ISO dates, fiscal-period
 Latest packets cannot prove historical point-in-time selection for dates before their publication cutoff: such requests reject the packet. A historical archive/version selector is required before claiming backtest-ready coverage. Yahoo fallback observation dates describe current snapshots; their historical publication availability is unverified. SEC filing dates are day-level availability, not intraday timestamps.
 
 Unqualified PPE net income is retained in packets for research but never substituted for common-stockholder income in the shared valuation history or P/E. Ordinary-share market equity is preserved for WACC weights; diluted annual shares remain a per-share valuation basis. Current prices, beta, Treasury benchmarks, common income, common book equity and common dividends remain labeled fallbacks where PPE has no unambiguous supported field. ROE's existing common-income/common-equity diagnostic retains its baseline basis; it is distinct from total shareholder equity. Annual weighted-average diluted shares are a dated dilution approximation, not a claim of live outstanding shares. Imported snapshots and manual overrides retain original provenance; overrides remain identified in calculation details.
+
+## Zion compact service and existing SEC archive enrichment
+
+Cloudflare can bind `ZION_VALUATIONS` to the private `zion-valuation` Worker in
+Scott-Switzer/zion. Its `/v1/valuation/company/{ticker}?as_of=YYYY-MM-DD` route
+serves the same compact packet contract. This is separate from the optional large
+`ZION_API_BASE_URL` company/research adapter. The private service exposes no
+workers.dev route, arbitrary object reads, acquisition or licensed warehouse data.
+The app bounds this call to three seconds within its shared request deadline,
+validates the returned packet, and retains the existing direct R2 fallback.
+`source.transport` identifies the path actually used. Both service and direct R2
+paths cache the index for 60 seconds and immutable packets by content address.
+`/api/providers` reports service configuration separately from HTTP adapter config.
+
+The publisher can supplement every existing issuer from an already acquired SEC
+companyfacts ZIP using bounded, ETag-pinned R2 range reads. It checks ZIP member
+CRC, CIK, uncompressed size, SHA-256, annual period, filing date and units. It does
+not download the whole archive or call SEC. Missing/older same-period supplements
+preserve previously published fields and dividends; conflicting facts fail closed.
+Shared upstream serving pointers are never changed. The valuation index is changed
+only after immutable packet verification, conditionally against its original ETag.
+
+Operator example (optional boto3 installed in the operator environment; existing
+rclone credential names only, never secret values):
+
+```sh
+python scripts/publish_ppe_packets.py --rclone-remote r2 \
+  --sec-archive-key sec/bulk/sec-nightly-20260924/companyfacts.zip \
+  --all --report /path/to/coverage.json
+```
+
+Default is dry-run. Review the coverage report before repeating with `--publish`.
+The archive bucket defaults to `financial-data-wrds-private`; only the explicitly
+named public SEC archive is read. No WRDS/provider observations are republished.
+Individual absent, oversized or conflicting issuer supplements remain explicit.
+
+Automatic assembly reads the packet before validating the fallback statements.
+Supported SEC fields can therefore fill missing fallback statement inputs, keeping
+their original provider/period/accession provenance. Common-stockholder income,
+ordinary shares, common equity and market inputs still require their own evidence;
+general net income is never substituted for common income.

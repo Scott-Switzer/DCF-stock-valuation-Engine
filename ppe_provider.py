@@ -93,16 +93,47 @@ def _object_json(bucket, key, *, maximum, digest=None, ttl=60, deadline=None):
     return value
 
 
+def _service_packet(service, ticker, asof, deadline):
+    """Bounded Worker-to-Worker fetch; no public endpoint or bearer secret."""
+    from js import Request
+    url = f"https://zion.internal/v1/valuation/company/{ticker}?as_of={asof}"
+    response = _wait(service.fetch(Request.new(url)), deadline)
+    if response.status == 404:
+        return None
+    if response.status != 200:
+        raise ProviderError("Zion valuation service is temporarily unavailable.")
+    length = response.headers.get("Content-Length")
+    if length and int(length) > 131072:
+        raise ProviderError("Zion valuation packet exceeds its serving budget.")
+    # The private service itself bounds the source object before reading it.
+    raw = str(_wait(response.text(), deadline))
+    if len(raw.encode()) > 131072:
+        raise ProviderError("Zion valuation packet exceeds its serving budget.")
+    packet = validate_packet(json.loads(raw), ticker, asof)
+    packet["source"]["transport"] = "Zion private service binding"
+    return packet
+
+
 def load_packet(ticker, asof=None, *, deadline=None):
-    from flask import current_app, request
+    from flask import current_app, request, has_request_context
 
     ticker = ticker_symbol(ticker)
     asof = asof or datetime.now(timezone.utc).date().isoformat()
     if date.fromisoformat(asof) > datetime.now(timezone.utc).date():
         raise ProviderError("Future PPE valuation dates are unavailable.")
-    if not current_app.config.get("CLOUDFLARE"):
+    if not has_request_context() or not current_app.config.get("CLOUDFLARE"):
         return None
-    bucket = getattr(request.environ["workers.env"], "PPE_DATA", None)
+    env = request.environ["workers.env"]
+    service = getattr(env, "ZION_VALUATIONS", None)
+    service_error = None
+    if service is not None:
+        try:
+            packet = _service_packet(service, ticker, asof, min(deadline or float("inf"), time.monotonic() + 3))
+            if packet is not None:
+                return packet
+        except Exception:
+            service_error = "Zion service unavailable; authoritative PPE R2 fallback."
+    bucket = getattr(env, "PPE_DATA", None)
     if bucket is None:
         return None
     pointer = _object_json(bucket, POINTER, maximum=524288, deadline=deadline)
@@ -133,15 +164,17 @@ def load_packet(ticker, asof=None, *, deadline=None):
     packet = _object_json(bucket, key, maximum=131072, digest=digest, ttl=31536000, deadline=deadline)
     if packet is None:
         raise ProviderError("Published PPE packet is missing.")
-    return validate_packet(packet, ticker, asof)
+    packet = validate_packet(packet, ticker, asof)
+    packet["source"]["transport"] = service_error or "Direct PPE R2 binding"
+    return packet
 
 
-def prefer_ppe(document, ticker, asof, *, deadline=None):
+def prefer_ppe(document, ticker, asof, *, deadline=None, packet=None):
     """Retain an explicit baseline when the public packet cannot be used."""
     from ppe_packets import apply_packet
 
     try:
-        packet = load_packet(ticker, asof, deadline=deadline)
+        packet = packet or load_packet(ticker, asof, deadline=deadline)
         if packet:
             candidate = apply_packet(document, packet, asof)
             from dcf_loader import parse_document

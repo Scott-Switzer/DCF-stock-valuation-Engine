@@ -508,3 +508,71 @@ def apply_packet(document, packet, asof):
         "PPE annual periods match the baseline fiscal end within seven days; actual observation dates and fallback sources are retained per field. Missing PPE fields and common-stockholder income use the labeled baseline source. Ordinary-share market equity remains the WACC weight basis; diluted weighted-average shares are used for per-share valuation."
     )
     return doc
+
+
+def enrich_packet(previous, candidate, asof):
+    """Preserve same-period published evidence when a supplement is absent/older."""
+    validate_packet(previous, candidate['ticker'], asof)
+    validate_packet(candidate, candidate['ticker'], asof)
+    if previous.get('cik') != candidate.get('cik'):
+        raise ProviderError('PPE enrichment issuer mismatch.')
+    result = deepcopy(candidate)
+
+    def choose(old, new):
+        if not old or (new and old['period_end'] != new['period_end']):
+            return new
+        if not new or old['available_at'][:10] > new['available_at'][:10]:
+            return deepcopy(old)
+        return new
+
+    prior = {row['period_end']: row for row in previous['historical']}
+    for row in result['historical']:
+        old = prior.get(row['period_end'], {}).get('fields', {})
+        row['fields'] = {k: choose(old.get(k), v) for k, v in row['fields'].items()}
+    if previous['historical'][-1]['period_end'] == result['historical'][-1]['period_end']:
+        result['bridge'] = {k: choose(previous['bridge'].get(k), v) for k, v in result['bridge'].items()}
+        for key in ['diluted_shares', 'interest_expense']:
+            result[key] = choose(previous.get(key), result.get(key))
+    dividends = {row['period_end']: row for row in previous['dividends']}
+    incoming = {row['period_end']: row for row in result['dividends']}
+    result['dividends'] = [value for row in result['historical']
+        if (value := choose(dividends.get(row['period_end']), incoming.get(row['period_end']))) is not None]
+    return validate_packet(result, result['ticker'], asof)
+
+
+def supplement_statement_facts(facts, ends, packet, ticker, asof):
+    """Fill statement gaps before baseline validation, preserving SEC provenance.
+
+    This is an adapter into the statement assembler's metric vocabulary. It never
+    labels SEC evidence as Yahoo or treats general net income as common income.
+    """
+    validate_packet(packet, ticker, asof)
+    result = deepcopy(facts)
+    mapping = {'revenue': 'TotalRevenue', 'ebit': 'OperatingIncome',
+        'book_value': 'StockholdersEquity', 'capex': 'CapitalExpenditure',
+        'd_and_a': 'ReconciledDepreciation', 'nwc': 'PPEOperatingNWC',
+        'tax_rate': 'PPEEffectiveTaxRate', 'diluted_shares': 'DilutedAverageShares'}
+    latest = packet['historical'][-1]['period_end']
+    for end in ends:
+        matches = [row for row in packet['historical']
+            if abs((date.fromisoformat(row['period_end']) - date.fromisoformat(end)).days) <= 7]
+        if len(matches) != 1:
+            continue
+        row = matches[0]
+        fields = {target: row['fields'].get(source) for source, target in mapping.items()}
+        if row['period_end'] == latest:
+            fields.update({target: packet['bridge'].get(source) for source, target in {
+                'short_term_debt': 'CurrentDebt', 'long_term_debt': 'LongTermDebt',
+                'cash': 'CashAndCashEquivalents', 'preferred_equity': 'PreferredStockEquity',
+                'minority_interest': 'MinorityInterest'}.items()})
+            fields['InterestExpense'] = packet.get('interest_expense')
+        fields['CommonStockDividendPaid'] = next((d for d in packet['dividends']
+            if d['period_end'] == row['period_end']), None)
+        for metric, field in fields.items():
+            if field is not None and (end, metric) not in result:
+                result[end, metric] = (field['value'], {
+                    **field['provenance'], 'period_end': field['period_end'],
+                    'available_at': field['available_at'], 'unit': field['unit'],
+                    'value': field['value'], 'assembly_metric': metric,
+                    'basis': 'Published PPE/SEC statement supplement'})
+    return result
