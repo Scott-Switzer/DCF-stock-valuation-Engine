@@ -393,7 +393,17 @@ def apply_packet(document, packet, asof):
             # The canonical metric and NetIncomeLoss/ProfitLoss do not verify
             # income available to common shareholders (preferred dividends).
             f = p["fields"].get(key) if p and key != "net_income" else None
+            rejected_tax = f if key == "tax_rate" and f and not 0 <= f["value"] <= 1 else None
+            if rejected_tax:
+                f = None
             row[key] = choose(f"historical.{original_end}.{key}", row.get(key), f)
+            if rejected_tax:
+                coverage[-1]["excluded_ppe_observation"] = rejected_tax
+                coverage[-1]["reason"] = "Reported SEC tax ratio is outside the model's zero-to-one range; dated baseline tax assumption retained."
+                doc["source"].setdefault("warnings", []).append(
+                    f"SEC reported tax ratio for {original_end} is {rejected_tax['value']:.2%}; "
+                    "the model retains the labeled baseline tax assumption while using other eligible SEC fields."
+                )
             if f:
                 used_fields[key] = f
                 row["provenance"][key] = {

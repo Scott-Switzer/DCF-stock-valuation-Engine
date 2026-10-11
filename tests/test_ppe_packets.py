@@ -304,3 +304,24 @@ def test_cloud_statement_gaps_preserve_source_and_do_not_invent_common_income():
     assert result['2025-09-30', 'TotalRevenue'][0] == 999
     assert ('2025-09-30', 'NetIncomeCommonStockholders') not in result
     assert ('2025-09-30', 'OperatingIncome') not in old
+
+
+def test_unsupported_reported_tax_ratio_does_not_discard_other_sec_fields():
+    p = packet()
+    doc = demo_document()
+    doc['company']['ticker'] = 'AAPL'
+    doc['valuation_date'] = '2026-10-10'
+    for row, source_row in zip(doc['historical'], p['historical']):
+        row['period_end'] = source_row['period_end']
+    doc['bridge']['as_of'] = p['historical'][-1]['period_end']
+    baseline_tax = doc['historical'][-1]['tax_rate']
+    p['historical'][-1]['fields']['tax_rate'] = {'value': -0.25,
+        'period_end': p['historical'][-1]['period_end'], 'available_at': '2026-01-01',
+        'unit': 'pure', 'provenance': {'provider': 'SEC companyfacts'}}
+    result = apply_packet(doc, p, '2026-10-10')
+    assert result['historical'][-1]['ebit'] == 30
+    assert result['historical'][-1]['tax_rate'] == baseline_tax
+    coverage = next(r for r in result['source']['field_coverage'] if r['field'].endswith('2025-09-27.tax_rate'))
+    assert coverage['status'] == 'fallback'
+    assert coverage['excluded_ppe_observation']['value'] == -0.25
+    assert any('reported tax ratio' in w for w in result['source']['warnings'])
