@@ -313,6 +313,7 @@
       assemble("relative", generation);
   });
   function render(item) {
+    window.researchWorkspace?.setContext(item);
     $("save-valuation").disabled = !item?.valid || !!item?.saving;
     $("export-xlsx").disabled = !item?.valid;
     $("export-json").disabled = !item?.valid;
