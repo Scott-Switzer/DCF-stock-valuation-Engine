@@ -38,11 +38,14 @@ const active={valid:true,result:{method:'dcf',input_financials:{company:{ticker:
  const source=fs.readFileSync('static/js/workspace.js','utf8');
  const start=source.indexOf('  $("company-loader").addEventListener("submit"');
  const end=source.indexOf('  async function loadReferences(',start);
- let cleared=false,callback;
+ let cleared=false,callback,restored;
  const loadContext={loading:false,generation:0,window:{researchWorkspace:{setContext(x){assert.equal(x,null);cleared=true;}}},
-  $:id=>({addEventListener:(k,f)=>callback=f,disabled:false,value:'MSFT'}),status(){},request:()=>new Promise(()=>{})};
+  $:id=>({addEventListener:(k,f)=>callback=f,disabled:false,value:'MSFT'}),status(){},request:async()=>{throw Error('Failed ticker load');},
+  results:new Map([['dcf',active]]),method:'dcf',render:item=>{restored=item;}};
  vm.createContext(loadContext);vm.runInContext(source.slice(start,end),loadContext);
- callback({preventDefault(){}});
+ const loadingTask=callback({preventDefault(){}});
  assert.equal(cleared,true);
+ await loadingTask;
+ assert.equal(restored,active);
  assert.ok(source.includes('setContext(loading ? null : item)'));
 })().catch(error=>{console.error(error);process.exitCode=1;});

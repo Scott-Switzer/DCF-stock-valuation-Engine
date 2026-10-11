@@ -11,6 +11,7 @@ A valuation suite with five-year unlevered discounted cash flow, dividend discou
 - Enter a ticker to load three annual periods, market price, diluted shares, capital claims and estimated capital costs. Review the source notes, then edit your forecast assumptions.
 - DDM based on common-dividend forecasts, equity-return discounting and separate present/12-month values.
 - Relative valuation with EV/Revenue, EV/EBITDA, EV/EBIT, P/E and P/B, peer means, selectable methods and financial-firm restrictions.
+- Private investment theses, named scenarios and immutable research revisions, with a pageable library, frozen-note editing, JSON/print reports and snapshot-based model Excel. See [the research workflow](docs/research-workspace.md).
 - DCF-to-method handoff reuses identity/forward forecasts while requiring sourced dividends and peers.
 
 - Three historical fiscal years and five years of individually editable revenue growth, EBIT, net-income, book-value, D&A, CapEx, working-capital and tax assumptions.

@@ -122,7 +122,6 @@
     if (loading) return;
     loading = true;
     window.researchWorkspace?.setContext(null);
-    let loaded = false;
     const token = generation;
     $("workspace-load").disabled = true;
     status("Loading statements and market data…");
@@ -133,7 +132,6 @@
       if (token !== generation) return;
       generation++;
       baseline = data;
-      loaded = true;
       analysts = null;
       results.clear();
       $("live-result").hidden = true;
@@ -162,7 +160,7 @@
       if (token === generation) status(e.message, true);
     } finally {
       loading = false;
-      if (loaded) render(results.get(method));
+      render(results.get(method));
       $("workspace-load").disabled = false;
     }
   });
