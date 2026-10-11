@@ -95,5 +95,10 @@ def compare_result(reference, actual, rel_tol=1e-9, abs_tol=1e-6):
         valid = (isinstance(observed, (int, float)) and not isinstance(observed, bool)
                  and math.isfinite(observed))
         if not valid or not math.isclose(expected, observed, rel_tol=rel_tol, abs_tol=abs_tol):
-            differences.append({"field": field, "expected": expected, "actual": observed})
+            safe_observed = observed
+            if isinstance(observed, float) and not math.isfinite(observed):
+                safe_observed = str(observed)
+            elif not valid and observed is not None and not isinstance(observed, (str, bool)):
+                safe_observed = repr(observed)
+            differences.append({"field": field, "expected": expected, "actual": safe_observed})
     return differences

@@ -27,6 +27,11 @@ DEFAULT_BASE = "https://dcf-valuation-engine.scswitzer.workers.dev"
 # Controlled QA assumptions, never advertised as recommended company forecasts.
 ASSUMPTIONS = {"revenue_growth_rates": [0.05] * 5, "terminal_growth_rate": 0.02,
                "wacc_override": 0.10, "terminal_mode": "template"}
+LOCAL_RESULT = object()
+
+
+class ScenarioBlocked(ValueError):
+    """The independent reference cannot support the controlled QA scenario."""
 
 
 def post(base, path, payload, timeout):
@@ -46,10 +51,17 @@ def post(base, path, payload, timeout):
         return response.code, value, round(time.monotonic() - start, 3)
 
 
-def reconcile(doc, actual=None):
+def reconcile(doc, actual=LOCAL_RESULT):
     """Use explicit QA assumptions; never infer an independently verified WACC."""
-    reference = reference_dcf(doc, ASSUMPTIONS)
-    actual = actual if actual is not None else evaluate(deepcopy(doc), assumptions_from_json(ASSUMPTIONS))
+    try:
+        reference = reference_dcf(doc, ASSUMPTIONS)
+    except ValueError as exc:
+        raise ScenarioBlocked(str(exc)) from exc
+    if actual is LOCAL_RESULT:
+        actual = evaluate(deepcopy(doc), assumptions_from_json(ASSUMPTIONS))
+    if not isinstance(actual, dict):
+        return {"status": "FAIL", "differences": [{"field": "response", "expected": "valuation object", "actual": actual}],
+                "reference": reference, "assumptions": deepcopy(ASSUMPTIONS)}
     differences = compare_result(reference, actual)
     return {"status": "FAIL" if differences else "PASS", "differences": differences,
             "reference": reference, "assumptions": deepcopy(ASSUMPTIONS),
@@ -88,18 +100,26 @@ def audit_entry(entry, *, base=None, timeout=45):
         result["independent_dcf"] = check
         if check["status"] == "FAIL":
             result["status"] = dcf["status"] = "FAIL"
-        if base:
-            status, actual, seconds = post(base, "/api/preview/dcf", {"financials": doc, "assumptions": ASSUMPTIONS}, timeout)
-            api = reconcile(doc, actual) if status == 200 else {"status": "FAIL", "http_status": status}
-            api["seconds"] = seconds
-            result["api_reconciliation"] = api
-            if api["status"] == "FAIL":
-                result["status"] = dcf["status"] = "FAIL"
-    except ValueError as exc:
+    except ScenarioBlocked as exc:
         # A controlled assumption set can be unsuitable (e.g. nonpositive FCFF).
         # This is an explicit scenario block, never a fabricated zero target.
         dcf["status"] = "BLOCKED"
         dcf["reasons"].append(str(exc))
+        return result
+    except (ValueError, TypeError, KeyError) as exc:
+        result["status"] = dcf["status"] = "FAIL"
+        dcf["reasons"].append(f"Engine failed a supported reference scenario: {exc}")
+        return result
+    if base:
+        try:
+            status, actual, seconds = post(base, "/api/preview/dcf", {"financials": doc, "assumptions": ASSUMPTIONS}, timeout)
+            api = reconcile(doc, actual) if status == 200 else {"status": "FAIL", "http_status": status}
+            api["seconds"] = seconds
+        except (ValueError, OSError, URLError, TypeError, KeyError) as exc:
+            api = {"status": "FAIL", "reason": str(exc)}
+        result["api_reconciliation"] = api
+        if api["status"] == "FAIL":
+            result["status"] = dcf["status"] = "FAIL"
     return result
 
 

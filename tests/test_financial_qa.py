@@ -10,7 +10,7 @@ from app import assumptions_from_json, evaluate
 from dcf_loader import demo_document
 from financial_qa import QA_UNIVERSE, audit_snapshot, capital_cost_check, source_receipts
 from reconciliation.reference_dcf import compare_result, reference_dcf
-from scripts.validate_universe import ASSUMPTIONS, audit_entry, markdown_report
+from scripts.validate_universe import ASSUMPTIONS, audit_entry, markdown_report, main
 
 
 def aapl():
@@ -130,6 +130,7 @@ def test_yahoo_receipts_retain_raw_sign_and_provider_metric():
 def test_wacc_component_check_distinguishes_parity_mismatch_and_missing():
     doc = aapl()
     assert capital_cost_check(doc)["status"] == "BLOCKED"
+
     costs = {"risk_free_rate": 0.04, "beta": 1.2, "equity_risk_premium": 0.05,
              "equity_market_value": 800, "debt": 200, "cost_of_debt": 0.06,
              "tax_rate": 0.25, "preferred_equity": 0, "wacc": 0.089}
@@ -139,3 +140,57 @@ def test_wacc_component_check_distinguishes_parity_mismatch_and_missing():
     assert capital_cost_check(doc)["status"] == "FAIL"
     costs["beta"] = None
     assert capital_cost_check(doc)["status"] == "BLOCKED"
+
+
+@pytest.mark.parametrize("body", [None, [], "not a valuation"])
+def test_empty_or_invalid_api_result_cannot_fall_back_to_local_engine(monkeypatch, body):
+    monkeypatch.setattr("scripts.validate_universe.post", lambda *args: (200, body, 0.01))
+    report = audit_entry({"ticker": "AAPL", "bundle": {"financials": aapl()}}, base="https://test.invalid")
+    assert report["status"] == "FAIL"
+    assert report["api_reconciliation"]["status"] == "FAIL"
+
+
+@pytest.mark.parametrize("error", [ValueError("Invalid JSON"), ValueError("Oversized response")])
+def test_malformed_api_response_is_failure_not_scenario_block(monkeypatch, error):
+    def fail(*args):
+        raise error
+    monkeypatch.setattr("scripts.validate_universe.post", fail)
+    report = audit_entry({"ticker": "AAPL", "bundle": {"financials": aapl()}}, base="https://test.invalid")
+    assert report["status"] == "FAIL"
+    assert report["methods"]["dcf"]["status"] == "FAIL"
+
+
+def test_nonfinite_calculation_writes_failure_reports_and_exits_nonzero(monkeypatch, tmp_path):
+    actual = evaluate(aapl(), assumptions_from_json(ASSUMPTIONS))
+    actual["intrinsic_value"] = float("nan")
+    monkeypatch.setattr("scripts.validate_universe.evaluate", lambda *args: actual)
+    monkeypatch.setattr("scripts.validate_universe.QA_UNIVERSE", ("AAPL",))
+    snapshots = tmp_path / "snapshots"
+    snapshots.mkdir()
+    (snapshots / "AAPL.json").write_text(json.dumps({"ticker": "AAPL", "bundle": {"financials": aapl()}}))
+    output = tmp_path / "report.json"
+    assert main(["--offline", "--snapshots", str(snapshots), "--output", str(output)]) == 1
+    report = json.loads(output.read_text())
+    assert report["companies"][0]["status"] == "FAIL"
+    assert report["companies"][0]["independent_dcf"]["differences"][0]["actual"] == "nan"
+    assert output.with_suffix(".md").exists()
+
+
+def test_dividend_coverage_dates_are_preserved_and_checked():
+    doc = aapl()
+    doc["source"]["common_dividends"] = {"value": 100, "period_end": "2025-09-27"}
+    doc["source"]["field_coverage"] = [{"field": "common_dividends", "status": "PPE", "available_at": "2099-01-01"}]
+    result = audit_snapshot(doc)
+    receipt = next(r for r in result["observations"] if r["field"] == "source.common_dividends")
+    assert receipt["provider_status"] == "PPE"
+    assert receipt["available_at"] == "2099-01-01"
+    assert result["status"] == "FAIL"
+
+
+def test_engine_error_in_supported_reference_scenario_is_failure(monkeypatch):
+    def fail(*args):
+        raise ValueError("Engine defect")
+    monkeypatch.setattr("scripts.validate_universe.evaluate", fail)
+    report = audit_entry({"ticker": "AAPL", "bundle": {"financials": aapl()}})
+    assert report["status"] == "FAIL"
+    assert report["methods"]["dcf"]["status"] == "FAIL"

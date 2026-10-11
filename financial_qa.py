@@ -49,7 +49,7 @@ def source_receipts(doc):
     observations = []
 
     def add(path, value, period=None, available=None, provenance=None, unit="USD"):
-        record = coverage.get(path, {})
+        record = coverage.get(path, coverage.get(path.removeprefix("source."), {}))
         observations.append({
             "field": path, "value": value, "unit": unit,
             "period_end": record.get("period_end", period),
