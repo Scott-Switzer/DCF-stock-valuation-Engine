@@ -113,3 +113,5 @@ MIT licensed. The CUIG workbook is a user-supplied reference and is not redistri
 Ticker loading prefers compatible public SEC financials from PPE compact packets. AAPL has three years of SEC-backed operating inputs, capex, D&A, operating working capital, effective tax rates and diluted weighted-average shares. Current prices, beta/risk-free inputs and unverified common-income/common-dividend/common-equity fields retain explicitly labeled Yahoo fallbacks. The same overlay applies to RV peers. Inspect Advanced → PPE & fallback coverage for dates and sources.
 
 The server endpoint `/api/company/AAPL` serves only a bounded public SEC valuation packet. It does not expose warehouse price objects or credentials. [Packet contract and publication](docs/ppe-packets.md) describes cutoff selection, coverage, caching and refresh.
+
+Real-company QA: [reproducible 25-company validation](docs/financial-validation.md) separates method readiness, provider coverage, independent arithmetic and source-verification limits. [Expansion progress](docs/research-expansion-progress.md) tracks the staged research-platform work.
