@@ -183,6 +183,14 @@ def suite_form_payload(method, form):
             }
             if not ticker and all(v is None for v in values.values()):
                 continue
+            original_peer = original_peers.get(ticker_symbol(ticker), {})
+            basis = form.get(f"peer_basis_{i}", original_peer.get("denominator_basis", "unspecified"))
+            period = form.get(f"peer_period_{i}", original_peer.get("financial_period_end"))
+            basis_metadata = {}
+            if "denominator_basis" in original_peer or basis != "unspecified":
+                basis_metadata["denominator_basis"] = basis
+            if "financial_period_end" in original_peer or period:
+                basis_metadata["financial_period_end"] = period or original_peer.get("financial_period_end")
             doc["comparables"].append(
                 {
                     **deepcopy(original_peers.get(ticker_symbol(ticker), {})),
@@ -192,8 +200,7 @@ def suite_form_payload(method, form):
                     "currency": "USD",
                     "source": form.get(f"peer_source_{i}", ""),
                     "multiples": values,
-                    "denominator_basis": form.get(f"peer_basis_{i}", original_peers.get(ticker_symbol(ticker), {}).get("denominator_basis", "unspecified")),
-                    "financial_period_end": form.get(f"peer_period_{i}", original_peers.get(ticker_symbol(ticker), {}).get("financial_period_end")),
+                    **basis_metadata,
                     **({"review_status": "user_confirmed"}
                        if form.get("peer_selection") == "explicit"
                        and original_peers.get(ticker_symbol(ticker), {}).get("review_status")

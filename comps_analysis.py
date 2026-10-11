@@ -43,6 +43,7 @@ def distribution(peers, key, forward, claims, shares, allowed=True):
             "weight": 1 / len(values) if included else 0,
             "implied_price": max(0, implied) if implied is not None else None,
             "raw_implied_price": implied,
+            "raw_price_contribution": implied / len(values) if implied is not None else None,
             "outlier": bool(included and fences and not fences[0] <= value <= fences[1]),
             "basis": peer_basis(peer), "period_end": peer.get("financial_period_end"),
             "price_as_of": peer.get("as_of"), "source": peer.get("source"),

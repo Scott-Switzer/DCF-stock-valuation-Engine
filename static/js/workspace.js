@@ -397,17 +397,17 @@
       const details = add(box, "details", "");
       const multiple = x => Number.isFinite(x) ? `${x.toFixed(2)}×` : "—";
       add(details, "summary", `${row.label}: mean ${multiple(row.mean)} · median ${multiple(row.median)}`);
-      add(details, "p", `Mean-implied ${money(row.implied_price)} · median-implied ${money(row.median_implied_price)}. ${row.outlier_count || 0} flagged outliers; kept in the calculation.`);
+      add(details, "p", `Mean-implied ${money(row.implied_price)} · median-implied ${money(row.median_implied_price)}. ${row.outlier_count || 0} flagged outliers; kept in the calculation. Peer contributions below use raw common equity; the aggregate share value is floored at zero.`);
       const wrap = add(details, "div", ""); wrap.className = "table-wrap";
       const table = add(wrap, "table", ""); table.className = "value-table";
       const head = add(add(table, "thead", ""), "tr", "");
-      for (const title of ["Peer", "Multiple", "Weight", "Implied", "Basis / period", "Coverage"])
+      for (const title of ["Peer", "Multiple", "Weight", "Raw implied / contribution", "Basis / period", "Coverage"])
         add(head, "th", title);
       const body = add(table, "tbody", "");
       for (const peer of row.distribution || []) {
         const tr = add(body, "tr", "");
         add(tr, "th", peer.ticker);
-        for (const value of [multiple(peer.multiple), pct(peer.weight), money(peer.implied_price),
+        for (const value of [multiple(peer.multiple), pct(peer.weight), `${money(peer.raw_implied_price)} / ${money(peer.raw_price_contribution)}`,
           `${peer.basis} · ${peer.period_end || "period not recorded"}`,
           peer.exclusion_reason || (peer.outlier ? "Outlier · included" : "Included")])
           add(tr, "td", value);
