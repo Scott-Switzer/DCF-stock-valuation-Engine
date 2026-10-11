@@ -325,3 +325,11 @@ def test_unsupported_reported_tax_ratio_does_not_discard_other_sec_fields():
     assert coverage['status'] == 'fallback'
     assert coverage['excluded_ppe_observation']['value'] == -0.25
     assert any('reported tax ratio' in w for w in result['source']['warnings'])
+
+
+def test_enrichment_rejects_conflicting_values_at_same_availability_date():
+    from ppe_packets import enrich_packet
+    old, new = packet(), packet()
+    new['historical'][-1]['fields']['ebit']['value'] = 999
+    with pytest.raises(ProviderError, match='Conflicting published'):
+        enrich_packet(old, new, '2026-10-10')

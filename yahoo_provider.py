@@ -247,7 +247,7 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc
             "unit": "pure",
             "value": tax_rate,
         }
-        if tax_rate is None and (end, "PPEEffectiveTaxRate") in facts:
+        if (tax_rate is None or not 0 <= tax_rate <= 1) and (end, "PPEEffectiveTaxRate") in facts:
             tax_rate, tax_provenance = facts[end, "PPEEffectiveTaxRate"]
         if tax_rate is None or not 0 <= tax_rate <= 1:
             normalized = v("TaxRateForCalcs", True)

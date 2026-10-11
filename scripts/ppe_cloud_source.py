@@ -9,6 +9,7 @@ import io
 import json
 import re
 import zipfile
+import zlib
 from concurrent.futures import ThreadPoolExecutor
 
 from dcf_loader import ProviderError
@@ -71,7 +72,10 @@ class SecArchive:
             return None, None
         if entry.file_size > MAX_FACTS or entry.compress_size > MAX_FACTS:
             raise ProviderError('SEC companyfacts member exceeds budget.')
-        raw = self.archive.read(entry)  # zipfile verifies the member CRC.
+        try:
+            raw = self.archive.read(entry)  # zipfile verifies the member CRC.
+        except (zipfile.BadZipFile, zlib.error, EOFError):
+            raise ProviderError('SEC archive member CRC or structure verification failed.') from None
         facts = json.loads(raw)
         if str(facts.get('cik', '')).zfill(10) != cik:
             raise ProviderError('SEC archive issuer mismatch.')

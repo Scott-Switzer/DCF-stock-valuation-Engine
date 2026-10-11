@@ -533,6 +533,8 @@ def enrich_packet(previous, candidate, asof):
             return new
         if not new or old['available_at'][:10] > new['available_at'][:10]:
             return deepcopy(old)
+        if old['available_at'][:10] == new['available_at'][:10] and old['value'] != new['value']:
+            raise ProviderError(f"Conflicting published and incoming PPE values for {old['period_end']} at the same availability date.")
         return new
 
     prior = {row['period_end']: row for row in previous['historical']}

@@ -49,3 +49,13 @@ def test_transport_cannot_read_or_write_other_financial_namespaces():
     for op in ['get', 'put']:
         with pytest.raises(ProviderError, match='namespace'):
             transport.call(op, 'private/research.json', raw=b'{}')
+
+
+def test_corrupt_member_is_a_reportable_provider_error(monkeypatch):
+    archive = SecArchive(ArchiveClient(), 'private', 'sec/bulk/published/companyfacts.zip')
+    def corrupt(*args):
+        raise zipfile.BadZipFile('CRC mismatch')
+    monkeypatch.setattr(archive.archive, 'read', corrupt)
+    with pytest.raises(ProviderError, match='member CRC'):
+        archive.facts('0000789019')
+    archive.close()
