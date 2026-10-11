@@ -1347,11 +1347,21 @@ def providers():
     )
 
 
+@app.get("/api/providers/datasets")
+def dataset_status():
+    from dataset_catalog import load_catalog
+    response = jsonify(load_catalog())
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 @app.get("/providers")
 def providers_page():
     """Server-rendered provider status; no secrets are exposed."""
+    from dataset_catalog import load_catalog
     return render_template(
         "providers.html",
+        dataset_catalog=load_catalog(),
         zion_valuation_configured=bool(getattr(request.environ.get("workers.env"), "ZION_VALUATIONS", None)),
         zion_configured=bool(provider_value("ZION_API_BASE_URL")),
         custom_api_configured=bool(provider_value("DCF_API_BASE_URL")),

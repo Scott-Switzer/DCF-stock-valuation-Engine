@@ -34,6 +34,7 @@ module_names = [
     "provider_cache.py",
     "ppe_packets.py",
     "ppe_provider.py",
+    "dataset_catalog.py",
     "yahoo_provider.py",
     "auto_loading.py",
     "decision_support.py",

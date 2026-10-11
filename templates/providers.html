@@ -18,4 +18,13 @@
 </table></div>
 <p class="help">Machine-readable status: <code>GET /api/providers</code>. Full adapter contract: <a href="https://github.com/Scott-Switzer/DCF-stock-valuation-Engine/blob/main/docs/provider-contract.md">docs/provider-contract.md</a>. Workflow guide: <a href="https://github.com/Scott-Switzer/DCF-stock-valuation-Engine/blob/main/docs/workflow.md">docs/workflow.md</a>.</p>
 </section>
+<section class="panel">
+<div class="panel-heading"><div><p class="eyebrow">02 · Cloud datasets</p><h2>Zion dataset connections</h2></div></div>
+<p class="help">Storage access is separate from valuation coverage. Only approved, mapped financial fields enter calculations. Stored files may be historical, incomplete, or restricted to private research.</p>
+<div class="table-wrap"><table class="input-table">
+<thead><tr><th scope="col">Source</th><th scope="col">Storage connection</th><th scope="col">Use in this app</th></tr></thead>
+<tbody>{% for source in dataset_catalog.sources %}<tr><th scope="row">{{ source.name }}</th><td>{{ source.connectivity|replace('_', ' ')|title }}</td><td>{{ source.note }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% if dataset_catalog.checked_at %}<p class="help">Connection checked {{ dataset_catalog.checked_at }}. This is not the date of the underlying financial observations.</p>{% endif %}
+</section>
 {% endblock %}

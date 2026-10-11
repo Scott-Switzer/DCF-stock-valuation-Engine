@@ -192,3 +192,18 @@ Static script and stylesheet URLs now include a content fingerprint. Matching
 Cloudflare responses permit immutable one-year public caching; unversioned or
 mismatched URLs require revalidation. A new release changes URLs when content
 changes, so repeat visits can reuse assets without keeping stale UI code.
+
+### Zion dataset status and private research access
+
+`GET /api/providers/datasets` reports live storage connectivity for the financial,
+private research, SEC filing and research lakehouse stores. It calls only the
+`Catalog` entrypoint of `zion-datasets` via `ZION_DATASET_CATALOG`. The response
+contains allowlisted labels and statuses, never object paths or records. Failure
+returns explicit UNAVAILABLE statuses; it does not prevent ticker loading.
+
+The separate private default entrypoint supports paginated object discovery and
+ETag-pinned bounded range reads for trusted research consumers. It is not exposed
+through this public app. A storage connection does not establish ticker coverage,
+financial accuracy, currentness, or redistribution rights. Valuation autofill still
+uses the approved compact SEC packet contract with per-field fallback provenance.
+See Zion's `docs/dataset-service.md` for the private operator API and local bridge.
