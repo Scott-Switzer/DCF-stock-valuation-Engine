@@ -374,7 +374,7 @@ def assign_library_identity():
     ensure_identity()
 
 
-COOKIE_WRITE_PATHS = ("/api/templates", "/api/share", "/api/watchlist", "/api/account", "/account")
+COOKIE_WRITE_PATHS = ("/api/research", "/api/templates", "/api/share", "/api/watchlist", "/api/account", "/account")
 
 
 @app.before_request
@@ -395,8 +395,9 @@ def limit_expensive_work():
     preview_request = request.method == "POST" and request.path.startswith("/api/preview/")
     mcp_request = request.method == "POST" and request.path == "/mcp"
     mutation = request.method in {"POST", "PUT", "PATCH", "DELETE"}
-    reference_request = request.method == "GET" and request.path.startswith(
-        ("/api/references/", "/api/guidance/", "/api/company/", "/api/providers")
+    reference_request = request.method == "GET" and (
+        request.path.startswith(("/api/references/", "/api/guidance/", "/api/company/", "/api/providers"))
+        or (request.path.startswith("/research/") and request.path.endswith("/export/xlsx"))
     )
     if app.config.get("CLOUDFLARE"):
         import hashlib
@@ -486,6 +487,7 @@ def limit_expensive_work():
                 "/mcp",
                 "/api/share",
                 "/api/templates",
+                "/api/research",
                 "/api/watchlist",
                 "/api/account",
                 "/account/",
@@ -501,6 +503,8 @@ def limit_expensive_work():
 
 @app.after_request
 def security_headers(response):
+    if request.path.startswith(("/api/research", "/research")):
+        response.headers["Cache-Control"] = "private, no-store"
     response.headers.update(
         {
             "X-Content-Type-Options": "nosniff",
@@ -1560,6 +1564,10 @@ app.view_functions["static"] = edge_static
 from suite_views import register_suite
 
 register_suite(app)
+
+from research import register_research
+
+register_research(app)
 
 
 if __name__ == "__main__":

@@ -50,6 +50,7 @@ module_names = [
     "mcp.py",
     "suite_models.py",
     "comps_analysis.py",
+    "research.py",
     "suite_views.py",
     "embedded_assets.py",
 ]

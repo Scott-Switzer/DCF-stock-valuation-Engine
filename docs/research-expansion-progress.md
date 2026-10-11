@@ -10,9 +10,9 @@ Final baseline CI and public smoke succeeded for `f2a8918`. Release evidence: `f
 
 ## Sequential milestones and acceptance
 
-- [ ] Financial QA infrastructure: reproducible 25-company matrix; source/period/field receipts; distinct integrity/readiness/reconciliation results; independently computed FCFF, bridge and per-share values; numerical discrepancies fail explicitly. Current scope: CLI audit and deterministic tests, with a dated live report. No unsupported claim of full filing verification.
+- [x] Financial QA infrastructure: reproducible 25-company matrix; source/period/field receipts; distinct integrity/readiness/reconciliation results; independently computed FCFF, bridge and per-share values; numerical discrepancies fail explicitly. Current scope: CLI audit and deterministic tests, with a dated live report. No unsupported claim of full filing verification.
 - [ ] Resolve observed financial data defects: inspect source records for flagged companies; preserve missing values and unsupported-method blocks. Extend independent cases and workbook parity where inputs support them.
-- [ ] Comparable-company methodology: inspect existing peer metrics; add explicit basis, transparent statistics/exclusions and peer contributions; regression tests for financial firms and unmatched bases.
+- [x] Comparable-company methodology: inspect existing peer metrics; add explicit basis, transparent statistics/exclusions and peer contributions; regression tests for financial firms and unmatched bases.
 - [ ] Research workspace: integrate existing overview/valuation/reverse/driver/scenario tools, add owned thesis/scenario persistence and snapshot-consistent exports; browser desktop/mobile acceptance.
 - [ ] Reliability: separate deterministic and live validation, scheduled non-saving real-company/export/freshness checks, measured latency evidence, release identity and rollback record.
 - [ ] Account recovery: inspect available email infrastructure, implement secure single-use hashed tokens and session revocation only with a configured delivery path; otherwise record exact setup dependency and continue independent work.
@@ -31,3 +31,13 @@ Implemented `financial_qa.py`, `reconciliation/reference_dcf.py`, `scripts/valid
 ### Comparable-company analysis milestone
 
 Branch: `codex/explainable-comps`. Adds source-dated peer basis, explicit constant-multiple versus matched-forward modes, peer distributions/contributions, median alternatives, visible IQR flags without deletion, API candidate exclusion, formula-workbook parity, and workspace/standalone inspection tables. Existing CUIG mean-based target arithmetic is preserved. Targeted regression tests cover mixed/unknown bases, required forward periods, financial-firm EV exclusions, P/B readiness, source-locked form round-trips, candidate API exclusion, raw equity contributions before flooring and independently recalculated workbook output. No database migration is required. Peer ranking still uses the existing source-backed starter/fit workflow; this milestone does not claim verified segment/geography information that is absent.
+
+### Saved investment research milestone
+
+Private structured thesis notes and named scenario snapshots for DCF, DDM and relative valuation. Every save recalculates on the server without fetching new provider data, creates an immutable revision and keeps financial provenance. Research library, frozen-note editing, same-input scenario comparison, complete JSON, printable summary and formula-driven model Excel reuse existing engines. Existing residual-income calculations remain available separately; research persistence for that method is not included yet. Additive migration `0008_research.sql` is required before deployment. Ownership, account claim, foreign-Origin rejection, escaped notes, migration preservation and exact snapshot exports have deterministic regression coverage. Browser and deployed acceptance are recorded separately in release evidence.
+
+### Release gates and remaining work
+
+Financial QA PR #9 merged as `acf7108`; comps PR #10 merged as `d2e8f2b`, deployed Worker `1955e66b-a357-485f-8536-1f1f0bef6f60`, public smoke and real AAPL desktop/mobile comps accepted. Reliability PR #12 merged as `bc32d57`, deployed Worker `ccc3aa19-4aa6-495b-aea6-ad44bb9652c9`; it adds real-company/freshness/arithmetic/workbook monitoring and clean Git/asset identity. Research PR #11 includes reviewed save-race guards, failed-load recovery, paging, ownership and workbook rate limits. Its migration and deployed browser/API acceptance remain release gates until recorded in the final release manifest.
+
+The complete platform specification remains larger than this batch. Pending: independent filing-by-filing reconciliation beyond existing cases; ORCL preferred-cost coverage; bank/REIT method-specific loading contracts; verified peer revenue mix/geography when source data becomes available; residual-income thesis persistence; and transactional email delivery plus verified-email/reset token lifecycles. Existing source limitations remain explicit, and no publication pointer was moved.

@@ -42,6 +42,13 @@ CREATE TABLE IF NOT EXISTS sessions (
  expires_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS valuations_owner_created ON valuations(client_hash, created_at);
+CREATE TABLE IF NOT EXISTS research_documents (
+ id TEXT PRIMARY KEY, client_hash TEXT NOT NULL, created_at TEXT NOT NULL,
+ parent_id TEXT, title TEXT NOT NULL, ticker TEXT NOT NULL, method TEXT NOT NULL,
+ scenario_name TEXT NOT NULL, financial_hash TEXT NOT NULL,
+ market_price REAL NOT NULL, target_price REAL NOT NULL, snapshot_json TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS research_owner_created ON research_documents(client_hash, created_at);
+CREATE INDEX IF NOT EXISTS research_owner_financial ON research_documents(client_hash, financial_hash, created_at);
 """
 
 
@@ -83,6 +90,7 @@ def _sign(value):
 
 
 LIBRARY_PATHS = (
+    "/api/research", "/research",
     "/api/templates", "/api/history", "/api/share", "/api/watchlist",
     "/watchlist", "/compare", "/api/calculate", "/ddm", "/relative",
 )

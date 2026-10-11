@@ -736,3 +736,7 @@ button.secondary:hover {
   gap: 0.5rem;
   margin: 0.35rem 0;
 }
+
+#research-form textarea {width:100%;box-sizing:border-box;resize:vertical;min-height:6rem;padding:.75rem;border:1px solid var(--border,#cbd5e1);border-radius:.4rem;font:inherit;background:var(--surface,#fff);color:inherit}
+.research-note {white-space:pre-wrap;overflow-wrap:anywhere}
+@media print {.site-header,footer,.no-print{display:none!important}.research-report .panel{break-inside:avoid}.research-report{font-size:11pt}.research-report pre{white-space:pre-wrap;overflow-wrap:anywhere}.research-report a{color:inherit;text-decoration:none}}

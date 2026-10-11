@@ -239,7 +239,7 @@ def claim_anonymous(anonymous, owner):
     """Move an unclaimed browser library into the account; conflicts stay put."""
     if not anonymous or not owner or anonymous == owner:
         return
-    for table in ("valuations", "templates", "watchlist", "share_links"):
+    for table in ("valuations", "templates", "watchlist", "share_links", "research_documents"):
         library._run(
             f"UPDATE OR IGNORE {table} SET client_hash=? WHERE client_hash=?",
             (owner, anonymous),

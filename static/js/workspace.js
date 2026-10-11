@@ -121,6 +121,7 @@
     event.preventDefault();
     if (loading) return;
     loading = true;
+    window.researchWorkspace?.setContext(null);
     const token = generation;
     $("workspace-load").disabled = true;
     status("Loading statements and market data…");
@@ -159,6 +160,7 @@
       if (token === generation) status(e.message, true);
     } finally {
       loading = false;
+      render(results.get(method));
       $("workspace-load").disabled = false;
     }
   });
@@ -240,7 +242,10 @@
     }
     if (message.generation !== generation) return;
     if (message.type === "editor-company") {
+      window.researchWorkspace?.setContext(null);
       if (key !== "dcf") {
+        results.set(key, {loaded:true, data:{financials:message.financials, form:message.form}});
+        if (key === method) render(null);
         status(
           "This method’s imported company inputs are active. Load a ticker above for a shared company workspace.",
         );
@@ -313,6 +318,7 @@
       assemble("relative", generation);
   });
   function render(item) {
+    window.researchWorkspace?.setContext(loading ? null : item);
     $("save-valuation").disabled = !item?.valid || !!item?.saving;
     $("export-xlsx").disabled = !item?.valid;
     $("export-json").disabled = !item?.valid;
