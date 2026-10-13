@@ -37,5 +37,46 @@
   "build": {
     "command": "python3 scripts/embed_assets.py"
   },
-  "preview_urls": false
+  "preview_urls": false,
+  "env": {
+    "staging": {
+      "name": "dcf-valuation-engine-staging",
+      "main": "worker_runtime/worker.py",
+      "account_id": "51b88c6a6ef833b3c2ff46e98d5d9356",
+      "compatibility_date": "2026-10-06",
+      "compatibility_flags": ["python_workers"],
+      "workers_dev": true,
+      "ratelimits": [
+        {"name": "PREVIEW_LIMIT", "namespace_id": "1946200601", "simple": {"limit": 120, "period": 60}},
+        {"name": "REFERENCE_LIMIT", "namespace_id": "1946200602", "simple": {"limit": 20, "period": 60}},
+        {"name": "WRITE_LIMIT", "namespace_id": "1946200603", "simple": {"limit": 10, "period": 60}},
+        {"name": "MCP_LIMIT", "namespace_id": "1946200604", "simple": {"limit": 60, "period": 60}}
+      ],
+      "services": [
+        {"binding": "ZION_VALUATIONS", "service": "zion-valuation"},
+        {"binding": "ZION_DATASET_CATALOG", "service": "zion-datasets", "entrypoint": "Catalog"}
+      ],
+      "r2_buckets": [{"binding": "PPE_DATA", "bucket_name": "financial-system-datasets"}],
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "dcf-valuations-staging",
+          "database_id": "cb4e6d0f-a800-4cdd-a4c4-7849c9617e07",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "observability": {
+        "enabled": true,
+        "head_sampling_rate": 1
+      },
+      "vars": {
+        "EDGAR_IDENTITY": "Scott Switzer scswitzer@chapman.edu",
+        "DEPLOY_ENVIRONMENT": "staging"
+      },
+      "build": {
+        "command": "python3 scripts/embed_assets.py"
+      },
+      "preview_urls": false
+    }
+  }
 }
