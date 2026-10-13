@@ -524,7 +524,6 @@ def security_headers(response):
                 "/api/sample",
                 "/api/search",
                 "/api/tickers",
-                "/api/company/",
                 "/api/guidance/",
                 "/api/references/",
             )

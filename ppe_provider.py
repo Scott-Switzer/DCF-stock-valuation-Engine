@@ -115,7 +115,21 @@ def _service_packet(service, ticker, asof, deadline):
     return packet
 
 
+def _transport_receipt(packet, kind, service_state, started):
+    """Local invocation evidence, not financial-source verification or cache telemetry."""
+    packet["source"]["transport_receipt"] = {
+        "schema_version": "valuation-transport-v1",
+        "kind": kind,
+        "service_state": service_state,
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+        "origin_seconds": round(time.monotonic() - started, 6),
+        "storage_cache": "NOT_ESTABLISHED",
+    }
+    return packet
+
+
 def load_packet(ticker, asof=None, *, deadline=None):
+    started = time.monotonic()
     from flask import current_app, request, has_request_context
 
     ticker = ticker_symbol(ticker)
@@ -127,12 +141,16 @@ def load_packet(ticker, asof=None, *, deadline=None):
     env = request.environ["workers.env"]
     service = getattr(env, "ZION_VALUATIONS", None)
     service_error = None
+    service_state = "NOT_CONFIGURED"
     if service is not None:
         try:
             packet = _service_packet(service, ticker, asof, min(deadline or float("inf"), time.monotonic() + 3))
             if packet is not None:
-                return packet
+                return _transport_receipt(packet, "ZION_SERVICE_BINDING", "SUCCESS", started)
+            service_state = "NOT_FOUND"
+            service_error = "Zion service has no packet; authoritative PPE R2 fallback."
         except Exception:
+            service_state = "ERROR"
             service_error = "Zion service unavailable; authoritative PPE R2 fallback."
     bucket = getattr(env, "PPE_DATA", None)
     if bucket is None:
@@ -167,7 +185,7 @@ def load_packet(ticker, asof=None, *, deadline=None):
         raise ProviderError("Published PPE packet is missing.")
     packet = validate_packet(packet, ticker, asof)
     packet["source"]["transport"] = service_error or "Direct PPE R2 binding"
-    return packet
+    return _transport_receipt(packet, "DIRECT_R2", service_state, started)
 
 
 def prefer_ppe(document, ticker, asof, *, deadline=None, packet=_UNSET, packet_error=None):
