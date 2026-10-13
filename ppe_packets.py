@@ -37,9 +37,29 @@ COMMON_INCOME_COMPONENTS = {
     "preferred_stock": ["DividendsPreferredStock"],
     "preferred_and_adjustments": ["PreferredStockDividendsAndOtherAdjustments"],
     "preferred_dividends_alt": ["PreferredStockDividends"],
+    "preferred_redemption_premium": ["PreferredStockRedemptionPremium"],
     "participating_securities": ["ParticipatingSecuritiesDistributedAndUndistributedEarningsLossBasic"],
     "participating_securities_alt": ["ParticipatingSecuritiesDistributedAndUndistributedEarnings"],
 }
+# Mutually exclusive economic categories: at most one tag per category may contribute to a
+# multi-component EPS numerator bridge, preventing synonymous preferred or participating tags
+# from being summed together.
+COMMON_INCOME_CATEGORIES = (
+    (
+        "preferred_dividends",
+        "preferred_cash",
+        "preferred_stock",
+        "preferred_and_adjustments",
+        "preferred_dividends_alt",
+    ),
+    (
+        "participating_securities",
+        "participating_securities_alt",
+    ),
+    (
+        "preferred_redemption_premium",
+    ),
+)
 COMMON_INCOME_TOLERANCE_USD = 1.0
 
 
@@ -133,8 +153,10 @@ def _filing_value(facts, tags, end, accession):
 def explain_residual(parent, direct, components):
     """Explain parent net income less the direct common-income value.
 
-    Explained only when the residual equals zero, one reported component, or the exact sum of
-    two reported components. Anything else is 'unexplained_residual' and is never forced into a
+    Explained only when the residual equals zero, one reported component, or an exact sum of
+    components drawn from distinct economic categories (preferred dividends, participating
+    securities, and preferred redemption premium). Synonymous tags within the same category are
+    never summed together. Anything else is 'unexplained_residual' and is never forced into a
     match. Shared with scripts/reconcile_common_income.py.
     """
     if direct is None:
@@ -148,11 +170,24 @@ def explain_residual(parent, direct, components):
     for name, value in components.items():
         if abs(residual - value) <= tol:
             return f"explained_by_{name}"
-    names = list(components)
-    for i, first in enumerate(names):
-        for second in names[i + 1 :]:
-            if abs(residual - components[first] - components[second]) <= tol:
-                return f"explained_by_{first}_plus_{second}"
+    active = [
+        [name for name in group if name in components and abs(components[name]) > tol]
+        for group in COMMON_INCOME_CATEGORIES
+    ]
+    for i in range(len(active)):
+        for j in range(i + 1, len(active)):
+            for first in active[i]:
+                for second in active[j]:
+                    if abs(residual - components[first] - components[second]) <= tol:
+                        return f"explained_by_{first}_plus_{second}"
+    for first in active[0]:
+        for second in active[1]:
+            for third in active[2]:
+                if (
+                    abs(residual - components[first] - components[second] - components[third])
+                    <= tol
+                ):
+                    return f"explained_by_{first}_plus_{second}_plus_{third}"
     return "unexplained_residual"
 
 

@@ -22,17 +22,31 @@ Usage:
 import argparse
 import datetime
 import json
+import os
 import sys
 import time
 import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from dcf_loader import ProviderError  # noqa: E402
+from dcf_loader import ProviderError, provider_setting  # noqa: E402
 from ppe_packets import common_income_evidence  # noqa: E402
 
-USER_AGENT = "Buffy valuation research contact@example.com"
+DEFAULT_USER_AGENT = "Scott Switzer scswitzer@chapman.edu"
 COMPANYFACTS = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
+
+
+def sec_user_agent():
+    identity = (
+        os.getenv("EDGAR_IDENTITY")
+        or provider_setting("EDGAR_IDENTITY")
+        or DEFAULT_USER_AGENT
+    ).strip()
+    if "@" not in identity or "example.com" in identity.lower():
+        raise ProviderError(
+            "Configure a truthful SEC User-Agent (EDGAR_IDENTITY with name and contact email)."
+        )
+    return identity
 
 # name -> CIK (10-digit)
 ISSUERS = {
@@ -57,6 +71,7 @@ TAGS = {
     "participating_securities": "ParticipatingSecuritiesDistributedAndUndistributedEarningsLossBasic",
     "participating_securities_alt": "ParticipatingSecuritiesDistributedAndUndistributedEarnings",
     "preferred_dividends_alt": "PreferredStockDividends",
+    "preferred_redemption_premium": "PreferredStockRedemptionPremium",
     "common_basic": "NetIncomeLossAvailableToCommonStockholdersBasic",
     "common_diluted": "NetIncomeLossAvailableToCommonStockholdersDiluted",
 }
@@ -67,7 +82,7 @@ def fetch(cik, cache_dir):
     path = cache_dir / f"CIK{cik}.json"
     if not path.exists():
         request = urllib.request.Request(
-            COMPANYFACTS.format(cik=cik), headers={"User-Agent": USER_AGENT}
+            COMPANYFACTS.format(cik=cik), headers={"User-Agent": sec_user_agent()}
         )
         with urllib.request.urlopen(request, timeout=60) as response:
             path.write_bytes(response.read())
@@ -151,7 +166,14 @@ def reconcile(ticker, cik, cache_dir):
         for name in TAGS:
             if end in series[name]:
                 row["observations"][name] = series[name][end]
-        row.update(reconcile_verdict(doc, end, series["common_basic"].get(end)))
+        verdict = reconcile_verdict(doc, end, series["common_basic"].get(end))
+        row.update(verdict)
+        if verdict.get("verdict") == "unexplained_residual":
+            latest_direct = restated_observations(doc, TAGS["common_basic"]).get(end)
+            if latest_direct and latest_direct.get("accession") != (series["common_basic"].get(end) or {}).get("accession"):
+                restated = reconcile_verdict(doc, end, latest_direct)
+                if restated.get("verdict", "").startswith("explained_by_") or restated.get("verdict") == "match_parent_net_income":
+                    row["later_comparative_reconciliation"] = restated
         rows.append(row)
     return rows
 

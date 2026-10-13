@@ -563,16 +563,56 @@ def test_real_jpm_common_income_is_bridged_to_its_own_filing():
     assert {r["provenance"]["accession"] for r in ci} == {"0001628280-26-008131"}
 
 
-def test_real_jpm_2009_unexplained_residual_is_rejected_and_later_years_bridge():
-    # 2009: parent 11,728M minus direct 8,774M leaves 2,954M, but the latest filing's
-    # components (preferred stock 1,327M + participating 515M) sum to 1,842M, so it abstains.
-    # 2010 and 2011 come from the later filings that report them, each bridged in its own filing.
+def test_real_jpm_2009_2011_bridges_three_distinct_components_and_rejects_early_cutoff():
+    # At the 2026-10-07 cutoff, the latest 10-K carrying 2009 (accession 0000019617-12-000163,
+    # filed 2012-02-29) discloses preferred stock (1,327M), participating securities (515M),
+    # and preferred redemption premium (1,112M), which bridge 11,728M - 8,774M = 2,954M.
     p = real_packet("JPM", "0000019617", [2009, 2010, 2011])
     ci = p["common_income"]
-    assert [r["period_end"] for r in ci] == ["2010-12-31", "2011-12-31"]
-    assert [r["value"] for r in ci] == [15764000000, 17568000000]
-    assert {r["provenance"]["accession"] for r in ci} == {"0000019617-13-000221", "0000019617-14-000289"}
-    assert all(r["provenance"]["bridge"].startswith("explained_by_") for r in ci)
+    assert [r["period_end"] for r in ci] == ["2009-12-31", "2010-12-31", "2011-12-31"]
+    assert [r["value"] for r in ci] == [8774000000, 15764000000, 17568000000]
+    assert ci[0]["provenance"]["bridge"] == (
+        "explained_by_preferred_stock_plus_participating_securities_alt_plus_preferred_redemption_premium"
+    )
+    assert {r["provenance"]["accession"] for r in ci} == {
+        "0000019617-12-000163",
+        "0000019617-13-000221",
+        "0000019617-14-000289",
+    }
+    # At the original 2009 filing cutoff (2010-03-01), accession 0000950123-10-016029 lacks
+    # the tagged preferred and participating adjustments, so the gate fails closed.
+    facts = json.loads((REAL_FACTS / "JPM.json").read_text())
+    early = build_packet(
+        "JPM",
+        "0000019617",
+        [observation("revenue", 1000, end="2009-12-31", start="2009-01-01", available="2010-02-24")],
+        facts,
+        "2010-03-01",
+        {},
+    )
+    assert early["common_income"] == []
+
+
+def test_synonymous_preferred_tags_are_never_summed_to_explain_residual():
+    # Two tags from the same economic category (preferred_dividends and preferred_stock)
+    # must never be summed together to match a residual.
+    p = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(90)],
+        NetIncomeLoss=[annual_fact(150)],
+        PreferredStockDividendsIncomeStatementImpact=[annual_fact(30)],
+        DividendsPreferredStock=[annual_fact(30)],
+    )
+    assert p["common_income"] == []
+
+
+def test_sec_user_agent_rejects_placeholder_email(monkeypatch):
+    from scripts.reconcile_common_income import sec_user_agent
+
+    monkeypatch.setenv("EDGAR_IDENTITY", "Test User contact@example.com")
+    with pytest.raises(ProviderError, match="truthful SEC User-Agent"):
+        sec_user_agent()
+    monkeypatch.setenv("EDGAR_IDENTITY", "Scott Switzer scswitzer@chapman.edu")
+    assert sec_user_agent() == "Scott Switzer scswitzer@chapman.edu"
 
 
 def test_real_bac_and_gs_preferred_reconciliations_are_accepted():
