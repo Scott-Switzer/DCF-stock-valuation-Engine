@@ -9,12 +9,27 @@ import json
 from pathlib import Path
 import sys
 import time
+import os
+import tempfile
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from company_packets import assemble_packet  # noqa: E402
 from financial_qa import QA_UNIVERSE  # noqa: E402
+
+
+def write_json_atomic(path, value):
+    """Keep the prior checkpoint intact if disk space or serialization fails."""
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, prefix='.ledger-', delete=False) as stream:
+            temporary = Path(stream.name)
+            json.dump(value, stream, indent=2, allow_nan=False)
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def summarize(packet):
@@ -62,14 +77,14 @@ def main():
                 if snapshot.get('ticker') != ticker: raise ValueError('Snapshot identity mismatch')
                 packet = assemble_packet(snapshot.get('bundle'), ticker=ticker, error=snapshot.get('error'))
             if packet.get('ticker') != ticker: raise ValueError('Packet identity mismatch')
-            (packet_dir / f'{ticker}.json').write_text(json.dumps(packet, allow_nan=False))
+            write_json_atomic(packet_dir / f'{ticker}.json', packet)
             row = summarize(packet)
         except (HTTPError, URLError, OSError, ValueError, KeyError, TypeError) as exc:
             row = {'ticker': ticker, 'status': 'FETCH_OR_CONTRACT_FAILED', 'reason': str(exc),
                    'independent_source_verification': 'NOT_ESTABLISHED'}
         row['seconds'] = round(time.monotonic() - started, 3)
         report['companies'].append(row)
-        args.output.write_text(json.dumps(report, indent=2, allow_nan=False))
+        write_json_atomic(args.output, report)
         print(f"{ticker}: {row['status']} ({row['seconds']}s)", flush=True)
     lines = ['# Company coverage ledger', '', f"Mode: {report['mode']}",
              'Connectivity, mapping, freshness and independent accuracy are separate. No observation is independently filing-verified by this assembler.', '',
