@@ -11,6 +11,7 @@ import logging
 import math
 import os
 import re
+import time
 from pathlib import Path
 from flask import Flask, Response, jsonify, redirect, render_template, request
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -809,8 +810,20 @@ def company_packet(ticker):
         return jsonify(error=str(exc)), 503 if isinstance(exc, ProviderError) else 400
 
 
+def server_timing(started, stages=None):
+    """Build a Server-Timing header from measured stages; bodies and cache policy are unchanged."""
+    parts = [
+        f"{name};dur={round(seconds * 1000, 1)}"
+        for name, seconds in (stages or {}).items()
+        if isinstance(seconds, (int, float))
+    ]
+    parts.append(f"flask;dur={round((time.monotonic() - started) * 1000, 1)}")
+    return ", ".join(parts)
+
+
 @app.post("/api/preview/<method>")
 def preview_api(method):
+    started = time.monotonic()
     if method not in {"dcf", "ddm", "relative"}:
         return jsonify(error="Unknown method."), 404
     try:
@@ -819,7 +832,9 @@ def preview_api(method):
         doc, a = payload() if method == "dcf" else suite_payload(method)
         result = evaluate(doc, a) if method == "dcf" else suite_evaluate(method, doc, a)
         result["input_financials"] = doc
-        return jsonify(result)
+        response = jsonify(result)
+        response.headers["Server-Timing"] = server_timing(started)
+        return response
     except ValueError as exc:
         return jsonify(error=str(exc)), 400
 
@@ -942,21 +957,28 @@ def company_packet_api(ticker):
 
 @app.post("/api/load/<method>")
 def load_company_api(method):
+    started = time.monotonic()
     try:
         from company_packets import load_cached_method as load_method
 
         raw = request.get_json(silent=True)
         if not isinstance(raw, dict):
             raise ValueError("Send a ticker and valuation date in a JSON object.")
-        return jsonify(
-            load_method(
-                method,
-                raw.get("ticker"),
-                raw.get("valuation_date"),
-                raw.get("equity_risk_premium", 0.05),
-                raw.get("credit_spread", 0.015),
-            )
+        result = load_method(
+            method,
+            raw.get("ticker"),
+            raw.get("valuation_date"),
+            raw.get("equity_risk_premium", 0.05),
+            raw.get("credit_spread", 0.015),
         )
+        summary = result.get("load_summary", {})
+        # Stage durations describe a fresh build only; a HIT must not replay the original build's timings.
+        built_now = summary.get("assembly_cache", {}).get("state") == "MISS"
+        response = jsonify(result)
+        response.headers["Server-Timing"] = server_timing(
+            started, summary.get("stage_seconds") if built_now else None
+        )
+        return response
     except ValueError as e:
         return jsonify(error=str(e)), 400
     except ProviderError as e:
