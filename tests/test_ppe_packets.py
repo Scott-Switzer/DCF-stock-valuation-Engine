@@ -1,4 +1,6 @@
+import json
 from copy import deepcopy
+from pathlib import Path
 import pytest
 from dcf_loader import demo_document, ProviderError
 from ppe_packets import build_packet, apply_packet, validate_packet
@@ -333,3 +335,278 @@ def test_enrichment_rejects_conflicting_values_at_same_availability_date():
     new['historical'][-1]['fields']['ebit']['value'] = 999
     with pytest.raises(ProviderError, match='Conflicting published'):
         enrich_packet(old, new, '2026-10-10')
+
+
+# --- Net income available to common shareholders (basic EPS numerator) ---
+
+
+def annual_fact(value, filed="2025-10-31", form="10-K", accn="test", start="2024-09-29", end="2025-09-27"):
+    return {"val": value, "start": start, "end": end, "filed": filed, "form": form, "accn": accn}
+
+
+def sec_facts(cik=320193, **tags):
+    return {"cik": cik, "facts": {"us-gaap": {t: {"units": {"USD": rows}} for t, rows in tags.items()}}}
+
+
+def three_year_rows():
+    return [
+        observation(
+            "revenue", 100 + i * 10, end=f"{y}-09-27", start=f"{y - 1}-09-29", available=f"{y}-10-31"
+        )
+        for i, y in enumerate([2023, 2024, 2025])
+    ]
+
+
+def build_with(cik=320193, **tags):
+    return build_packet(
+        "AAPL", "0000320193", three_year_rows(), sec_facts(cik=cik, **tags), "2026-10-07", {}
+    )
+
+
+def aligned_doc(p):
+    d = demo_document()
+    d["company"]["ticker"] = "AAPL"
+    d["valuation_date"] = "2026-10-10"
+    for row, h in zip(d["historical"], p["historical"]):
+        row["period_end"] = h["period_end"]
+    d["bridge"]["as_of"] = p["historical"][-1]["period_end"]
+    return d
+
+
+def test_direct_basic_common_income_is_sourced_from_its_own_tag():
+    p = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(120)],
+        NetIncomeLoss=[annual_fact(150)],
+        PreferredStockDividendsIncomeStatementImpact=[annual_fact(30)],
+    )
+    assert len(p["common_income"]) == 1
+    assert p["common_income"][0]["value"] == 120
+    assert p["common_income"][0]["period_end"] == "2025-09-27"
+    assert "NetIncomeLossAvailableToCommonStockholdersBasic" in json.dumps(p["common_income"][0])
+
+
+def test_consolidated_or_derived_income_never_becomes_common_income():
+    # ProfitLoss includes noncontrolling interests; NetIncomeLoss is not the basic EPS numerator.
+    assert build_with(ProfitLoss=[annual_fact(150)])["common_income"] == []
+    assert build_with(NetIncomeLoss=[annual_fact(150)])["common_income"] == []
+    # Preferred dividends alone do not establish common-shareholder income.
+    assert build_with(PreferredStockDividendsIncomeStatementImpact=[annual_fact(10)])["common_income"] == []
+
+
+def test_quarterly_common_income_is_ignored():
+    quarter = annual_fact(40, start="2025-07-01", end="2025-09-27")
+    assert build_with(NetIncomeLossAvailableToCommonStockholdersBasic=[quarter])["common_income"] == []
+
+
+def test_unexplained_residual_rejects_direct_common_income():
+    # Parent 150 vs direct 120 leaves 30 with no reported component: never forced into a match.
+    p = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(120)],
+        NetIncomeLoss=[annual_fact(150)],
+    )
+    assert p["common_income"] == []
+
+
+def test_components_from_another_filing_do_not_explain_residual():
+    p = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(120, accn="A")],
+        NetIncomeLoss=[annual_fact(150, accn="A")],
+        PreferredStockDividendsIncomeStatementImpact=[annual_fact(30, accn="B")],
+    )
+    assert p["common_income"] == []
+
+
+def test_two_reported_components_explain_residual_exactly():
+    p = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(120)],
+        NetIncomeLoss=[annual_fact(150)],
+        PreferredStockDividendsIncomeStatementImpact=[annual_fact(10)],
+        ParticipatingSecuritiesDistributedAndUndistributedEarningsLossBasic=[annual_fact(20)],
+    )
+    row = p["common_income"][0]
+    assert row["value"] == 120
+    assert (
+        row["provenance"]["bridge"]
+        == "explained_by_preferred_dividends_plus_participating_securities"
+    )
+
+
+def test_validate_rejects_common_income_without_accepted_bridge():
+    p = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(120)],
+        NetIncomeLoss=[annual_fact(120)],
+    )
+    assert p["common_income"]
+    p["common_income"][0]["provenance"]["bridge"] = "unexplained_residual"
+    with pytest.raises(ProviderError, match="not verified"):
+        validate_packet(p, "AAPL", "2026-10-07")
+
+
+def test_amendment_after_cutoff_ignored_and_latest_amendment_used():
+    rows = [
+        annual_fact(120, filed="2025-10-31", accn="orig"),
+        annual_fact(125, filed="2026-01-15", form="10-K/A", accn="amend"),
+        annual_fact(999, filed="2026-11-01", form="10-K/A", accn="late"),
+    ]
+    p = build_with(NetIncomeLossAvailableToCommonStockholdersBasic=rows, NetIncomeLoss=rows)
+    assert p["common_income"][0]["value"] == 125
+
+
+def test_conflicting_common_income_facts_in_one_filing_are_rejected():
+    rows = [annual_fact(120, accn="same"), annual_fact(121, accn="same")]
+    with pytest.raises(ProviderError, match="Conflicting"):
+        build_with(NetIncomeLossAvailableToCommonStockholdersBasic=rows)
+
+
+def test_negative_common_income_is_preserved():
+    p = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(-45)],
+        NetIncomeLoss=[annual_fact(-45)],
+    )
+    assert p["common_income"][0]["value"] == -45
+
+
+def test_common_income_with_wrong_cik_is_rejected():
+    with pytest.raises(ProviderError):
+        build_with(cik=1, NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(120)])
+
+
+def test_apply_uses_direct_common_income_and_not_consolidated_income():
+    p = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(120)],
+        NetIncomeLoss=[annual_fact(150)],
+        PreferredStockDividendsIncomeStatementImpact=[annual_fact(30)],
+    )
+    d = aligned_doc(p)
+    baseline = d["historical"][-1]["net_income"]
+    updated = apply_packet(d, p, "2026-10-10")
+    assert updated["historical"][-1]["net_income"] == 120
+
+    q = build_with(ProfitLoss=[annual_fact(150)], NetIncomeLoss=[annual_fact(150)])
+    kept = apply_packet(aligned_doc(q), q, "2026-10-10")
+    assert kept["historical"][-1]["net_income"] == baseline
+
+
+def test_enrichment_carries_common_income_and_accepts_legacy_packets():
+    from ppe_packets import enrich_packet
+    ci = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(120)],
+        NetIncomeLoss=[annual_fact(120)],
+    )["common_income"][0]
+    old = packet()
+    old["common_income"] = deepcopy([ci])
+    assert enrich_packet(old, packet(), "2026-10-10")["common_income"] == [ci]
+    legacy = packet()
+    legacy.pop("common_income")
+    new = packet()
+    new["common_income"] = deepcopy([ci])
+    assert enrich_packet(legacy, new, "2026-10-10")["common_income"] == [ci]
+
+
+def test_supplement_fills_only_direct_common_income_gap():
+    from ppe_packets import supplement_statement_facts
+    p = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(120)],
+        NetIncomeLoss=[annual_fact(120)],
+    )
+    old = {("2025-09-30", "TotalRevenue"): (999, {"provider": "baseline"})}
+    result = supplement_statement_facts(old, ["2025-09-30"], p, "AAPL", "2026-10-10")
+    assert result["2025-09-30", "NetIncomeCommonStockholders"][0] == 120
+    assert result["2025-09-30", "NetIncomeCommonStockholders"][1]["period_end"] == "2025-09-27"
+    assert result["2025-09-30", "TotalRevenue"][0] == 999
+    empty = supplement_statement_facts({}, ["2025-09-30"], build_with(), "AAPL", "2026-10-10")
+    assert ("2025-09-30", "NetIncomeCommonStockholders") not in empty
+
+
+def test_validate_accepts_missing_common_income_and_rejects_misaligned_periods():
+    p = packet()
+    p.pop("common_income")
+    assert validate_packet(p, "AAPL", "2026-10-07") is p
+    bad = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(120)],
+        NetIncomeLoss=[annual_fact(120)],
+    )
+    bad["common_income"][0]["period_end"] = "2024-09-28"
+    with pytest.raises(ProviderError, match="common income periods"):
+        validate_packet(bad, "AAPL", "2026-10-07")
+
+
+# --- Real SEC companyfacts (10-K-only subsets committed under tests/fixtures/sec) ---
+
+REAL_FACTS = Path(__file__).parent / "fixtures" / "sec" / "common-income"
+JPM_BRIDGE = "explained_by_preferred_stock_plus_participating_securities"
+
+
+def real_packet(ticker, cik, years):
+    facts = json.loads((REAL_FACTS / f"{ticker}.json").read_text())
+    rows = [
+        observation(
+            "revenue", 1000 + i, end=f"{y}-12-31", start=f"{y - 1}-12-31", available=f"{y + 1}-03-01"
+        )
+        for i, y in enumerate(years)
+    ]
+    return build_packet(ticker, cik, rows, facts, "2026-10-07", {})
+
+
+def real_doc(p):
+    d = aligned_doc(p)
+    d["company"]["ticker"] = p["ticker"]
+    return d
+
+
+def test_real_jpm_common_income_is_bridged_to_its_own_filing():
+    p = real_packet("JPM", "0000019617", [2023, 2024, 2025])
+    ci = p["common_income"]
+    assert [r["period_end"] for r in ci] == ["2023-12-31", "2024-12-31", "2025-12-31"]
+    assert [r["value"] for r in ci] == [47760000000, 56868000000, 55681000000]
+    assert {r["provenance"]["bridge"] for r in ci} == {JPM_BRIDGE}
+    assert {r["provenance"]["accession"] for r in ci} == {"0001628280-26-008131"}
+
+
+def test_real_jpm_2009_unexplained_residual_is_rejected_and_later_years_bridge():
+    # 2009: parent 11,728M minus direct 8,774M leaves 2,954M, but the latest filing's
+    # components (preferred stock 1,327M + participating 515M) sum to 1,842M, so it abstains.
+    # 2010 and 2011 come from the later filings that report them, each bridged in its own filing.
+    p = real_packet("JPM", "0000019617", [2009, 2010, 2011])
+    ci = p["common_income"]
+    assert [r["period_end"] for r in ci] == ["2010-12-31", "2011-12-31"]
+    assert [r["value"] for r in ci] == [15764000000, 17568000000]
+    assert {r["provenance"]["accession"] for r in ci} == {"0000019617-13-000221", "0000019617-14-000289"}
+    assert all(r["provenance"]["bridge"].startswith("explained_by_") for r in ci)
+
+
+def test_real_bac_and_gs_preferred_reconciliations_are_accepted():
+    bac = real_packet("BAC", "0000070858", [2023, 2024, 2025])
+    assert [r["value"] for r in bac["common_income"]] == [24656000000, 25344000000, 29055000000]
+    assert {r["provenance"]["accession"] for r in bac["common_income"]} == {"0000070858-26-000157"}
+    gs = real_packet("GS", "0000886982", [2023, 2024, 2025])
+    assert [r["value"] for r in gs["common_income"]] == [7907000000, 13525000000, 16300000000]
+    assert {r["provenance"]["bridge"] for r in gs["common_income"]} == {
+        "explained_by_preferred_dividends"
+    }
+
+
+def test_real_citigroup_unexplained_residual_is_never_published():
+    p = real_packet("C", "0000831001", [2023, 2024, 2025])
+    assert p["common_income"] == []
+    assert validate_packet(p, "C", "2026-10-07") is p
+
+
+@pytest.mark.parametrize(
+    "ticker,cik",
+    [("AAPL", "0000320193"), ("KO", "0000021344"), ("MSFT", "0000789019"), ("XOM", "0000034088")],
+)
+def test_real_issuers_without_common_basic_tag_abstain(ticker, cik):
+    p = real_packet(ticker, cik, [2023, 2024, 2025])
+    assert p["common_income"] == []
+    assert validate_packet(p, ticker, "2026-10-07") is p
+
+
+def test_real_jpm_common_income_flows_to_model_and_supplement():
+    from ppe_packets import supplement_statement_facts
+    p = real_packet("JPM", "0000019617", [2023, 2024, 2025])
+    updated = apply_packet(real_doc(p), p, "2026-10-10")
+    assert updated["historical"][-1]["net_income"] == 55681000000
+    result = supplement_statement_facts({}, ["2025-12-31"], p, "JPM", "2026-10-10")
+    assert result["2025-12-31", "NetIncomeCommonStockholders"][0] == 55681000000
+    assert result["2025-12-31", "NetIncomeCommonStockholders"][1]["period_end"] == "2025-12-31"

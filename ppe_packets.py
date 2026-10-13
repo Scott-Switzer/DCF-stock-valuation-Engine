@@ -22,7 +22,25 @@ SEC_TAGS = {
     "interest_expense": ["InterestExpense", "InterestAndDebtExpense"],
 }
 SEC_TAGS["short_term_borrowings"] = ["ShortTermBorrowings", "CommercialPaper"]
-DURATIONS = DURATION | {"common_dividends", "interest_expense"}
+# Basic EPS numerator: income attributable to the parent after preferred dividends.
+# Direct tag only. It is never derived from NetIncomeLoss less preferred dividends or
+# noncontrolling interests: an absent tag is not zero, and that derivation needs
+# reconciliation evidence this producer does not have.
+SEC_TAGS["common_income"] = ["NetIncomeLossAvailableToCommonStockholdersBasic"]
+DURATIONS = DURATION | {"common_dividends", "interest_expense", "common_income"}
+# Statement items that can explain the residual between parent NetIncomeLoss and the direct
+# common-income tag. They are matched within the same filing (accession) as the direct
+# observation, so an observation from one filing is never explained by another filing's items.
+COMMON_INCOME_COMPONENTS = {
+    "preferred_dividends": ["PreferredStockDividendsIncomeStatementImpact"],
+    "preferred_cash": ["DividendsPreferredStockCash"],
+    "preferred_stock": ["DividendsPreferredStock"],
+    "preferred_and_adjustments": ["PreferredStockDividendsAndOtherAdjustments"],
+    "preferred_dividends_alt": ["PreferredStockDividends"],
+    "participating_securities": ["ParticipatingSecuritiesDistributedAndUndistributedEarningsLossBasic"],
+    "participating_securities_alt": ["ParticipatingSecuritiesDistributedAndUndistributedEarnings"],
+}
+COMMON_INCOME_TOLERANCE_USD = 1.0
 
 
 def _number(value):
@@ -95,6 +113,81 @@ def _sec(facts, metric, end, cutoff, source):
     return None
 
 
+def _filing_value(facts, tags, end, accession):
+    """Annual USD value of the given tags reported in one specific 10-K accession."""
+    values = set()
+    for tag in tags:
+        for r in facts.get("facts", {}).get("us-gaap", {}).get(tag, {}).get("units", {}).get("USD", []):
+            if (
+                r.get("end") == end
+                and r.get("accn") == accession
+                and r.get("form") in {"10-K", "10-K/A"}
+                and _annual(r.get("start"), end)
+            ):
+                values.add(_number(r["val"]))
+    if len(values) > 1:
+        raise ProviderError(f"Conflicting SEC facts in filing {accession} for {end}.")
+    return values.pop() if values else None
+
+
+def explain_residual(parent, direct, components):
+    """Explain parent net income less the direct common-income value.
+
+    Explained only when the residual equals zero, one reported component, or the exact sum of
+    two reported components. Anything else is 'unexplained_residual' and is never forced into a
+    match. Shared with scripts/reconcile_common_income.py.
+    """
+    if direct is None:
+        return "no_direct_tag"
+    if parent is None:
+        return "no_parent_net_income"
+    residual = parent - direct
+    tol = COMMON_INCOME_TOLERANCE_USD
+    if abs(residual) <= tol:
+        return "match_parent_net_income"
+    for name, value in components.items():
+        if abs(residual - value) <= tol:
+            return f"explained_by_{name}"
+    names = list(components)
+    for i, first in enumerate(names):
+        for second in names[i + 1 :]:
+            if abs(residual - components[first] - components[second]) <= tol:
+                return f"explained_by_{first}_plus_{second}"
+    return "unexplained_residual"
+
+
+def common_income_evidence(facts, end, direct):
+    """Same-filing evidence for one direct common-income observation, with its verdict.
+
+    Parent income and every component are read only from the direct observation's own 10-K
+    accession. Shared by the packet gate and scripts/reconcile_common_income.py.
+    """
+    accession = direct["provenance"].get("accession")
+    if not accession:
+        return {"verdict": "no_accession", "accession": None, "parent": None, "components": {}}
+    parent = _filing_value(facts, ["NetIncomeLoss"], end, accession)
+    components = {}
+    for name, tags in COMMON_INCOME_COMPONENTS.items():
+        value = _filing_value(facts, tags, end, accession)
+        if value is not None:
+            components[name] = value
+    return {
+        "verdict": explain_residual(parent, direct["value"], components),
+        "accession": accession,
+        "parent": parent,
+        "components": components,
+    }
+
+
+def common_income_bridge(facts, end, direct):
+    """Verify a direct common-income observation against its own filing's parent income."""
+    return common_income_evidence(facts, end, direct)["verdict"]
+
+
+def bridge_accepted(verdict):
+    return verdict == "match_parent_net_income" or str(verdict).startswith("explained_by_")
+
+
 def _derived(value, components, formula, unit="USD"):
     return _field(
         value,
@@ -164,6 +257,7 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
     groups = selected
     historical = []
     dividends = []
+    common_income = []
     bridges = {}
     shares = None
     interest = None
@@ -191,6 +285,7 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
                 "diluted_shares",
                 "common_dividends",
                 "interest_expense",
+                "common_income",
             ]
         }
         if (
@@ -230,6 +325,12 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
         historical.append({"period_end": end, "fields": f})
         if values["common_dividends"]:
             dividends.append(values["common_dividends"])
+        if values["common_income"]:
+            # Reject a direct tag whose residual to the same filing's parent income is unexplained.
+            verdict = common_income_bridge(facts, end, values["common_income"])
+            values["common_income"]["provenance"]["bridge"] = verdict
+            if bridge_accepted(verdict):
+                common_income.append(values["common_income"])
         bridges = {k: g.get(k) or _sec(facts, k, end, cutoff, sec_source) for k in BRIDGE_FIELDS}
         bridges["short_term_debt"] = values["short_term_debt"]
         shares = values["diluted_shares"]
@@ -246,6 +347,7 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
         "diluted_shares": shares,
         "interest_expense": interest,
         "dividends": dividends,
+        "common_income": common_income,
     }
     validate_packet(packet, ticker, cutoff)
     return packet
@@ -265,6 +367,21 @@ def _date(value, *, timestamp=False):
         return parsed
     except (TypeError, ValueError):
         raise ProviderError("Invalid PPE observation date.") from None
+
+
+def _validate_annual_series(rows, label, metric, ends, check):
+    """Validate a per-period series (dividends, common income) aligned to annual periods."""
+    if not isinstance(rows, list) or len(rows) > 3:
+        raise ProviderError(f"Invalid PPE {label} coverage.")
+    previous = None
+    for f in rows:
+        if not isinstance(f, dict):
+            raise ProviderError(f"Invalid PPE {label} field.")
+        end = _date(f.get("period_end"))
+        if end not in ends or (previous and end <= previous):
+            raise ProviderError(f"Invalid PPE {label} periods.")
+        check(f, metric, end)
+        previous = end
 
 
 def validate_packet(packet, ticker, asof):
@@ -325,18 +442,14 @@ def validate_packet(packet, ticker, asof):
         field(f, metric, ends[-1])
     field(packet.get("diluted_shares"), "diluted_shares", ends[-1])
     field(packet.get("interest_expense"), "interest_expense", ends[-1])
-    dividends = packet.get("dividends")
-    if not isinstance(dividends, list) or len(dividends) > 3:
-        raise ProviderError("Invalid PPE dividend coverage.")
-    previous = None
-    for f in dividends:
-        if not isinstance(f, dict):
-            raise ProviderError("Invalid PPE dividend field.")
-        end = _date(f.get("period_end"))
-        if end not in ends or (previous and end <= previous):
-            raise ProviderError("Invalid PPE dividend periods.")
-        field(f, "common_dividends", end)
-        previous = end
+    _validate_annual_series(packet.get("dividends"), "dividend", "common_dividends", ends, field)
+    # Optional: packets published before the common-income mapping omit this key.
+    _validate_annual_series(
+        packet.get("common_income", []), "common income", "common_income", ends, field
+    )
+    for x in packet.get("common_income", []):
+        if not bridge_accepted((x.get("provenance") or {}).get("bridge")):
+            raise ProviderError("Common income is not verified against its filing.")
     return packet
 
 
@@ -374,6 +487,7 @@ def apply_packet(document, packet, asof):
         return f["value"] if f else old
 
     matched = []
+    common_by_end = {x["period_end"]: x for x in packet.get("common_income", [])}
     for row in doc["historical"]:
         candidates = [
             x
@@ -390,9 +504,12 @@ def apply_packet(document, packet, asof):
         original_end = row["period_end"]
         used_fields = {}
         for key in HISTORY_FIELDS:
-            # The canonical metric and NetIncomeLoss/ProfitLoss do not verify
-            # income available to common shareholders (preferred dividends).
-            f = p["fields"].get(key) if p and key != "net_income" else None
+            if p and key == "net_income":
+                # Consolidated NetIncomeLoss/ProfitLoss never replaces the baseline. Only a
+                # direct common-shareholder observation for the same period may.
+                f = common_by_end.get(p["period_end"])
+            else:
+                f = p["fields"].get(key) if p else None
             rejected_tax = f if key == "tax_rate" and f and not 0 <= f["value"] <= 1 else None
             if rejected_tax:
                 f = None
@@ -515,7 +632,7 @@ def apply_packet(document, packet, asof):
         field_coverage=coverage,
     )
     doc["source"].setdefault("warnings", []).append(
-        "PPE annual periods match the baseline fiscal end within seven days; actual observation dates and fallback sources are retained per field. Missing PPE fields and common-stockholder income use the labeled baseline source. Ordinary-share market equity remains the WACC weight basis; diluted weighted-average shares are used for per-share valuation."
+        "PPE annual periods match the baseline fiscal end within seven days; actual observation dates and fallback sources are retained per field. Missing PPE fields use the labeled baseline source; common-stockholder income is replaced only by a direct SEC NetIncomeLossAvailableToCommonStockholdersBasic observation. Ordinary-share market equity remains the WACC weight basis; diluted weighted-average shares are used for per-share valuation."
     )
     return doc
 
@@ -549,6 +666,10 @@ def enrich_packet(previous, candidate, asof):
     incoming = {row['period_end']: row for row in result['dividends']}
     result['dividends'] = [value for row in result['historical']
         if (value := choose(dividends.get(row['period_end']), incoming.get(row['period_end']))) is not None]
+    common = {row['period_end']: row for row in previous.get('common_income', [])}
+    incoming_common = {row['period_end']: row for row in result.get('common_income', [])}
+    result['common_income'] = [value for row in result['historical']
+        if (value := choose(common.get(row['period_end']), incoming_common.get(row['period_end']))) is not None]
     return validate_packet(result, result['ticker'], asof)
 
 
@@ -579,6 +700,8 @@ def supplement_statement_facts(facts, ends, packet, ticker, asof):
                 'minority_interest': 'MinorityInterest'}.items()})
             fields['InterestExpense'] = packet.get('interest_expense')
         fields['CommonStockDividendPaid'] = next((d for d in packet['dividends']
+            if d['period_end'] == row['period_end']), None)
+        fields['NetIncomeCommonStockholders'] = next((d for d in packet.get('common_income', [])
             if d['period_end'] == row['period_end']), None)
         for metric, field in fields.items():
             if field is not None and (end, metric) not in result:
