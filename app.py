@@ -396,7 +396,7 @@ def limit_expensive_work():
     mcp_request = request.method == "POST" and request.path == "/mcp"
     mutation = request.method in {"POST", "PUT", "PATCH", "DELETE"}
     reference_request = request.method == "GET" and (
-        request.path.startswith(("/api/references/", "/api/guidance/", "/api/company/", "/api/providers"))
+        request.path.startswith(("/api/references/", "/api/guidance/", "/api/company/", "/api/providers", "/coverage/"))
         or (request.path.startswith("/research/") and request.path.endswith("/export/xlsx"))
     )
     if app.config.get("CLOUDFLARE"):
@@ -914,10 +914,37 @@ def analyst_references_api(ticker):
         return jsonify(error=str(exc)), 503
 
 
+@app.get("/coverage/<ticker>")
+def company_coverage_page(ticker):
+    try:
+        from company_packets import load_company_packet
+        from financial_qa import QA_UNIVERSE
+        return render_template("company_coverage.html", packet=load_company_packet(ticker), universe=QA_UNIVERSE)
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+    except ProviderError as exc:
+        return jsonify(error=str(exc)), 503
+
+
+@app.get("/api/company/<ticker>/packet")
+def company_packet_api(ticker):
+    try:
+        from company_packets import load_company_packet
+        if set(request.args) - {"as_of"} or any(len(request.args.getlist(k)) != 1 for k in request.args):
+            raise ValueError("Only one optional as_of date is supported.")
+        response = jsonify(load_company_packet(ticker, request.args.get("as_of")))
+        response.headers["Cache-Control"] = "no-store"
+        return response
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+    except ProviderError as exc:
+        return jsonify(error=str(exc)), 503
+
+
 @app.post("/api/load/<method>")
 def load_company_api(method):
     try:
-        from auto_loading import load_method
+        from company_packets import load_cached_method as load_method
 
         raw = request.get_json(silent=True)
         if not isinstance(raw, dict):

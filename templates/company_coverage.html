@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ packet.ticker }} data coverage · Valuation Engine{% endblock %}
+{% block content %}
+<section class="intro"><div><p class="eyebrow">Company data</p><h1>{{ packet.ticker }} coverage</h1><p class="lead">Valuation date {{ packet.valuation_date }}. Source coverage and financial correctness are separate checks.</p></div></section>
+<section class="panel">
+<div class="panel-heading"><h2>Validation universe</h2><a href="/api/company/{{ packet.ticker }}/packet">Company packet JSON</a></div>
+<nav aria-label="Company coverage">{% for ticker in universe %}<a href="/coverage/{{ ticker }}">{{ ticker }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</nav>
+<p>Status: <strong>{{ packet.status|title }}</strong>. {% if packet.reason %}{{ packet.reason }}{% else %}Fields retain provider evidence; independent filing reconciliation remains incomplete.{% endif %}</p>
+{% if packet.cache %}<p class="help">Assembly cache: {{ packet.cache.state|lower }} · {{ packet.cache.age_seconds }} seconds old. Financial observation dates below have not been refreshed by caching.</p>{% endif %}
+</section>
+<section class="panel"><h2>Dataset use</h2><div class="table-wrap"><table class="input-table"><thead><tr><th>Dataset</th><th>Mapped</th><th>Fields used</th></tr></thead><tbody>
+{% for source in packet.datasets %}<tr><th>{{ source.dataset|replace('_', ' ')|title }}</th><td>{{ 'Yes' if source.mapped else 'No' }}</td><td>{{ source.used_fields }}</td></tr>{% endfor %}
+</tbody></table></div><p class="help">A connected store may contain many unmapped datasets. These counts describe this company packet, not the entire warehouse.</p></section>
+{% if packet.fields %}<section class="panel"><h2>Fields and dates</h2><p class="help">Earlier annual periods are historical context. Freshness thresholds: 7 calendar days for prices, 550 days for the latest annual period. Unknown availability stays unknown.</p>
+<div class="table-wrap"><table class="input-table"><thead><tr><th>Field</th><th>Value / unit</th><th>Period</th><th>Available</th><th>Selection</th><th>Freshness</th></tr></thead><tbody>
+{% for field in packet.fields %}<tr><th>{{ field.field }}</th><td>{{ field.value if field.value is not none else 'Missing' }} {{ field.unit }}</td><td>{{ field.period_end or 'Unknown' }}</td><td>{{ field.available_at or 'Unknown' }}</td><td>{{ field.source_selection|replace('_', ' ')|title }}</td><td>{{ field.freshness.status|replace('_', ' ')|title }}</td></tr>{% endfor %}
+</tbody></table></div></section>{% endif %}
+{% endblock %}
