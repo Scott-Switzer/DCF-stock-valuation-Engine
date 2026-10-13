@@ -135,3 +135,38 @@ def test_coverage_page_renders_blocked_company_without_hiding_it(monkeypatch):
     with app.test_client() as client:
         r = client.get('/coverage/JPM')
         assert r.status_code == 200 and 'Missing inputs' in r.text and 'JPM coverage' in r.text
+
+
+def test_exact_fiscal_year_end_does_not_make_latest_row_historical(bundle):
+    from datetime import date, timedelta
+    doc = bundle['financials']
+    latest = max(x['period_end'] for x in doc['historical'])
+    exact = (date.fromisoformat(latest) - timedelta(days=3)).isoformat()
+    field = f'historical.{latest}.revenue'
+    doc['source']['field_coverage'] = [{'field': field, 'period_end': exact, 'available_at': latest, 'status': 'PPE'}]
+    p = cp.assemble_packet(bundle)
+    receipt = next(x for x in p['fields'] if x['field'] == field)
+    assert receipt['period_end'] == exact
+    assert receipt['freshness']['status'] != 'HISTORICAL'
+    assert receipt['available_at'] == latest
+    assert receipt['availability_basis'] == 'FILING_DATE'
+
+
+def test_baseline_cutoff_is_not_verified_availability(bundle):
+    p = cp.assemble_packet(bundle)
+    receipt = next(x for x in p['fields'] if x['field'] == 'market.price')
+    assert receipt['available_at'] is None
+    assert receipt['availability_basis'] == 'NOT_ESTABLISHED'
+    assert 'reported_available_at' in receipt
+
+
+def test_disk_failure_preserves_previous_ledger_checkpoint(tmp_path, monkeypatch):
+    from scripts import build_company_ledger as ledger
+    target = tmp_path / 'report.json'; target.write_text('{"previous":true}')
+    def disk_full(value, stream, **kwargs):
+        stream.write('{"partial":')
+        raise OSError(28, 'No space left on device')
+    monkeypatch.setattr(ledger.json, 'dump', disk_full)
+    with pytest.raises(OSError): ledger.write_json_atomic(target, {'next': True})
+    assert json.loads(target.read_text()) == {'previous': True}
+    assert list(tmp_path.iterdir()) == [target]

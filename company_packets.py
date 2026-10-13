@@ -135,12 +135,16 @@ def assemble_packet(bundle, *, ticker=None, asof=None, analysts=None, error=None
         is_ppe = field['provider_status'] == 'PPE'
         ppe += int(present and is_ppe)
         fallback += int(present and not is_ppe)
+        field['availability_basis'] = 'FILING_DATE' if is_ppe else 'NOT_ESTABLISHED'
+        if not is_ppe:
+            field['reported_available_at'] = field['available_at']
+            field['available_at'] = None
         field['mapped'] = True
         field['present'] = present
         field['source_selection'] = 'PUBLISHED_SEC' if is_ppe else 'BASELINE_OR_DERIVED'
         field['freshness'] = age_status(field['period_end'], asof, 7 if field['field'] == 'market.price' else 550)
         if (field['field'].startswith('historical.') and field['period_end']
-                and latest_period and field['period_end'] < latest_period
+                and latest_period and field['field'].split('.')[1] < latest_period
                 and field['freshness']['status'] not in {'FUTURE', 'INVALID_DATE'}):
             field['freshness']['status'] = 'HISTORICAL'
         fields.append(field)

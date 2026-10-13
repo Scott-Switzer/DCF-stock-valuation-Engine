@@ -23,7 +23,10 @@ new dataset conflicts. Values remain absolute USD or shares; prices are USD/shar
 and tax rates are decimal ratios. Earlier annual observations are HISTORICAL, not
 stale merely because they are old. Price freshness uses 7 calendar days; the latest
 annual period uses 550 days. These are explicit screening policies, not market
-session calendars or assertions of currentness. Missing dates remain UNKNOWN.
+session calendars or assertions of currentness. Missing dates remain UNKNOWN. Baseline retrieval/cutoff dates are retained as
+`reported_available_at`, but are not promoted to verified financial availability.
+Fiscal-year grouping uses the normalized row identity while displaying the exact
+source period date.
 
 PARTIAL means contract/readiness checks ran but independent filing reconciliation
 is not established. Contract validation, source accuracy and arithmetic agreement
