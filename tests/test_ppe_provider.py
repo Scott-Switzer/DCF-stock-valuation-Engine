@@ -156,6 +156,32 @@ def test_ppe_pointer_and_body_receive_same_deadline(monkeypatch):
     assert calls == [123.0]
 
 
+def test_pointer_override_selects_candidate_release(monkeypatch):
+    from types import SimpleNamespace
+    import ppe_provider
+    keys = []
+    monkeypatch.setattr(
+        ppe_provider, '_object_json',
+        lambda bucket, key, **kw: keys.append(key) or None,
+    )
+    env = SimpleNamespace(PPE_DATA=object(), PPE_POINTER_OVERRIDE='control/valuation/CANDIDATE-staging.json')
+    monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
+    with app.test_request_context(environ_overrides={'workers.env': env}):
+        assert ppe_provider.load_packet('PEP', '2026-10-10', deadline=123.0) is None
+    assert keys == ['control/valuation/CANDIDATE-staging.json']
+
+
+def test_pointer_override_rejects_paths_outside_control_valuation(monkeypatch):
+    from types import SimpleNamespace
+    import ppe_provider
+    import pytest
+    env = SimpleNamespace(PPE_DATA=object(), PPE_POINTER_OVERRIDE='gold/valuation/releases/evil.json')
+    monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
+    with app.test_request_context(environ_overrides={'workers.env': env}):
+        with pytest.raises(ProviderError, match='Invalid PPE pointer override'):
+            ppe_provider.load_packet('PEP', '2026-10-10')
+
+
 def test_zion_binding_is_preferred_and_failure_uses_r2(monkeypatch):
     from types import SimpleNamespace
     import ppe_provider

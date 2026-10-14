@@ -155,7 +155,16 @@ def load_packet(ticker, asof=None, *, deadline=None):
     bucket = getattr(env, "PPE_DATA", None)
     if bucket is None:
         return None
-    pointer = _object_json(bucket, POINTER, maximum=524288, deadline=deadline)
+    # Staging-only candidate pointer (e.g. an isolated release under test).
+    # Never set in production: the live CURRENT.json pointer stays authoritative.
+    override = getattr(env, "PPE_POINTER_OVERRIDE", None) or ""
+    if not isinstance(override, str) or not override:
+        pointer_key = POINTER
+    elif not re.fullmatch(r"control/valuation/[A-Za-z0-9][A-Za-z0-9_.-]*\.json", override):
+        raise ProviderError("Invalid PPE pointer override.")
+    else:
+        pointer_key = override
+    pointer = _object_json(bucket, pointer_key, maximum=524288, deadline=deadline)
     if pointer is None:
         return None
     if (
