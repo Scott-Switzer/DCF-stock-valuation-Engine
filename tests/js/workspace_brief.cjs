@@ -82,6 +82,11 @@ const financials = (overrides) => ({
   r = await runLoad({ financials: financials({}) });
   assert.ok(r.fetched.includes('/api/brief'), 'fallback brief request fires');
 
+  // A skipped baseline brief explains why instead of staying silent.
+  r = await runLoad({ financials: financials({}), load_summary: { stage_seconds: { brief_skipped: 'No baseline could be solved' } } });
+  assert.ok(!r.doc.getElementById('research-brief').hidden, 'skipped-brief note visible');
+  assert.ok(!r.fetched.includes('/api/brief'), 'no fallback fetch when the skip reason is known');
+
   // Blocked brief still renders instead of failing the load.
   r = await runLoad({ financials: financials({}), brief: { blocked: 'Financial firm', ticker: 'TEST' } });
   assert.ok(!r.doc.getElementById('research-brief').hidden, 'blocked brief visible');

@@ -175,6 +175,13 @@
       $("company-strip").hidden = false;
       performance.mark("workspace:company-visible");
       if (data.brief) renderBrief(data.brief, generation);
+      else if (data.load_summary?.stage_seconds?.brief_skipped)
+        // No baseline could be solved (e.g. unsuitable financials): say why
+        // instead of leaving the panel silently empty.
+        renderBrief(
+          { blocked: `No baseline brief: ${data.load_summary.stage_seconds.brief_skipped}` },
+          generation,
+        );
       else loadBrief(data.financials, generation);
       await assemble(method, generation);
       performance.mark("workspace:method-assembled");
