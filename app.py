@@ -1100,10 +1100,12 @@ def load_company_api(method):
             result["form"].pop("base_document", None)
         # Stage durations describe a fresh build only; a HIT must not replay the original build's timings.
         built_now = summary.get("assembly_cache", {}).get("state") == "MISS"
+        serializing = time.monotonic()
         response = jsonify(result)
-        response.headers["Server-Timing"] = server_timing(
-            started, summary.get("stage_seconds") if built_now else None
-        )
+        stages = summary.get("stage_seconds") if built_now else dict(summary.get("hit_breakdown") or {})
+        if not built_now:
+            stages["response_json"] = round(time.monotonic() - serializing, 4)
+        response.headers["Server-Timing"] = server_timing(started, stages)
         return response
     except ValueError as e:
         return jsonify(error=str(e)), 400

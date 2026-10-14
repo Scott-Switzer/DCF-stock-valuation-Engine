@@ -61,12 +61,21 @@ def load_cached_method(method, ticker, asof=None, equity_risk_premium=0.05,
     started = time.monotonic()
     key = _key(method, ticker, asof)
     try:
-        cached = store.get(key)
+        hit_timings = {}
+        try:
+            cached = store.get(key, hit_timings)
+        except TypeError:
+            cached = store.get(key)
+        fetched = time.monotonic()
+        hit_timings['fetch_seconds'] = round(fetched - started, 4)
         if (isinstance(cached, dict) and 0 <= clock() - cached['created_at'] < TTL
                 and cached['sha256'] == _digest(cached['bundle'])
                 and cached['bundle']['financials']['company']['ticker'] == ticker
                 and cached['bundle']['financials']['valuation_date'] == asof):
+            verified = time.monotonic()
+            hit_timings['digest_seconds'] = round(verified - fetched, 4)
             result = deepcopy(cached['bundle'])
+            hit_timings['copy_seconds'] = round(time.monotonic() - verified, 4)
             summary = result.setdefault('load_summary', {})
             summary['original_assembly_seconds'] = summary.get('elapsed_seconds')
             summary['elapsed_seconds'] = round(time.monotonic() - started, 3)
@@ -75,6 +84,9 @@ def load_cached_method(method, ticker, asof=None, equity_risk_premium=0.05,
                 'ttl_seconds': TTL, 'built_at': cached['built_at'],
                 'note': 'Original financial observation dates retained; not a live quote guarantee.',
             }
+            # Current-request HIT costs only; never a replay of build timings.
+            summary['hit_breakdown'] = {k: v for k, v in hit_timings.items()
+                                         if isinstance(v, (int, float))}
             return result
     except Exception:
         pass  # Corrupt/unavailable cache never becomes financial evidence.

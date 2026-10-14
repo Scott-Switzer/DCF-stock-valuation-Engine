@@ -38,6 +38,9 @@ def test_cache_hit_preserves_dates_and_isolates_mutation(bundle):
     assert second['load_summary']['assembly_cache']['state'] == 'HIT'
     assert second['load_summary']['original_assembly_seconds'] == 9
     assert second['load_summary']['elapsed_seconds'] < 9
+    breakdown = second['load_summary']['hit_breakdown']
+    assert set(breakdown) >= {'fetch_seconds', 'digest_seconds', 'copy_seconds'}
+    assert all(isinstance(v, (int, float)) and v >= 0 for v in breakdown.values())
 
 
 @pytest.mark.parametrize('change', ['expired', 'corrupt', 'ticker', 'date', 'method', 'custom'])
