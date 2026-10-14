@@ -868,16 +868,19 @@ def assemble_api(method):
             raise ValueError("Provide a loaded company snapshot.")
         doc = raw["financials"]
         parse_document(doc, minority_may_be_negative=method in {"ddm", "relative"})
-        return jsonify(
-            load_method(
-                method,
-                doc["company"]["ticker"],
-                snapshot=doc,
-                forecast_assumptions=assumptions_from_json(raw["assumptions"])
-                if "assumptions" in raw
-                else None,
-            )
+        bundle = load_method(
+            method,
+            doc["company"]["ticker"],
+            snapshot=doc,
+            forecast_assumptions=assumptions_from_json(raw["assumptions"])
+            if "assumptions" in raw
+            else None,
         )
+        # Same wire dedup as /api/load/<method>: financials travel once;
+        # the browser rebuilds form.base_document from them at intake.
+        if isinstance(bundle.get("form"), dict):
+            bundle["form"].pop("base_document", None)
+        return jsonify(bundle)
     except ValueError as exc:
         return jsonify(error=str(exc)), 400
     except ProviderError as exc:
@@ -1089,6 +1092,12 @@ def load_company_api(method):
             raw.get("credit_spread", 0.015),
         )
         summary = result.get("load_summary", {})
+        # The wire bundle carries financials once: drop the JSON-serialized
+        # duplicate from the form. The browser reconstructs
+        # form.base_document from financials before iframe/compare use.
+        # Server caches, saved submissions and manual flows keep the field.
+        if isinstance(result.get("form"), dict):
+            result["form"].pop("base_document", None)
         # Stage durations describe a fresh build only; a HIT must not replay the original build's timings.
         built_now = summary.get("assembly_cache", {}).get("state") == "MISS"
         response = jsonify(result)

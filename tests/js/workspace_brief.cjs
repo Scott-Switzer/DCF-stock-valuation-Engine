@@ -45,8 +45,10 @@ async function runLoad(data) {
     status() {}, assemble: async () => {}, render() {},
     loadReferences() {}, editors: new Map(), results: new Map(),
     method: 'dcf', baseline: null, analysts: null, guidanceRequested: false,
+    baselineBrief: null, briefTimer: null, briefSeq: 0,
     generation: 0, loading: false,
     money: (v) => String(v), pct: (v) => String(v), date: (v) => String(v),
+    withBaseDocument: (d) => d,
     request: async (url) => { fetched.push(url); return data; },
   };
   const start = source.indexOf('  $("company-loader").addEventListener("submit"');
