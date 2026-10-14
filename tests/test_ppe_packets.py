@@ -75,6 +75,102 @@ def test_conflicting_revision_is_rejected():
         )
 
 
+def _tag_facts(end, start, filed, accn, pairs):
+    facts = {"cik": 320193, "facts": {"us-gaap": {}}}
+    for tag, value in pairs:
+        facts["facts"]["us-gaap"][tag] = {
+            "units": {
+                "USD": [
+                    {
+                        "val": value,
+                        "start": start,
+                        "end": end,
+                        "filed": filed,
+                        "form": "10-K",
+                        "accn": accn,
+                    }
+                ]
+            }
+        }
+    return facts
+
+
+def test_conflicting_net_income_resolves_to_parent_tag():
+    accn = "0000320193-25-000001"
+    rows = [
+        observation("revenue", 100),
+        dict(observation("net_income", 4863), source_record_id=accn),
+        dict(observation("net_income", 4873), source_record_id=accn),
+    ]
+    facts = _tag_facts(
+        "2025-09-27",
+        "2024-09-29",
+        "2025-10-31",
+        accn,
+        [("NetIncomeLoss", 4863), ("ProfitLoss", 4873)],
+    )
+    p = build_packet("AAPL", "0000320193", rows, facts, "2026-10-07", {})
+    field = p["historical"][-1]["fields"]["net_income"]
+    assert field["value"] == 4863
+    assert field["provenance"]["superseded_canonical_values"] == [4873]
+
+
+def test_conflicting_revenue_resolves_by_tag_priority():
+    accn = "0000320193-25-000001"
+    rows = [
+        dict(observation("revenue", 196913), source_record_id=accn),
+        dict(observation("revenue", 200949), source_record_id=accn),
+    ]
+    facts = _tag_facts(
+        "2025-09-27",
+        "2024-09-29",
+        "2025-10-31",
+        accn,
+        [
+            ("RevenueFromContractWithCustomerExcludingAssessedTax", 196913),
+            ("Revenues", 200949),
+        ],
+    )
+    p = build_packet("AAPL", "0000320193", rows, facts, "2026-10-07", {})
+    assert p["historical"][-1]["fields"]["revenue"]["value"] == 196913
+
+
+def test_conflict_with_unmatched_facts_is_rejected():
+    accn = "0000320193-25-000001"
+    rows = [
+        observation("revenue", 100),
+        dict(observation("net_income", 4863), source_record_id=accn),
+        dict(observation("net_income", 4874), source_record_id=accn),
+    ]
+    facts = _tag_facts(
+        "2025-09-27",
+        "2024-09-29",
+        "2025-10-31",
+        accn,
+        [("NetIncomeLoss", 4860), ("ProfitLoss", 4873)],
+    )
+    with pytest.raises(ProviderError, match="Conflicting"):
+        build_packet("AAPL", "0000320193", rows, facts, "2026-10-07", {})
+
+
+def test_consolidated_only_conflict_value_is_rejected_when_parent_differs():
+    accn = "0000320193-25-000001"
+    rows = [
+        observation("revenue", 100),
+        dict(observation("net_income", 4873), source_record_id=accn),
+        dict(observation("net_income", 4874), source_record_id=accn),
+    ]
+    facts = _tag_facts(
+        "2025-09-27",
+        "2024-09-29",
+        "2025-10-31",
+        accn,
+        [("NetIncomeLoss", 4863), ("ProfitLoss", 4873)],
+    )
+    with pytest.raises(ProviderError, match="Conflicting"):
+        build_packet("AAPL", "0000320193", rows, facts, "2026-10-07", {})
+
+
 def test_sec_annual_cash_flow_and_tax_supplement():
     facts = {"cik": 320193, "facts": {"us-gaap": {}}}
     for tag, value in [

@@ -233,6 +233,61 @@ def _derived(value, components, formula, unit="USD"):
     )
 
 
+def _resolve_canonical_conflict(metric, rows, facts, end):
+    """Resolve same-day conflicting canonical lake rows via ordered SEC tags.
+
+    The upstream lake merges synonymous XBRL tags (NetIncomeLoss vs ProfitLoss,
+    Revenues vs RevenueFromContractWithCustomerExcludingAssessedTax) into one
+    canonical metric. When two values share the latest availability date, prefer
+    the value matching the earliest-priority SEC tag -- the same order _sec uses
+    -- read in that row's own filing accession. Returns the winning rows, or
+    None when facts are absent or no value matches. Never invents a value: an
+    unmatched conflict still raises.
+    """
+    tags = SEC_TAGS.get(metric, [])
+    if not facts or not tags:
+        return None
+    scored = []
+    for row in rows:
+        try:
+            value = _number(row.get("value_decimal", row.get("value")))
+        except ProviderError:
+            return None
+        accession = row.get("source_record_id")
+        rank = None
+        for i, tag in enumerate(tags):
+            try:
+                expected = _filing_value(facts, [tag], end, accession)
+            except ProviderError:
+                return None
+            if expected is not None and abs(expected - value) <= COMMON_INCOME_TOLERANCE_USD:
+                rank = i
+                break
+        if rank is None:
+            return None
+        scored.append((rank, row))
+    best = min(rank for rank, _ in scored)
+    winners = [row for rank, row in scored if rank == best]
+    if len({_number(r.get("value_decimal", r.get("value"))) for r in winners}) != 1:
+        return None
+    return winners
+
+
+def _facts_revenue_ends(facts, cutoff):
+    """Annual 10-K revenue period ends available in SEC facts at cutoff."""
+    ends = set()
+    for tag in SEC_TAGS.get("revenue", []):
+        for r in facts.get("facts", {}).get("us-gaap", {}).get(tag, {}).get("units", {}).get("USD", []):
+            if (
+                r.get("form") in {"10-K", "10-K/A"}
+                and r.get("filed", "9999") <= cutoff
+                and (r.get("end") or "9999") <= cutoff
+                and _annual(r.get("start"), r.get("end"))
+            ):
+                ends.add(r["end"])
+    return sorted(ends)
+
+
 def build_packet(ticker, cik, rows, facts, cutoff, source):
     ticker = ticker_symbol(ticker)
     date.fromisoformat(cutoff)
@@ -262,6 +317,11 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
             continue
         groups.setdefault(end, {}).setdefault(metric, []).append(row)
     ends = sorted(k for k, v in groups.items() if v.get("revenue"))[-3:]
+    if len(ends) < 3 and facts:
+        # Upstream coverage gap (e.g. bank revenue never mapped to the canonical
+        # lake metric): complete the three annual periods from SEC facts revenue.
+        # Every field taken this way carries SEC-companyfacts provenance.
+        ends = sorted(set(ends) | set(_facts_revenue_ends(facts, cutoff)))[-3:]
     if not ends:
         raise ProviderError("No eligible annual PPE revenue.")
     selected = {}
@@ -272,8 +332,15 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
             top = [r for r in candidates if r["available_at"] == latest]
             if any(r.get("unit") != "USD" for r in top):
                 raise ProviderError(f"Unexpected PPE unit for {metric}.")
-            if len({_number(r.get("value_decimal", r.get("value"))) for r in top}) != 1:
-                raise ProviderError(f"Conflicting PPE {metric} observations for {end}.")
+            distinct = {_number(r.get("value_decimal", r.get("value"))) for r in top}
+            superseded = []
+            if len(distinct) != 1:
+                resolved = _resolve_canonical_conflict(metric, top, facts, end)
+                if resolved is None:
+                    raise ProviderError(f"Conflicting PPE {metric} observations for {end}.")
+                winner = _number(resolved[0].get("value_decimal", resolved[0].get("value")))
+                superseded = sorted(distinct - {winner})
+                top = resolved
             row = top[0]
             selected[end][metric] = _field(
                 row.get("value_decimal", row.get("value")),
@@ -287,6 +354,11 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
                     "evidence_id": row.get("evidence_id"),
                     "period_start": row.get("period_start"),
                     "quality_status": row.get("quality_status"),
+                    **(
+                        {"superseded_canonical_values": superseded}
+                        if superseded
+                        else {}
+                    ),
                 },
             )
     groups = selected
@@ -299,7 +371,7 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
     facts = facts or {}
     sec_source = source.get("sec_source", {})
     for end in ends:
-        g = groups[end]
+        g = groups.get(end, {})
         f = {
             k: g.get(k) or _sec(facts, k, end, cutoff, sec_source)
             for k in HISTORY_FIELDS

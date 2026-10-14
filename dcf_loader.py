@@ -377,6 +377,9 @@ TAGS = {
         "RevenueFromContractWithCustomerExcludingAssessedTax",
         "Revenues",
         "SalesRevenueNet",
+        # Broker-dealer/bank top line (total revenues less interest expense).
+        # Lowest priority: only used when no standard revenue tag is reported.
+        "RevenuesNetOfInterestExpense",
     ],
     "ebit": ["OperatingIncomeLoss"],
     "net_income": ["NetIncomeLoss", "ProfitLoss"],
