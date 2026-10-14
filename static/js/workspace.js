@@ -149,7 +149,11 @@
       $("workspace-market").textContent =
         `${money(data.financials.market.price)} · ${date(data.financials.market.price_as_of)}`;
       $("workspace-source").textContent =
-        data.financials.source.ppe_release ? "PPE / SEC + labeled fallbacks · sourced inputs locked" : `Yahoo${data.financials.source.classification ? " + SEC" : ""} · sourced inputs locked`;
+        data.financials.source.ppe_release
+          ? "PPE / SEC + labeled fallbacks · sourced inputs locked"
+          : data.financials.source.statement_source === "SEC-first"
+            ? "SEC-first statements + Yahoo market · sourced inputs locked"
+            : `Yahoo${data.financials.source.classification ? " + SEC" : ""} · sourced inputs locked`;
       $("company-strip").hidden = false;
       await assemble(method, generation);
       performance.mark("workspace:method-assembled");
