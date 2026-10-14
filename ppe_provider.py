@@ -128,43 +128,15 @@ def _transport_receipt(packet, kind, service_state, started):
     return packet
 
 
-def load_packet(ticker, asof=None, *, deadline=None):
-    started = time.monotonic()
-    from flask import current_app, request, has_request_context
+def _packet_from_pointer(bucket, pointer_key, ticker, asof, deadline, pointer=_UNSET):
+    """Validated packet from an index pointer, or None when unlisted.
 
-    ticker = ticker_symbol(ticker)
-    asof = asof or datetime.now(timezone.utc).date().isoformat()
-    if date.fromisoformat(asof) > datetime.now(timezone.utc).date():
-        raise ProviderError("Future PPE valuation dates are unavailable.")
-    if not has_request_context() or not current_app.config.get("CLOUDFLARE"):
-        return None
-    env = request.environ["workers.env"]
-    service = getattr(env, "ZION_VALUATIONS", None)
-    service_error = None
-    service_state = "NOT_CONFIGURED"
-    if service is not None:
-        try:
-            packet = _service_packet(service, ticker, asof, min(deadline or float("inf"), time.monotonic() + 3))
-            if packet is not None:
-                return _transport_receipt(packet, "ZION_SERVICE_BINDING", "SUCCESS", started)
-            service_state = "NOT_FOUND"
-            service_error = "Zion service has no packet; authoritative PPE R2 fallback."
-        except Exception:
-            service_state = "ERROR"
-            service_error = "Zion service unavailable; authoritative PPE R2 fallback."
-    bucket = getattr(env, "PPE_DATA", None)
-    if bucket is None:
-        return None
-    # Staging-only candidate pointer (e.g. an isolated release under test).
-    # Never set in production: the live CURRENT.json pointer stays authoritative.
-    override = getattr(env, "PPE_POINTER_OVERRIDE", None) or ""
-    if not isinstance(override, str) or not override:
-        pointer_key = POINTER
-    elif not re.fullmatch(r"control/valuation/[A-Za-z0-9][A-Za-z0-9_.-]*\.json", override):
-        raise ProviderError("Invalid PPE pointer override.")
-    else:
-        pointer_key = override
-    pointer = _object_json(bucket, pointer_key, maximum=524288, deadline=deadline)
+    Raises on schema/reference mismatches, missing objects and contract
+    failures; a bare absence (no pointer, no entry) returns None so callers
+    can fall through to the next source.
+    """
+    if pointer is _UNSET:
+        pointer = _object_json(bucket, pointer_key, maximum=524288, deadline=deadline)
     if pointer is None:
         return None
     if (
@@ -192,7 +164,56 @@ def load_packet(ticker, asof=None, *, deadline=None):
     packet = _object_json(bucket, key, maximum=131072, digest=digest, ttl=31536000, deadline=deadline)
     if packet is None:
         raise ProviderError("Published PPE packet is missing.")
-    packet = validate_packet(packet, ticker, asof)
+    return validate_packet(packet, ticker, asof)
+
+
+def load_packet(ticker, asof=None, *, deadline=None):
+    started = time.monotonic()
+    from flask import current_app, request, has_request_context
+
+    ticker = ticker_symbol(ticker)
+    asof = asof or datetime.now(timezone.utc).date().isoformat()
+    if date.fromisoformat(asof) > datetime.now(timezone.utc).date():
+        raise ProviderError("Future PPE valuation dates are unavailable.")
+    if not has_request_context() or not current_app.config.get("CLOUDFLARE"):
+        return None
+    env = request.environ["workers.env"]
+    bucket = getattr(env, "PPE_DATA", None)
+    if bucket is None:
+        return None
+    # Staging-only candidate pointer (e.g. an isolated release under test).
+    # Never set in production: the live CURRENT.json pointer stays authoritative.
+    override = getattr(env, "PPE_POINTER_OVERRIDE", None) or ""
+    if not isinstance(override, str) or not override:
+        pointer_key = POINTER
+    elif not re.fullmatch(r"control/valuation/[A-Za-z0-9][A-Za-z0-9_.-]*\.json", override):
+        raise ProviderError("Invalid PPE pointer override.")
+    else:
+        pointer_key = override
+    if pointer_key != POINTER:
+        # Isolation for the release under test: a listed candidate wins over
+        # every other source. Tickers absent from the candidate index fall
+        # through to the normal service-then-production order unchanged.
+        candidate = _packet_from_pointer(bucket, pointer_key, ticker, asof, deadline)
+        if candidate is not None:
+            candidate["source"]["transport"] = "Direct PPE R2 binding (staging candidate index)"
+            return _transport_receipt(candidate, "CANDIDATE_R2", "NOT_CONSULTED", started)
+    service = getattr(env, "ZION_VALUATIONS", None)
+    service_error = None
+    service_state = "NOT_CONFIGURED"
+    if service is not None:
+        try:
+            packet = _service_packet(service, ticker, asof, min(deadline or float("inf"), time.monotonic() + 3))
+            if packet is not None:
+                return _transport_receipt(packet, "ZION_SERVICE_BINDING", "SUCCESS", started)
+            service_state = "NOT_FOUND"
+            service_error = "Zion service has no packet; authoritative PPE R2 fallback."
+        except Exception:
+            service_state = "ERROR"
+            service_error = "Zion service unavailable; authoritative PPE R2 fallback."
+    packet = _packet_from_pointer(bucket, pointer_key, ticker, asof, deadline)
+    if packet is None:
+        return None
     packet["source"]["transport"] = service_error or "Direct PPE R2 binding"
     return _transport_receipt(packet, "DIRECT_R2", service_state, started)
 
