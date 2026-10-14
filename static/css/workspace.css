@@ -737,6 +737,11 @@ button.secondary:hover {
   margin: 0.35rem 0;
 }
 
+#brief-content {display:grid;gap:.55rem;margin-top:.6rem}
+.brief-row {display:grid;grid-template-columns:190px 1fr;gap:.8rem;align-items:baseline;font-size:.88rem}
+.brief-row span {color:var(--color-text-muted,#53665c);font-weight:600;font-size:.76rem;text-transform:uppercase;letter-spacing:.04em}
+.brief-row strong {font-weight:600}
+@media(max-width:600px){.brief-row{grid-template-columns:1fr;gap:.15rem}}
 #research-form textarea {width:100%;box-sizing:border-box;resize:vertical;min-height:6rem;padding:.75rem;border:1px solid var(--border,#cbd5e1);border-radius:.4rem;font:inherit;background:var(--surface,#fff);color:inherit}
 .research-note {white-space:pre-wrap;overflow-wrap:anywhere}
 @media print {.site-header,footer,.no-print{display:none!important}.research-report .panel{break-inside:avoid}.research-report{font-size:11pt}.research-report pre{white-space:pre-wrap;overflow-wrap:anywhere}.research-report a{color:inherit;text-decoration:none}}

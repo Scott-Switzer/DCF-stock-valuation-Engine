@@ -39,6 +39,7 @@ module_names = [
     "financial_qa.py",
     "yahoo_provider.py",
     "auto_loading.py",
+    "brief.py",
     "sec_first.py",
     "decision_support.py",
     "issuer_classification.py",

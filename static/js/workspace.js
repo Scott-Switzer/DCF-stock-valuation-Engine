@@ -155,6 +155,7 @@
             ? "SEC-first statements + Yahoo market · sourced inputs locked"
             : `Yahoo${data.financials.source.classification ? " + SEC" : ""} · sourced inputs locked`;
       $("company-strip").hidden = false;
+      loadBrief(data.financials, generation);
       await assemble(method, generation);
       performance.mark("workspace:method-assembled");
       loadReferences(data.financials.company.ticker, generation);
@@ -172,6 +173,80 @@
       performance.mark("workspace:visible");
     }
   });
+  function briefRow(label, value) {
+    const row = document.createElement("div");
+    row.className = "brief-row";
+    const term = document.createElement("span");
+    term.textContent = label;
+    const val = document.createElement("strong");
+    val.textContent = value;
+    row.append(term, val);
+    return row;
+  }
+  async function loadBrief(financials, token) {
+    const panel = $("research-brief"), box = $("brief-content");
+    panel.hidden = true;
+    box.replaceChildren();
+    try {
+      const brief = await request("/api/brief", { financials });
+      if (token !== generation) return;
+      if (brief.blocked) {
+        box.append(briefRow("DCF applicability", brief.blocked));
+      } else {
+        const direction = brief.dcf.upside_12m >= 0 ? "above" : "below";
+        box.append(briefRow(
+          "12-month picture",
+          `${money(brief.dcf.target_price_12m)} vs ${money(brief.price.value)} market (${pct(brief.dcf.upside_12m)} ${direction}) · as of ${date(brief.price.as_of)}`,
+        ));
+        box.append(briefRow(
+          "DCF baseline",
+          `Intrinsic ${money(brief.dcf.intrinsic_value)} · WACC ${pct(brief.assumptions.wacc)} · terminal growth ${pct(brief.assumptions.terminal_growth_rate)} · revenue growth ${pct(brief.assumptions.revenue_growth_mean)} · EBIT margin ${pct(brief.assumptions.ebit_margin_mean)}`,
+        ));
+        for (const [key, label] of [["revenue_growth", "Market-implied growth"], ["ebit_margin", "Market-implied EBIT margin"]]) {
+          const slot = brief.market_implied[key] || {};
+          box.append(briefRow(
+            label,
+            slot.status === "solved" ? `${pct(slot.implied)} · ${slot.detail}` : (slot.detail || "Unavailable"),
+          ));
+        }
+        const band = (brief.scenarios || [])
+          .map((s) => `${s.name} ${money(s.target_price_12m)}`)
+          .join(" · ");
+        if (band) box.append(briefRow("Bear / base / bull (12m)", band));
+        if (brief.drivers?.note) box.append(briefRow("Biggest value driver", `${brief.drivers.top || "—"} · ${brief.drivers.note}`));
+        const fresh = brief.freshness || {};
+        const periods = (fresh.period_ends || []).join(", ");
+        box.append(briefRow(
+          "Data freshness",
+          `Statements end ${periods || "—"} · ${fresh.statement_source || "source unrecorded"}${fresh.ppe_release ? " · PPE release" : ""} · ${fresh.warning_count || 0} warning(s)`,
+        ));
+        for (const text of fresh.snapshot_warnings || []) {
+          const note = document.createElement("p");
+          note.className = "help";
+          note.textContent = text;
+          box.append(note);
+        }
+        const evidence = document.createElement("p");
+        evidence.className = "help";
+        for (const [label, href] of [
+          ["SEC filings & outlook", "#management-guidance"],
+          ["Analyst references", brief.evidence?.references_api],
+          ["Coverage record", brief.evidence?.coverage_page],
+        ]) {
+          if (!href) continue;
+          const link = document.createElement("a");
+          link.textContent = label;
+          link.href = href;
+          evidence.append(link, document.createTextNode(" · "));
+        }
+        box.append(evidence);
+      }
+      panel.hidden = false;
+      performance.mark("workspace:brief-visible");
+    } catch (_) {
+      /* The brief is instant context; the interactive valuation still loads. */
+    }
+  }
   async function loadReferences(ticker, token) {
     try {
       const r = await fetch(`/api/references/${encodeURIComponent(ticker)}`);
