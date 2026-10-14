@@ -1,0 +1,17 @@
+{
+  "ticker": "CAT",
+  "asof": "2026-10-14",
+  "wacc": 0.09658169711942258,
+  "status": "PASS",
+  "packet_fact_differences": [],
+  "common_income_differences": [],
+  "ppe_provenance_fields": 21,
+  "intrinsic_packet_path": 209.8709880954307,
+  "staging_intrinsic": 209.87086438600514,
+  "staging_financials_evaluated_locally": 209.87086438600514,
+  "worker_math_match": true,
+  "local_rebuild_drift": 5.894549771243546e-07,
+  "intrinsic_alt_baseline": 209.8836918853947,
+  "alt_baseline_gap": 6.05314249448841e-05,
+  "basis_comment": "Verified basis: published packet sha256 6ac3aec3b6f8aebda76bf8f2f619ae7a10220b1f7041ce3f6c8d8759f405903c (gold/valuation/releases/6ac3aec3b6f8aebda76bf8f2f619ae7a10220b1f7041ce3f6c8d8759f405903c/companies/CAT.json), 3 common-income periods (2023/2024/2025-12-31), goodwill-impairment adjustment facts x3; production load_method path rebuilt twice with identical rows, packet facts replayed exactly, local intrinsic reproduces the staging lane exactly, alt Yahoo baseline within tolerance."
+}

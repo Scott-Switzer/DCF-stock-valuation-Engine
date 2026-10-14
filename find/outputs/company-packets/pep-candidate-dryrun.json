@@ -1,0 +1,30 @@
+{
+  "cutoff_date": "2026-10-14",
+  "pointer": "control/valuation/CANDIDATE-staging.json",
+  "published": false,
+  "companies": [
+    {
+      "ticker": "PEP",
+      "status": "READY",
+      "periods": [
+        "2023-12-30",
+        "2024-12-28",
+        "2025-12-27"
+      ],
+      "common_income_periods": 3,
+      "has_adjustment_facts": true,
+      "bytes": 40173,
+      "sha256": "8650ada304c2ee92db3ff42e2c96a4c08bbc9fa03f191fc0da80e17d21979c76",
+      "key": "gold/valuation/releases/8650ada304c2ee92db3ff42e2c96a4c08bbc9fa03f191fc0da80e17d21979c76/companies/PEP.json"
+    }
+  ],
+  "production_pointer_sha256_before": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+  "candidate_pointer_sha256_before": "40075ded95bceb936806805f64d20373e793f1d209eae337a49f640ae9ace981",
+  "candidate_companies_before": [
+    "CAT",
+    "PEP"
+  ],
+  "production_pointer_sha256_after": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+  "production_pointer_untouched": true,
+  "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+}
