@@ -1,0 +1,351 @@
+{
+ "frozen": {
+  "valuation_date": "2026-10-14",
+  "price": 128.55,
+  "price_note": "Midpoint of same-day Yahoo quotes 128.495 / 128.60; held fixed to isolate statement-definition effects.",
+  "shares": 1373000000.0,
+  "wacc": 0.0572,
+  "wacc_note": "Held fixed (rounding of both live WACCs) to isolate accounting effects; live WACCs differ by 0.4bp from quote timing.",
+  "revenue_growth": 0.05,
+  "terminal_growth": 0.02,
+  "horizon_years": 5
+ },
+ "bases": {
+  "A_reported_gaap": {
+   "historical": [
+    {
+     "period_end": "2023-12-30",
+     "revenue": 91471000000.0,
+     "ebit": 11986000000.0,
+     "net_income": 9074000000.0,
+     "d_and_a": 2948000000.0,
+     "capex": 5518000000.0,
+     "nwc": -7898000000.0
+    },
+    {
+     "period_end": "2024-12-28",
+     "revenue": 91854000000.0,
+     "ebit": 12887000000.0,
+     "net_income": 9578000000.0,
+     "d_and_a": 3160000000.0,
+     "capex": 5318000000.0,
+     "nwc": -7133000000.0
+    },
+    {
+     "period_end": "2025-12-27",
+     "revenue": 93925000000.0,
+     "ebit": 11498000000.0,
+     "net_income": 8240000000.0,
+     "d_and_a": 3451000000.0,
+     "capex": 4415000000.0,
+     "nwc": -7113000000.0
+    }
+   ],
+   "assumption_means": {
+    "ebit_margin": 0.13125054098564012,
+    "da_margin": 0.03445776550234206
+   },
+   "forecast": [
+    {
+     "Year": 1,
+     "Revenue": 98621250000.0,
+     "EBIT": 12944092415.180061,
+     "NOPAT": 10481379010.534811,
+     "D&A": 3398267906.0478516,
+     "UFCF": 9215867545.88721
+    },
+    {
+     "Year": 2,
+     "Revenue": 103552312500.0,
+     "EBIT": 13591297035.939064,
+     "NOPAT": 11005447961.061552,
+     "D&A": 3568181301.3502445,
+     "UFCF": 9264460959.537052
+    },
+    {
+     "Year": 3,
+     "Revenue": 108729928125.0,
+     "EBIT": 14270861887.736017,
+     "NOPAT": 11555720359.11463,
+     "D&A": 3746590366.4177566,
+     "UFCF": 9727684007.513906
+    },
+    {
+     "Year": 4,
+     "Revenue": 114166424531.25,
+     "EBIT": 14984404982.122818,
+     "NOPAT": 12133506377.07036,
+     "D&A": 3933919884.738644,
+     "UFCF": 10214068207.8896
+    },
+    {
+     "Year": 5,
+     "Revenue": 119874745757.8125,
+     "EBIT": 15733625231.22896,
+     "NOPAT": 12740181695.92388,
+     "D&A": 4130615878.9755764,
+     "UFCF": 10724771618.28408
+    }
+   ],
+   "terminal_value": 294066318565.8539,
+   "terminal_flow": 10939267050.649763,
+   "enterprise_value": 264205219814.10797,
+   "equity_value": 224041219814.10797,
+   "intrinsic_value": 163.1764164705812,
+   "target_price_12m": 167.47115137770408
+  },
+  "B_normalized_operating": {
+   "historical": [
+    {
+     "period_end": "2023-12-30",
+     "revenue": 91471000000.0,
+     "ebit": 12913000000.0,
+     "net_income": 9074000000.0,
+     "d_and_a": 2948000000.0,
+     "capex": 5518000000.0,
+     "nwc": -7898000000.0
+    },
+    {
+     "period_end": "2024-12-28",
+     "revenue": 91854000000.0,
+     "ebit": 12920000000.0,
+     "net_income": 9578000000.0,
+     "d_and_a": 3160000000.0,
+     "capex": 5318000000.0,
+     "nwc": -7133000000.0
+    },
+    {
+     "period_end": "2025-12-27",
+     "revenue": 93925000000.0,
+     "ebit": 13491000000.0,
+     "net_income": 8240000000.0,
+     "d_and_a": 3451000000.0,
+     "capex": 4415000000.0,
+     "nwc": -7113000000.0
+    }
+   ],
+   "assumption_means": {
+    "ebit_margin": 0.14182143534363953,
+    "da_margin": 0.03445776550234206
+   },
+   "forecast": [
+    {
+     "Year": 1,
+     "Revenue": 98621250000.0,
+     "EBIT": 13986607230.38391,
+     "NOPAT": 11325547342.447727,
+     "D&A": 3398267906.0478516,
+     "UFCF": 10060035877.800125
+    },
+    {
+     "Year": 2,
+     "Revenue": 103552312500.0,
+     "EBIT": 14685937591.903105,
+     "NOPAT": 11891824709.570114,
+     "D&A": 3568181301.3502445,
+     "UFCF": 10150837708.045616
+    },
+    {
+     "Year": 3,
+     "Revenue": 108729928125.0,
+     "EBIT": 15420234471.49826,
+     "NOPAT": 12486415945.04862,
+     "D&A": 3746590366.4177566,
+     "UFCF": 10658379593.447897
+    },
+    {
+     "Year": 4,
+     "Revenue": 114166424531.25,
+     "EBIT": 16191246195.073174,
+     "NOPAT": 13110736742.301052,
+     "D&A": 3933919884.738644,
+     "UFCF": 11191298573.120295
+    },
+    {
+     "Year": 5,
+     "Revenue": 119874745757.8125,
+     "EBIT": 17000808504.826832,
+     "NOPAT": 13766273579.416103,
+     "D&A": 4130615878.9755764,
+     "UFCF": 11750863501.776302
+    }
+   ],
+   "terminal_value": 322201096016.447,
+   "terminal_flow": 11985880771.811829,
+   "enterprise_value": 289447511331.78827,
+   "equity_value": 249283511331.78827,
+   "intrinsic_value": 181.56118815133888,
+   "target_price_12m": 186.29269708824935
+  },
+  "C_provider_yahoo": {
+   "historical": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 91471000000.0,
+     "ebit": 12913000000.0,
+     "net_income": 9074000000.0,
+     "d_and_a": 3518000000.0,
+     "capex": 5518000000.0,
+     "nwc": -7898000000.0
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 91854000000.0,
+     "ebit": 12920000000.0,
+     "net_income": 9578000000.0,
+     "d_and_a": 3815000000.0,
+     "capex": 5318000000.0,
+     "nwc": -7133000000.0
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 93925000000.0,
+     "ebit": 13491000000.0,
+     "net_income": 8240000000.0,
+     "d_and_a": 4178000000.0,
+     "capex": 4415000000.0,
+     "nwc": -7113000000.0
+    }
+   ],
+   "assumption_means": {
+    "ebit_margin": 0.14182143534363953,
+    "da_margin": 0.04149195986169344
+   },
+   "forecast": [
+    {
+     "Year": 1,
+     "Revenue": 98621250000.0,
+     "EBIT": 13986607230.38391,
+     "NOPAT": 11325547342.447727,
+     "D&A": 4091988946.510034,
+     "UFCF": 10753756918.26231
+    },
+    {
+     "Year": 2,
+     "Revenue": 103552312500.0,
+     "EBIT": 14685937591.903105,
+     "NOPAT": 11891824709.570114,
+     "D&A": 4296588393.835536,
+     "UFCF": 10879244800.530907
+    },
+    {
+     "Year": 3,
+     "Revenue": 108729928125.0,
+     "EBIT": 15420234471.49826,
+     "NOPAT": 12486415945.04862,
+     "D&A": 4511417813.527312,
+     "UFCF": 11423207040.557451
+    },
+    {
+     "Year": 4,
+     "Revenue": 114166424531.25,
+     "EBIT": 16191246195.073174,
+     "NOPAT": 13110736742.301052,
+     "D&A": 4736988704.203678,
+     "UFCF": 11994367392.58533
+    },
+    {
+     "Year": 5,
+     "Revenue": 119874745757.8125,
+     "EBIT": 17000808504.826832,
+     "NOPAT": 13766273579.416103,
+     "D&A": 4973838139.413862,
+     "UFCF": 12594085762.214588
+    }
+   ],
+   "terminal_value": 345321706383.3032,
+   "terminal_flow": 12845967477.45888,
+   "enterprise_value": 310191133276.96844,
+   "equity_value": 270027133276.96844,
+   "intrinsic_value": 196.6694342876682,
+   "target_price_12m": 201.7598755878723
+  }
+ },
+ "bridge": {
+  "A_to_B_normalization_effect": 18.384771680757694,
+  "A_to_C_provider_convention_effect": 33.49301781708701,
+  "note": "Single-factor sequential bridge from A with a defined order (impairment normalization, then provider conventions); interaction between EBIT and D&A conventions lives inside the A_to_C leg."
+ },
+ "ledger": {
+  "policy": "normalize",
+  "reported_ebit_margins": [
+   0.1310360660755868,
+   0.1402987349489407,
+   0.12241682193239287
+  ],
+  "adjustments": [
+   {
+    "period_end": "2023-12-30",
+    "kind": "impairment_addback",
+    "amount": 927000000,
+    "reported_ebit": 11986000000.0,
+    "adjusted_ebit": 12913000000.0,
+    "evidence": [
+     {
+      "kind": "intangible_impairment",
+      "amount": 927000000,
+      "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+      "accession": "0000077476-26-000007",
+      "filed": "2026-02-03"
+     }
+    ]
+   },
+   {
+    "period_end": "2024-12-28",
+    "kind": "impairment_addback",
+    "amount": 33000000,
+    "reported_ebit": 12887000000.0,
+    "adjusted_ebit": 12920000000.0,
+    "evidence": [
+     {
+      "kind": "intangible_impairment",
+      "amount": 33000000,
+      "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+      "accession": "0000077476-26-000007",
+      "filed": "2026-02-03"
+     },
+     {
+      "kind": "goodwill_impairment",
+      "amount": 0,
+      "tag": "GoodwillImpairmentLoss",
+      "accession": "0000077476-26-000007",
+      "filed": "2026-02-03"
+     }
+    ]
+   },
+   {
+    "period_end": "2025-12-27",
+    "kind": "impairment_addback",
+    "amount": 1993000000,
+    "reported_ebit": 11498000000.0,
+    "adjusted_ebit": 13491000000.0,
+    "evidence": [
+     {
+      "kind": "intangible_impairment",
+      "amount": 1993000000,
+      "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+      "accession": "0000077476-26-000007",
+      "filed": "2026-02-03"
+     },
+     {
+      "kind": "goodwill_impairment",
+      "amount": 0,
+      "tag": "GoodwillImpairmentLoss",
+      "accession": "0000077476-26-000007",
+      "filed": "2026-02-03"
+     }
+    ]
+   }
+  ],
+  "periods_with_impairment": 3,
+  "period_count": 3,
+  "recurrence_note": "Separately-disclosed impairments appear in 3 of 3 loaded periods; normalizing assumes they do not recur, which consecutive-year impairments contradict. Review the filing Notes before relying on a normalized basis.",
+  "adjusted_ebit_margins": [
+   0.1411704255993703,
+   0.14065800074030527,
+   0.143635879691243
+  ],
+  "forecast_basis": "normalized_operating",
+  "tax_note": "The forecast applies the period tax rate to adjusted EBIT; the tax shield on the add-back itself is not separately modeled."
+ }
+}

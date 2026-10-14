@@ -278,6 +278,30 @@
         }
         if (brief.basis_note)
           box.append(briefRow(`Brief basis (${brief.basis || "baseline"})`, brief.basis_note));
+        const basis = brief.accounting_basis || {};
+        if (basis.forecast_basis || (basis.adjustments || []).length || (basis.incomparability || []).length) {
+          const parts = [`Forecast uses ${basis.forecast_basis === "reported_gaap" ? "reported GAAP observations" : basis.forecast_basis}`];
+          if (Number.isFinite(basis.reported_ebit_margin_mean))
+            parts.push(`reported EBIT margin ${pct(basis.reported_ebit_margin_mean)}`);
+          const alt = basis.normalized_alternative;
+          if (alt && Number.isFinite(alt.intrinsic_value))
+            parts.push(`normalized alternative ${money(alt.intrinsic_value)} (impairment-adjusted, assumes no recurrence — not a truer price)`);
+          box.append(briefRow("Accounting basis", parts.join(" · ")));
+          for (const adj of basis.adjustments || []) {
+            const ev = (adj.evidence || []).map((e) => `${e.tag} ${e.accession || "unfiled"}`).join(", ");
+            box.append(briefRow(
+              `Adjustment ${adj.period_end}`,
+              `+${money(adj.amount)} impairment add-back to EBIT${ev ? ` · ${ev}` : ""}`,
+            ));
+          }
+          if (basis.recurrence_note) box.append(briefRow("Recurrence", basis.recurrence_note));
+          for (const text of basis.incomparability || []) {
+            const note = document.createElement("p");
+            note.className = "help";
+            note.textContent = text;
+            box.append(note);
+          }
+        }
         if (brief.drivers?.note) box.append(briefRow("Biggest value driver", `${brief.drivers.top || "—"} · ${brief.drivers.note}`));
         const fresh = brief.freshness || {};
         const periods = (fresh.period_ends || []).join(", ");
