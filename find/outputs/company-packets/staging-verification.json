@@ -1,0 +1,127 @@
+{
+  "staging": "https://dcf-valuation-engine-staging.scswitzer.workers.dev",
+  "asof": "2026-10-14",
+  "pep_miss": {
+    "assembly_state": null,
+    "stage_seconds": {
+      "brief_inline": 0.0,
+      "preview_inline": 0.0,
+      "sec_classification": 0.0,
+      "sec_first": 0.118,
+      "wacc_model_inputs": 0.0,
+      "zion_packet": 0.03
+    },
+    "statement_source": "SEC-first",
+    "transport": "Direct PPE R2 binding (staging candidate index)",
+    "candidate": true,
+    "release_id": "0a318ed6667fcf4c4d80e8d1c44def7a",
+    "adjustments_source": "published with packet",
+    "adjustments_timing": 0.0,
+    "ebit_facts": 3,
+    "impairment_facts": {
+      "goodwill_impairment": 2,
+      "intangible_impairment": 3
+    },
+    "periods": [
+      "2023-12-30",
+      "2024-12-28",
+      "2025-12-27"
+    ],
+    "wacc": 0.05932651805799539,
+    "client_seconds": 0.606
+  },
+  "pep_hit": {
+    "assembly_state": null,
+    "stage_seconds": {
+      "brief_inline": 0.0,
+      "preview_inline": 0.0,
+      "sec_classification": 0.0,
+      "sec_first": 0.139,
+      "wacc_model_inputs": 0.0,
+      "zion_packet": 0.037
+    },
+    "statement_source": "SEC-first",
+    "transport": "Direct PPE R2 binding (staging candidate index)",
+    "candidate": true,
+    "release_id": "0a318ed6667fcf4c4d80e8d1c44def7a",
+    "adjustments_source": "published with packet",
+    "adjustments_timing": 0.0,
+    "ebit_facts": 3,
+    "impairment_facts": {
+      "goodwill_impairment": 2,
+      "intangible_impairment": 3
+    },
+    "periods": [
+      "2023-12-30",
+      "2024-12-28",
+      "2025-12-27"
+    ],
+    "wacc": 0.05932651805799539,
+    "client_seconds": 1.235
+  },
+  "cat": {
+    "assembly_state": "HIT",
+    "stage_seconds": {
+      "brief_inline": 0.0,
+      "preview_inline": 0.0,
+      "sec_classification": 0.133,
+      "sec_first": 0.515,
+      "wacc_model_inputs": 0.0,
+      "zion_packet": 0.062
+    },
+    "statement_source": "SEC-first",
+    "transport": "Direct PPE R2 binding (staging candidate index)",
+    "candidate": true,
+    "release_id": "0a318ed6667fcf4c4d80e8d1c44def7a",
+    "adjustments_source": "published with packet",
+    "adjustments_timing": 0.0,
+    "ebit_facts": 3,
+    "impairment_facts": {
+      "goodwill_impairment": 3,
+      "intangible_impairment": 0
+    },
+    "periods": [
+      "2023-12-31",
+      "2024-12-31",
+      "2025-12-31"
+    ],
+    "wacc": 0.0965817303031199,
+    "client_seconds": 0.388
+  },
+  "workbook_pep": {
+    "snapshot_reused": true,
+    "target": 156.7755899271691,
+    "band_base_exact": true,
+    "custom": false,
+    "brief_matches_local": true,
+    "custom_target": 200.32377660591445,
+    "custom_band_base_exact": true,
+    "custom_moves_principal": true,
+    "custom_flagged": true
+  },
+  "workbook_cat": {
+    "snapshot_reused": true,
+    "target": 217.45852223352404,
+    "band_base_exact": true,
+    "custom": false,
+    "brief_matches_local": true,
+    "custom_target": 246.60136463176624,
+    "custom_band_base_exact": true,
+    "custom_moves_principal": true,
+    "custom_flagged": true
+  },
+  "aapl_fallback": {
+    "assembly_state": "MISS",
+    "statement_source": "Yahoo",
+    "ppe_status": null,
+    "transport": "Zion private service binding",
+    "receipt": {
+      "kind": "ZION_SERVICE_BINDING",
+      "observed_at": "2026-10-14T20:45:23.312000+00:00",
+      "origin_seconds": 0.052,
+      "schema_version": "valuation-transport-v1",
+      "service_state": "SUCCESS",
+      "storage_cache": "NOT_ESTABLISHED"
+    }
+  }
+}
