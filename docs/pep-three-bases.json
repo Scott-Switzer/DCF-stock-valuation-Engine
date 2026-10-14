@@ -286,6 +286,7 @@
       "amount": 927000000,
       "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
       "accession": "0000077476-26-000007",
+      "form": "10-K",
       "filed": "2026-02-03"
      }
     ]
@@ -302,6 +303,7 @@
       "amount": 33000000,
       "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
       "accession": "0000077476-26-000007",
+      "form": "10-K",
       "filed": "2026-02-03"
      },
      {
@@ -309,6 +311,7 @@
       "amount": 0,
       "tag": "GoodwillImpairmentLoss",
       "accession": "0000077476-26-000007",
+      "form": "10-K",
       "filed": "2026-02-03"
      }
     ]
@@ -325,6 +328,7 @@
       "amount": 1993000000,
       "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
       "accession": "0000077476-26-000007",
+      "form": "10-K",
       "filed": "2026-02-03"
      },
      {
@@ -332,20 +336,404 @@
       "amount": 0,
       "tag": "GoodwillImpairmentLoss",
       "accession": "0000077476-26-000007",
+      "form": "10-K",
       "filed": "2026-02-03"
      }
     ]
    }
   ],
+  "period_audit": [
+   {
+    "period_end": "2023-12-30",
+    "matched_period_end": "2023-12-30",
+    "amount": 927000000,
+    "verdict": "verified_addback",
+    "reason": "charge is inside the reported GAAP operating income",
+    "evidence": [
+     {
+      "kind": "intangible_impairment",
+      "amount": 927000000,
+      "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+      "accession": "0000077476-26-000007",
+      "form": "10-K",
+      "filed": "2026-02-03"
+     }
+    ],
+    "reported_ebit": 11986000000.0
+   },
+   {
+    "period_end": "2024-12-28",
+    "matched_period_end": "2024-12-28",
+    "amount": 33000000,
+    "verdict": "verified_addback",
+    "reason": "charge is inside the reported GAAP operating income",
+    "evidence": [
+     {
+      "kind": "intangible_impairment",
+      "amount": 33000000,
+      "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+      "accession": "0000077476-26-000007",
+      "form": "10-K",
+      "filed": "2026-02-03"
+     },
+     {
+      "kind": "goodwill_impairment",
+      "amount": 0,
+      "tag": "GoodwillImpairmentLoss",
+      "accession": "0000077476-26-000007",
+      "form": "10-K",
+      "filed": "2026-02-03"
+     }
+    ],
+    "reported_ebit": 12887000000.0
+   },
+   {
+    "period_end": "2025-12-27",
+    "matched_period_end": "2025-12-27",
+    "amount": 1993000000,
+    "verdict": "verified_addback",
+    "reason": "charge is inside the reported GAAP operating income",
+    "evidence": [
+     {
+      "kind": "intangible_impairment",
+      "amount": 1993000000,
+      "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+      "accession": "0000077476-26-000007",
+      "form": "10-K",
+      "filed": "2026-02-03"
+     },
+     {
+      "kind": "goodwill_impairment",
+      "amount": 0,
+      "tag": "GoodwillImpairmentLoss",
+      "accession": "0000077476-26-000007",
+      "form": "10-K",
+      "filed": "2026-02-03"
+     }
+    ],
+    "reported_ebit": 11498000000.0
+   }
+  ],
+  "ebit_definition": {
+   "classification": "gaap_operating_income_verified",
+   "reason": "Reported EBIT equals SEC OperatingIncomeLoss for every loaded period: the disclosed charges are inside the reported EBIT.",
+   "periods": [
+    {
+     "period_end": "2023-12-30",
+     "sec_period_end": "2023-12-30",
+     "matched_by": "exact_period_end",
+     "reported_ebit": 11986000000.0,
+     "sec_operating_income": 11986000000,
+     "adjustment_total": 927000000,
+     "verdict": "includes_charges",
+     "tag": "OperatingIncomeLoss",
+     "accession": "0000077476-26-000007",
+     "form": "10-K",
+     "filed": "2026-02-03"
+    },
+    {
+     "period_end": "2024-12-28",
+     "sec_period_end": "2024-12-28",
+     "matched_by": "exact_period_end",
+     "reported_ebit": 12887000000.0,
+     "sec_operating_income": 12887000000,
+     "adjustment_total": 33000000,
+     "verdict": "includes_charges",
+     "tag": "OperatingIncomeLoss",
+     "accession": "0000077476-26-000007",
+     "form": "10-K",
+     "filed": "2026-02-03"
+    },
+    {
+     "period_end": "2025-12-27",
+     "sec_period_end": "2025-12-27",
+     "matched_by": "exact_period_end",
+     "reported_ebit": 11498000000.0,
+     "sec_operating_income": 11498000000,
+     "adjustment_total": 1993000000,
+     "verdict": "includes_charges",
+     "tag": "OperatingIncomeLoss",
+     "accession": "0000077476-26-000007",
+     "form": "10-K",
+     "filed": "2026-02-03"
+    }
+   ]
+  },
   "periods_with_impairment": 3,
   "period_count": 3,
-  "recurrence_note": "Separately-disclosed impairments appear in 3 of 3 loaded periods; normalizing assumes they do not recur, which consecutive-year impairments contradict. Review the filing Notes before relying on a normalized basis.",
+  "applied_total": 2953000000,
+  "rejected_total": 0,
+  "recurrence_note": "Separately-disclosed impairments appear in 3 of 3 loaded periods. Normalizing assumes the charges do not recur; with charges in every loaded period that assumption is aggressive and the normalized value is a scenario, not a better valuation.",
   "adjusted_ebit_margins": [
    0.1411704255993703,
    0.14065800074030527,
    0.143635879691243
   ],
   "forecast_basis": "normalized_operating",
+  "adjustment_status": "applied",
   "tax_note": "The forecast applies the period tax rate to adjusted EBIT; the tax shield on the add-back itself is not separately modeled."
+ },
+ "audit": {
+  "sec_first": {
+   "ebit_definition": {
+    "classification": "gaap_operating_income_verified",
+    "reason": "Reported EBIT equals SEC OperatingIncomeLoss for every loaded period: the disclosed charges are inside the reported EBIT.",
+    "periods": [
+     {
+      "period_end": "2023-12-30",
+      "sec_period_end": "2023-12-30",
+      "matched_by": "exact_period_end",
+      "reported_ebit": 11986000000.0,
+      "sec_operating_income": 11986000000,
+      "adjustment_total": 927000000,
+      "verdict": "includes_charges",
+      "tag": "OperatingIncomeLoss",
+      "accession": "0000077476-26-000007",
+      "form": "10-K",
+      "filed": "2026-02-03"
+     },
+     {
+      "period_end": "2024-12-28",
+      "sec_period_end": "2024-12-28",
+      "matched_by": "exact_period_end",
+      "reported_ebit": 12887000000.0,
+      "sec_operating_income": 12887000000,
+      "adjustment_total": 33000000,
+      "verdict": "includes_charges",
+      "tag": "OperatingIncomeLoss",
+      "accession": "0000077476-26-000007",
+      "form": "10-K",
+      "filed": "2026-02-03"
+     },
+     {
+      "period_end": "2025-12-27",
+      "sec_period_end": "2025-12-27",
+      "matched_by": "exact_period_end",
+      "reported_ebit": 11498000000.0,
+      "sec_operating_income": 11498000000,
+      "adjustment_total": 1993000000,
+      "verdict": "includes_charges",
+      "tag": "OperatingIncomeLoss",
+      "accession": "0000077476-26-000007",
+      "form": "10-K",
+      "filed": "2026-02-03"
+     }
+    ]
+   },
+   "periods": [
+    {
+     "period_end": "2023-12-30",
+     "matched_period_end": "2023-12-30",
+     "amount": 927000000,
+     "verdict": "verified_addback",
+     "reason": "charge is inside the reported GAAP operating income",
+     "evidence": [
+      {
+       "kind": "intangible_impairment",
+       "amount": 927000000,
+       "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+       "accession": "0000077476-26-000007",
+       "form": "10-K",
+       "filed": "2026-02-03"
+      }
+     ],
+     "reported_ebit": 11986000000.0
+    },
+    {
+     "period_end": "2024-12-28",
+     "matched_period_end": "2024-12-28",
+     "amount": 33000000,
+     "verdict": "verified_addback",
+     "reason": "charge is inside the reported GAAP operating income",
+     "evidence": [
+      {
+       "kind": "intangible_impairment",
+       "amount": 33000000,
+       "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+       "accession": "0000077476-26-000007",
+       "form": "10-K",
+       "filed": "2026-02-03"
+      },
+      {
+       "kind": "goodwill_impairment",
+       "amount": 0,
+       "tag": "GoodwillImpairmentLoss",
+       "accession": "0000077476-26-000007",
+       "form": "10-K",
+       "filed": "2026-02-03"
+      }
+     ],
+     "reported_ebit": 12887000000.0
+    },
+    {
+     "period_end": "2025-12-27",
+     "matched_period_end": "2025-12-27",
+     "amount": 1993000000,
+     "verdict": "verified_addback",
+     "reason": "charge is inside the reported GAAP operating income",
+     "evidence": [
+      {
+       "kind": "intangible_impairment",
+       "amount": 1993000000,
+       "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+       "accession": "0000077476-26-000007",
+       "form": "10-K",
+       "filed": "2026-02-03"
+      },
+      {
+       "kind": "goodwill_impairment",
+       "amount": 0,
+       "tag": "GoodwillImpairmentLoss",
+       "accession": "0000077476-26-000007",
+       "form": "10-K",
+       "filed": "2026-02-03"
+      }
+     ],
+     "reported_ebit": 11498000000.0
+    }
+   ],
+   "addback_total": 2953000000,
+   "rejected_total": 0
+  },
+  "provider": {
+   "ebit_definition": {
+    "classification": "charges_already_excluded_verified",
+    "reason": "Reported EBIT equals SEC OperatingIncomeLoss plus the disclosed charges: this EBIT definition already excludes them, so an add-back would double count.",
+    "periods": [
+     {
+      "period_end": "2023-12-31",
+      "sec_period_end": "2023-12-30",
+      "matched_by": "nearest_fiscal_end",
+      "reported_ebit": 12913000000.0,
+      "sec_operating_income": 11986000000,
+      "adjustment_total": 927000000,
+      "verdict": "excludes_charges",
+      "tag": "OperatingIncomeLoss",
+      "accession": "0000077476-26-000007",
+      "form": "10-K",
+      "filed": "2026-02-03"
+     },
+     {
+      "period_end": "2024-12-31",
+      "sec_period_end": "2024-12-28",
+      "matched_by": "nearest_fiscal_end",
+      "reported_ebit": 12920000000.0,
+      "sec_operating_income": 12887000000,
+      "adjustment_total": 33000000,
+      "verdict": "excludes_charges",
+      "tag": "OperatingIncomeLoss",
+      "accession": "0000077476-26-000007",
+      "form": "10-K",
+      "filed": "2026-02-03"
+     },
+     {
+      "period_end": "2025-12-31",
+      "sec_period_end": "2025-12-27",
+      "matched_by": "nearest_fiscal_end",
+      "reported_ebit": 13491000000.0,
+      "sec_operating_income": 11498000000,
+      "adjustment_total": 1993000000,
+      "verdict": "excludes_charges",
+      "tag": "OperatingIncomeLoss",
+      "accession": "0000077476-26-000007",
+      "form": "10-K",
+      "filed": "2026-02-03"
+     }
+    ]
+   },
+   "periods": [
+    {
+     "period_end": "2023-12-31",
+     "matched_period_end": "2023-12-30",
+     "amount": 927000000,
+     "verdict": "rejected_already_excluded",
+     "reason": "the reported EBIT definition already excludes this charge; adding it back would double count",
+     "evidence": [
+      {
+       "kind": "intangible_impairment",
+       "amount": 927000000,
+       "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+       "accession": "0000077476-26-000007",
+       "form": "10-K",
+       "filed": "2026-02-03"
+      }
+     ],
+     "reported_ebit": 12913000000.0
+    },
+    {
+     "period_end": "2024-12-31",
+     "matched_period_end": "2024-12-28",
+     "amount": 33000000,
+     "verdict": "rejected_already_excluded",
+     "reason": "the reported EBIT definition already excludes this charge; adding it back would double count",
+     "evidence": [
+      {
+       "kind": "intangible_impairment",
+       "amount": 33000000,
+       "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+       "accession": "0000077476-26-000007",
+       "form": "10-K",
+       "filed": "2026-02-03"
+      },
+      {
+       "kind": "goodwill_impairment",
+       "amount": 0,
+       "tag": "GoodwillImpairmentLoss",
+       "accession": "0000077476-26-000007",
+       "form": "10-K",
+       "filed": "2026-02-03"
+      }
+     ],
+     "reported_ebit": 12920000000.0
+    },
+    {
+     "period_end": "2025-12-31",
+     "matched_period_end": "2025-12-27",
+     "amount": 1993000000,
+     "verdict": "rejected_already_excluded",
+     "reason": "the reported EBIT definition already excludes this charge; adding it back would double count",
+     "evidence": [
+      {
+       "kind": "intangible_impairment",
+       "amount": 1993000000,
+       "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+       "accession": "0000077476-26-000007",
+       "form": "10-K",
+       "filed": "2026-02-03"
+      },
+      {
+       "kind": "goodwill_impairment",
+       "amount": 0,
+       "tag": "GoodwillImpairmentLoss",
+       "accession": "0000077476-26-000007",
+       "form": "10-K",
+       "filed": "2026-02-03"
+      }
+     ],
+     "reported_ebit": 13491000000.0
+    }
+   ],
+   "addback_total": 0,
+   "rejected_total": 2953000000
+  }
+ },
+ "labels": {
+  "sec_first": {
+   "label": "reported_gaap_verified",
+   "reason": "EBIT comes from filed SEC statements with REPORTED quality status and an accession receipt for every loaded period.",
+   "evidence": {
+    "accessions": [
+     "0000077476-26-000007"
+    ],
+    "quality_status": "REPORTED"
+   }
+  },
+  "provider": {
+   "label": "provider_defined",
+   "reason": "EBIT and D&A are provider-defined measures; comparability with filed GAAP definitions is unverified for this issuer.",
+   "evidence": {
+    "statement_source": "Yahoo"
+   }
+  }
  }
 }

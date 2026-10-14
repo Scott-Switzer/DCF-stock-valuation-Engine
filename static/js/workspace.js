@@ -279,14 +279,25 @@
         if (brief.basis_note)
           box.append(briefRow(`Brief basis (${brief.basis || "baseline"})`, brief.basis_note));
         const basis = brief.accounting_basis || {};
-        if (basis.forecast_basis || (basis.adjustments || []).length || (basis.incomparability || []).length) {
-          const parts = [`Forecast uses ${basis.forecast_basis === "reported_gaap" ? "reported GAAP observations" : basis.forecast_basis}`];
-          if (Number.isFinite(basis.reported_ebit_margin_mean))
-            parts.push(`reported EBIT margin ${pct(basis.reported_ebit_margin_mean)}`);
+        if (basis.basis || basis.forecast_basis) {
+          const LABELS = {
+            reported_gaap_verified: "reported GAAP (filing-verified)",
+            provider_defined: "provider-defined",
+            normalized_adjusted: "normalized (adjusted)",
+            mixed_or_unverified: "mixed / unverified",
+          };
+          const name = LABELS[basis.basis] || basis.basis || basis.forecast_basis;
+          box.append(briefRow(
+            "Accounting basis",
+            `${name}${Number.isFinite(basis.reported_ebit_margin_mean) ? ` · reported EBIT margin ${pct(basis.reported_ebit_margin_mean)}` : ""}`,
+          ));
+          if (basis.basis_reason) box.append(briefRow("Basis evidence", basis.basis_reason));
           const alt = basis.normalized_alternative;
           if (alt && Number.isFinite(alt.intrinsic_value))
-            parts.push(`normalized alternative ${money(alt.intrinsic_value)} (impairment-adjusted, assumes no recurrence — not a truer price)`);
-          box.append(briefRow("Accounting basis", parts.join(" · ")));
+            box.append(briefRow(
+              "Normalized scenario",
+              `${money(alt.intrinsic_value)} on top of the reported basis (impairment-adjusted, assumes no recurrence — a scenario, not a truer price)`,
+            ));
           for (const adj of basis.adjustments || []) {
             const ev = (adj.evidence || []).map((e) => `${e.tag} ${e.accession || "unfiled"}`).join(", ");
             box.append(briefRow(
@@ -294,11 +305,17 @@
               `+${money(adj.amount)} impairment add-back to EBIT${ev ? ` · ${ev}` : ""}`,
             ));
           }
+          for (const rej of basis.rejected_adjustments || []) {
+            box.append(briefRow(
+              `Adjustment rejected ${rej.period_end}`,
+              `${money(rej.amount)} not added back: ${rej.reason}`,
+            ));
+          }
           if (basis.recurrence_note) box.append(briefRow("Recurrence", basis.recurrence_note));
-          for (const text of basis.incomparability || []) {
+          if (basis.comparability_note) {
             const note = document.createElement("p");
             note.className = "help";
-            note.textContent = text;
+            note.textContent = basis.comparability_note;
             box.append(note);
           }
         }
