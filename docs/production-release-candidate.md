@@ -61,6 +61,23 @@ deploy; `63130e6` on staging is the expected pre-release runtime, not a mismatch
 - `/api/diag/concurrency` returns 404 outside staging (environment-gated).
 - Rate limits use separate staging/production namespaces.
 
+## Deployment record (executed 2026-10-14, approved release)
+
+- Commit `d1008a0` (PR #31 manifest fix on `692d8ef`), clean tree, CI green 3.12 + 3.13.
+- `python3 scripts/embed_assets.py` exit 0; `wrangler deploy` to production bindings.
+- Production Worker version `137718bd-49f6-4f88-ab68-f67fdf5dd34a`; `/health`
+  reports commit `d1008a06b7c787b050d851335f9f4c67620ee83b`, `tracked_dirty:false`.
+- Live smoke: AAPL 91.81 / MSFT 119.40 / PEP 196.95 baselines with bundled brief
+  + preview; account 401 gates, no unauth writes; unknown share 404; packet
+  export 200; BAC/O fail fast; MRX explained skip; `private, no-store` live.
+- `control/valuation/CURRENT.json` sha256 `ecf1e1c4…` byte-identical before,
+  during and after. No D1/R2 production data changes, no migrations.
+- Authenticated two-account save/share/revoke verified on staging (14/14 account
+  checks + full share→revoke→404 cycle); same flow in production remains a gap
+  (no test identities created in prod without separate authorization).
+- Rollback reference unchanged: `3d504ea8-2d06-4f88-ab68-f67fdf5dd34a`.
+  (This section is docs-only and does not affect the deployed bundle.)
+
 ## Release (requires approval — do not run yet)
 
 ```sh

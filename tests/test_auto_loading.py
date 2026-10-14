@@ -84,6 +84,35 @@ def test_provider_failure_keeps_existing_work_and_returns_specific_error(client,
     assert r.get_json()["error"] == "Missing required financial observation."
 
 
+def test_financial_firm_statement_failure_names_suitability(client, monkeypatch):
+    def failed(*args, **kwargs):
+        raise auto_loading.ProviderError(
+            "Yahoo missing OperatingIncome for 2023-12-31; cannot complete financials."
+        )
+
+    monkeypatch.setattr(auto_loading, "load_yahoo", failed)
+    # MRX is a registry-confirmed financial firm (SEC SIC 6200): no network needed.
+    r = client.post("/api/load/dcf", json={"ticker": "MRX"})
+    assert r.status_code == 503
+    error = r.get_json()["error"]
+    assert "financial firm" in error
+    assert "Yahoo missing OperatingIncome" in error
+
+
+def test_nonfinancial_statement_failure_keeps_original_error(client, monkeypatch):
+    def failed(*args, **kwargs):
+        raise auto_loading.ProviderError(
+            "Yahoo missing OperatingIncome for 2023-12-31; cannot complete financials."
+        )
+
+    monkeypatch.setattr(auto_loading, "load_yahoo", failed)
+    monkeypatch.setattr(auto_loading, "company_classification", lambda ticker, http: None)
+    r = client.post("/api/load/dcf", json={"ticker": "TEST"})
+    assert r.status_code == 503
+    assert r.get_json()["error"].startswith("Yahoo missing OperatingIncome")
+    assert "financial firm" not in r.get_json()["error"]
+
+
 def test_default_pages_are_live_blank_not_sample(client):
     for path in ["/", "/ddm", "/relative"]:
         r = client.get(path)

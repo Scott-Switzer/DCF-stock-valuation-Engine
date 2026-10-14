@@ -120,6 +120,38 @@ def company_classification(ticker, http):
     }
 
 
+def financial_unavailable_reason(ticker, http, detail):
+    """Suitability-aware message when statements cannot be built for a bank.
+
+    Banks, brokerages and insurers file no industrial operating-income series,
+    so a missing-field provider error would otherwise read as a data outage.
+    Returns the reframed message when the ticker is a confirmed financial firm
+    (reviewed registry first, live SEC lookup second), else None so callers
+    re-raise the original provider error unchanged. Classification failures
+    also yield None: an unconfirmed ticker never becomes financial evidence.
+    """
+    try:
+        sec = company_classification(ticker, http)
+        classification = resolve_classification(ticker, sec)
+    except Exception:
+        # Classification is best-effort context for the error message only;
+        # any lookup failure keeps the original provider error unchanged.
+        return None
+    if classification.get("status") != "confirmed" or not is_financial_sic(
+        classification.get("sic")
+    ):
+        return None
+    label = (
+        f"SEC SIC {classification['sic']} "
+        f"({classification.get('description') or 'financial firm'})"
+    )
+    return (
+        f"{label} is a financial firm; an industrial FCFF DCF cannot be "
+        f"completed from its available statements ({detail}). "
+        "Use P/E and P/B relative valuation or file-based review."
+    )
+
+
 def relative_metrics(doc):
     latest = doc["historical"][-1]
     shares = doc["market"]["diluted_shares"]
@@ -222,14 +254,19 @@ def load_method(
             timings["sec_first"] = round(time.monotonic() - began, 3)
         if dcf is None:
             began = time.monotonic()
-            dcf = load_yahoo(
-                ticker,
-                asof,
-                http,
-                include_capital_costs=method != "relative",
-                require_wacc=method == "dcf",
-                packet=packet,
-            )
+            try:
+                dcf = load_yahoo(
+                    ticker,
+                    asof,
+                    http,
+                    include_capital_costs=method != "relative",
+                    require_wacc=method == "dcf",
+                    packet=packet,
+                )
+            except ProviderError as exc:
+                timings["yahoo"] = round(time.monotonic() - began, 3)
+                reason = financial_unavailable_reason(ticker, http, str(exc))
+                raise ProviderError(reason or str(exc)) from exc
             timings["yahoo"] = round(time.monotonic() - began, 3)
             began = time.monotonic()
             dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None), packet=packet, packet_error=packet_error)
