@@ -1,9 +1,15 @@
-# Production release candidate: `63130e6` (PRs #17–#29)
+# Production release candidate: `692d8ef` (PRs #17–#30; runtime code `63130e6`)
 
 Production currently serves `c56df1d` (Worker version `3d504ea8-…`, deployed 2026-10-08).
-This manifest covers the 15 commits between `c56df1d` and release candidate `63130e6`
+This manifest covers the commits between `c56df1d` and current `main` `692d8ef`
 so the release can be approved and executed as one controlled step. No production
-resources have been changed; staging carries the candidate now.
+resources have been changed; staging carries the candidate runtime now.
+
+Build identity note: staging `/health` currently reports runtime commit `63130e6`
+(PR #29) because #30 (`692d8ef`) is docs-only and staging was built before it.
+The build script embeds the checked-out Git HEAD, so a fresh build from current
+`main` must report `692d8ef` with `tracked_dirty:false`. Verify that value after
+deploy; `63130e6` on staging is the expected pre-release runtime, not a mismatch.
 
 ## Scope (merged, CI green on 3.12 + 3.13)
 
@@ -21,8 +27,9 @@ resources have been changed; staging carries the candidate now.
 - #27 browser benchmark, brief-sync hardening, skipped-brief explanations
 - #28 D1 cache-hit instrumentation (current-request `hit_breakdown`)
 - #29 bundled baseline preview (first value renders with the load response)
+- #30 release manifest itself (docs-only; no runtime change — hence staging health still reports `63130e6` until rebuilt from `692d8ef`)
 
-## Verification on staging (version `19213256-…`, commit `63130e6`)
+## Verification on staging (runtime commit `63130e6`; `main` is `692d8ef` docs-only)
 
 - Full suite 636 passed + 10 subtests, `ruff` clean, 3 Node harnesses green.
 - Real-Chromium benchmark, per ticker × actual cache state (evidence retained
@@ -60,7 +67,7 @@ resources have been changed; staging carries the candidate now.
 python3 scripts/embed_assets.py && wrangler deploy
 ```
 
-then verify `/health` reports commit `63130e6`, smoke-test one ticker load,
+then verify `/health` reports commit `692d8ef` (fresh build from `main`, `tracked_dirty:false`), smoke-test one ticker load,
 one save/share/revoke cycle, and confirm `control/valuation/CURRENT.json`
 is byte-identical before and after.
 
