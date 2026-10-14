@@ -290,6 +290,9 @@
       }
       panel.hidden = false;
       performance.mark("workspace:brief-visible");
+      requestAnimationFrame(() =>
+        performance.mark("workspace:brief-painted"),
+      );
     } catch (_) {
       /* The brief is instant context; the interactive valuation still loads. */
     }
@@ -352,10 +355,12 @@
   // brief from the same accepted model state (debounced; stale responses
   // never overwrite newer ones). Reverting to baseline restores the
   // bundled brief without a request.
-  function briefFormsEqual(a, b) {
-    const x = a || {}, y = b || {},
-      keys = new Set([...Object.keys(x), ...Object.keys(y)]);
-    for (const k of keys) {
+  function briefFormsEqual(form, baselineForm) {
+    // Dirtiness = did the user change anything reachable. Only fields the
+    // editor actually submits can carry an edit; template-only baseline
+    // keys (no matching input) are ignored rather than forcing a refetch.
+    const x = form || {}, y = baselineForm || {};
+    for (const k of Object.keys(x)) {
       if (k === "base_document") continue;
       const va = x[k] == null ? "" : String(x[k]),
         vb = y[k] == null ? "" : String(y[k]);
@@ -375,12 +380,21 @@
     briefTimer = setTimeout(async () => {
       if (seq !== briefSeq || gen !== generation) return;
       try {
-        if (
-          result?.assumptions &&
-          baseline.form &&
+        const same =
+          !!result?.assumptions &&
+          !!baseline.form &&
           briefFormsEqual(form, baseline.form) &&
-          baselineBrief
-        ) {
+          !!baselineBrief;
+        if (
+          typeof URLSearchParams !== "undefined" &&
+          new URLSearchParams(location.search).has("brief-debug")
+        )
+          console.log("[brief-sync]", {
+            same,
+            basis: baselineBrief?.basis,
+            keys: form ? Object.keys(form).filter((k) => k !== "base_document" && String(form[k] ?? "") !== String((baseline.form || {})[k] ?? "")).slice(0, 12) : null,
+          });
+        if (same) {
           renderBrief(baselineBrief, generation);
           return;
         }
@@ -522,6 +536,9 @@
     if (item && item.valuedGeneration !== generation) {
       item.valuedGeneration = generation;
       performance.mark("workspace:value-visible");
+      requestAnimationFrame(() =>
+        performance.mark("workspace:value-painted"),
+      );
     }
     $("preview-status").textContent = item.error
       ? `Fix inputs: ${item.error}. Showing the last valid result.`
