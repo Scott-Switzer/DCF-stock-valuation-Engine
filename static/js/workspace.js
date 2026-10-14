@@ -149,13 +149,15 @@
       $("workspace-market").textContent =
         `${money(data.financials.market.price)} · ${date(data.financials.market.price_as_of)}`;
       $("workspace-source").textContent =
-        data.financials.source.ppe_release
-          ? "PPE / SEC + labeled fallbacks · sourced inputs locked"
-          : data.financials.source.statement_source === "SEC-first"
-            ? "SEC-first statements + Yahoo market · sourced inputs locked"
+        data.financials.source.statement_source === "SEC-first"
+          ? "SEC-first statements + Yahoo market · sourced inputs locked"
+          : data.financials.source.ppe_release
+            ? "PPE / SEC + labeled fallbacks · sourced inputs locked"
             : `Yahoo${data.financials.source.classification ? " + SEC" : ""} · sourced inputs locked`;
       $("company-strip").hidden = false;
-      loadBrief(data.financials, generation);
+      performance.mark("workspace:company-visible");
+      if (data.brief) renderBrief(data.brief, generation);
+      else loadBrief(data.financials, generation);
       await assemble(method, generation);
       performance.mark("workspace:method-assembled");
       loadReferences(data.financials.company.ticker, generation);
@@ -170,7 +172,7 @@
       loading = false;
       render(results.get(method));
       $("workspace-load").disabled = false;
-      performance.mark("workspace:visible");
+      performance.mark("workspace:handler-settled");
     }
   });
   function briefRow(label, value) {
@@ -184,11 +186,21 @@
     return row;
   }
   async function loadBrief(financials, token) {
+    // Fallback when the load response carries no embedded brief (custom
+    // loads): one extra round trip instead of no brief at all.
+    try {
+      const brief = await request("/api/brief", { financials });
+      if (token !== generation) return;
+      renderBrief(brief, token);
+    } catch (_) {
+      /* The brief is instant context; the interactive valuation still loads. */
+    }
+  }
+  function renderBrief(brief, token) {
     const panel = $("research-brief"), box = $("brief-content");
     panel.hidden = true;
     box.replaceChildren();
     try {
-      const brief = await request("/api/brief", { financials });
       if (token !== generation) return;
       if (brief.blocked) {
         box.append(briefRow("DCF applicability", brief.blocked));
@@ -213,6 +225,8 @@
           .map((s) => `${s.name} ${money(s.target_price_12m)}`)
           .join(" · ");
         if (band) box.append(briefRow("Bear / base / bull (12m)", band));
+        if (brief.basis_note)
+          box.append(briefRow(`Brief basis (${brief.basis || "baseline"})`, brief.basis_note));
         if (brief.drivers?.note) box.append(briefRow("Biggest value driver", `${brief.drivers.top || "—"} · ${brief.drivers.note}`));
         const fresh = brief.freshness || {};
         const periods = (fresh.period_ends || []).join(", ");
@@ -419,6 +433,10 @@
       return;
     }
     $("live-result").hidden = false;
+    if (item && item.valuedGeneration !== generation) {
+      item.valuedGeneration = generation;
+      performance.mark("workspace:value-visible");
+    }
     $("preview-status").textContent = item.error
       ? `Fix inputs: ${item.error}. Showing the last valid result.`
       : item.pending

@@ -454,7 +454,7 @@ def load_method(
                 method, dict(doc, comparables=reliable_peers(doc["comparables"])),
                 suite_assumptions(method, {"included_methods": included}),
             )
-    return {
+    bundle = {
         "financials": doc,
         "form": form,
         "warnings": doc["source"]["warnings"],
@@ -469,3 +469,14 @@ def load_method(
             "snapshot_kind": "current; not historical point-in-time",
         },
     }
+    if method == "dcf":
+        # The default brief rides with the snapshot: same baseline assumptions,
+        # same numbers as /api/brief, no second upload or evaluation round trip.
+        # Cached wholesale with the bundle; /api/brief remains for custom assumptions.
+        from brief import build_brief
+
+        began = time.monotonic()
+        bundle["brief"] = build_brief(doc)
+        timings["brief_inline"] = round(time.monotonic() - began, 3)
+        bundle["load_summary"]["stage_seconds"] = timings
+    return bundle
