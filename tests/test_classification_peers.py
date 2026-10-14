@@ -44,6 +44,54 @@ def test_mrx_registry_entry_keeps_provenance_and_is_confirmed():
     assert record["registry_version"] == REGISTRY_VERSION
 
 
+def test_registry_entries_carry_auditable_filing_provenance():
+    from issuer_classification import REVIEWED, registry_record
+
+    assert len(REVIEWED) >= 12
+    for ticker, entry in REVIEWED.items():
+        for key in ("cik", "entity_name", "sic", "description", "source", "source_url", "as_of"):
+            assert entry.get(key), f"{ticker} missing {key}"
+        assert entry["cik"].isdigit() and len(entry["cik"]) == 10
+        record = registry_record(ticker)
+        assert record["sic"] == entry["sic"]
+        assert record["source"] == entry["source"]
+    assert registry_record("ZZZZ") is None
+
+
+def test_covered_ticker_skips_sec_classification_network():
+    import auto_loading
+
+    calls = []
+
+    class NoNetwork:
+        def get(self, url, **kwargs):
+            calls.append(url)
+            raise AssertionError(f"network must not be used: {url}")
+
+    record = auto_loading.company_classification("AAPL", NoNetwork())
+    assert record["sic"] == "3571"
+    assert "10-K filed 2025-10-31" in record["source"]
+    assert calls == []
+
+
+def test_uncovered_ticker_still_uses_live_sec_lookup(monkeypatch):
+    import auto_loading
+
+    seen = []
+
+    class FakeHTTP:
+        def get(self, url, **kwargs):
+            seen.append(url)
+            if "company_tickers" in url:
+                return {"0": {"ticker": "ZZZZ", "cik_str": 123456}}
+            return {"sic": "6021", "sicDescription": "National Commercial Banks", "entityType": "operating"}
+
+    monkeypatch.setattr(auto_loading, "provider_setting", lambda name: "Tester tester@example.com")
+    record = auto_loading.company_classification("ZZZZ", FakeHTTP())
+    assert record["sic"] == "6021"
+    assert len(seen) == 2
+
+
 def test_sec_record_takes_precedence_over_registry():
     record = resolve_classification("MRX", {"sic": "6200", "description": "Brokers"})
     assert record["source"] == "SEC submissions"

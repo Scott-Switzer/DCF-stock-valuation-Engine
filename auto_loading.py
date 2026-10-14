@@ -77,6 +77,11 @@ def starter_peers(ticker, http):
 
 
 def company_classification(ticker, http):
+    from issuer_classification import registry_record
+
+    reviewed = registry_record(ticker)
+    if reviewed is not None:
+        return reviewed
     identity = provider_setting("EDGAR_IDENTITY")
     if "@" not in identity:
         return None

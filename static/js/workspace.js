@@ -224,7 +224,21 @@
         const band = (brief.scenarios || [])
           .map((s) => `${s.name} ${money(s.target_price_12m)}`)
           .join(" · ");
-        if (band) box.append(briefRow("Bear / base / bull (12m)", band));
+        if (band) {
+          const spec = (brief.scenarios || [])
+            .map((s) => `${s.name} ${s.spec ? `(g${s.spec.revenue_growth_delta >= 0 ? "+" : ""}${(s.spec.revenue_growth_delta * 100).toFixed(1)}pp/m${(s.spec.ebit_margin_delta * 100).toFixed(1)}pp)` : ""}`)
+            .join(" · ");
+          box.append(briefRow("Bear / base / bull (12m)", `${band} — ${spec}`));
+        }
+        if (Number.isFinite(brief.terminal_share))
+          box.append(briefRow("Terminal value share", `${pct(brief.terminal_share)} of enterprise value lies beyond year five.`));
+        if (brief.history_vs_baseline) {
+          const h = brief.history_vs_baseline;
+          box.append(briefRow(
+            "History vs baseline",
+            `Reported revenue CAGR ${pct(h.historical_revenue_cagr)} vs forecast ${pct(h.baseline_revenue_growth_mean)} · reported EBIT margin ${pct(h.historical_ebit_margin_mean)} vs forecast ${pct(h.baseline_ebit_margin_mean)}`,
+          ));
+        }
         if (brief.basis_note)
           box.append(briefRow(`Brief basis (${brief.basis || "baseline"})`, brief.basis_note));
         if (brief.drivers?.note) box.append(briefRow("Biggest value driver", `${brief.drivers.top || "—"} · ${brief.drivers.note}`));
