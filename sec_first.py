@@ -11,6 +11,7 @@ endpoints; only the annual *statement* request is bypassed.
 
 from copy import deepcopy
 from datetime import datetime, timezone
+import time
 
 from dcf_loader import (
     HISTORY_FIELDS,
@@ -132,8 +133,10 @@ def load_sec_first(
             None,
         )
         name = entry.get("title", ticker) if entry else ticker
+        cik = str((entry or {}).get("cik_str", "")).zfill(10) or None
     except ProviderError:
         name = ticker
+        cik = None
     doc = blank_document(ticker, name, asof, "api")
     doc["company"].update(eligible=True, security_type="EQUITY")
     warnings = [
@@ -349,6 +352,26 @@ def load_sec_first(
     for key, value in costs.items():
         if isinstance(value, (int, float)):
             finite(value, key)
+    # Separately-disclosed impairment facts for the accounting-policy layer.
+    # Best effort: absence is recorded, never zero, and never fails the load.
+    began_adjust = time.monotonic()
+    from accounting_policy import fetch_adjustment_facts
+
+    try:
+        period_ends = [r["period_end"] for r in doc["historical"]]
+        doc["source"]["accounting_adjustments"] = fetch_adjustment_facts(
+            cik, period_ends, http
+        )
+    except Exception as exc:
+        doc["source"]["accounting_adjustments"] = {
+            "facts": {},
+            "unavailable": [
+                {"kind": "all", "tag": None, "reason": f"lookup failed: {exc}"[:160]}
+            ],
+        }
+    doc["source"]["accounting_adjustments_timing"] = round(
+        time.monotonic() - began_adjust, 3
+    )
     try:
         parse_document(doc, minority_may_be_negative=True)
     except ValueError as exc:

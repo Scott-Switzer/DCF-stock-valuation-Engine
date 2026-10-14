@@ -11,7 +11,7 @@ with a preview, or fails **for a reason the user can act on**.
 | --- | --- | --- | --- |
 | AAPL | loads | loads, 91.81 | parity held (byte-identical across repeat loads) |
 | MSFT | loads | loads, 119.40 | unchanged |
-| PEP | loads (Yahoo $196.95 prod / SEC-first $163.20 staging) | loads, SEC-first 163.20 | source conflict now explained, not hidden |
+| PEP | loads (Yahoo $196.95 prod / SEC-first $163.20 staging) | loads, SEC-first 163.20 + normalized alternative + convention warnings | conflict reframed as accounting definitions with three stated bases |
 | XOM | loads (Yahoo fallback) | loads, 153.26 | unchanged; `CURRENT.json` has no XOM entry |
 | BAC | `Yahoo missing OperatingIncome for 2023-12-31; cannot complete financials.` | `SEC SIC 6021 (National Commercial Banks) is a financial firm; an industrial FCFF DCF cannot be completed from its available statements (Yahoo missing OperatingIncome …). Use P/E and P/B relative valuation or file-based review.` | 503 → 503, now actionable |
 | JPM | same opaque error | same reframed SIC 6021 message | actionable |
@@ -65,7 +65,11 @@ other than PEP's source-corrected path is unchanged.
 
 PEP is already the working SEC-first example (gate passes, 3 annual periods,
 1.373B diluted shares, preferred equity 0.0 via filed buildup residual,
-accession `0000077476-26-000007`). BAC/JPM are **not** suitable examples: their
-filed packets lack CAPEX and bridge fields by construction, so manufacturing an
-SEC-first industrial DCF for them would be fabricated coverage. Recorded as work
-for the packet builder, not claimed as delivered.
+accession `0000077476-26-000007`). The PEP Yahoo-vs-SEC gap is now understood
+as a convention difference (pre-impairment EBIT and ROU-loaded D&A vs GAAP
+operating profit and ordinary D&A), not provider error — see
+[pep-reconciliation.md](pep-reconciliation.md) and
+[pep-three-bases.md](pep-three-bases.md). BAC/JPM are **not** suitable examples:
+their filed packets lack CAPEX and bridge fields by construction, so
+manufacturing an SEC-first industrial DCF for them would be fabricated
+coverage. Recorded as work for the packet builder, not claimed as delivered.

@@ -45,6 +45,73 @@ def _drivers_from_sensitivity(sensitivity):
     }
 
 
+def _accounting_basis(d, wacc):
+    """Which accounting conventions feed the forecast, and what would change them.
+
+    The forecast always uses reported GAAP observations. When the snapshot
+    carries source-backed impairment facts, a normalized alternative is valued
+    with the same baseline machinery so the user sees the policy effect with
+    its recurrence warning attached. Never breaks the brief: any failure
+    yields an explicit unavailable entry.
+    """
+    from accounting_policy import (
+        apply_policy,
+        provider_convention_notes,
+        rou_treatment,
+    )
+
+    block = {
+        "forecast_basis": "reported_gaap",
+        "reported_ebit_margin_mean": None,
+        "normalized_alternative": None,
+        "adjustments": [],
+        "recurrence_note": None,
+        "incomparability": provider_convention_notes(d),
+        "rou": rou_treatment(d)["reason"],
+    }
+    historical = d.get("historical", []) or []
+    reported = [
+        r.get("ebit") / r.get("revenue")
+        for r in historical
+        if r.get("ebit") is not None and r.get("revenue")
+    ]
+    if reported:
+        block["reported_ebit_margin_mean"] = sum(reported) / len(reported)
+    adjustments = (d.get("source") or {}).get("accounting_adjustments")
+    if not adjustments:
+        block["recurrence_note"] = (
+            "No separately-disclosed adjustment facts ride with this snapshot; "
+            "a normalized basis cannot be valued from it."
+        )
+        return block
+    try:
+        adjusted, ledger = apply_policy(deepcopy(d), adjustments, "normalize")
+        block["adjustments"] = ledger.get("adjustments", [])
+        block["recurrence_note"] = ledger.get("recurrence_note")
+        if adjusted is None:
+            return block
+        from compare import coerce_dcf_assumptions
+        from app import evaluate
+
+        alt_assumptions, _ = coerce_dcf_assumptions(deepcopy(adjusted), None, wacc)
+        alt = evaluate(deepcopy(adjusted), alt_assumptions)
+        alt_margins = list(alt_assumptions.ebit_margins or [])
+        block["normalized_alternative"] = {
+            "intrinsic_value": alt["intrinsic_value"],
+            "target_price_12m": alt["target_price_12m"],
+            "ebit_margin_mean": (
+                sum(alt_margins) / len(alt_margins) if alt_margins else None
+            ),
+            "note": (
+                "Same baseline machinery on impairment-adjusted EBIT; assumes "
+                "the disclosed charges do not recur. Not a truer price."
+            ),
+        }
+    except (ValueError, KeyError, TypeError) as exc:
+        block["recurrence_note"] = f"Normalized basis unavailable: {exc}"
+    return block
+
+
 def build_brief(doc, raw_assumptions=None):
     """Assemble the brief from a validated dcf-financials-v1 snapshot."""
     from dcf_loader import parse_document
@@ -99,6 +166,7 @@ def build_brief(doc, raw_assumptions=None):
         hist_margin = sum(margins_hist) / len(margins_hist)
     growth_rates = list(assumptions.revenue_growth_rates or [])
     margins = list(assumptions.ebit_margins or [])
+    accounting_basis = _accounting_basis(d, wacc)
     return {
         "ticker": ticker,
         "company": d["company"].get("name", ticker),
@@ -128,6 +196,7 @@ def build_brief(doc, raw_assumptions=None):
             "custom": custom,
         },
         "market_implied": implied,
+        "accounting_basis": accounting_basis,
         "terminal_share": result.get("terminal_value_share"),
         "history_vs_baseline": {
             "historical_revenue_cagr": hist_growth,
