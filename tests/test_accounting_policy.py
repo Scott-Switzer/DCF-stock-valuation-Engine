@@ -32,6 +32,17 @@ PEP_CHARGES = [927000000.0, 33000000.0, 1993000000.0]
 PEP_AS_OF = "2026-10-14"
 
 
+def _receipt(cik, sha256="a" * 64, etag="pinned-etag"):
+    return {
+        "provider": "SEC companyfacts",
+        "sha256": sha256,
+        "archive_key": "sec/bulk/test/companyfacts.zip",
+        "archive_etag": etag,
+        "archive_member": f"CIK{str(cik).zfill(10)}.json",
+        "archive_member_crc32": "00000000",
+    }
+
+
 class Server:
     """Serve a payload map by tag; anything else is a 404."""
 
@@ -376,6 +387,52 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(result["facts"], {"intangible_impairment": [], "goodwill_impairment": []})
         self.assertTrue(any("does not match" in u["reason"] for u in result["unavailable"]))
 
+    def test_offline_builder_missing_cik_without_receipt_is_unavailable(self):
+        from accounting_policy import build_adjustment_facts_from_companyfacts
+
+        combined = {"facts": {"us-gaap": dict(PEP_FIXTURE)}}
+        result = build_adjustment_facts_from_companyfacts(
+            PEP_CIK, PEP_PERIODS, combined, PEP_AS_OF
+        )
+        self.assertEqual(result["facts"], {"intangible_impairment": [], "goodwill_impairment": []})
+        self.assertEqual(result["ebit_facts"], [])
+        self.assertTrue(any("no authenticated archive receipt" in u["reason"]
+                            for u in result["unavailable"]))
+
+    def test_offline_builder_missing_cik_with_receipt_qualifies(self):
+        from accounting_policy import build_adjustment_facts_from_companyfacts
+
+        combined = {"facts": {"us-gaap": dict(PEP_FIXTURE)}}
+        result = build_adjustment_facts_from_companyfacts(
+            PEP_CIK, PEP_PERIODS, combined, PEP_AS_OF, receipt=_receipt(PEP_CIK)
+        )
+        self.assertTrue(result["facts"]["intangible_impairment"])
+        self.assertTrue(result["ebit_facts"])
+
+    def test_offline_builder_rejects_receipt_for_another_issuer(self):
+        from accounting_policy import build_adjustment_facts_from_companyfacts
+
+        combined = {"facts": {"us-gaap": dict(PEP_FIXTURE)}}
+        result = build_adjustment_facts_from_companyfacts(
+            PEP_CIK, PEP_PERIODS, combined, PEP_AS_OF, receipt=_receipt("0000320193")
+        )
+        self.assertEqual(result["ebit_facts"], [])
+        self.assertTrue(any("does not match" in u["reason"] for u in result["unavailable"]))
+
+    def test_offline_builder_rejects_unauthenticated_receipt(self):
+        from accounting_policy import build_adjustment_facts_from_companyfacts
+
+        combined = {"facts": {"us-gaap": dict(PEP_FIXTURE)}}
+        for bad in (_receipt(PEP_CIK, sha256="zz"),
+                    _receipt(PEP_CIK, etag=""),
+                    {"archive_member": "CIK0000077476.json"}):
+            result = build_adjustment_facts_from_companyfacts(
+                PEP_CIK, PEP_PERIODS, combined, PEP_AS_OF, receipt=bad
+            )
+            self.assertEqual(result["ebit_facts"], [])
+            self.assertTrue(any("no authenticated archive receipt" in u["reason"]
+                                for u in result["unavailable"]))
+
     def test_offline_builder_matches_live_facts(self):
         from accounting_policy import build_adjustment_facts_from_companyfacts
 
@@ -384,7 +441,7 @@ class PolicyTests(unittest.TestCase):
         for tag, payload in PEP_FIXTURE.items():
             combined["facts"]["us-gaap"][tag] = payload
         offline = build_adjustment_facts_from_companyfacts(
-            PEP_CIK, PEP_PERIODS, combined, PEP_AS_OF
+            PEP_CIK, PEP_PERIODS, combined, PEP_AS_OF, receipt=_receipt(PEP_CIK)
         )
         self.assertEqual(
             {f["period_end"]: f["amount"] for f in offline["facts"]["intangible_impairment"]},

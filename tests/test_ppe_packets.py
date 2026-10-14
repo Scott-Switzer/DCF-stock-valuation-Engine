@@ -576,6 +576,13 @@ def test_adjustment_evidence_rejects_wrong_issuer_bad_unit_and_taxonomy():
     p = _adjustment_packet(cik="0000000000")
     with pytest.raises(ProviderError, match="issuer mismatch"):
         validate_packet(p, "AAPL", "2026-10-07")
+    # Two combined supplements with missing identifiers must never agree
+    # with each other by default.
+    p = _adjustment_packet()
+    del p["adjustment_facts"]["cik"]
+    p["cik"] = None
+    with pytest.raises(ProviderError, match="issuer mismatch"):
+        validate_packet(p, "AAPL", "2026-10-07")
     p = _adjustment_packet(taxonomy="ifrs-full")
     with pytest.raises(ProviderError, match="taxonomy"):
         validate_packet(p, "AAPL", "2026-10-07")

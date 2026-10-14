@@ -29,6 +29,7 @@ No ticker names or numeric constants live here.
 
 from copy import deepcopy
 from datetime import date
+import re
 
 # Kind -> tags that may carry the separately-disclosed charge, plus any other
 # kind it could double count against when both match the same period.
@@ -278,7 +279,26 @@ def fetch_adjustment_facts(
     return result
 
 
-def build_adjustment_facts_from_companyfacts(cik, period_ends, facts, as_of=None, tags=None):
+def _receipt_cik(receipt):
+    """Issuer CIK named by an authenticated archive receipt, or "".
+
+    The receipt must carry the pinned member digest, the archive ETag, and a
+    member name of the form CIK{10 digits}.json; the member name is the
+    identity claim, authenticated by the digest + ETag pair.
+    """
+    if not isinstance(receipt, dict):
+        return ""
+    digest = receipt.get("sha256", "")
+    if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+        return ""
+    if not receipt.get("archive_etag"):
+        return ""
+    member = receipt.get("archive_member", "")
+    match = re.fullmatch(r"CIK([0-9]{10})\.json", str(member)) if isinstance(member, str) else None
+    return match.group(1).lstrip("0") if match else ""
+
+
+def build_adjustment_facts_from_companyfacts(cik, period_ends, facts, as_of=None, tags=None, receipt=None):
     """Offline adjustment evidence from a published companyfacts supplement.
 
     Same validation as the live path (issuer, taxonomy, USD, annual duration,
@@ -308,9 +328,23 @@ def build_adjustment_facts_from_companyfacts(cik, period_ends, facts, as_of=None
         return result
     result["cik"] = str(cik).zfill(10)
     # The combined source must identify the same issuer; trusted metadata is
-    # never constructed from the requested CIK alone.
+    # never constructed from the requested CIK alone. A supplement carrying
+    # no issuer identifier qualifies only when an authenticated archive
+    # receipt (pinned member digest + ETag naming this issuer's member)
+    # establishes identity.
     source_cik = str((facts or {}).get("cik", "")).strip().lstrip("0")
-    if source_cik and source_cik != clean_cik:
+    if not source_cik:
+        source_cik = _receipt_cik(receipt)
+        if not source_cik:
+            result["unavailable"].append(
+                {
+                    "kind": "all",
+                    "tag": None,
+                    "reason": "supplement CIK unavailable and no authenticated archive receipt",
+                }
+            )
+            return result
+    if source_cik != clean_cik:
         result["unavailable"].append(
             {
                 "kind": "all",
