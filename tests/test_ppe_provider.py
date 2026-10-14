@@ -174,8 +174,8 @@ def test_pointer_override_selects_candidate_release(monkeypatch):
     monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
     with app.test_request_context(environ_overrides={'workers.env': env}):
         assert ppe_provider.load_packet('PEP', '2026-10-10', deadline=123.0) is None
-    # Candidate probe first, then the normal R2 fallback through the same pointer.
-    assert keys == ['control/valuation/CANDIDATE-staging.json'] * 2
+    # Candidate probe first, then the authoritative production R2 fallback.
+    assert keys == ['control/valuation/CANDIDATE-staging.json', ppe_provider.POINTER]
 
 
 def test_pointer_override_rejects_paths_outside_control_valuation(monkeypatch):
@@ -223,6 +223,128 @@ def test_candidate_miss_falls_through_to_zion(monkeypatch):
                 result = ppe_provider.load_packet('AAPL', '2026-10-10')
         service.assert_called_once()
     assert result['source']['transport_receipt']['kind'] == 'ZION_SERVICE_BINDING'
+
+
+def test_candidate_miss_then_zion_404_uses_production_r2(monkeypatch):
+    from types import SimpleNamespace
+    import ppe_provider
+    from tests.test_ppe_packets import packet
+    p = packet()
+    key = 'gold/valuation/releases/' + 'a' * 64 + '/companies/AAPL.json'
+    candidate = {'schema_version': 'ppe-valuation-index-v1', 'companies': {}}
+    production = {'schema_version': 'ppe-valuation-index-v1',
+                  'companies': {'AAPL': {'key': key, 'sha256': 'b' * 64}}}
+    env = SimpleNamespace(ZION_VALUATIONS=object(), PPE_DATA=object(),
+                           PPE_POINTER_OVERRIDE='control/valuation/CANDIDATE-staging.json')
+    monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
+    keys = []
+
+    def fake_object_json(bucket, k, **kw):
+        keys.append(k)
+        if k == 'control/valuation/CANDIDATE-staging.json':
+            return candidate
+        if k == ppe_provider.POINTER:
+            return production
+        if k == key:
+            return p
+        raise AssertionError(f'unexpected R2 read: {k}')
+
+    with app.test_request_context(environ_overrides={'workers.env': env}):
+        with patch('ppe_provider._service_packet', return_value=None):
+            with patch('ppe_provider._object_json', side_effect=fake_object_json):
+                result = ppe_provider.load_packet('AAPL', '2026-10-10')
+    assert keys == ['control/valuation/CANDIDATE-staging.json', ppe_provider.POINTER, key]
+    receipt = result['source']['transport_receipt']
+    assert receipt['kind'] == 'DIRECT_R2' and receipt['service_state'] == 'NOT_FOUND'
+    assert result['source']['transport'] == 'Zion service has no packet; authoritative PPE R2 fallback.'
+
+
+def test_candidate_miss_zion_error_falls_back_to_production(monkeypatch):
+    from types import SimpleNamespace
+    import ppe_provider
+    from tests.test_ppe_packets import packet
+    p = packet()
+    key = 'gold/valuation/releases/' + 'a' * 64 + '/companies/AAPL.json'
+    candidate = {'schema_version': 'ppe-valuation-index-v1', 'companies': {}}
+    production = {'schema_version': 'ppe-valuation-index-v1',
+                  'companies': {'AAPL': {'key': key, 'sha256': 'b' * 64}}}
+    env = SimpleNamespace(ZION_VALUATIONS=object(), PPE_DATA=object(),
+                           PPE_POINTER_OVERRIDE='control/valuation/CANDIDATE-staging.json')
+    monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
+
+    def fake_object_json(bucket, k, **kw):
+        if k == 'control/valuation/CANDIDATE-staging.json':
+            return candidate
+        if k == ppe_provider.POINTER:
+            return production
+        if k == key:
+            return p
+        raise AssertionError(f'unexpected R2 read: {k}')
+
+    with app.test_request_context(environ_overrides={'workers.env': env}):
+        with patch('ppe_provider._service_packet', side_effect=ProviderError('Unavailable')):
+            with patch('ppe_provider._object_json', side_effect=fake_object_json):
+                result = ppe_provider.load_packet('AAPL', '2026-10-10')
+    receipt = result['source']['transport_receipt']
+    assert receipt['kind'] == 'DIRECT_R2' and receipt['service_state'] == 'ERROR'
+    assert result['source']['transport'] == 'Zion service unavailable; authoritative PPE R2 fallback.'
+
+
+def test_candidate_miss_zion_404_production_miss_returns_none(monkeypatch):
+    from types import SimpleNamespace
+    import ppe_provider
+    empty = {'schema_version': 'ppe-valuation-index-v1', 'companies': {}}
+    env = SimpleNamespace(ZION_VALUATIONS=object(), PPE_DATA=object(),
+                           PPE_POINTER_OVERRIDE='control/valuation/CANDIDATE-staging.json')
+    monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
+    with app.test_request_context(environ_overrides={'workers.env': env}):
+        with patch('ppe_provider._service_packet', return_value=None):
+            with patch('ppe_provider._object_json', return_value=empty):
+                assert ppe_provider.load_packet('AAPL', '2026-10-10') is None
+
+
+def test_corrupt_candidate_pointer_raises_without_suppression(monkeypatch):
+    from types import SimpleNamespace
+    import ppe_provider
+    import pytest
+    corrupt = {'schema_version': 'ppe-valuation-index-v0', 'companies': {}}
+    env = SimpleNamespace(ZION_VALUATIONS=object(), PPE_DATA=object(),
+                           PPE_POINTER_OVERRIDE='control/valuation/CANDIDATE-staging.json')
+    monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
+    with app.test_request_context(environ_overrides={'workers.env': env}):
+        with patch('ppe_provider._service_packet') as service:
+            with patch('ppe_provider._object_json', return_value=corrupt):
+                with pytest.raises(ProviderError, match='schema mismatch'):
+                    ppe_provider.load_packet('AAPL', '2026-10-10')
+        service.assert_not_called()
+
+
+def test_production_routing_queries_current_pointer(monkeypatch):
+    from types import SimpleNamespace
+    import ppe_provider
+    from tests.test_ppe_packets import packet
+    p = packet()
+    key = 'gold/valuation/releases/' + 'a' * 64 + '/companies/AAPL.json'
+    production = {'schema_version': 'ppe-valuation-index-v1',
+                  'companies': {'AAPL': {'key': key, 'sha256': 'b' * 64}}}
+    env = SimpleNamespace(ZION_VALUATIONS=object(), PPE_DATA=object())
+    monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
+    keys = []
+
+    def fake_object_json(bucket, k, **kw):
+        keys.append(k)
+        if k == ppe_provider.POINTER:
+            return production
+        if k == key:
+            return p
+        raise AssertionError(f'unexpected R2 read: {k}')
+
+    with app.test_request_context(environ_overrides={'workers.env': env}):
+        with patch('ppe_provider._service_packet', return_value=None):
+            with patch('ppe_provider._object_json', side_effect=fake_object_json):
+                result = ppe_provider.load_packet('AAPL', '2026-10-10')
+    assert keys == [ppe_provider.POINTER, key]
+    assert result['source']['transport_receipt']['kind'] == 'DIRECT_R2'
 
 
 def test_zion_binding_is_preferred_and_failure_uses_r2(monkeypatch):

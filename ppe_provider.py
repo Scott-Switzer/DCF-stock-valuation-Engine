@@ -211,7 +211,11 @@ def load_packet(ticker, asof=None, *, deadline=None):
         except Exception:
             service_state = "ERROR"
             service_error = "Zion service unavailable; authoritative PPE R2 fallback."
-    packet = _packet_from_pointer(bucket, pointer_key, ticker, asof, deadline)
+    # Authoritative fallback: after a candidate miss (and a Zion miss), unlisted
+    # tickers fall through to the production index. The candidate pointer must
+    # never shadow production entries, so this always reads POINTER even when
+    # a staging override selected the candidate index above.
+    packet = _packet_from_pointer(bucket, POINTER, ticker, asof, deadline)
     if packet is None:
         return None
     packet["source"]["transport"] = service_error or "Direct PPE R2 binding"
