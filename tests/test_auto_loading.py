@@ -294,6 +294,32 @@ def test_wire_bundle_dedups_base_document_but_manual_form_keeps_it(client):
     )
 
 
+def test_bundled_preview_matches_preview_api_path(client):
+    from app import evaluate, form_payload
+
+    loaded = client.post("/api/load/dcf", json={"ticker": "TEST"}).get_json()
+    preview = loaded.get("preview")
+    assert preview, "dcf bundle carries the baseline preview"
+    # No second copy of the snapshot inside the preview.
+    assert "input_financials" not in preview
+    # Same numbers the iframe preview would compute from the submitted form.
+    form = dict(loaded["form"])
+    form["base_document"] = json.dumps(loaded["financials"])
+    doc, assumptions = form_payload(
+        MultiDict({k: str(v) if v is not None else "" for k, v in form.items()})
+    )
+    expected = evaluate(doc, assumptions)
+    assert preview["intrinsic_value"] == expected["intrinsic_value"]
+    assert preview["target_price_12m"] == expected["target_price_12m"]
+    assert preview["upside_12m"] == expected["upside_12m"]
+
+
+@pytest.mark.parametrize("method", ["ddm", "relative"])
+def test_suite_bundles_have_no_dcf_preview(client, method):
+    loaded = client.post("/api/load/" + method, json={"ticker": "TEST"}).get_json()
+    assert "preview" not in loaded
+
+
 def test_assemble_wire_bundle_dedups_base_document(client):
     loaded = client.post("/api/load/dcf", json={"ticker": "TEST"}).get_json()
     for method in ("ddm", "relative"):

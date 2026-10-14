@@ -56,7 +56,7 @@ async function runLoad(data) {
   vm.createContext(context);
   vm.runInContext(source.slice(start, end), context);
   await submit({ preventDefault() {} });
-  return { marks, fetched, doc };
+  return { marks, fetched, doc, results: context.results };
 }
 
 const financials = (overrides) => ({
@@ -86,6 +86,18 @@ const financials = (overrides) => ({
   r = await runLoad({ financials: financials({}), load_summary: { stage_seconds: { brief_skipped: 'No baseline could be solved' } } });
   assert.ok(!r.doc.getElementById('research-brief').hidden, 'skipped-brief note visible');
   assert.ok(!r.fetched.includes('/api/brief'), 'no fallback fetch when the skip reason is known');
+
+  // A bundled preview is adopted so first value needs no iframe round trip.
+  r = await runLoad({
+    financials: financials({}),
+    form: { base_document: '{"x":1}' },
+    brief,
+    preview: { intrinsic_value: 88, target_price_12m: 90 },
+  });
+  const adopted = r.results.get('dcf');
+  assert.ok(adopted?.valid, 'bundled preview adopted as valid');
+  assert.equal(adopted.result.intrinsic_value, 88);
+  assert.equal(adopted.result.input_financials.company.ticker, 'TEST', 'snapshot reattached by reference');
 
   // Blocked brief still renders instead of failing the load.
   r = await runLoad({ financials: financials({}), brief: { blocked: 'Financial firm', ticker: 'TEST' } });

@@ -154,6 +154,17 @@
       briefSeq++;
       analysts = null;
       results.clear();
+      if (data.preview && method === "dcf") {
+        // First value renders with the load response: the bundled preview
+        // is the same baseline evaluation the iframe would fetch. Reattach
+        // the delivered snapshot instead of transferring it twice.
+        data.preview.input_financials = baseline.financials;
+        results.set("dcf", {
+          loaded: true, data: baseline, result: data.preview,
+          form: baseline.form, valid: true, pending: false,
+          error: null, saved: false,
+        });
+      }
       $("live-result").hidden = true;
       $("save-valuation").disabled = true;
       $("management-guidance").hidden = true;
