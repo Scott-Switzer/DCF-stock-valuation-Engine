@@ -7,8 +7,9 @@ selected by PPE_POINTER_OVERRIDE (default: control/valuation/CANDIDATE-staging.j
 Safety properties (enforced in code, not documentation):
 - The production pointer control/valuation/CURRENT.json is NEVER written:
   CandidateTransport refuses the write, and --pointer rejects it at startup.
-- Before/after SHA-256 digests of the production pointer are recorded to
-  prove it is byte-identical.
+- Before/after SHA-256 digests of the raw production pointer bytes are
+  recorded to prove it is byte-identical; canonical-JSON digests are kept
+  alongside as an explicitly labeled semantic comparison only.
 - Packet artifacts are immutable and content-addressed; uploads are
   conditional (If-None-Match *) with read-back digest verification.
 - The candidate pointer update is conditional on its original ETag and
@@ -49,6 +50,21 @@ def canonical(raw: bytes):
 
 def digest(data: bytes):
     return hashlib.sha256(data).hexdigest()
+
+
+def pointer_integrity(raw):
+    """(raw_sha256, canonical_sha256) for a pointer object, or (None, None).
+
+    Byte identity is the raw digest; the canonical digest is a semantic
+    comparison only and must never substitute for raw-byte identity.
+    """
+    if raw is None:
+        return None, None
+    try:
+        canonical_sha = digest(canonical(raw))
+    except (TypeError, ValueError):
+        canonical_sha = None
+    return digest(raw), canonical_sha
 
 
 def main():
@@ -110,10 +126,14 @@ def main():
                 continue
             resolved.setdefault(symbol, entry)
 
-        # Production pointer digest, before: read-only proof it stays untouched.
+        # Production pointer integrity, before: the raw-byte digest is the
+        # byte-identity proof; the canonical digest is a semantic comparison
+        # only and must never substitute for raw identity.
         prod_before = transport.call("get", CandidateTransport.PRODUCTION_POINTER)
-        report["production_pointer_sha256_before"] = (
-            digest(canonical(base64.b64decode(prod_before["body"]))) if prod_before else None)
+        raw_sha, canonical_sha = pointer_integrity(
+            base64.b64decode(prod_before["body"]) if prod_before else None)
+        report["production_pointer_sha256_before"] = raw_sha
+        report["production_pointer_canonical_sha256_before"] = canonical_sha
 
         prior_raw = None
         prior_entry = transport.call("get", args.pointer)
@@ -211,8 +231,10 @@ def main():
             report["published"] = True
 
         prod_after = transport.call("get", CandidateTransport.PRODUCTION_POINTER)
-        report["production_pointer_sha256_after"] = (
-            digest(canonical(base64.b64decode(prod_after["body"]))) if prod_after else None)
+        raw_sha, canonical_sha = pointer_integrity(
+            base64.b64decode(prod_after["body"]) if prod_after else None)
+        report["production_pointer_sha256_after"] = raw_sha
+        report["production_pointer_canonical_sha256_after"] = canonical_sha
         report["production_pointer_untouched"] = (
             report["production_pointer_sha256_before"] == report["production_pointer_sha256_after"])
         if args.publish and not report["production_pointer_untouched"]:

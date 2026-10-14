@@ -130,6 +130,24 @@ def test_etag_recorded_only_by_get_not_bare_call():
     assert transport.etags.get(CandidateTransport.DEFAULT_POINTER) == '"v1"'
 
 
+def test_pointer_integrity_distinguishes_raw_identity_from_semantics():
+    import hashlib
+    from scripts.publish_candidate_packets import pointer_integrity
+    a = b'{"companies": {"PEP": 1}}'
+    b = b'{ "companies" : { "PEP" : 1 } }'
+    raw_a, canon_a = pointer_integrity(a)
+    raw_b, canon_b = pointer_integrity(b)
+    # Same semantic content, different bytes: raw identity sees the change,
+    # the canonical comparison does not, so it must never gate untouched-ness.
+    assert raw_a != raw_b
+    assert canon_a == canon_b
+    assert raw_a == hashlib.sha256(a).hexdigest()
+    assert pointer_integrity(None) == (None, None)
+    raw, canon = pointer_integrity(b"not json")
+    assert raw == hashlib.sha256(b"not json").hexdigest()
+    assert canon is None
+
+
 def test_corrupt_member_is_a_reportable_provider_error(monkeypatch):
     archive = SecArchive(ArchiveClient(), 'private', 'sec/bulk/published/companyfacts.zip')
     def corrupt(*args):

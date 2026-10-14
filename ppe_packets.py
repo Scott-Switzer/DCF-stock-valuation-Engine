@@ -663,7 +663,7 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
 
         try:
             adjustment_facts = build_adjustment_facts_from_companyfacts(
-                cik, ends, facts, cutoff
+                cik, ends, facts, cutoff, receipt=source.get("sec_source")
             )
         except Exception as exc:
             raise ProviderError(
@@ -803,7 +803,15 @@ def _validate_adjustment_evidence(adj, packet, ends, cutoff):
     """
     if not isinstance(adj, dict) or adj.get("schema_version") != "accounting-adjustments-v1":
         raise ProviderError("Invalid PPE adjustment evidence schema.")
-    if str(adj.get("cik", "")).zfill(10) != str(packet.get("cik", "")).zfill(10):
+    adj_cik = str(adj.get("cik", "")).zfill(10)
+    packet_cik = str(packet.get("cik", "")).zfill(10)
+    # Both sides must carry a real issuer identifier: two combined supplements
+    # with missing identifiers must never agree with each other by default.
+    if (
+        not re.fullmatch(r"[0-9]{10}", adj_cik)
+        or adj_cik == "0000000000"
+        or adj_cik != packet_cik
+    ):
         raise ProviderError("PPE adjustment evidence issuer mismatch.")
     if adj.get("taxonomy", "us-gaap") != "us-gaap":
         raise ProviderError("PPE adjustment evidence taxonomy is not us-gaap.")
