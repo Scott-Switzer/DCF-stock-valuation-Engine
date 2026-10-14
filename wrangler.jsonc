@@ -71,7 +71,8 @@
       },
       "vars": {
         "EDGAR_IDENTITY": "Scott Switzer scswitzer@chapman.edu",
-        "DEPLOY_ENVIRONMENT": "staging"
+        "DEPLOY_ENVIRONMENT": "staging",
+        "PPE_POINTER_OVERRIDE": "control/valuation/CANDIDATE-staging.json"
       },
       "build": {
         "command": "python3 scripts/embed_assets.py"
