@@ -17,6 +17,8 @@ function element() {
 }
 
 const BASE_FORM = { growth_0: 5, growth_1: 5, wacc: 6.5, terminal_growth: 2, base_document: '{"x":1}' };
+// Template-only baseline keys with no matching editor input: not edits.
+const BASELINE_FORM = { ...BASE_FORM, future_note: '', mode: 'manual', eligible: 'yes' };
 const BASELINE_BRIEF = {
   basis: 'baseline', basis_note: 'Baseline note.', blocked: null,
   dcf: { target_price_12m: 90, upside_12m: -0.1, intrinsic_value: 88, upside: -0.12, wacc: 0.08, terminal_growth: 0.02 },
@@ -51,7 +53,7 @@ function setup() {
     },
     performance: { mark() {} },
     fetch: async () => ({ ok: false }),
-    setTimeout, clearTimeout,
+    setTimeout, clearTimeout, URLSearchParams,
     $: (id) => doc.getElementById(id),
     money: (v) => `M${v}`, pct: (v) => `P${v}`, date: (v) => `D${v}`,
     // Stubs for out-of-slice collaborators.
@@ -74,7 +76,7 @@ function setup() {
     method: 'dcf',
     baseline: {
       financials: { company: { ticker: 'TEST' }, market: {}, source: { kind: 'api' } },
-      form: { ...BASE_FORM },
+      form: { ...BASELINE_FORM },
       brief: BASELINE_BRIEF,
     },
     baselineBrief: null, briefTimer: null, briefSeq: 0,
@@ -149,6 +151,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await sleep(600);
     assert.equal(briefPosts.length, 0, 'no brief request on invalid input');
     assert.ok(!nodes.get('research-brief').hidden, 'last good brief stays visible');
+  }
+
+  // 6b. Template-only baseline keys absent from the submitted form are not edits.
+  {
+    const { briefPosts, previewResult } = setup();
+    previewResult({ ...BASE_FORM }, { revenue_growth_rates: [0.05] });
+    await sleep(600);
+    assert.equal(briefPosts.length, 0, 'template-only keys do not force a refetch');
   }
 
   // 6. Numeric formatting differences (5 vs "5.00") still count as baseline.
