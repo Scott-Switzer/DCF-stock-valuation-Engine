@@ -545,6 +545,28 @@ def test_components_from_another_filing_do_not_explain_residual():
     assert p["common_income"] == []
 
 
+def test_consolidated_parent_and_nci_explain_residual():
+    # Caterpillar pattern: consolidated ProfitLoss parent, no NetIncomeLoss tag;
+    # the same-filing NCI attribution bridges parent to the direct tag.
+    p = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(10335)],
+        ProfitLoss=[annual_fact(10332)],
+        NetIncomeLossAttributableToNoncontrollingInterest=[annual_fact(-3)],
+    )
+    assert len(p["common_income"]) == 1
+    assert p["common_income"][0]["value"] == 10335
+    assert p["common_income"][0]["provenance"]["bridge"] == "explained_by_nci_income"
+
+
+def test_nci_from_another_filing_does_not_explain_residual():
+    p = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(10335, accn="A")],
+        ProfitLoss=[annual_fact(10332, accn="A")],
+        NetIncomeLossAttributableToNoncontrollingInterest=[annual_fact(-3, accn="B")],
+    )
+    assert p["common_income"] == []
+
+
 def test_two_reported_components_explain_residual_exactly():
     p = build_with(
         NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(120)],

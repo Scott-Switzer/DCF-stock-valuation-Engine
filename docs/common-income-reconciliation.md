@@ -27,6 +27,13 @@ verdict:
 - `no_direct_tag` — the issuer does not report the common-basic tag for that period.
   The packet abstains and the existing baseline stays in force.
 
+Issuers reporting consolidated income as `ProfitLoss` (no `NetIncomeLoss` tag) use
+it as the parent leg; the same-filing `NetIncomeLossAttributableToNoncontrollingInterest`
+(`nci_income` category) then reconciles consolidated income to the direct tag.
+Verified live for CAT FY2023–2025 (dry-run, archive `sec-nightly-20260924`): all three
+periods bridge exactly in accession `0000018230-26-000008`; CAT gate moves from 8 to
+5 missing reasons (nwc, short-term debt and preferred equity remain unpublished).
+
 ## Independent filing check
 
 | Issuer | Fiscal year | Accession | Net income to parent | Preferred stock | Participating securities | Redemption premium | Common basic (bridged) | Verdict |
@@ -34,6 +41,7 @@ verdict:
 | JPM | FY2025 | 0001628280-26-008131 | 57,048 | 1,099 | 268 | 0 | 55,681 | explained |
 | JPM | FY2010 (in FY2011 10-K) | 0000019617-12-000163 | 17,370 | 642 | 964 | 0 | 15,764 | explained |
 | JPM | FY2009 (in FY2011 10-K) | 0000019617-12-000163 | 11,728 | 1,327 | 515 | 1,112 | 8,774 | explained |
+| CAT | FY2023–2025 | 0000018230-26-000008 | 10,332 / 10,788 / 8,882 (ProfitLoss parent) | 0 | 0 | 0 | 10,335 / 10,792 / 8,884 | explained_by_nci_income (−3 / −4 / −2 NCI) |
 
 57,048 − 1,099 − 268 = 55,681 (USD millions), matching the FY2025 filing's EPS numerator
 reconciliation.

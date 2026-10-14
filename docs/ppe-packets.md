@@ -66,6 +66,13 @@ The archive bucket defaults to `financial-data-wrds-private`; only the explicitl
 named public SEC archive is read. No WRDS/provider observations are republished.
 Individual absent, oversized or conflicting issuer supplements remain explicit.
 
+Each packet also publishes validated `adjustment_facts` (separately-disclosed
+impairment tags plus SEC `OperatingIncomeLoss`, same filing-grade checks as the live
+path: issuer, us-gaap, USD, annual duration, 10-K form, filing cutoff, accession,
+conflict rejection) built offline from the same companyfacts supplement, so
+SEC-first loads attach evidence with no live concept fetch. Packets predating the
+evidence keep a bounded live fallback until republication.
+
 Automatic assembly reads the packet before validating the fallback statements.
 Supported SEC fields can therefore fill missing fallback statement inputs, keeping
 their original provider/period/accession provenance. Common-stockholder income,

@@ -40,6 +40,7 @@ COMMON_INCOME_COMPONENTS = {
     "preferred_redemption_premium": ["PreferredStockRedemptionPremium"],
     "participating_securities": ["ParticipatingSecuritiesDistributedAndUndistributedEarningsLossBasic"],
     "participating_securities_alt": ["ParticipatingSecuritiesDistributedAndUndistributedEarnings"],
+    "nci_income": ["NetIncomeLossAttributableToNoncontrollingInterest"],
 }
 # Mutually exclusive economic categories: at most one tag per category may contribute to a
 # multi-component EPS numerator bridge, preventing synonymous preferred or participating tags
@@ -58,6 +59,9 @@ COMMON_INCOME_CATEGORIES = (
     ),
     (
         "preferred_redemption_premium",
+    ),
+    (
+        "nci_income",
     ),
 )
 COMMON_INCOME_TOLERANCE_USD = 1.0
@@ -201,6 +205,13 @@ def common_income_evidence(facts, end, direct):
     if not accession:
         return {"verdict": "no_accession", "accession": None, "parent": None, "components": {}}
     parent = _filing_value(facts, ["NetIncomeLoss"], end, accession)
+    parent_tag = "NetIncomeLoss"
+    if parent is None:
+        # Some issuers (e.g. Caterpillar) report consolidated income as
+        # ProfitLoss; the NCI component below then reconciles it to the
+        # parent-attributable direct tag within the same filing.
+        parent = _filing_value(facts, ["ProfitLoss"], end, accession)
+        parent_tag = "ProfitLoss"
     components = {}
     for name, tags in COMMON_INCOME_COMPONENTS.items():
         value = _filing_value(facts, tags, end, accession)
@@ -210,6 +221,7 @@ def common_income_evidence(facts, end, direct):
         "verdict": explain_residual(parent, direct["value"], components),
         "accession": accession,
         "parent": parent,
+        "parent_tag": parent_tag,
         "components": components,
     }
 
@@ -583,6 +595,16 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
     bridges["short_term_debt"] = values["short_term_debt"]
     shares = values["diluted_shares"]
     interest = values["interest_expense"]
+    adjustment_facts = None
+    if facts:
+        try:
+            from accounting_policy import build_adjustment_facts_from_companyfacts
+
+            adjustment_facts = build_adjustment_facts_from_companyfacts(
+                cik, ends, facts, cutoff
+            )
+        except Exception:
+            adjustment_facts = None
     packet = {
         "schema_version": SCHEMA,
         "ticker": ticker,
@@ -597,6 +619,8 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
         "dividends": dividends,
         "common_income": common_income,
     }
+    if adjustment_facts is not None:
+        packet["adjustment_facts"] = adjustment_facts
     validate_packet(packet, ticker, cutoff)
     return packet
 
@@ -698,6 +722,39 @@ def validate_packet(packet, ticker, asof):
     for x in packet.get("common_income", []):
         if not bridge_accepted((x.get("provenance") or {}).get("bridge")):
             raise ProviderError("Common income is not verified against its filing.")
+    if "adjustment_facts" in packet:
+        adj = packet["adjustment_facts"]
+        if not isinstance(adj, dict) or adj.get("schema_version") != "accounting-adjustments-v1":
+            raise ProviderError("Invalid PPE adjustment evidence schema.")
+        if str(adj.get("cik", "")).zfill(10) != str(packet.get("cik", "")).zfill(10):
+            raise ProviderError("PPE adjustment evidence issuer mismatch.")
+        end_strings = {e.isoformat() for e in ends}
+        facts_map = adj.get("facts")
+        if not isinstance(facts_map, dict):
+            raise ProviderError("Invalid PPE adjustment evidence facts.")
+        for kind, items in facts_map.items():
+            if not isinstance(items, list):
+                raise ProviderError("Invalid PPE adjustment evidence facts.")
+            for fact in items:
+                if not isinstance(fact, dict):
+                    raise ProviderError("Invalid PPE adjustment evidence fact.")
+                if fact.get("period_end") not in end_strings:
+                    raise ProviderError("PPE adjustment evidence period mismatch.")
+                if not isinstance(fact.get("amount"), (int, float)):
+                    raise ProviderError("Invalid PPE adjustment evidence amount.")
+                filed = _date(str(fact.get("filed"))[:10])
+                if filed > cutoff:
+                    raise ProviderError("PPE adjustment evidence filed after cutoff.")
+                if not fact.get("accession") or not fact.get("tag") or not fact.get("period_start"):
+                    raise ProviderError("PPE adjustment evidence provenance incomplete.")
+        ebit_facts = adj.get("ebit_facts", [])
+        if not isinstance(ebit_facts, list):
+            raise ProviderError("Invalid PPE adjustment EBIT evidence.")
+        for fact in ebit_facts:
+            if not isinstance(fact, dict) or fact.get("period_end") not in end_strings:
+                raise ProviderError("PPE adjustment EBIT evidence period mismatch.")
+            if not fact.get("accession") or not fact.get("filed"):
+                raise ProviderError("PPE adjustment EBIT evidence provenance incomplete.")
     return packet
 
 
@@ -918,6 +975,12 @@ def enrich_packet(previous, candidate, asof):
     incoming_common = {row['period_end']: row for row in result.get('common_income', [])}
     result['common_income'] = [value for row in result['historical']
         if (value := choose(common.get(row['period_end']), incoming_common.get(row['period_end']))) is not None]
+    if 'adjustment_facts' not in result and 'adjustment_facts' in previous:
+        prev_adj = previous['adjustment_facts']
+        prev_ends = {r['period_end'] for r in previous.get('historical', [])}
+        result_ends = {r['period_end'] for r in result.get('historical', [])}
+        if isinstance(prev_adj, dict) and prev_ends <= result_ends:
+            result['adjustment_facts'] = deepcopy(prev_adj)
     return validate_packet(result, result['ticker'], asof)
 
 

@@ -144,7 +144,13 @@ def _select_period_facts(payload, tag, period_ends, as_of, future, conflicts):
         if fact.get("val") is None:
             continue
         filed = _as_date(fact.get("filed"))
-        if cutoff is not None and filed is not None and filed > cutoff:
+        if filed is None:
+            # Missing or invalid filing date: not filing-grade evidence.
+            continue
+        if not fact.get("accn"):
+            # No accession receipt: the filing context cannot be verified.
+            continue
+        if cutoff is not None and filed > cutoff:
             future.append(
                 {
                     "period_end": end,
@@ -272,6 +278,93 @@ def fetch_adjustment_facts(
     return result
 
 
+def build_adjustment_facts_from_companyfacts(cik, period_ends, facts, as_of=None, tags=None):
+    """Offline adjustment evidence from a published companyfacts supplement.
+
+    Same validation as the live path (issuer, taxonomy, USD, annual duration,
+    accepted form, filing cutoff, accession, conflict rejection) but with no
+    network: each tag payload is projected from the combined companyfacts
+    ``facts`` dict used at packet publication time. Returns the same
+    ``accounting-adjustments-v1`` shape with ``status`` resolved.
+    """
+    tags = tags or ADJUSTMENT_TAGS
+    wants = [p for p in (period_ends or []) if p]
+    result = {
+        "schema_version": "accounting-adjustments-v1",
+        "cik": None,
+        "as_of": as_of,
+        "status": "resolved",
+        "facts": {kind: [] for kind in tags},
+        "ebit_facts": [],
+        "unavailable": [],
+        "conflicts": [],
+        "future_restatements": [],
+    }
+    clean_cik = str(cik or "").strip().lstrip("0")
+    if not clean_cik.isdigit():
+        result["unavailable"].append(
+            {"kind": "all", "tag": None, "reason": "issuer CIK unavailable"}
+        )
+        return result
+    result["cik"] = str(cik).zfill(10)
+    _us_gaap = ((facts or {}).get("facts") or {}).get("us-gaap") or {}
+    for kind, spec in tags.items():
+        matched = False
+        for tag in spec["tags"]:
+            block = _us_gaap.get(tag)
+            if not isinstance(block, dict):
+                result["unavailable"].append(
+                    {"kind": kind, "tag": tag, "reason": "tag absent from published supplement"}
+                )
+                continue
+            payload = {
+                "taxonomy": "us-gaap",
+                "cik": result["cik"],
+                "units": {USD_UNIT: ((block.get("units") or {}).get(USD_UNIT) or [])},
+            }
+            invalid = _validate_payload(payload, result["cik"], tag)
+            if invalid:
+                result["unavailable"].append({"kind": kind, "tag": tag, "reason": invalid})
+                continue
+            selected = _select_period_facts(
+                payload, tag, wants, as_of, result["future_restatements"], result["conflicts"]
+            )
+            if selected:
+                matched = True
+                result["facts"][kind].extend(selected[end] for end in wants if end in selected)
+            if matched:
+                break
+            result["unavailable"].append(
+                {
+                    "kind": kind,
+                    "tag": tag,
+                    "reason": "no validated annual 10-K fact for the loaded periods",
+                }
+            )
+    for tag in EBIT_TAGS:
+        block = _us_gaap.get(tag)
+        if not isinstance(block, dict):
+            result["unavailable"].append(
+                {"kind": "ebit", "tag": tag, "reason": "tag absent from published supplement"}
+            )
+            continue
+        payload = {
+            "taxonomy": "us-gaap",
+            "cik": result["cik"],
+            "units": {USD_UNIT: ((block.get("units") or {}).get(USD_UNIT) or [])},
+        }
+        invalid = _validate_payload(payload, result["cik"], tag)
+        if invalid:
+            result["unavailable"].append({"kind": "ebit", "tag": tag, "reason": invalid})
+            continue
+        selected = _select_period_facts(
+            payload, tag, wants, as_of, result["future_restatements"], result["conflicts"]
+        )
+        result["ebit_facts"] = [selected[end] for end in wants if end in selected]
+        break
+    return result
+
+
 def _nearest_key(end, keys):
     """Exact period end, else the nearest candidate within 7 days, else None.
 
@@ -337,7 +430,7 @@ def _ebit_definition(doc, adjustments):
             ),
             "periods": [],
         }
-    totals, _ = _fact_totals(adjustments)
+    totals, evidence = _fact_totals(adjustments)
     periods = []
     verdicts = set()
     def match(end):
@@ -373,9 +466,20 @@ def _ebit_definition(doc, adjustments):
             verdicts.add("unavailable")
             continue
         gaap = fact.get("amount")
-        charge = totals.get(fact.get("period_end"), 0) or totals.get(end, 0) or 0
+        sec_end = fact.get("period_end")
+        # Compatible filing contexts only: the EBIT fact and every adjustment
+        # fact for the tied period must come from the same filing accession.
+        # A charge from another filing never explains this EBIT definition.
+        charge_items = evidence.get(sec_end, []) or evidence.get(end, []) or []
+        charge_accessions = {e.get("accession") for e in charge_items if e.get("accession")}
+        context_compatible = not charge_items or (
+            bool(fact.get("accession")) and charge_accessions == {fact.get("accession")}
+        )
+        charge = sum((e.get("amount") or 0) for e in charge_items)
         if gaap is None:
             verdict = "unavailable"
+        elif charge_items and not context_compatible:
+            verdict = "unverified"
         elif abs(ebit - gaap) < 1.0:
             verdict = "includes_charges"  # GAAP operating income
         elif charge and abs(ebit - (gaap + charge)) < 1.0:
@@ -391,6 +495,8 @@ def _ebit_definition(doc, adjustments):
                 "sec_operating_income": gaap,
                 "adjustment_total": charge,
                 "verdict": verdict,
+                "filing_context_compatible": context_compatible,
+                "adjustment_accessions": sorted(charge_accessions),
                 "tag": fact.get("tag"),
                 "accession": fact.get("accession"),
                 "form": fact.get("form"),
@@ -484,7 +590,9 @@ def audit_adjustments(doc, adjustments):
         "periods": periods,
         "addback_total": sum(p["amount"] for p in periods if p["verdict"] == "verified_addback"),
         "rejected_total": sum(
-            p["amount"] for p in periods if p["verdict"].startswith("rejected")
+            p["amount"]
+            for p in periods
+            if p["verdict"].startswith("rejected") or p["verdict"] == "overlap_rejected"
         ),
     }
 
@@ -506,7 +614,17 @@ def classify_basis(doc, adjustments=None):
         ]
         statuses = {p.get("quality_status") for p in reported}
         accessions = {p.get("accession") for p in reported if p.get("accession")}
-        if reported and statuses == {"REPORTED"} and accessions:
+        per_period = [
+            (p.get("quality_status"), p.get("accession"), p.get("period_start"))
+            for p in reported
+        ]
+        complete = (
+            bool(reported)
+            and all(status == "REPORTED" for status, _, _ in per_period)
+            and all(bool(accn) for _, accn, _ in per_period)
+            and all(bool(start) for _, _, start in per_period)
+        )
+        if complete:
             return {
                 "label": BASIS_VERIFIED_GAAP,
                 "reason": (
@@ -518,8 +636,8 @@ def classify_basis(doc, adjustments=None):
         return {
             "label": BASIS_UNVERIFIED,
             "reason": (
-                "SEC-first statements are present but carry no per-period "
-                "REPORTED quality status and accession receipts."
+                "SEC-first statements are present but lack complete per-period "
+                "REPORTED quality status, accession receipts or period starts."
             ),
             "evidence": {"quality_status": sorted(s for s in statuses if s)},
         }
@@ -568,9 +686,10 @@ def comparability_note(doc):
 def apply_policy(doc, adjustments, policy="as_reported"):
     """Derive the forecast-ready series for ``policy``; ``doc`` is untouched.
 
-    ``normalize`` adds back only periods whose audited verdict is
-    ``verified_addback``. Returns ``(series_or_None, ledger)``; unknown policies
-    raise ValueError.
+    ``normalize`` succeeds only when every loaded period carrying a charge is
+    a ``verified_addback``. Any overlap rejection or partial/unverified charge
+    blocks the whole normalized series (no partial-period normalization).
+    Returns ``(series_or_None, ledger)``; unknown policies raise ValueError.
     """
     if policy not in POLICIES:
         raise ValueError(f"Accounting policy must be one of {POLICIES}.")
@@ -582,6 +701,46 @@ def apply_policy(doc, adjustments, policy="as_reported"):
     ]
     applied = [p for p in audit["periods"] if p["verdict"] == "verified_addback"]
     impaired_periods = sum(1 for p in audit["periods"] if p["amount"])
+    charged = [p for p in audit["periods"] if p["amount"]]
+    has_overlap = any(p["verdict"] == "overlap_rejected" for p in charged)
+    has_non_verified = any(p["verdict"] != "verified_addback" for p in charged)
+    if policy == "normalize" and charged and (has_overlap or has_non_verified):
+        blocked_status = "conflicted_evidence" if has_overlap else "partial_or_unverified_evidence"
+        blocked_reason = (
+            "overlapping impairment concepts could double count; no normalized series"
+            if has_overlap
+            else "only a subset of charged periods verifies; a partial add-back would misstate the trend"
+        )
+        ledger = {
+            "policy": policy,
+            "reported_ebit_margins": reported_margins,
+            "adjustments": [],
+            "period_audit": audit["periods"],
+            "ebit_definition": audit["ebit_definition"],
+            "periods_with_impairment": impaired_periods,
+            "period_count": len(historical),
+            "applied_total": 0,
+            "rejected_total": audit["rejected_total"],
+            "recurrence_note": (
+                f"Separately-disclosed impairments appear in {impaired_periods} of "
+                f"{len(historical)} loaded periods. Normalizing assumes the charges "
+                "do not recur"
+                + (
+                    "; with charges in every loaded period that assumption is "
+                    "aggressive and the normalized value is a scenario, not a "
+                    "better valuation."
+                    if impaired_periods == len(historical) and impaired_periods
+                    else "."
+                )
+            )
+            if impaired_periods
+            else "No separately-disclosed impairments in the loaded periods.",
+            "adjusted_ebit_margins": None,
+            "forecast_basis": "reported_gaap",
+            "adjustment_status": blocked_status,
+            "blocked_reason": blocked_reason,
+        }
+        return None, ledger
     ledger = {
         "policy": policy,
         "reported_ebit_margins": reported_margins,
