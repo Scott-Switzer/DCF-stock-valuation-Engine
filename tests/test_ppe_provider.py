@@ -7,16 +7,22 @@ def test_company_packet_api_missing_and_failure(tmp_path):
     app.config.update(TESTING=True, STATE_PATH=str(tmp_path / "state.sqlite3"))
     with app.test_client() as client:
         with patch("ppe_provider.load_packet", return_value=None):
-            assert client.get("/api/company/AAPL").status_code == 404
+            response = client.get("/api/company/AAPL")
+            assert response.status_code == 404
+            assert response.headers["Cache-Control"] == "no-store"
         with patch("ppe_provider.load_packet", side_effect=ProviderError("Integrity failure")):
-            assert client.get("/api/company/AAPL").status_code == 503
+            response = client.get("/api/company/AAPL")
+            assert response.status_code == 503
+            assert response.headers["Cache-Control"] == "no-store"
         with patch(
             "ppe_provider.load_packet",
             return_value={"schema_version": "ppe-valuation-packet-v1", "ticker": "AAPL"},
         ):
             response = client.get("/api/company/AAPL")
             assert response.status_code == 200
-            assert response.headers["Cache-Control"] == "no-store"
+            # Digest-verified immutable packet bodies are edge-cacheable;
+            # errors above stay no-store.
+            assert response.headers["Cache-Control"].startswith("public, max-age=300")
 
 
 def test_loading_fallback_is_explicit(tmp_path):

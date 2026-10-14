@@ -397,7 +397,7 @@ def limit_expensive_work():
     mcp_request = request.method == "POST" and request.path == "/mcp"
     mutation = request.method in {"POST", "PUT", "PATCH", "DELETE"}
     reference_request = request.method == "GET" and (
-        request.path.startswith(("/api/references/", "/api/guidance/", "/api/company/", "/api/providers", "/coverage/"))
+        request.path.startswith(("/api/references/", "/api/guidance/", "/api/company/", "/api/providers", "/api/diag/", "/coverage/"))
         or (request.path.startswith("/research/") and request.path.endswith("/export/xlsx"))
     )
     if app.config.get("CLOUDFLARE"):
@@ -527,11 +527,14 @@ def security_headers(response):
                 "/api/tickers",
                 "/api/guidance/",
                 "/api/references/",
+                "/api/company/",
             )
         )
     ):
         # Public provider reference data is already TTL-cached server-side;
         # a short edge TTL absorbs repeat ticker lookups without stale risk.
+        # /api/company packet bodies are digest-verified immutable objects;
+        # the ticker pointer can lag a new release by at most the edge TTL.
         response.headers["Cache-Control"] = (
             "public, max-age=300, stale-while-revalidate=600"
         )
@@ -936,6 +939,78 @@ def guidance_api(ticker):
         from guidance import load_guidance
 
         return jsonify(load_guidance(ticker))
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+    except ProviderError as exc:
+        return jsonify(error=str(exc)), 503
+
+
+@app.get("/api/diag/concurrency")
+def diag_concurrency_api():
+    """Staging-only prototype: sequential vs overlapped provider I/O.
+
+    Fetches three independent inputs (external market reference, the R2
+    valuation pointer, the private packet service) once sequentially and once
+    overlapped via a single asyncio.gather bridge, and reports both walls.
+    Never enabled outside the staging environment; removed if unjustified.
+    """
+    try:
+        from flask import current_app, has_request_context
+
+        staging = (
+            has_request_context()
+            and current_app.config.get("CLOUDFLARE")
+            and getattr(request.environ.get("workers.env"), "DEPLOY_ENVIRONMENT", "") == "staging"
+        )
+        if not staging:
+            return jsonify(error="Diagnostics are staging-only."), 404
+        import asyncio
+        import time as _time
+        from pyodide.ffi import run_sync
+        from workers import fetch as js_fetch
+
+        env = request.environ["workers.env"]
+
+        async def one_external():
+            response = await js_fetch(
+                "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1d",
+                headers={"User-Agent": "staging-concurrency-probe"},
+            )
+            body = await response.text()
+            return ("external", response.status, len(body))
+
+        async def one_pointer():
+            obj = await env.PPE_DATA.get("control/valuation/CURRENT.json")
+            body = await obj.text()
+            return ("r2_pointer", 200, len(body))
+
+        async def one_service():
+            from js import Request
+
+            response = await env.ZION_VALUATIONS.fetch(
+                Request.new("https://zion.internal/v1/valuation/company/PEP?as_of=2026-10-14")
+            )
+            body = await response.text()
+            return ("service", response.status, len(body))
+
+        async def overlapped():
+            return await asyncio.gather(one_external(), one_pointer(), one_service())
+
+        started = _time.monotonic()
+        sequential = [run_sync(one_external()), run_sync(one_pointer()), run_sync(one_service())]
+        sequential_ms = round((_time.monotonic() - started) * 1000, 1)
+        started = _time.monotonic()
+        try:
+            concurrent = run_sync(overlapped())
+        except Exception as exc:
+            return jsonify(mode="concurrent_unsupported", detail=str(exc)[:200], sequential_ms=sequential_ms)
+        concurrent_ms = round((_time.monotonic() - started) * 1000, 1)
+        return jsonify(
+            sequential_ms=sequential_ms,
+            concurrent_ms=concurrent_ms,
+            sequential=[{name: (status, size)} for name, status, size in sequential],
+            concurrent=[{name: (status, size)} for name, status, size in concurrent],
+        )
     except ValueError as exc:
         return jsonify(error=str(exc)), 400
     except ProviderError as exc:

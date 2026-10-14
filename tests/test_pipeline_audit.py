@@ -56,13 +56,13 @@ def test_assembly_hit_does_not_claim_current_service_invocation():
     assert p['independent_source_verification'] == 'NOT_ESTABLISHED'
 
 
-def test_packet_routes_preserve_no_store_and_public_sample_cache(monkeypatch, tmp_path):
+def test_packet_routes_cache_public_packets_and_sample(monkeypatch, tmp_path):
     monkeypatch.setitem(app.config, 'STATE_PATH', str(tmp_path / 'state.sqlite3'))
     monkeypatch.setattr('company_packets.load_company_packet', lambda *a: {'status': 'BLOCKED'})
     monkeypatch.setattr(ppe_provider, 'load_packet', lambda *a: packet())
     with app.test_client() as client:
         for path in ['/api/company/AAPL', '/api/company/AAPL/packet']:
-            assert client.get(path).headers['Cache-Control'] == 'no-store'
+            assert client.get(path).headers['Cache-Control'].startswith('public, max-age=300')
         assert 'public' in client.get('/api/sample').headers['Cache-Control']
 
 

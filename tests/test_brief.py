@@ -64,6 +64,21 @@ class BuildBriefTests(unittest.TestCase):
         )
         self.assertEqual(custom_brief["assumptions"]["revenue_growth_mean"], 0.10)
 
+    def test_analysis_fields_are_present_and_inspectable(self):
+        from brief import build_brief
+
+        brief = build_brief(demo())
+        self.assertIsInstance(brief["terminal_share"], float)
+        self.assertGreaterEqual(brief["terminal_share"], 0)
+        self.assertLessEqual(brief["terminal_share"], 1)
+        hist = brief["history_vs_baseline"]
+        self.assertIsNotNone(hist["historical_revenue_cagr"])
+        self.assertIsNotNone(hist["baseline_revenue_growth_mean"])
+        specs = {s["name"]: s["spec"] for s in brief["scenarios"]}
+        self.assertEqual(specs["Bear"]["revenue_growth_delta"], -0.02)
+        self.assertEqual(specs["Bull"]["wacc_delta"], -0.01)
+        self.assertEqual(specs["Base"]["ebit_margin_delta"], 0.0)
+
     def test_baseline_basis_label(self):
         from brief import build_brief
 

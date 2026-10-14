@@ -83,6 +83,20 @@ def build_brief(doc, raw_assumptions=None):
     classification = source.get("classification", {}) or {}
     warnings = source.get("warnings", []) or []
     historical = d.get("historical", []) or []
+    revenues = [r.get("revenue") for r in historical]
+    hist_growth = (
+        (revenues[-1] / revenues[0]) ** (1 / (len(revenues) - 1)) - 1
+        if len(revenues) > 1 and all(revenues) and revenues[0] > 0 and revenues[-1] > 0
+        else None
+    )
+    hist_margin = None
+    margins_hist = [
+        r.get("ebit") / r.get("revenue")
+        for r in historical
+        if r.get("ebit") is not None and r.get("revenue")
+    ]
+    if margins_hist:
+        hist_margin = sum(margins_hist) / len(margins_hist)
     growth_rates = list(assumptions.revenue_growth_rates or [])
     margins = list(assumptions.ebit_margins or [])
     return {
@@ -114,10 +128,33 @@ def build_brief(doc, raw_assumptions=None):
             "custom": custom,
         },
         "market_implied": implied,
+        "terminal_share": result.get("terminal_value_share"),
+        "history_vs_baseline": {
+            "historical_revenue_cagr": hist_growth,
+            "historical_ebit_margin_mean": hist_margin,
+            "baseline_revenue_growth_mean": (
+                sum(growth_rates) / len(growth_rates) if growth_rates else None
+            ),
+            "baseline_ebit_margin_mean": sum(margins) / len(margins) if margins else None,
+            "note": (
+                "Reported history vs the baseline forecast feeding this brief; "
+                "a premium to intrinsic value must be justified by beating "
+                "one of these lines."
+            ),
+        },
         "scenarios": [
-            {"name": s["name"], "intrinsic_value": s["intrinsic_value"],
-             "target_price_12m": s["target_price_12m"]}
+            {
+                "name": s["name"],
+                "intrinsic_value": s["intrinsic_value"],
+                "target_price_12m": s["target_price_12m"],
+                "spec": {
+                    "revenue_growth_delta": delta,
+                    "ebit_margin_delta": delta,
+                    "wacc_delta": -delta / 2,
+                },
+            }
             for s in result.get("scenarios", [])
+            for delta in ({"Bear": -0.02, "Base": 0.0, "Bull": 0.02}.get(s["name"], 0.0),)
         ],
         "drivers": _drivers_from_sensitivity(result.get("sensitivity")),
         "freshness": {
