@@ -10,7 +10,10 @@
     generation = 0,
     loading = false,
     analysts = null,
-    guidanceRequested = false;
+    guidanceRequested = false,
+    baselineBrief = null,
+    briefTimer = null,
+    briefSeq = 0;
   const money = (value) =>
     Number.isFinite(value)
       ? value.toLocaleString(undefined, {
@@ -32,6 +35,19 @@
   function status(text, error = false) {
     $("workspace-status").textContent = text;
     $("workspace-status").className = error ? "notice error" : "notice";
+  }
+  // Load/assemble responses carry financials once; the embedded editor and
+  // compare flows still expect form.base_document, so rebuild it locally
+  // instead of transferring the same snapshot twice.
+  function withBaseDocument(data) {
+    if (
+      data &&
+      data.financials &&
+      data.form &&
+      !data.form.base_document
+    )
+      data.form.base_document = JSON.stringify(data.financials);
+    return data;
   }
   async function request(url, body) {
     const r = await fetch(url, {
@@ -83,7 +99,7 @@
             });
       if (token !== generation) return;
       item.loaded = true;
-      item.data = data;
+      item.data = withBaseDocument(data);
       item.assembling = false;
       results.set(key, item);
       if (ready.has(key)) send(key, data);
@@ -133,7 +149,9 @@
       performance.mark("workspace:load-response");
       if (token !== generation) return;
       generation++;
-      baseline = data;
+      baseline = withBaseDocument(data);
+      baselineBrief = data.brief || null;
+      briefSeq++;
       analysts = null;
       results.clear();
       $("live-result").hidden = true;
@@ -191,6 +209,7 @@
     try {
       const brief = await request("/api/brief", { financials });
       if (token !== generation) return;
+      baselineBrief = brief;
       renderBrief(brief, token);
     } catch (_) {
       /* The brief is instant context; the interactive valuation still loads. */
@@ -328,6 +347,54 @@
       }
     }
   }
+  // Live brief sync: the bundled brief covers baseline assumptions only.
+  // When a valid DCF preview arrives with edited assumptions, refresh the
+  // brief from the same accepted model state (debounced; stale responses
+  // never overwrite newer ones). Reverting to baseline restores the
+  // bundled brief without a request.
+  function briefFormsEqual(a, b) {
+    const x = a || {}, y = b || {},
+      keys = new Set([...Object.keys(x), ...Object.keys(y)]);
+    for (const k of keys) {
+      if (k === "base_document") continue;
+      const va = x[k] == null ? "" : String(x[k]),
+        vb = y[k] == null ? "" : String(y[k]);
+      if (va === vb) continue;
+      const na = Number(va), nb = Number(vb);
+      if (va !== "" && vb !== "" && Number.isFinite(na) && Number.isFinite(nb)) {
+        if (Math.abs(na - nb) < 1e-9) continue;
+      }
+      return false;
+    }
+    return true;
+  }
+  function scheduleBriefSync(result, form) {
+    if (!baseline || baselineBrief?.blocked || result?.error) return;
+    clearTimeout(briefTimer);
+    const seq = ++briefSeq, gen = generation;
+    briefTimer = setTimeout(async () => {
+      if (seq !== briefSeq || gen !== generation) return;
+      try {
+        if (
+          result?.assumptions &&
+          baseline.form &&
+          briefFormsEqual(form, baseline.form) &&
+          baselineBrief
+        ) {
+          renderBrief(baselineBrief, generation);
+          return;
+        }
+        const brief = await request("/api/brief", {
+          financials: result?.input_financials || baseline.financials,
+          assumptions: result?.assumptions,
+        });
+        if (seq !== briefSeq || gen !== generation) return;
+        renderBrief(brief, generation);
+      } catch (_) {
+        /* A stale or failed brief never clears the last good one. */
+      }
+    }, 350);
+  }
   window.addEventListener("message", (event) => {
     if (event.origin !== location.origin) return;
     const pair = [...editors].find(
@@ -396,6 +463,9 @@
         $("workspace-source").textContent = message.financials.source.name;
         $("company-strip").hidden = false;
         send("dcf", baseline);
+        baselineBrief = null;
+        briefSeq++;
+        loadBrief(message.financials, generation);
         if (message.financials.source.kind !== "synthetic")
           loadReferences(message.financials.company.ticker, generation);
       }
@@ -422,6 +492,8 @@
     }
     results.set(key, item);
     if (key === method) render(item);
+    if (key === "dcf" && message.type === "preview-result")
+      scheduleBriefSync(message.result, message.form);
     if (
       key === "dcf" &&
       method === "relative" &&

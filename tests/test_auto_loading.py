@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 import pytest
 from app import app, form_payload, evaluate
 from suite_views import suite_form_payload, suite_evaluate
@@ -39,6 +40,11 @@ def test_ticker_load_fills_every_required_input_and_calculates(client, method):
     )
     assert r.status_code == 200, r.get_json()
     payload = r.get_json()
+    # The wire bundle carries financials once; the browser rebuilds
+    # form.base_document from financials before any form submission.
+    assert "base_document" not in payload["form"]
+    payload["form"]["base_document"] = json.dumps(payload["financials"])
+    assert json.loads(payload["form"]["base_document"]) == payload["financials"]
     f = MultiDict({k: str(v) if v is not None else "" for k, v in payload["form"].items()})
     d, a = form_payload(f) if method == "dcf" else suite_form_payload(method, f)
     v = evaluate(d, a) if method == "dcf" else suite_evaluate(method, d, a)
@@ -111,6 +117,7 @@ def test_historical_yahoo_snapshot_is_rejected(client):
 def test_loaded_financials_cannot_be_relabelled_as_another_ticker(client, method):
     loaded = client.post("/api/load/" + method, json={"ticker": "TEST"}).get_json()
     form = loaded["form"]
+    form["base_document"] = json.dumps(loaded["financials"])
     form["ticker"] = "AAPL"
     r = client.post("/" + method, data=form)
     assert r.status_code == 400
@@ -218,6 +225,7 @@ def test_workspace_relative_uses_current_dcf_year_one_assumptions(client):
 
     loaded = client.post("/api/load/dcf", json={"ticker": "TEST"}).get_json()
     form = loaded["form"]
+    form["base_document"] = json.dumps(loaded["financials"])
     form["growth_0"] = 17
     doc, assumptions = form_payload(
         MultiDict({k: str(v) if v is not None else "" for k, v in form.items()})
@@ -266,6 +274,36 @@ def test_relative_multiples_use_diluted_equity_without_reusing_wacc_weights():
         * doc["market"]["diluted_shares"]
         / doc["historical"][-1]["net_income"]
     )
+
+
+def test_wire_bundle_dedups_base_document_but_manual_form_keeps_it(client):
+    from app import default_form
+
+    for method in ("dcf", "ddm", "relative"):
+        payload = client.post("/api/load/" + method, json={"ticker": "TEST"}).get_json()
+        # One wire copy: financials travel as structured data, not twice.
+        assert "base_document" not in payload["form"]
+        assert payload["financials"]["company"]["ticker"] == "TEST"
+        # Browser-side reconstruction is exactly the delivered snapshot.
+        assert json.loads(json.dumps(payload["financials"])) == payload["financials"]
+    # Manual/classic flows still render the field server-side.
+    from dcf_loader import demo_document
+
+    assert json.loads(default_form(demo_document())["base_document"])["schema_version"] == (
+        "dcf-financials-v1"
+    )
+
+
+def test_assemble_wire_bundle_dedups_base_document(client):
+    loaded = client.post("/api/load/dcf", json={"ticker": "TEST"}).get_json()
+    for method in ("ddm", "relative"):
+        response = client.post(
+            "/api/assemble/" + method, json={"financials": loaded["financials"]}
+        )
+        assert response.status_code == 200, response.get_json()
+        bundle = response.get_json()
+        assert "base_document" not in bundle["form"]
+        assert json.loads(json.dumps(bundle["financials"])) == bundle["financials"]
 
 
 def test_automatic_relative_evaluation_uses_only_reviewed_peers(client, monkeypatch):

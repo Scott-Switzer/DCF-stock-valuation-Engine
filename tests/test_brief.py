@@ -102,6 +102,39 @@ class BuildBriefTests(unittest.TestCase):
             build_brief({"company": {"ticker": "X"}})
 
 
+class BriefAssumptionSyncTests(unittest.TestCase):
+    def test_custom_brief_matches_preview_accepted_state(self):
+        # The live-sync contract: /api/brief fed the preview's accepted
+        # financials + assumptions reproduces the preview's own figures.
+        from dataclasses import asdict
+        from app import evaluate
+        from brief import build_brief
+        from compare import coerce_dcf_assumptions
+
+        doc = demo()
+        wacc = (doc["source"].get("capital_costs", {}) or {}).get("wacc") or 0.065
+        assumptions, _ = coerce_dcf_assumptions(doc, None, wacc)
+        raw = asdict(assumptions)
+        raw["revenue_growth_rates"] = [0.07] * 5
+        raw["ebit_margins"] = [0.22] * 5
+        accepted, _ = coerce_dcf_assumptions(deepcopy(doc), deepcopy(raw), wacc)
+        expected = evaluate(deepcopy(doc), deepcopy(accepted))
+        brief = build_brief(deepcopy(doc), asdict(accepted))
+        self.assertEqual(brief["basis"], "custom")
+        self.assertTrue(brief["assumptions"]["custom"])
+        self.assertAlmostEqual(brief["dcf"]["intrinsic_value"], expected["intrinsic_value"])
+        self.assertAlmostEqual(brief["dcf"]["target_price_12m"], expected["target_price_12m"])
+        self.assertAlmostEqual(brief["dcf"]["upside_12m"], expected["upside_12m"])
+        self.assertAlmostEqual(brief["assumptions"]["revenue_growth_mean"], 0.07)
+        self.assertAlmostEqual(brief["assumptions"]["ebit_margin_mean"], 0.22)
+        for name in ("Bear", "Base", "Bull"):
+            got = next(s for s in brief["scenarios"] if s["name"] == name)
+            want = next(s for s in expected["scenarios"] if s["name"] == name)
+            self.assertEqual(got["target_price_12m"], want["target_price_12m"])
+            # Brief-only inspectability: each scenario carries its deltas.
+            self.assertIn("revenue_growth_delta", got["spec"])
+
+
 class BriefApiTests(unittest.TestCase):
     def test_api_returns_brief_for_snapshot(self):
         from app import app
