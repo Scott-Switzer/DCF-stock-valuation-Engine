@@ -223,6 +223,58 @@ def bridge_accepted(verdict):
     return verdict == "match_parent_net_income" or str(verdict).startswith("explained_by_")
 
 
+def _sec_subtotal_difference(facts, total_tag, part_tag, end, cutoff, source, formula):
+    """Derive a bridge claim from two reported equity subtotals (Yahoo parity).
+
+    Preferred equity is stockholders equity minus common equity; minority
+    interest is total equity including noncontrolling interest minus
+    stockholders equity. Both legs must come from the same 10-K accession and
+    agree at the latest filing date; a negative difference is rejected and
+    reported as missing, never as zero. Returns an SEC-provenance field or None.
+    """
+    legs = {}
+    for tag in (total_tag, part_tag):
+        candidates = [
+            r
+            for r in facts.get("facts", {})
+            .get("us-gaap", {})
+            .get(tag, {})
+            .get("units", {})
+            .get("USD", [])
+            if r.get("end") == end
+            and r.get("form") in {"10-K", "10-K/A"}
+            and r.get("filed", "9999") <= cutoff
+            and not r.get("start")
+        ]
+        if not candidates:
+            return None
+        latest = max(r["filed"] for r in candidates)
+        top = [r for r in candidates if r["filed"] == latest]
+        if len({_number(r["val"]) for r in top}) != 1:
+            return None
+        legs[tag] = top[0]
+    if legs[total_tag].get("accn") != legs[part_tag].get("accn"):
+        return None
+    value = _number(legs[total_tag]["val"]) - _number(legs[part_tag]["val"])
+    if value < -COMMON_INCOME_TOLERANCE_USD:
+        return None
+    return _field(
+        max(value, 0.0),
+        end,
+        max(r["filed"] for r in legs.values()),
+        "USD",
+        {
+            **source,
+            "provider": "SEC companyfacts",
+            "formula": formula,
+            "total_tag": total_tag,
+            "part_tag": part_tag,
+            "accession": legs[total_tag].get("accn"),
+            "filing_date": max(r["filed"] for r in legs.values()),
+        },
+    )
+
+
 def _derived(value, components, formula, unit="USD"):
     return _field(
         value,
@@ -439,9 +491,29 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
             if bridge_accepted(verdict):
                 common_income.append(values["common_income"])
         bridges = {k: g.get(k) or _sec(facts, k, end, cutoff, sec_source) for k in BRIDGE_FIELDS}
-        bridges["short_term_debt"] = values["short_term_debt"]
-        shares = values["diluted_shares"]
-        interest = values["interest_expense"]
+    if bridges.get("preferred_equity") is None:
+        bridges["preferred_equity"] = _sec_subtotal_difference(
+            facts,
+            "StockholdersEquity",
+            "CommonStockEquity",
+            end,
+            cutoff,
+            sec_source,
+            "stockholders equity minus common equity",
+        )
+    if bridges.get("minority_interest") is None:
+        bridges["minority_interest"] = _sec_subtotal_difference(
+            facts,
+            "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+            "StockholdersEquity",
+            end,
+            cutoff,
+            sec_source,
+            "total equity including noncontrolling interest minus stockholders equity",
+        )
+    bridges["short_term_debt"] = values["short_term_debt"]
+    shares = values["diluted_shares"]
+    interest = values["interest_expense"]
     packet = {
         "schema_version": SCHEMA,
         "ticker": ticker,

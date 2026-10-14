@@ -153,6 +153,39 @@ def test_conflict_with_unmatched_facts_is_rejected():
         build_packet("AAPL", "0000320193", rows, facts, "2026-10-07", {})
 
 
+def test_productive_assets_capex_and_accretion_d_and_a_tags_map():
+    p = build_with(
+        PaymentsToAcquireProductiveAssets=[annual_fact(42)],
+        DepreciationAmortizationAndAccretionNet=[annual_fact(13)],
+    )
+    f = p["historical"][-1]["fields"]
+    assert f["capex"]["value"] == 42
+    assert f["d_and_a"]["value"] == 13
+    assert f["capex"]["provenance"]["tag"] == "PaymentsToAcquireProductiveAssets"
+
+
+def test_preferred_equity_derives_from_reported_equity_subtotals():
+    p = build_with(
+        StockholdersEquity=[
+            dict(annual_fact(400), start=None),
+            dict(annual_fact(400), start=None),
+            dict(annual_fact(400), start=None),
+        ],
+        CommonStockEquity=[dict(annual_fact(400), start=None)],
+    )
+    bridge = p["bridge"]["preferred_equity"]
+    assert bridge["value"] == 0
+    assert bridge["provenance"]["formula"] == "stockholders equity minus common equity"
+
+
+def test_preferred_derivation_rejects_mismatched_filings():
+    p = build_with(
+        StockholdersEquity=[dict(annual_fact(400), start=None, accn="A")],
+        CommonStockEquity=[dict(annual_fact(400), start=None, accn="B")],
+    )
+    assert p["bridge"]["preferred_equity"] is None
+
+
 def test_consolidated_only_conflict_value_is_rejected_when_parent_differs():
     accn = "0000320193-25-000001"
     rows = [

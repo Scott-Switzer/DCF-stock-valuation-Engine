@@ -386,8 +386,16 @@ TAGS = {
     "d_and_a": [
         "DepreciationDepletionAndAmortization",
         "DepreciationDepletionAndAmortizationPropertyPlantAndEquipment",
+        # Cash-flow D&A totals reported without the depletion split (retailers,
+        # banks). Lowest priority: only used when no depletion-inclusive tag exists.
+        "DepreciationAmortizationAndAccretionNet",
+        "DepreciationAndAmortization",
     ],
-    "capex": ["PaymentsToAcquirePropertyPlantAndEquipment"],
+    "capex": [
+        "PaymentsToAcquirePropertyPlantAndEquipment",
+        # PepsiCo labels PP&E additions as productive assets.
+        "PaymentsToAcquireProductiveAssets",
+    ],
     "current_assets": ["AssetsCurrent"],
     "current_liabilities": ["LiabilitiesCurrent"],
     "cash": ["CashAndCashEquivalentsAtCarryingValue"],
