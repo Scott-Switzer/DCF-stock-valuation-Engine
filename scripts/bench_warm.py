@@ -18,8 +18,18 @@ DELAY = 8
 
 def one(ticker):
     body = json.dumps({"ticker": ticker}).encode()
+    # Cloudflare bot challenge (1010) rejects non-browser User-Agents.
     req = urllib.request.Request(
-        f"{BASE}/api/load/dcf", data=body, headers={"Content-Type": "application/json"}
+        f"{BASE}/api/load/dcf",
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/126.0.0.0 Safari/537.36"
+            ),
+        },
     )
     started = time.monotonic()
     try:
