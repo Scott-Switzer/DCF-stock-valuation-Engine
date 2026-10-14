@@ -14,6 +14,12 @@ def client(tmp_path):
     return app.test_client()
 
 
+def test_diag_concurrency_is_staging_only(client):
+    response = client.get("/api/diag/concurrency")
+    assert response.status_code == 404
+    assert response.get_json()["error"] == "Diagnostics are staging-only."
+
+
 @pytest.mark.parametrize("method", ["dcf", "ddm", "relative"])
 def test_preview_never_saves(client, method):
     doc = demo_document() if method == "dcf" else suite_sample(method)
