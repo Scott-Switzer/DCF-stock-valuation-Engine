@@ -148,6 +148,19 @@ class EmbeddedBriefTests(unittest.TestCase):
             expected["market_implied"]["revenue_growth"]["status"],
         )
 
+    def test_invalid_baseline_still_loads_without_embedded_brief(self):
+        import auto_loading
+        from test_yahoo_provider import MockHTTP
+
+        snapshot = demo()
+        for row in snapshot["historical"]:
+            row["net_income"] = row["revenue"] * 1.5  # baseline margin fails validation
+        bundle = auto_loading.load_method(
+            "dcf", snapshot["company"]["ticker"], snapshot=snapshot, http=MockHTTP()
+        )
+        self.assertNotIn("brief", bundle)
+        self.assertIn("brief_skipped", bundle["load_summary"]["stage_seconds"])
+
     def test_ddm_load_carries_no_brief(self):
         import auto_loading
         from test_yahoo_provider import MockHTTP

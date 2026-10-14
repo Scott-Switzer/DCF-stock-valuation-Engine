@@ -473,10 +473,15 @@ def load_method(
         # The default brief rides with the snapshot: same baseline assumptions,
         # same numbers as /api/brief, no second upload or evaluation round trip.
         # Cached wholesale with the bundle; /api/brief remains for custom assumptions.
+        # A snapshot whose baseline assumptions are invalid still loads; the
+        # client then uses the /api/brief fallback instead of an embedded brief.
         from brief import build_brief
 
         began = time.monotonic()
-        bundle["brief"] = build_brief(doc)
-        timings["brief_inline"] = round(time.monotonic() - began, 3)
+        try:
+            bundle["brief"] = build_brief(doc)
+            timings["brief_inline"] = round(time.monotonic() - began, 3)
+        except ValueError as exc:
+            timings["brief_skipped"] = str(exc)[:160]
         bundle["load_summary"]["stage_seconds"] = timings
     return bundle
