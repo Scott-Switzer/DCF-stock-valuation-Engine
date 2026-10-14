@@ -835,8 +835,6 @@ def test_preferred_from_common_buildup_rejects_negative_residual_and_missing_leg
 
 
 def test_packet_bridge_uses_common_buildup_when_common_equity_tag_is_absent():
-    from ppe_packets import _sec_preferred_from_common_buildup
-
     merged = {"cik": 320193, "facts": {"us-gaap": {}}}
     for end in ("2023-09-27", "2024-09-27", "2025-09-27"):
         for tag, rows in buildup_facts(end=end)["facts"]["us-gaap"].items():
