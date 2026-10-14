@@ -194,19 +194,47 @@ def load_method(
             packet = None
             packet_error = str(exc)
         timings["zion_packet"] = round(time.monotonic() - began, 3)
-        began = time.monotonic()
-        dcf = load_yahoo(
-            ticker,
-            asof,
-            http,
-            include_capital_costs=method != "relative",
-            require_wacc=method == "dcf",
-            packet=packet,
-        )
-        timings["yahoo"] = round(time.monotonic() - began, 3)
-        began = time.monotonic()
-        dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None), packet=packet, packet_error=packet_error)
-        timings["ppe_apply"] = round(time.monotonic() - began, 3)
+        from sec_first import eligibility_gate, load_sec_first
+        gate = eligibility_gate(packet, ticker, asof)
+        dcf = None
+        sec_first_error = None
+        if gate["eligible"]:
+            began = time.monotonic()
+            try:
+                dcf = load_sec_first(
+                    ticker,
+                    asof,
+                    http,
+                    packet,
+                    include_capital_costs=method != "relative",
+                    require_wacc=method == "dcf",
+                )
+                dcf["source"]["ppe_status"] = (
+                    "SEC-first: packet statements used directly; no Yahoo annual-statement request."
+                )
+            except ProviderError as exc:
+                sec_first_error = str(exc)
+            timings["sec_first"] = round(time.monotonic() - began, 3)
+        if dcf is None:
+            began = time.monotonic()
+            dcf = load_yahoo(
+                ticker,
+                asof,
+                http,
+                include_capital_costs=method != "relative",
+                require_wacc=method == "dcf",
+                packet=packet,
+            )
+            timings["yahoo"] = round(time.monotonic() - began, 3)
+            began = time.monotonic()
+            dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None), packet=packet, packet_error=packet_error)
+            timings["ppe_apply"] = round(time.monotonic() - began, 3)
+            if sec_first_error:
+                dcf["source"].setdefault("warnings", []).append(
+                    f"SEC-first statement path unavailable ({sec_first_error}); using Yahoo financials with provenance."
+                )
+        dcf["source"]["statement_source"] = "SEC-first" if dcf["source"].get("statement_source") == "SEC-first" else "Yahoo"
+        dcf["source"]["sec_first_gate"] = gate
         dcf["source"]["revenue_growth_reference"] = historical_growth(dcf["historical"], "revenue")
         dividend_rows = dcf["source"]["common_dividends"]["historical"]
         dcf["source"]["dividend_growth_reference"] = historical_growth(dividend_rows, "value")

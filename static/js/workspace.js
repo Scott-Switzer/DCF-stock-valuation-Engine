@@ -125,10 +125,12 @@
     const token = generation;
     $("workspace-load").disabled = true;
     status("Loading statements and market data…");
+    performance.mark("workspace:load-start");
     try {
       const data = await request("/api/load/dcf", {
         ticker: $("workspace-ticker").value.trim().toUpperCase(),
       });
+      performance.mark("workspace:load-response");
       if (token !== generation) return;
       generation++;
       baseline = data;
@@ -147,9 +149,14 @@
       $("workspace-market").textContent =
         `${money(data.financials.market.price)} · ${date(data.financials.market.price_as_of)}`;
       $("workspace-source").textContent =
-        data.financials.source.ppe_release ? "PPE / SEC + labeled fallbacks · sourced inputs locked" : `Yahoo${data.financials.source.classification ? " + SEC" : ""} · sourced inputs locked`;
+        data.financials.source.ppe_release
+          ? "PPE / SEC + labeled fallbacks · sourced inputs locked"
+          : data.financials.source.statement_source === "SEC-first"
+            ? "SEC-first statements + Yahoo market · sourced inputs locked"
+            : `Yahoo${data.financials.source.classification ? " + SEC" : ""} · sourced inputs locked`;
       $("company-strip").hidden = false;
       await assemble(method, generation);
+      performance.mark("workspace:method-assembled");
       loadReferences(data.financials.company.ticker, generation);
       guidanceRequested = false;
       $("guidance-content").textContent =
@@ -162,6 +169,7 @@
       loading = false;
       render(results.get(method));
       $("workspace-load").disabled = false;
+      performance.mark("workspace:visible");
     }
   });
   async function loadReferences(ticker, token) {
@@ -226,6 +234,7 @@
     const [key, frame] = pair;
     const message = event.data || {};
     if (message.type === "editor-ready") {
+      performance.mark(`workspace:editor-ready:${key}`);
       ready.add(key);
       const item = results.get(key);
       if (item?.data) send(key, item.data);
