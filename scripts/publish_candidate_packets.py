@@ -80,6 +80,8 @@ def main():
             prior = transport.call("get", args.pointer)
             if prior is None:
                 raise ProviderError("No candidate pointer to restore against.")
+            # call() does not record ETags; the conditional restore needs it.
+            transport.etags[args.pointer] = prior["etag"]
             raw = Path(args.restore_pointer).read_bytes()
             transport.call("put", args.pointer, raw,
                            expected_etag=transport.etags.get(args.pointer))
@@ -116,6 +118,8 @@ def main():
         prior_raw = None
         prior_entry = transport.call("get", args.pointer)
         if prior_entry is not None:
+            # call() does not record ETags; the conditional pointer update needs it.
+            transport.etags[args.pointer] = prior_entry["etag"]
             prior_raw = base64.b64decode(prior_entry["body"])
             prior_index = json.loads(prior_raw)
             if (not isinstance(prior_index, dict)

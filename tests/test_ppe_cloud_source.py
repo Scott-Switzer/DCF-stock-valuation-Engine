@@ -118,6 +118,18 @@ def test_candidate_transport_merges_preserving_existing_entries():
     assert set(transport.get(CandidateTransport.DEFAULT_POINTER)["companies"]) == {"PEP", "CAT"}
 
 
+def test_etag_recorded_only_by_get_not_bare_call():
+    # Regression trap: conditional pointer updates must source the ETag from
+    # get() (which records it), not from a bare call() (which does not).
+    client = MemoryClient()
+    client.objects[CandidateTransport.DEFAULT_POINTER] = (b"{}", '"v1"')
+    transport = CandidateTransport(client)
+    transport.call("get", CandidateTransport.DEFAULT_POINTER)
+    assert transport.etags.get(CandidateTransport.DEFAULT_POINTER) is None
+    transport.get(CandidateTransport.DEFAULT_POINTER)
+    assert transport.etags.get(CandidateTransport.DEFAULT_POINTER) == '"v1"'
+
+
 def test_corrupt_member_is_a_reportable_provider_error(monkeypatch):
     archive = SecArchive(ArchiveClient(), 'private', 'sec/bulk/published/companyfacts.zip')
     def corrupt(*args):
