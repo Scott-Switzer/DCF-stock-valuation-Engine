@@ -865,6 +865,32 @@ def assemble_api(method):
         return jsonify(error=str(exc)), 503
 
 
+@app.post("/api/brief")
+def brief_api():
+    """Instant Investment Research Brief for an already-loaded snapshot.
+
+    No provider calls: the snapshot's financials plus baseline (or posted)
+    assumptions feed the same evaluate/reverse-DCF machinery as the
+    workspace. Financial firms get a blocked brief with the reason."""
+    started = time.monotonic()
+    try:
+        from brief import build_brief
+        from compare import coerce_dcf_assumptions
+
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict) or not isinstance(raw.get("financials"), dict):
+            raise ValueError("Provide a loaded company snapshot.")
+        if "assumptions" in raw:
+            coerce_dcf_assumptions(raw["financials"], raw["assumptions"], 0.065)
+        response = jsonify(build_brief(raw["financials"], raw.get("assumptions")))
+        response.headers["Server-Timing"] = server_timing(started)
+        return response
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+    except ProviderError as exc:
+        return jsonify(error=str(exc)), 503
+
+
 @app.post("/api/peer")
 def peer_api():
     try:
