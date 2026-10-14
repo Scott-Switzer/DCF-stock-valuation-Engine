@@ -174,7 +174,8 @@ def test_pointer_override_selects_candidate_release(monkeypatch):
     monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
     with app.test_request_context(environ_overrides={'workers.env': env}):
         assert ppe_provider.load_packet('PEP', '2026-10-10', deadline=123.0) is None
-    assert keys == ['control/valuation/CANDIDATE-staging.json']
+    # Candidate probe first, then the normal R2 fallback through the same pointer.
+    assert keys == ['control/valuation/CANDIDATE-staging.json'] * 2
 
 
 def test_pointer_override_rejects_paths_outside_control_valuation(monkeypatch):
@@ -186,6 +187,42 @@ def test_pointer_override_rejects_paths_outside_control_valuation(monkeypatch):
     with app.test_request_context(environ_overrides={'workers.env': env}):
         with pytest.raises(ProviderError, match='Invalid PPE pointer override'):
             ppe_provider.load_packet('PEP', '2026-10-10')
+
+
+def test_candidate_hit_wins_over_zion_without_consulting_it(monkeypatch):
+    from types import SimpleNamespace
+    import ppe_provider
+    from tests.test_ppe_packets import packet
+    p = packet()
+    key = 'gold/valuation/releases/' + 'a' * 64 + '/companies/AAPL.json'
+    pointer = {'schema_version': 'ppe-valuation-index-v1', 'companies': {'AAPL': {'key': key, 'sha256': 'b' * 64}}}
+    env = SimpleNamespace(ZION_VALUATIONS=object(), PPE_DATA=object(),
+                           PPE_POINTER_OVERRIDE='control/valuation/CANDIDATE-staging.json')
+    monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
+    with app.test_request_context(environ_overrides={'workers.env': env}):
+        with patch('ppe_provider._service_packet') as service:
+            with patch('ppe_provider._object_json', side_effect=[pointer, p]):
+                result = ppe_provider.load_packet('AAPL', '2026-10-10')
+        service.assert_not_called()
+    assert result['source']['transport_receipt']['kind'] == 'CANDIDATE_R2'
+    assert result['source']['transport_receipt']['service_state'] == 'NOT_CONSULTED'
+
+
+def test_candidate_miss_falls_through_to_zion(monkeypatch):
+    from types import SimpleNamespace
+    import ppe_provider
+    from tests.test_ppe_packets import packet
+    p = packet()
+    pointer = {'schema_version': 'ppe-valuation-index-v1', 'companies': {}}
+    env = SimpleNamespace(ZION_VALUATIONS=object(), PPE_DATA=object(),
+                           PPE_POINTER_OVERRIDE='control/valuation/CANDIDATE-staging.json')
+    monkeypatch.setitem(app.config, 'CLOUDFLARE', True)
+    with app.test_request_context(environ_overrides={'workers.env': env}):
+        with patch('ppe_provider._service_packet', return_value=p) as service:
+            with patch('ppe_provider._object_json', return_value=pointer):
+                result = ppe_provider.load_packet('AAPL', '2026-10-10')
+        service.assert_called_once()
+    assert result['source']['transport_receipt']['kind'] == 'ZION_SERVICE_BINDING'
 
 
 def test_zion_binding_is_preferred_and_failure_uses_r2(monkeypatch):
