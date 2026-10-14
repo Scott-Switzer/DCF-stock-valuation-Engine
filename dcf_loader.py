@@ -400,7 +400,14 @@ TAGS = {
     "current_liabilities": ["LiabilitiesCurrent"],
     "cash": ["CashAndCashEquivalentsAtCarryingValue"],
     "short_term_debt": ["DebtCurrent"],
-    "current_maturities": ["LongTermDebtCurrent"],
+    # Current portion of long-term debt. Some issuers (e.g. Caterpillar) do not
+    # tag LongTermDebtCurrent and instead disclose the maturity-schedule row
+    # for principal due in the next twelve months; ordered fallback, same
+    # validation as every tag.
+    "current_maturities": [
+        "LongTermDebtCurrent",
+        "LongTermDebtMaturitiesRepaymentsOfPrincipalInNextTwelveMonths",
+    ],
     "short_term_borrowings": ["ShortTermBorrowings"],
     "long_term_debt": ["LongTermDebtNoncurrent"],
     "total_assets": ["Assets"],

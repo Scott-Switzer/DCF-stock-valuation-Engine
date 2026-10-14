@@ -558,6 +558,78 @@ def test_consolidated_parent_and_nci_explain_residual():
     assert p["common_income"][0]["provenance"]["bridge"] == "explained_by_nci_income"
 
 
+def _adjustment_packet(**overrides):
+    base = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(120)],
+        NetIncomeLoss=[annual_fact(120)],
+        OperatingIncomeLoss=[annual_fact(40)],
+    )
+    adj = base.get("adjustment_facts", {})
+    if "ebit_probe" in overrides:
+        adj.setdefault("ebit_facts", []).append(overrides.pop("ebit_probe"))
+    adj.update(overrides)
+    base["adjustment_facts"] = adj
+    return base
+
+
+def test_adjustment_evidence_rejects_wrong_issuer_bad_unit_and_taxonomy():
+    p = _adjustment_packet(cik="0000000000")
+    with pytest.raises(ProviderError, match="issuer mismatch"):
+        validate_packet(p, "AAPL", "2026-10-07")
+    p = _adjustment_packet(taxonomy="ifrs-full")
+    with pytest.raises(ProviderError, match="taxonomy"):
+        validate_packet(p, "AAPL", "2026-10-07")
+    p = _adjustment_packet()
+    p["adjustment_facts"]["ebit_facts"][0]["unit"] = "EUR"
+    with pytest.raises(ProviderError, match="not USD"):
+        validate_packet(p, "AAPL", "2026-10-07")
+
+
+def test_adjustment_evidence_rejects_bad_duration_dates_and_post_cutoff():
+    p = _adjustment_packet()
+    p["adjustment_facts"]["ebit_facts"][0]["period_start"] = "2025-07-01"
+    with pytest.raises(ProviderError, match="not annual duration"):
+        validate_packet(p, "AAPL", "2026-10-07")
+    p = _adjustment_packet()
+    p["adjustment_facts"]["ebit_facts"][0]["filed"] = "not-a-date"
+    with pytest.raises(ProviderError, match="missing/invalid dates"):
+        validate_packet(p, "AAPL", "2026-10-07")
+    p = _adjustment_packet()
+    p["adjustment_facts"]["ebit_facts"][0]["filed"] = "2026-11-01"
+    with pytest.raises(ProviderError, match="after cutoff"):
+        validate_packet(p, "AAPL", "2026-10-07")
+    p = _adjustment_packet()
+    p["adjustment_facts"]["ebit_facts"][0]["accession"] = ""
+    with pytest.raises(ProviderError, match="receipt missing"):
+        validate_packet(p, "AAPL", "2026-10-07")
+
+
+def test_adjustment_evidence_rejects_contradictory_filing_context():
+    from accounting_policy import build_adjustment_facts_from_companyfacts
+
+    combined = {"cik": 320193, "facts": {"us-gaap": {}}}
+    for tag, accn in (
+        ("ImpairmentOfIntangibleAssetsExcludingGoodwill", "A"),
+        ("OperatingIncomeLoss", "B"),
+    ):
+        combined["facts"]["us-gaap"][tag] = {
+            "units": {"USD": [dict(annual_fact(10, accn=accn), tag=tag)]}
+        }
+    # The offline builder accepts per-tag facts; the packet boundary rejects
+    # pairing an EBIT fact with another filing's adjustments.
+    facts = build_adjustment_facts_from_companyfacts(
+        "0000320193", ["2025-09-27"], combined, "2026-10-07"
+    )
+    assert facts["ebit_facts"] and facts["facts"]["intangible_impairment"]
+    p = build_with(
+        NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(120)],
+        NetIncomeLoss=[annual_fact(120)],
+    )
+    p["adjustment_facts"] = facts
+    with pytest.raises(ProviderError, match="contradicts"):
+        validate_packet(p, "AAPL", "2026-10-07")
+
+
 def test_nci_from_another_filing_does_not_explain_residual():
     p = build_with(
         NetIncomeLossAvailableToCommonStockholdersBasic=[annual_fact(10335, accn="A")],
@@ -854,6 +926,59 @@ def test_preferred_from_common_buildup_rejects_negative_residual_and_missing_leg
     assert (
         _sec_preferred_from_common_buildup(facts, "2025-09-27", "2026-10-07", {}) is None
     )
+
+
+def test_preferred_buildup_accepts_combined_common_and_total_equity_legs():
+    # Caterpillar pattern: no standalone StockholdersEquity, CommonStockValue
+    # or APIC tags; SE derives as total including NCI less filed NCI (zero)
+    # and common uses the combined tag. 2025-12-31 identities in one filing:
+    # 21318 - 0 - (7181 + 65448 - 1772 - 49539) = 0.
+    from ppe_packets import _sec_preferred_from_common_buildup
+
+    legs = {
+        "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest": 21318,
+        "MinorityInterest": 0,
+        "CommonStocksIncludingAdditionalPaidInCapital": 7181,
+        "RetainedEarningsAccumulatedDeficit": 65448,
+        "AccumulatedOtherComprehensiveIncomeLossNetOfTax": -1772,
+        "TreasuryStockValue": 49539,
+    }
+    facts = sec_facts(
+        **{tag: [instant_fact(value)] for tag, value in legs.items()}
+    )
+    field = _sec_preferred_from_common_buildup(facts, "2025-09-27", "2026-10-07", {})
+    assert field["value"] == 0.0
+    assert field["provenance"]["accession"] == "test"
+    assert "CommonStocksIncludingAdditionalPaidInCapital" in field["provenance"]["part_tags"]
+
+
+def test_preferred_buildup_rejects_split_variant_filings():
+    from ppe_packets import _sec_preferred_from_common_buildup
+
+    legs = {
+        "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest": 21318,
+        "MinorityInterest": 0,
+        "CommonStocksIncludingAdditionalPaidInCapital": 7181,
+        "RetainedEarningsAccumulatedDeficit": 65448,
+        "AccumulatedOtherComprehensiveIncomeLossNetOfTax": -1772,
+        "TreasuryStockValue": 49539,
+    }
+    facts = sec_facts(
+        **{tag: [instant_fact(value)] for tag, value in legs.items()}
+    )
+    facts["facts"]["us-gaap"]["MinorityInterest"]["units"]["USD"][0]["accn"] = "other"
+    assert _sec_preferred_from_common_buildup(facts, "2025-09-27", "2026-10-07", {}) is None
+
+
+def test_short_term_debt_accepts_maturity_schedule_variant():
+    # Caterpillar pattern: no LongTermDebtCurrent tag; current maturities come
+    # from the disclosed next-twelve-months repayment schedule.
+    p = build_with(
+        ShortTermBorrowings=[instant_fact(5514)],
+        LongTermDebtMaturitiesRepaymentsOfPrincipalInNextTwelveMonths=[instant_fact(7120)],
+    )
+    debt = p["bridge"]["short_term_debt"]
+    assert debt["value"] == 5514 + 7120
 
 
 def test_packet_bridge_uses_common_buildup_when_common_equity_tag_is_absent():

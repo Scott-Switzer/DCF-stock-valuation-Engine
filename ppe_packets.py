@@ -287,51 +287,112 @@ def _sec_subtotal_difference(facts, total_tag, part_tag, end, cutoff, source, fo
     )
 
 
+def _instant_leg(facts, tag, end, cutoff):
+    """Latest-filed 10-K instant USD row for one tag, or None.
+
+    Returns None when the tag is absent, has no row for the period, or carries
+    contradictory values at the latest filing date. Shared by the bridge
+    derivations so every leg follows the same selection discipline.
+    """
+    candidates = [
+        r
+        for r in facts.get("facts", {})
+        .get("us-gaap", {})
+        .get(tag, {})
+        .get("units", {})
+        .get("USD", [])
+        if r.get("end") == end
+        and r.get("form") in {"10-K", "10-K/A"}
+        and r.get("filed", "9999") <= cutoff
+        and not r.get("start")
+    ]
+    if not candidates:
+        return None
+    latest = max(r["filed"] for r in candidates)
+    top = [r for r in candidates if r["filed"] == latest]
+    if len({_number(r["val"]) for r in top}) != 1:
+        return None
+    return top[0]
+
+
 def _sec_preferred_from_common_buildup(facts, end, cutoff, source):
     """Derive preferred equity from a full common-equity build-up (filing identity).
 
     Preferred equity is stockholders equity minus common equity, where common
     equity is par/common value plus additional paid-in capital plus retained
     earnings plus accumulated other comprehensive income minus treasury stock.
-    All six legs must come from the same 10-K accession; a negative residual
-    beyond tolerance is rejected and reported as missing, never as zero.
-    Returns an SEC-provenance field or None.
+    Two reusable filing variants are accepted: the combined
+    ``CommonStocksIncludingAdditionalPaidInCapital`` tag may stand in for the
+    separate par-value and APIC legs, and stockholders equity may be derived
+    as total equity including noncontrolling interest less filed NCI when the
+    standalone stockholders-equity tag is absent. Every leg must come from the
+    same 10-K accession; a negative residual beyond tolerance is rejected and
+    reported as missing, never as zero. Returns an SEC-provenance field or
+    None.
     """
+    legs = {}
+    used_tags = []
+    se_row = _instant_leg(facts, "StockholdersEquity", end, cutoff)
+    if se_row is not None:
+        legs["StockholdersEquity"] = se_row
+        used_tags.append("StockholdersEquity")
+        se_value = _number(se_row["val"])
+    else:
+        total = _instant_leg(
+            facts, "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", end, cutoff
+        )
+        nci = _instant_leg(facts, "MinorityInterest", end, cutoff)
+        if total is None or nci is None:
+            return None
+        legs["StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"] = total
+        legs["MinorityInterest"] = nci
+        used_tags.extend(
+            ["StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", "MinorityInterest"]
+        )
+        se_value = _number(total["val"]) - _number(nci["val"])
+    pair = [
+        _instant_leg(facts, tag, end, cutoff)
+        for tag in ("CommonStockValue", "AdditionalPaidInCapitalCommonStock")
+    ]
+    if all(row is not None for row in pair):
+        legs["CommonStockValue"], legs["AdditionalPaidInCapitalCommonStock"] = pair
+        used_tags.extend(["CommonStockValue", "AdditionalPaidInCapitalCommonStock"])
+        common_head = _number(pair[0]["val"]) + _number(pair[1]["val"])
+    else:
+        combined = _instant_leg(facts, "CommonStocksIncludingAdditionalPaidInCapital", end, cutoff)
+        if combined is None:
+            return None
+        legs["CommonStocksIncludingAdditionalPaidInCapital"] = combined
+        used_tags.append("CommonStocksIncludingAdditionalPaidInCapital")
+        common_head = _number(combined["val"])
     signs = {
-        "CommonStockValue": 1,
-        "AdditionalPaidInCapitalCommonStock": 1,
         "RetainedEarningsAccumulatedDeficit": 1,
         "AccumulatedOtherComprehensiveIncomeLossNetOfTax": 1,
         "TreasuryStockValue": -1,
     }
-    legs = {}
-    for tag in ["StockholdersEquity", *signs]:
-        candidates = [
-            r
-            for r in facts.get("facts", {})
-            .get("us-gaap", {})
-            .get(tag, {})
-            .get("units", {})
-            .get("USD", [])
-            if r.get("end") == end
-            and r.get("form") in {"10-K", "10-K/A"}
-            and r.get("filed", "9999") <= cutoff
-            and not r.get("start")
-        ]
-        if not candidates:
+    for tag in signs:
+        row = _instant_leg(facts, tag, end, cutoff)
+        if row is None:
             return None
-        latest = max(r["filed"] for r in candidates)
-        top = [r for r in candidates if r["filed"] == latest]
-        if len({_number(r["val"]) for r in top}) != 1:
-            return None
-        legs[tag] = top[0]
+        legs[tag] = row
+        used_tags.append(tag)
     accessions = {r.get("accn") for r in legs.values()}
     if len(accessions) != 1:
         return None
-    common = sum(signs[tag] * _number(legs[tag]["val"]) for tag in signs)
-    value = _number(legs["StockholdersEquity"]["val"]) - common
+    common = common_head + sum(signs[tag] * _number(legs[tag]["val"]) for tag in signs)
+    value = se_value - common
     if value < -COMMON_INCOME_TOLERANCE_USD:
         return None
+    classic = {
+        "StockholdersEquity", "CommonStockValue", "AdditionalPaidInCapitalCommonStock",
+        "RetainedEarningsAccumulatedDeficit", "AccumulatedOtherComprehensiveIncomeLossNetOfTax",
+        "TreasuryStockValue",
+    }
+    formula = (
+        "stockholders equity minus (common value + APIC + retained earnings + AOCI - treasury stock)"
+        if set(used_tags) == classic
+        else "stockholders equity minus built-up common equity (" + ", ".join(sorted(used_tags)) + ")"
+    )
     return _field(
         max(value, 0.0),
         end,
@@ -340,12 +401,9 @@ def _sec_preferred_from_common_buildup(facts, end, cutoff, source):
         {
             **source,
             "provider": "SEC companyfacts",
-            "formula": (
-                "stockholders equity minus (common value + APIC + retained "
-                "earnings + AOCI - treasury stock)"
-            ),
+            "formula": formula,
             "total_tag": "StockholdersEquity",
-            "part_tags": sorted(signs),
+            "part_tags": sorted(used_tags),
             "accession": next(iter(accessions)),
             "filing_date": max(r["filed"] for r in legs.values()),
         },
@@ -597,14 +655,20 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
     interest = values["interest_expense"]
     adjustment_facts = None
     if facts:
-        try:
-            from accounting_policy import build_adjustment_facts_from_companyfacts
+        # Fail closed: a supplement that cannot be turned into validated
+        # evidence fails publication loudly instead of shipping a packet that
+        # silently lacks evidence. Packets built without a supplement (tests,
+        # canonical-only builds) simply carry no evidence section.
+        from accounting_policy import build_adjustment_facts_from_companyfacts
 
+        try:
             adjustment_facts = build_adjustment_facts_from_companyfacts(
                 cik, ends, facts, cutoff
             )
-        except Exception:
-            adjustment_facts = None
+        except Exception as exc:
+            raise ProviderError(
+                f"PPE adjustment evidence build failed for {ticker}: {exc}"
+            ) from exc
     packet = {
         "schema_version": SCHEMA,
         "ticker": ticker,
@@ -723,39 +787,81 @@ def validate_packet(packet, ticker, asof):
         if not bridge_accepted((x.get("provenance") or {}).get("bridge")):
             raise ProviderError("Common income is not verified against its filing.")
     if "adjustment_facts" in packet:
-        adj = packet["adjustment_facts"]
-        if not isinstance(adj, dict) or adj.get("schema_version") != "accounting-adjustments-v1":
-            raise ProviderError("Invalid PPE adjustment evidence schema.")
-        if str(adj.get("cik", "")).zfill(10) != str(packet.get("cik", "")).zfill(10):
-            raise ProviderError("PPE adjustment evidence issuer mismatch.")
-        end_strings = {e.isoformat() for e in ends}
-        facts_map = adj.get("facts")
-        if not isinstance(facts_map, dict):
-            raise ProviderError("Invalid PPE adjustment evidence facts.")
-        for kind, items in facts_map.items():
-            if not isinstance(items, list):
-                raise ProviderError("Invalid PPE adjustment evidence facts.")
-            for fact in items:
-                if not isinstance(fact, dict):
-                    raise ProviderError("Invalid PPE adjustment evidence fact.")
-                if fact.get("period_end") not in end_strings:
-                    raise ProviderError("PPE adjustment evidence period mismatch.")
-                if not isinstance(fact.get("amount"), (int, float)):
-                    raise ProviderError("Invalid PPE adjustment evidence amount.")
-                filed = _date(str(fact.get("filed"))[:10])
-                if filed > cutoff:
-                    raise ProviderError("PPE adjustment evidence filed after cutoff.")
-                if not fact.get("accession") or not fact.get("tag") or not fact.get("period_start"):
-                    raise ProviderError("PPE adjustment evidence provenance incomplete.")
-        ebit_facts = adj.get("ebit_facts", [])
-        if not isinstance(ebit_facts, list):
-            raise ProviderError("Invalid PPE adjustment EBIT evidence.")
-        for fact in ebit_facts:
-            if not isinstance(fact, dict) or fact.get("period_end") not in end_strings:
-                raise ProviderError("PPE adjustment EBIT evidence period mismatch.")
-            if not fact.get("accession") or not fact.get("filed"):
-                raise ProviderError("PPE adjustment EBIT evidence provenance incomplete.")
+        _validate_adjustment_evidence(packet["adjustment_facts"], packet, ends, cutoff)
     return packet
+
+
+def _validate_adjustment_evidence(adj, packet, ends, cutoff):
+    """Independently re-check published accounting evidence at the boundary.
+
+    The offline extractor already validates each fact; this validator repeats
+    every check that matters for publication (issuer, taxonomy, unit, annual
+    duration, filing dates, cutoff, receipts, filing-context agreement) so a
+    malformed artifact can never be published or loaded. Anything malformed
+    raises; absence of evidence is expressed with explicit unavailable entries,
+    never by omitting the section silently.
+    """
+    if not isinstance(adj, dict) or adj.get("schema_version") != "accounting-adjustments-v1":
+        raise ProviderError("Invalid PPE adjustment evidence schema.")
+    if str(adj.get("cik", "")).zfill(10) != str(packet.get("cik", "")).zfill(10):
+        raise ProviderError("PPE adjustment evidence issuer mismatch.")
+    if adj.get("taxonomy", "us-gaap") != "us-gaap":
+        raise ProviderError("PPE adjustment evidence taxonomy is not us-gaap.")
+    end_strings = {e.isoformat() for e in ends}
+
+    def check_fact(fact, label):
+        if not isinstance(fact, dict):
+            raise ProviderError(f"Invalid PPE adjustment evidence {label}.")
+        if fact.get("period_end") not in end_strings:
+            raise ProviderError(f"PPE adjustment evidence {label} period mismatch.")
+        amount = fact.get("amount")
+        if isinstance(amount, bool) or not isinstance(amount, (int, float)):
+            raise ProviderError(f"Invalid PPE adjustment evidence {label} amount.")
+        if fact.get("unit") != "USD":
+            raise ProviderError(f"PPE adjustment evidence {label} unit is not USD.")
+        if not isinstance(fact.get("tag"), str) or not fact["tag"]:
+            raise ProviderError(f"PPE adjustment evidence {label} tag missing.")
+        if fact.get("form") not in {"10-K", "10-K/A"}:
+            raise ProviderError(f"PPE adjustment evidence {label} form not accepted.")
+        try:
+            start = date.fromisoformat(str(fact.get("period_start"))[:10])
+            end = date.fromisoformat(str(fact.get("period_end"))[:10])
+            filed = date.fromisoformat(str(fact.get("filed"))[:10])
+        except (TypeError, ValueError):
+            raise ProviderError(
+                f"PPE adjustment evidence {label} has missing/invalid dates."
+            ) from None
+        if not 330 <= (end - start).days <= 400:
+            raise ProviderError(f"PPE adjustment evidence {label} is not annual duration.")
+        if filed > cutoff:
+            raise ProviderError(f"PPE adjustment evidence {label} filed after cutoff.")
+        if not isinstance(fact.get("accession"), str) or not fact["accession"]:
+            raise ProviderError(f"PPE adjustment evidence {label} receipt missing.")
+
+    facts_map = adj.get("facts")
+    if not isinstance(facts_map, dict):
+        raise ProviderError("Invalid PPE adjustment evidence facts.")
+    accessions_by_end = {}
+    for kind, items in facts_map.items():
+        if not isinstance(kind, str) or not kind or not isinstance(items, list):
+            raise ProviderError("Invalid PPE adjustment evidence facts.")
+        for fact in items:
+            check_fact(fact, "fact")
+            accessions_by_end.setdefault(fact["period_end"], set()).add(fact["accession"])
+    ebit_facts = adj.get("ebit_facts", [])
+    if not isinstance(ebit_facts, list):
+        raise ProviderError("Invalid PPE adjustment EBIT evidence.")
+    for fact in ebit_facts:
+        check_fact(fact, "EBIT fact")
+        # The EBIT tie-out is only meaningful within one filing: an EBIT fact
+        # whose accession disagrees with the same-period adjustment facts is
+        # a contradictory filing context, rejected rather than paired.
+        others = accessions_by_end.get(fact["period_end"], set())
+        if others and others != {fact["accession"]}:
+            raise ProviderError("PPE adjustment EBIT filing context contradicts adjustments.")
+    for key in ("unavailable", "conflicts", "future_restatements"):
+        if not isinstance(adj.get(key, []), list):
+            raise ProviderError("Invalid PPE adjustment evidence diagnostics.")
 
 
 def apply_packet(document, packet, asof):

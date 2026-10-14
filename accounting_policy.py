@@ -307,6 +307,19 @@ def build_adjustment_facts_from_companyfacts(cik, period_ends, facts, as_of=None
         )
         return result
     result["cik"] = str(cik).zfill(10)
+    # The combined source must identify the same issuer; trusted metadata is
+    # never constructed from the requested CIK alone.
+    source_cik = str((facts or {}).get("cik", "")).strip().lstrip("0")
+    if source_cik and source_cik != clean_cik:
+        result["unavailable"].append(
+            {
+                "kind": "all",
+                "tag": None,
+                "reason": f"supplement CIK {source_cik} does not match {clean_cik}",
+            }
+        )
+        return result
+    result["taxonomy"] = "us-gaap"
     _us_gaap = ((facts or {}).get("facts") or {}).get("us-gaap") or {}
     for kind, spec in tags.items():
         matched = False
