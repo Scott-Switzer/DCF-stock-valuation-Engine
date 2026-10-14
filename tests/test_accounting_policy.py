@@ -308,8 +308,82 @@ class PolicyTests(unittest.TestCase):
         adjusted, ledger = apply_policy(yahoo_doc(), facts(), "normalize")
         self.assertIsNone(adjusted)
         self.assertEqual(ledger["adjustments"], [])
-        self.assertEqual(ledger["adjustment_status"], "no_verifiable_adjustments")
+        self.assertEqual(ledger["adjustment_status"], "partial_or_unverified_evidence")
         self.assertEqual(ledger["rejected_total"], sum(PEP_CHARGES))
+
+    def test_normalize_blocked_by_overlap_conflict(self):
+        import accounting_policy
+
+        overlap = deepcopy(accounting_policy.ADJUSTMENT_TAGS)
+        overlap["goodwill_impairment"]["overlaps"] = ("intangible_impairment",)
+        original = accounting_policy.ADJUSTMENT_TAGS
+        accounting_policy.ADJUSTMENT_TAGS = overlap
+        try:
+            adjusted, ledger = apply_policy(sec_doc(), facts(), "normalize")
+        finally:
+            accounting_policy.ADJUSTMENT_TAGS = original
+        # One period verifies alone, but the overlap conflict blocks the whole
+        # normalized series: no partial-period normalization.
+        self.assertIsNone(adjusted)
+        self.assertEqual(ledger["adjustments"], [])
+        self.assertEqual(ledger["adjustment_status"], "conflicted_evidence")
+
+    def test_missing_filing_date_rejected(self):
+        from accounting_policy import fetch_adjustment_facts
+
+        payloads = deepcopy(PEP_FIXTURE)
+        for payload in payloads.values():
+            for fact in payload["units"]["USD"]:
+                fact.pop("filed", None)
+        result = fetch_adjustment_facts(PEP_CIK, PEP_PERIODS, Server(payloads), as_of=PEP_AS_OF)
+        self.assertEqual(result["facts"]["intangible_impairment"], [])
+        self.assertTrue(
+            any("no validated annual 10-K fact" in u["reason"] for u in result["unavailable"])
+        )
+
+    def test_missing_accession_rejected(self):
+        from accounting_policy import fetch_adjustment_facts
+
+        payloads = deepcopy(PEP_FIXTURE)
+        for payload in payloads.values():
+            for fact in payload["units"]["USD"]:
+                fact.pop("accn", None)
+        result = fetch_adjustment_facts(PEP_CIK, PEP_PERIODS, Server(payloads), as_of=PEP_AS_OF)
+        self.assertEqual(result["facts"]["intangible_impairment"], [])
+
+    def test_mismatched_filing_context_blocks_tieout(self):
+        from accounting_policy import audit_adjustments
+
+        result = facts()
+        for fact in result["ebit_facts"]:
+            fact["accession"] = "0000000000-00-000000"
+        audit = audit_adjustments(sec_doc(), result)
+        self.assertEqual(
+            audit["ebit_definition"]["classification"], "mixed_or_unverified"
+        )
+        self.assertEqual(
+            {p["verdict"] for p in audit["periods"] if p["amount"]},
+            {"rejected_unverified"},
+        )
+
+    def test_offline_builder_matches_live_facts(self):
+        from accounting_policy import build_adjustment_facts_from_companyfacts
+
+        live = facts()
+        combined = {"facts": {"us-gaap": {}}}
+        for tag, payload in PEP_FIXTURE.items():
+            combined["facts"]["us-gaap"][tag] = payload
+        offline = build_adjustment_facts_from_companyfacts(
+            PEP_CIK, PEP_PERIODS, combined, PEP_AS_OF
+        )
+        self.assertEqual(
+            {f["period_end"]: f["amount"] for f in offline["facts"]["intangible_impairment"]},
+            {f["period_end"]: f["amount"] for f in live["facts"]["intangible_impairment"]},
+        )
+        self.assertEqual(
+            {f["period_end"]: f["amount"] for f in offline["ebit_facts"]},
+            {f["period_end"]: f["amount"] for f in live["ebit_facts"]},
+        )
 
     def test_all_period_recurrence_flagged(self):
         _, ledger = apply_policy(sec_doc(), facts(), "as_reported")
@@ -432,6 +506,31 @@ class BriefBasisTests(unittest.TestCase):
         self.assertEqual(basis["basis"], "reported_gaap_verified")
         self.assertIsNone(basis["normalized_alternative"])
         self.assertIn("pending", basis["recurrence_note"])
+
+    def test_brief_normalized_alt_uses_edited_assumptions(self):
+        from dataclasses import asdict
+        from brief import build_brief
+        from compare import coerce_dcf_assumptions
+
+        doc = self._resolved(sec_doc())
+        base = build_brief(deepcopy(doc))["accounting_basis"]
+        self.assertEqual(base["normalized_alternative"]["assumptions_basis"], "baseline")
+        assumptions, _ = coerce_dcf_assumptions(deepcopy(doc), None, 0.065)
+        raw = asdict(assumptions)
+        raw["revenue_growth_rates"] = [0.12] * 5
+        custom = build_brief(deepcopy(doc), deepcopy(raw))["accounting_basis"]
+        alt = custom["normalized_alternative"]
+        self.assertIsNotNone(alt)
+        self.assertEqual(alt["assumptions_basis"], "custom")
+        self.assertNotEqual(alt["intrinsic_value"], base["normalized_alternative"]["intrinsic_value"])
+
+    def test_sec_basis_requires_complete_per_period_provenance(self):
+        from accounting_policy import classify_basis
+
+        doc = sec_doc()
+        for row in doc["historical"]:
+            row["provenance"]["ebit"].pop("accession", None)
+        self.assertEqual(classify_basis(doc)["label"], "mixed_or_unverified")
 
     def test_brief_without_evidence_reports_unavailable(self):
         from brief import build_brief

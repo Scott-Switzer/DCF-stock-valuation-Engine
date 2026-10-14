@@ -1,0 +1,28 @@
+{
+  "cutoff_date": "2026-10-14",
+  "companies": [
+    {
+      "ticker": "CAT",
+      "status": "READY",
+      "periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "fields": 24,
+      "dividend_periods": 3,
+      "bytes": 31627
+    },
+    {
+      "ticker": "ABT",
+      "status": "SEC_SUPPLEMENT_REJECTED",
+      "reason": "SEC archive member CRC or structure verification failed."
+    }
+  ],
+  "published": false,
+  "sec_archive": {
+    "key": "sec/bulk/sec-nightly-20260924/companyfacts.zip",
+    "etag": "8e09f7f4e3577b361c2bcf09f9edab6f-27"
+  },
+  "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+}

@@ -25,10 +25,6 @@ from ppe_packets import validate_packet
 
 STATEMENT_FIELDS = tuple(k for k in HISTORY_FIELDS if k != "net_income")
 
-# Below this much remaining shared budget the adjustment fetch is skipped and
-# reported as pending, so the default brief and preview never wait on it.
-ADJUSTMENT_BUDGET_SECONDS = 1.5
-
 
 def eligibility_gate(packet, ticker, asof):
     """Decide whether a company may bypass Yahoo annual statements.
@@ -60,6 +56,10 @@ def eligibility_gate(packet, ticker, asof):
     for row in history:
         end = row.get("period_end")
         fields = row.get("fields", {})
+        for key in ("revenue", "ebit"):
+            prov = (fields.get(key) or {}).get("provenance") or {}
+            if not prov.get("accession") or not (fields.get(key) or {}).get("available_at"):
+                reasons.append(f"incomplete_provenance_{key}_{end}: missing accession or filing date")
         if common_by_end.get(end) is None:
             reasons.append(f"missing_common_income_{end}: no bridged direct common tag")
         coverage[end] = {}
@@ -356,15 +356,16 @@ def load_sec_first(
     for key, value in costs.items():
         if isinstance(value, (int, float)):
             finite(value, key)
-    # Separately-disclosed adjustment facts for the accounting-policy layer.
-    # Three latency rules: reuse facts published with the packet, skip the
-    # fetch when the shared request budget is nearly spent (evidence is then
-    # reported pending, never zero), and otherwise fetch once per issuer+tag
-    # with a 24h cache. Never fails the load.
+    # Adjustment evidence preferably rides with the validated packet
+    # publication (no network). Packets predating the evidence keep the
+    # bounded live companyconcept fallback so existing issuers (e.g. via the
+    # Zion binding) retain their audited add-backs until republication; the
+    # fetch is skipped when the shared budget is nearly spent (pending, never
+    # zero). Never fails the load.
     began_adjust = time.monotonic()
     period_ends = [r["period_end"] for r in doc["historical"]]
     published = packet.get("adjustment_facts") if isinstance(packet, dict) else None
-    if isinstance(published, dict) and published.get("facts"):
+    if isinstance(published, dict) and isinstance(published.get("facts"), dict):
         doc["source"]["accounting_adjustments"] = published
         doc["source"]["accounting_adjustments_source"] = "published with packet"
     else:
@@ -372,7 +373,7 @@ def load_sec_first(
 
         deadline = getattr(http, "deadline", None)
         remaining = None if deadline is None else deadline - time.monotonic()
-        if remaining is not None and remaining < ADJUSTMENT_BUDGET_SECONDS:
+        if remaining is not None and remaining < 1.5:
             doc["source"]["accounting_adjustments"] = {
                 "schema_version": "accounting-adjustments-v1",
                 "status": "pending",
@@ -400,7 +401,7 @@ def load_sec_first(
                 facts["status"] = "resolved"
                 doc["source"]["accounting_adjustments"] = facts
                 doc["source"]["accounting_adjustments_source"] = (
-                    "SEC companyconcept (validated at load)"
+                    "SEC companyconcept (validated at load; packet predates published evidence)"
                 )
             except Exception as exc:
                 doc["source"]["accounting_adjustments"] = {

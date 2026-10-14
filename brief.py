@@ -45,13 +45,14 @@ def _drivers_from_sensitivity(sensitivity):
     }
 
 
-def _accounting_basis(d, wacc):
+def _accounting_basis(d, wacc, raw_assumptions=None):
     """Which accounting basis the forecast actually uses, with its evidence.
 
     The label is evidence-based rather than assumed: a provider snapshot is
     never called reported GAAP. When validated adjustment evidence rides with
     the snapshot and the audited inclusion verdict allows it, a normalized
-    alternative is valued to show the policy effect. Never breaks the brief.
+    alternative is valued with the same edited assumptions as the main DCF
+    (baseline only when the user has not edited them). Never breaks the brief.
     """
     from accounting_policy import (
         apply_policy,
@@ -113,7 +114,9 @@ def _accounting_basis(d, wacc):
         from compare import coerce_dcf_assumptions
         from app import evaluate
 
-        alt_assumptions, _ = coerce_dcf_assumptions(deepcopy(adjusted), None, wacc)
+        alt_assumptions, alt_custom = coerce_dcf_assumptions(
+            deepcopy(adjusted), raw_assumptions, wacc
+        )
         alt = evaluate(deepcopy(adjusted), alt_assumptions)
         alt_margins = list(alt_assumptions.ebit_margins or [])
         block["normalized_alternative"] = {
@@ -122,10 +125,11 @@ def _accounting_basis(d, wacc):
             "ebit_margin_mean": (
                 sum(alt_margins) / len(alt_margins) if alt_margins else None
             ),
+            "assumptions_basis": ("custom" if alt_custom else "baseline"),
             "note": (
-                "Same baseline machinery on impairment-adjusted EBIT; assumes "
-                "the disclosed charges do not recur. A scenario, not a truer "
-                "price."
+                "Same machinery and same edited assumptions on "
+                "impairment-adjusted EBIT; assumes the disclosed charges do "
+                "not recur. A scenario, not a truer price."
             ),
         }
     except (ValueError, KeyError, TypeError) as exc:
@@ -187,7 +191,7 @@ def build_brief(doc, raw_assumptions=None):
         hist_margin = sum(margins_hist) / len(margins_hist)
     growth_rates = list(assumptions.revenue_growth_rates or [])
     margins = list(assumptions.ebit_margins or [])
-    accounting_basis = _accounting_basis(d, wacc)
+    accounting_basis = _accounting_basis(d, wacc, raw_assumptions)
     return {
         "ticker": ticker,
         "company": d["company"].get("name", ticker),
