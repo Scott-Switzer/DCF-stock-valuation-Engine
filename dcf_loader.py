@@ -766,7 +766,7 @@ def configured_url(name):
     return base
 
 
-def load_document(source, ticker, asof):
+def load_document(source, ticker, asof, *, cik=None, expected_release_id=None):
     iso_date(asof, "Valuation date")
     if source == "sample":
         return demo_document()
@@ -790,6 +790,12 @@ def load_document(source, ticker, asof):
         return load_yahoo(ticker, asof, http)
     if source == "sec":
         return load_sec(ticker, asof, http)
+    if source == "zion_history":
+        from zion_history_provider import load_history
+        return load_history(ticker, asof, http, cik=cik,
+                            base=configured_url('ZION_HISTORY_BASE_URL'),
+                            token=provider_setting('ZION_HISTORY_TOKEN'),
+                            expected_release_id=expected_release_id)
     if source == "zion":
         base = configured_url("ZION_API_BASE_URL")
         token = provider_setting("ZION_API_TOKEN")

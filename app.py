@@ -1127,7 +1127,11 @@ def financials_api():
             from auto_loading import load_method
 
             return jsonify(load_method("dcf", raw.get("ticker"), asof))
-        doc = load_document(raw.get("provider"), raw.get("ticker"), asof)
+        if raw.get("provider") == "zion_history":
+            doc = load_document('zion_history', raw.get('ticker'), asof,
+                                cik=raw.get('cik'), expected_release_id=raw.get('expected_release_id'))
+        else:
+            doc = load_document(raw.get("provider"), raw.get("ticker"), asof)
         return jsonify(financials=doc, form=default_form(doc))
     except ValueError as e:
         return jsonify(error=str(e)), 400
@@ -1494,6 +1498,12 @@ def providers():
     api_base = provider_value("DCF_API_BASE_URL").rstrip("/")
     return jsonify(
         providers={
+            "zion_history": {
+                "configured": bool(provider_value('ZION_HISTORY_BASE_URL') and provider_value('ZION_HISTORY_TOKEN')),
+                "label": "Zion native SEC financial history",
+                "kind": "private_financial_history",
+                "note": "Explicit CIK and historical cutoff required; missing DCF fields remain incomplete.",
+            },
             "auto": {"configured": True, "label": "Automatic company data"},
             "zion_valuation": {
                 "configured": bool(getattr(request.environ.get("workers.env"), "ZION_VALUATIONS", None)),
