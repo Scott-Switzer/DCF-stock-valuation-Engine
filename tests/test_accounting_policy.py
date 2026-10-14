@@ -366,6 +366,16 @@ class PolicyTests(unittest.TestCase):
             {"rejected_unverified"},
         )
 
+    def test_offline_builder_rejects_mismatched_source_cik(self):
+        from accounting_policy import build_adjustment_facts_from_companyfacts
+
+        combined = {"cik": 320193, "facts": {"us-gaap": {}}}
+        result = build_adjustment_facts_from_companyfacts(
+            PEP_CIK, PEP_PERIODS, combined, PEP_AS_OF
+        )
+        self.assertEqual(result["facts"], {"intangible_impairment": [], "goodwill_impairment": []})
+        self.assertTrue(any("does not match" in u["reason"] for u in result["unavailable"]))
+
     def test_offline_builder_matches_live_facts(self):
         from accounting_policy import build_adjustment_facts_from_companyfacts
 

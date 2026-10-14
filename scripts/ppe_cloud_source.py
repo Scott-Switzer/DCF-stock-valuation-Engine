@@ -98,6 +98,15 @@ class S3Transport:
     def __init__(self, client, bucket='financial-system-datasets'):
         self.client, self.bucket, self.etags = client, bucket, {}
 
+    def _read_allowed(self, key):
+        return (key in {'gold/serving/coverage25/CURRENT.json', 'control/valuation/CURRENT.json'}
+                or re.fullmatch(r'gold/valuation/releases/[a-f0-9]{64}/companies/[A-Z0-9.-]+\.json', key)
+                or re.fullmatch(r'gold/serving/releases/[a-f0-9]+/(manifest\.json|identity/resolver_index\.json|entities/entity_sec_cik_[0-9]+(?:_[A-Z-]+)?/fundamentals/annual\.json)', key))
+
+    def _write_allowed(self, key):
+        return (key == 'control/valuation/CURRENT.json' or re.fullmatch(
+            r'gold/valuation/releases/[a-f0-9]{64}/companies/[A-Z0-9.-]+\.json|raw/valuation-sec/[a-f0-9]{64}/companyfacts\.json', key))
+
     def call(self, op, key='', raw=None, expected_etag=None, items=None):
         if op == 'batch':
             if len(items) > 4:
@@ -108,9 +117,7 @@ class S3Transport:
             with ThreadPoolExecutor(max_workers=4) as executor:
                 return list(executor.map(execute, items))
         if op == 'get':
-            if not (key in {'gold/serving/coverage25/CURRENT.json', 'control/valuation/CURRENT.json'}
-                    or re.fullmatch(r'gold/valuation/releases/[a-f0-9]{64}/companies/[A-Z0-9.-]+\.json', key)
-                    or re.fullmatch(r'gold/serving/releases/[a-f0-9]+/(manifest\.json|identity/resolver_index\.json|entities/entity_sec_cik_[0-9]+(?:_[A-Z-]+)?/fundamentals/annual\.json)', key)):
+            if not self._read_allowed(key):
                 raise ProviderError('Publisher read outside allowed namespace.')
             try:
                 obj = self.client.get_object(Bucket=self.bucket, Key=key)
@@ -125,8 +132,7 @@ class S3Transport:
             if len(body) > MAX_FACTS:
                 raise ProviderError('Publisher object exceeds budget.')
             return {'body': base64.b64encode(body).decode(), 'etag': obj['ETag']}
-        if op != 'put' or not (key == 'control/valuation/CURRENT.json' or re.fullmatch(
-                r'gold/valuation/releases/[a-f0-9]{64}/companies/[A-Z0-9.-]+\.json|raw/valuation-sec/[a-f0-9]{64}/companyfacts\.json', key)):
+        if op != 'put' or not self._write_allowed(key):
             raise ProviderError('Publisher write outside valuation namespace.')
         if len(raw) > (MAX_FACTS if key.startswith('raw/') else 524288):
             raise ProviderError('Publisher write exceeds budget.')
@@ -158,6 +164,38 @@ class S3Transport:
 
     def close(self):
         pass
+
+
+class CandidateTransport(S3Transport):
+    """Candidate-only publication for isolated staging indexes.
+
+    Reads the serving namespace and content-addressed packets, and writes only
+    packet artifacts plus the staging candidate pointer. The production
+    ``control/valuation/CURRENT.json`` pointer can be *read* (so an operator
+    can prove it is byte-identical before and after) but any write to it --
+    or selecting it as the candidate pointer -- raises immediately.
+    """
+    PRODUCTION_POINTER = 'control/valuation/CURRENT.json'
+    DEFAULT_POINTER = 'control/valuation/CANDIDATE-staging.json'
+
+    def __init__(self, client, bucket='financial-system-datasets',
+                 pointer=DEFAULT_POINTER):
+        if (pointer == self.PRODUCTION_POINTER
+                or not re.fullmatch(r'control/valuation/CANDIDATE-[A-Za-z0-9][A-Za-z0-9_.-]*\.json', pointer or '')):
+            raise ProviderError('Candidate pointer must be a CANDIDATE-*.json index, never the production pointer.')
+        super().__init__(client, bucket)
+        self.pointer = pointer
+
+    def _read_allowed(self, key):
+        return (key == self.pointer
+                or key == self.PRODUCTION_POINTER
+                or super()._read_allowed(key))
+
+    def _write_allowed(self, key):
+        if key == self.PRODUCTION_POINTER:
+            raise ProviderError('Candidate mode refuses production pointer writes.')
+        return (key == self.pointer or re.fullmatch(
+            r'gold/valuation/releases/[a-f0-9]{64}/companies/[A-Z0-9.-]+\.json', key))
 
 
 def rclone_client(remote):
