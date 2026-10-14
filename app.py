@@ -506,6 +506,15 @@ def limit_expensive_work():
 def security_headers(response):
     if request.path.startswith(("/api/research", "/research")):
         response.headers["Cache-Control"] = "private, no-store"
+    # User-scope and bearer-token pages must never sit in edge cache.
+    # Heuristic edge caching keys on URL alone: a cached Set-Cookie would
+    # fixate one browser library identity onto other users, a cached
+    # /watchlist page would leak one user's library, and a cached /v/<token>
+    # page would stay accessible after the shared link is revoked.
+    if request.path == "/" or request.path.startswith(
+        ("/compare", "/watchlist", "/v/", "/providers", "/coverage/", "/account")
+    ):
+        response.headers["Cache-Control"] = "private, no-store"
     response.headers.update(
         {
             "X-Content-Type-Options": "nosniff",
@@ -543,6 +552,13 @@ def security_headers(response):
     from library import persist_identity
 
     persist_identity(response)
+    # Identity minting happens above, after the earlier header branches.
+    # A response carrying Set-Cookie must never be publicly edge-cached:
+    # a cached Set-Cookie would fixate one browser identity onto others.
+    if "Set-Cookie" in response.headers and response.headers.get(
+        "Cache-Control", ""
+    ).startswith("public"):
+        response.headers["Cache-Control"] = "private, no-store"
     return response
 
 
