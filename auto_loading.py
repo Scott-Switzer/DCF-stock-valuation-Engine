@@ -163,6 +163,7 @@ def load_method(
     from decision_support import historical_growth, peer_fit, peer_review_status
 
     start = time.monotonic()
+    timings = {}
     asof = asof or datetime.now(timezone.utc).date().isoformat()
     ticker = ticker_symbol(ticker)
     http = http or JsonHTTP(budget=40)
@@ -186,11 +187,14 @@ def load_method(
     else:
         from ppe_provider import load_packet
         packet_error = None
+        began = time.monotonic()
         try:
             packet = load_packet(ticker, asof, deadline=getattr(http, "deadline", None))
         except ProviderError as exc:
             packet = None
             packet_error = str(exc)
+        timings["zion_packet"] = round(time.monotonic() - began, 3)
+        began = time.monotonic()
         dcf = load_yahoo(
             ticker,
             asof,
@@ -199,7 +203,10 @@ def load_method(
             require_wacc=method == "dcf",
             packet=packet,
         )
+        timings["yahoo"] = round(time.monotonic() - began, 3)
+        began = time.monotonic()
         dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None), packet=packet, packet_error=packet_error)
+        timings["ppe_apply"] = round(time.monotonic() - began, 3)
         dcf["source"]["revenue_growth_reference"] = historical_growth(dcf["historical"], "revenue")
         dividend_rows = dcf["source"]["common_dividends"]["historical"]
         dcf["source"]["dividend_growth_reference"] = historical_growth(dividend_rows, "value")
@@ -215,10 +222,12 @@ def load_method(
             ],
             "value",
         )
+        began = time.monotonic()
         try:
             sec = company_classification(ticker, http)
         except ProviderError:
             sec = None
+        timings["sec_classification"] = round(time.monotonic() - began, 3)
         # Financial firms still load: the DCF is blocked by classification, and P/E and P/B stay available.
         classification = resolve_classification(ticker, sec)
         dcf["source"]["classification"] = classification
@@ -240,11 +249,13 @@ def load_method(
             dcf["source"]["warnings"].append(
                 "No confirmed industry classification is available; confirm operating-company suitability before relying on FCFF DCF."
             )
+        began = time.monotonic()
         costs = (
             recalculate_costs(dcf, equity_risk_premium, credit_spread)
             if method != "relative"
             else {}
         )
+        timings["wacc_model_inputs"] = round(time.monotonic() - began, 3)
     from app import default_form
     from suite_views import suite_form, suite_assumptions, suite_evaluate
 
@@ -423,6 +434,7 @@ def load_method(
             "company": doc["company"]["name"],
             "ticker": ticker,
             "elapsed_seconds": round(time.monotonic() - start, 2),
+            "stage_seconds": timings,
             "historical_periods": [r["period_end"] for r in dcf["historical"]],
             "peer_count": len(doc.get("comparables", [])),
             "capital_costs": costs,
