@@ -103,6 +103,34 @@ def age_status(value, asof, maximum):
     return {'status': 'FUTURE' if age < 0 else 'STALE' if age > maximum else 'WITHIN_POLICY', 'age_days': age}
 
 
+def transport_evidence(document, cache=None):
+    """Separate assembled-cache delivery from the original financial snapshot path."""
+    source = (document or {}).get('source', {})
+    release = source.get('ppe_release') or {}
+    receipt = release.get('transport_receipt')
+    label = release.get('transport')
+    legacy = {
+        'Zion private service binding': 'ZION_SERVICE_BINDING',
+        'Direct PPE R2 binding': 'DIRECT_R2',
+        'Zion service unavailable; authoritative PPE R2 fallback.': 'DIRECT_R2',
+        'Zion service has no packet; authoritative PPE R2 fallback.': 'DIRECT_R2',
+    }
+    kind = receipt.get('kind', 'UNKNOWN') if isinstance(receipt, dict) else legacy.get(label, 'UNKNOWN')
+    if not release and source.get('ppe_status'):
+        kind = 'BASELINE_ONLY'
+    return {
+        'request_path': 'ASSEMBLY_CACHE' if (cache or {}).get('state') == 'HIT' else kind,
+        'snapshot_origin': kind,
+        'receipt_basis': 'STRUCTURED' if isinstance(receipt, dict) else 'LEGACY_LABEL' if label in legacy else 'NOT_ESTABLISHED',
+        'receipt': deepcopy(receipt),
+        'label': label,
+        'ppe_status': source.get('ppe_status'),
+        'source_release_id': release.get('release_id'),
+        'source_sha256': release.get('sha256'),
+        'note': 'Snapshot origin is not proof of an upstream call on a cached delivery; market and unsupported fields retain their own sources.',
+    }
+
+
 def assemble_packet(bundle, *, ticker=None, asof=None, analysts=None, error=None):
     """Pure assembly: no network, no repair, no inferred observation availability."""
     asof = valuation_date(asof or (bundle or {}).get('financials', {}).get('valuation_date'))
@@ -175,6 +203,7 @@ def assemble_packet(bundle, *, ticker=None, asof=None, analysts=None, error=None
     return {**base, 'status': audit['status'], 'financials': doc, 'fields': fields,
             'methods': audit['methods'], 'issues': audit['issues'],
             'cache': deepcopy(bundle.get('load_summary', {}).get('assembly_cache')),
+            'transport': transport_evidence(doc, bundle.get('load_summary', {}).get('assembly_cache')),
             'components': {'financials': 'ASSEMBLED', 'analysts': analyst_status,
                            'peer_candidates': 'FOUR_UNREVIEWED_CANDIDATES',
                            'filing_evidence': 'FACT_PROVENANCE' if evidence else 'NOT_AVAILABLE'},

@@ -16,9 +16,7 @@ def test_company_packet_api_missing_and_failure(tmp_path):
         ):
             response = client.get("/api/company/AAPL")
             assert response.status_code == 200
-            assert response.headers["Cache-Control"] == (
-                "public, max-age=300, stale-while-revalidate=600"
-            )
+            assert response.headers["Cache-Control"] == "no-store"
 
 
 def test_loading_fallback_is_explicit(tmp_path):

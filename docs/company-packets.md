@@ -15,6 +15,19 @@ whose required automatic inputs are unavailable returns a BLOCKED packet with th
 reason, not a fabricated valuation or an omitted ledger row. Invalid dates and
 query parameters are rejected. The public packet never reads WRDS/private records.
 
+## Serving-path evidence
+
+Successful packets expose `transport.request_path` separately from
+`transport.snapshot_origin`. `ASSEMBLY_CACHE` means no new financial assembly was
+needed; the original snapshot may have come through `ZION_SERVICE_BINDING`,
+`DIRECT_R2` or `BASELINE_ONLY`. Unknown paths remain `UNKNOWN`.
+Request-scoped `source.ppe_release.transport_receipt` records the service outcome
+and origin duration when a packet is read. Legacy labels remain supported but
+are explicitly identified as legacy evidence. Neither receipt type establishes
+independent financial accuracy; market and unsupported fields still have their
+own sources. Both public company packet routes are `no-store`, while bounded
+internal caches remain active. See [pipeline audit and measured limits](production-monitoring.md#zion--dcf-pipeline-baseline).
+
 ## Source quality
 
 The assembler preserves the established published SEC overlay and labeled baseline

@@ -10,6 +10,130 @@ The independent calculator shares explicit forecast assumptions and reported inp
 
 Before deployment retain the prior Worker version and exact Git SHA. Use `--keep-vars`, preserve bindings, apply only reviewed additive migrations and verify no pending migration remains. If critical production checks fail, roll back to the saved prior Worker version with Wrangler; retain additive D1 tables. Never restore a database over new user data as a deployment shortcut.
 
+## Zion → DCF pipeline baseline
+
+Run the bounded, non-saving audit from the repository root:
+
+```sh
+.venv/bin/python scripts/audit_pipeline.py \
+  --tickers AAPL,MSFT --samples 5 --flow \
+  --output find/outputs/pipeline-baseline/public.json
+```
+
+This writes `zion-dcf-pipeline-audit-v1` JSON and a same-stem Markdown report.
+JSON is atomically checkpointed after each request, retaining failures and prior
+progress. Exit 0 means the requested contract/health/arithmetic checks passed;
+exit 1 means at least one failed. It does **not** mean performance targets or
+independent filing verification passed. `--require-zion` additionally requires
+compact responses to identify Zion and exclude cached delivery using `no-store`
+and cache headers; legacy public-TTL receipts cannot pass that strict gate.
+
+Requests are sequential and paced at least seven seconds apart, respecting the
+shared reference/write budgets; do not run simultaneous sweeps from the same
+network. Maximum eight tickers, 100 samples per ticker, two MB per response and
+120 seconds per socket timeout. No redirects, retries, cache flushing, R2
+publication, account access or valuation/research saves occur. Public-provider
+caches may fill through existing endpoints. Requests uses a Session to attempt
+connection reuse, not guarantee it. This is an operator CLI, not Worker code.
+
+The audit reads compact `/api/company/{ticker}` and assembled
+`/api/company/{ticker}/packet` endpoints with an explicit UTC valuation date.
+`--flow` also posts to `/api/load/dcf` and `/api/preview/dcf`, comparing all FCFF,
+terminal, enterprise/equity and per-share results with the independent reference.
+Flow assumptions are fixed QA values (5% growth, 10% WACC, 2% terminal growth),
+not investment recommendations. Automatic loading supports current UTC dates
+only; a historical assembled-load request may intentionally fail.
+
+Each record retains HTTP/cache headers, CF-Ray, body hash/size, source
+release/hash, path, date, transport origin and assembly-cache state. An assembly
+HIT proves cached delivery, not a Zion call on that request. The source SHA is the
+upstream financial artifact hash, not necessarily the public packet hash; the
+response body SHA is recorded separately. Statistics use nearest-rank p50/p95,
+show attempts/failures separately, and mark groups below 20 successful samples
+as SMALL_SAMPLE. Assembly MISS does not establish storage-cache misses or cold
+starts. Flow timing sums network durations and excludes browser rendering,
+editor readiness, debounce and optional references.
+
+### Measured evidence: 2026-10-13 UTC
+
+Public release remained clean `c56df1d16e0a8981c9dcbd36fa59aa4434881ac6` throughout
+the sweep (05:29:21–05:34:15 UTC); all measured CF-Ray suffixes were ATL. AAPL and
+MSFT each supplied five compact packets, five assembled packets and five
+load/preview flows. All 53 audit records passed and all ten previews reconciled.
+All 30 financial-response origins reported Zion using the legacy label. **Current
+invocation is not strictly established**: the unchanged deployed hook advertises
+public caching and has no structured receipts. Absent Age/CF-Cache-Status headers
+are not proof of absence of outer caching. Readiness configuration alone is not
+live-call evidence.
+
+| Public measurement | Successful samples | p50 seconds | p95 seconds |
+| --- | --- | --- | --- |
+| Compact packet, storage cache unknown | 10 | 0.189 | 1.268 |
+| Assembled packet, assembly MISS | 2 | 2.847 | 4.198 |
+| Assembled packet, assembly HIT | 8 | 0.487 | 0.764 |
+| Automatic load, assembly HIT | 10 | 0.367 | 0.686 |
+| Preview | 10 | 0.416 | 1.364 |
+| Load + preview request durations, assembly HIT | 10 | 0.950 | 1.723 |
+
+These are descriptive **small-sample**, single-client distributions. No cached
+storage p95 <250 ms, uncached storage p95 <750 ms or global SLO is certified.
+The measured assembled-HIT p95 exceeds 250 ms, but that is a different layer from
+Zion compact/storage serving. No performance optimization or speedup is claimed.
+
+Public browser AAPL submit-to-visible-result took **4.712 s**, then **3.341 s**
+on a repeated click. Both exceed the proposed <2 s workspace target. Page
+navigation was excluded. Load requests took 4.045 s and 2.220 s; the first preview
+request took 0.536 s. This identifies company loading as a material contributor
+but does not isolate its internal bottleneck. Browser cache state was not measured.
+No console errors were observed, and load/preview/reference requests returned 200.
+No save action was used. Chrome DevTools tracing was unavailable, so no Core Web
+Vitals are reported. Screenshot capture failed because the preview produced no
+composited frames; visual screenshot acceptance remains blocked.
+
+Local edited code passed a two-sample AAPL workerd audit with isolated local
+D1/R2 state, real public market inputs and no connected local Zion service.
+Structured receipts correctly reported DIRECT_R2 / ERROR; the strict Zion gate
+returned exit 1 as expected rather than certifying fallback. Browser loading
+produced an unsaved real AAPL result; this is runtime correctness, not production
+performance evidence. The deterministic suite passed 559 tests plus ten subtests,
+repository Ruff and Python compilation. After final CLI input/health-validation
+repairs, all 30 audit-specific tests passed again, and the final CLI passed an
+eight-record local workerd run. No typecheck is configured for this Python
+application. The new service SUCCESS/NOT_FOUND/NOT_CONFIGURED receipts also have
+synthetic regression coverage; the new live service-success path remains untested
+until a connected development service or authorized deployment is available.
+
+### Local changes and next release gate
+
+`ppe_provider.py` adds request-scoped `valuation-transport-v1` receipts with kind,
+service outcome, timestamp and origin duration. `company_packets.py` exposes
+snapshot origin separately from assembly-cache delivery. Existing free-text labels,
+financial formulas, D1/R2 infrastructure and fallback behavior are retained.
+
+The shared response hook previously overrode the assembled route's `no-store`
+with a public TTL. Both company packet routes now remain `no-store`; bounded
+internal R2/assembly caches are unchanged. The cache assertion was intentionally
+updated to require this behavior, with a regression check that unrelated sample
+responses retain their public cache policy.
+
+These changes are **uncommitted and undeployed**. After review and an authorized
+release, rerun the audit with `--require-zion` on the new clean SHA, then measure
+more browser samples and instrument company-load phases before optimizing. Do not
+infer current Zion calls from old assembled-cache receipts, and do not treat
+arithmetic parity as independent SEC filing reconciliation.
+
+Local detailed artifacts (not automatically committed or uploaded):
+
+- [Public JSON](../find/outputs/pipeline-baseline/public.json) and [summary](../find/outputs/pipeline-baseline/public.md)
+- [Local workerd JSON](../find/outputs/pipeline-baseline/local.json) and [summary](../find/outputs/pipeline-baseline/local.md)
+- [Final CLI workerd acceptance](../find/outputs/pipeline-baseline/local-final.json)
+- [Strict fallback rejection](../find/outputs/pipeline-baseline/local-require-zion.json)
+- [Browser observations](../find/outputs/pipeline-baseline/browser.json)
+
+References: [Service bindings](https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/),
+[Cache API locality](https://developers.cloudflare.com/workers/runtime-apis/cache/),
+[Workers cache delivery](https://developers.cloudflare.com/workers/cache/).
+
 ## Email delivery dependency
 
 The inspected Worker has only the RECORD_SALT secret and no email-sending binding. There is no verified sender/domain or delivery credential configured for this application. Existing accounts remain unverified and have no recovery email. Completing verification/reset requires a chosen transactional delivery service, a verified sender/domain and a server-only sending credential or Cloudflare email binding. Tokens must then be hashed, expiring and single-use, with generic request responses, resend/request throttles and session revocation on reset. Do not claim delivery or activate a nonfunctional reset screen before real delivery and token lifecycle acceptance pass.
