@@ -46,27 +46,37 @@ def _drivers_from_sensitivity(sensitivity):
 
 
 def _accounting_basis(d, wacc):
-    """Which accounting conventions feed the forecast, and what would change them.
+    """Which accounting basis the forecast actually uses, with its evidence.
 
-    The forecast always uses reported GAAP observations. When the snapshot
-    carries source-backed impairment facts, a normalized alternative is valued
-    with the same baseline machinery so the user sees the policy effect with
-    its recurrence warning attached. Never breaks the brief: any failure
-    yields an explicit unavailable entry.
+    The label is evidence-based rather than assumed: a provider snapshot is
+    never called reported GAAP. When validated adjustment evidence rides with
+    the snapshot and the audited inclusion verdict allows it, a normalized
+    alternative is valued to show the policy effect. Never breaks the brief.
     """
     from accounting_policy import (
         apply_policy,
-        provider_convention_notes,
+        audit_adjustments,
+        classify_basis,
+        comparability_note,
         rou_treatment,
     )
 
+    label = classify_basis(d)
+    comparability = comparability_note(d)
+    adjustments = (d.get("source") or {}).get("accounting_adjustments") or {}
     block = {
-        "forecast_basis": "reported_gaap",
+        "basis": label["label"],
+        "basis_reason": label["reason"],
+        "basis_evidence": label.get("evidence"),
+        "forecast_basis": label["label"],
+        "comparability": comparability["status"],
+        "comparability_note": comparability["text"],
         "reported_ebit_margin_mean": None,
         "normalized_alternative": None,
         "adjustments": [],
+        "rejected_adjustments": [],
+        "ebit_definition": None,
         "recurrence_note": None,
-        "incomparability": provider_convention_notes(d),
         "rou": rou_treatment(d)["reason"],
     }
     historical = d.get("historical", []) or []
@@ -77,16 +87,26 @@ def _accounting_basis(d, wacc):
     ]
     if reported:
         block["reported_ebit_margin_mean"] = sum(reported) / len(reported)
-    adjustments = (d.get("source") or {}).get("accounting_adjustments")
-    if not adjustments:
+    if not adjustments.get("facts"):
+        status = adjustments.get("status")
         block["recurrence_note"] = (
-            "No separately-disclosed adjustment facts ride with this snapshot; "
-            "a normalized basis cannot be valued from it."
+            "Normalization evidence is pending for this load; the reported "
+            "basis above is unaffected and no adjustment was assumed."
+            if status == "pending"
+            else "No validated separately-disclosed adjustment evidence rides "
+            "with this snapshot; a normalized basis cannot be valued from it."
         )
         return block
     try:
+        audit = audit_adjustments(d, adjustments)
+        block["ebit_definition"] = audit["ebit_definition"]["classification"]
         adjusted, ledger = apply_policy(deepcopy(d), adjustments, "normalize")
         block["adjustments"] = ledger.get("adjustments", [])
+        block["rejected_adjustments"] = [
+            p
+            for p in ledger.get("period_audit", [])
+            if p["amount"] and p["verdict"] != "verified_addback"
+        ]
         block["recurrence_note"] = ledger.get("recurrence_note")
         if adjusted is None:
             return block
@@ -104,7 +124,8 @@ def _accounting_basis(d, wacc):
             ),
             "note": (
                 "Same baseline machinery on impairment-adjusted EBIT; assumes "
-                "the disclosed charges do not recur. Not a truer price."
+                "the disclosed charges do not recur. A scenario, not a truer "
+                "price."
             ),
         }
     except (ValueError, KeyError, TypeError) as exc:

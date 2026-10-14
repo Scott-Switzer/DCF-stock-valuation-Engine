@@ -29,12 +29,24 @@ A→C provider-convention effect: $+33.49/share.
 - 2024-12-31: revenue $91,854,000,000, EBIT $12,920,000,000, net $9,578,000,000, D&A $3,815,000,000, capex $5,318,000,000
 - 2025-12-31: revenue $93,925,000,000, EBIT $13,491,000,000, net $8,240,000,000, D&A $4,178,000,000, capex $4,415,000,000
 
+## Add-back audit (why B applies and the provider basis refuses)
+
+SEC-first EBIT definition: gaap_operating_income_verified
+Provider EBIT definition: charges_already_excluded_verified
+Verified add-back total (A→B): $2,953,000,000
+Refused add-back total (provider basis): $2,953,000,000
+
+SEC-first EBIT equals filed OperatingIncomeLoss for every loaded period, so
+the disclosed charges are inside it and the add-back is evidence-backed.
+The provider EBIT equals OperatingIncomeLoss plus exactly those charges, so
+it already excludes them and an add-back would double count: refused.
+
 ## Adjustment ledger (B only)
 
 - 2023-12-30: +$927,000,000 impairment add-back (ImpairmentOfIntangibleAssetsExcludingGoodwill 0000077476-26-000007)
 - 2024-12-28: +$33,000,000 impairment add-back (ImpairmentOfIntangibleAssetsExcludingGoodwill 0000077476-26-000007, GoodwillImpairmentLoss 0000077476-26-000007)
 - 2025-12-27: +$1,993,000,000 impairment add-back (ImpairmentOfIntangibleAssetsExcludingGoodwill 0000077476-26-000007, GoodwillImpairmentLoss 0000077476-26-000007)
 
-Separately-disclosed impairments appear in 3 of 3 loaded periods; normalizing assumes they do not recur, which consecutive-year impairments contradict. Review the filing Notes before relying on a normalized basis.
+Separately-disclosed impairments appear in 3 of 3 loaded periods. Normalizing assumes the charges do not recur; with charges in every loaded period that assumption is aggressive and the normalized value is a scenario, not a better valuation.
 
 The forecast applies the period tax rate to adjusted EBIT; the tax shield on the add-back itself is not separately modeled.

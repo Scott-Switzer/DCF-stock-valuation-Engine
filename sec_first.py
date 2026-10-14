@@ -25,6 +25,10 @@ from ppe_packets import validate_packet
 
 STATEMENT_FIELDS = tuple(k for k in HISTORY_FIELDS if k != "net_income")
 
+# Below this much remaining shared budget the adjustment fetch is skipped and
+# reported as pending, so the default brief and preview never wait on it.
+ADJUSTMENT_BUDGET_SECONDS = 1.5
+
 
 def eligibility_gate(packet, ticker, asof):
     """Decide whether a company may bypass Yahoo annual statements.
@@ -352,23 +356,65 @@ def load_sec_first(
     for key, value in costs.items():
         if isinstance(value, (int, float)):
             finite(value, key)
-    # Separately-disclosed impairment facts for the accounting-policy layer.
-    # Best effort: absence is recorded, never zero, and never fails the load.
+    # Separately-disclosed adjustment facts for the accounting-policy layer.
+    # Three latency rules: reuse facts published with the packet, skip the
+    # fetch when the shared request budget is nearly spent (evidence is then
+    # reported pending, never zero), and otherwise fetch once per issuer+tag
+    # with a 24h cache. Never fails the load.
     began_adjust = time.monotonic()
-    from accounting_policy import fetch_adjustment_facts
+    period_ends = [r["period_end"] for r in doc["historical"]]
+    published = packet.get("adjustment_facts") if isinstance(packet, dict) else None
+    if isinstance(published, dict) and published.get("facts"):
+        doc["source"]["accounting_adjustments"] = published
+        doc["source"]["accounting_adjustments_source"] = "published with packet"
+    else:
+        from accounting_policy import fetch_adjustment_facts
 
-    try:
-        period_ends = [r["period_end"] for r in doc["historical"]]
-        doc["source"]["accounting_adjustments"] = fetch_adjustment_facts(
-            cik, period_ends, http
-        )
-    except Exception as exc:
-        doc["source"]["accounting_adjustments"] = {
-            "facts": {},
-            "unavailable": [
-                {"kind": "all", "tag": None, "reason": f"lookup failed: {exc}"[:160]}
-            ],
-        }
+        deadline = getattr(http, "deadline", None)
+        remaining = None if deadline is None else deadline - time.monotonic()
+        if remaining is not None and remaining < ADJUSTMENT_BUDGET_SECONDS:
+            doc["source"]["accounting_adjustments"] = {
+                "schema_version": "accounting-adjustments-v1",
+                "status": "pending",
+                "facts": {},
+                "ebit_facts": [],
+                "unavailable": [
+                    {
+                        "kind": "all",
+                        "tag": None,
+                        "reason": (
+                            "not fetched: only "
+                            f"{max(remaining, 0):.2f}s of the shared request budget remained"
+                        ),
+                    }
+                ],
+                "conflicts": [],
+                "future_restatements": [],
+            }
+            doc["source"]["accounting_adjustments_source"] = "pending"
+        else:
+            try:
+                facts = fetch_adjustment_facts(
+                    cik, period_ends, http, as_of=asof, include_ebit=True
+                )
+                facts["status"] = "resolved"
+                doc["source"]["accounting_adjustments"] = facts
+                doc["source"]["accounting_adjustments_source"] = (
+                    "SEC companyconcept (validated at load)"
+                )
+            except Exception as exc:
+                doc["source"]["accounting_adjustments"] = {
+                    "schema_version": "accounting-adjustments-v1",
+                    "status": "unavailable",
+                    "facts": {},
+                    "ebit_facts": [],
+                    "unavailable": [
+                        {"kind": "all", "tag": None, "reason": f"lookup failed: {exc}"[:160]}
+                    ],
+                    "conflicts": [],
+                    "future_restatements": [],
+                }
+                doc["source"]["accounting_adjustments_source"] = "unavailable"
     doc["source"]["accounting_adjustments_timing"] = round(
         time.monotonic() - began_adjust, 3
     )

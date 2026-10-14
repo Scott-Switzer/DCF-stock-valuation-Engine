@@ -85,11 +85,21 @@ def main():
 
     doc_c, assump_c, res_c = freeze(yahoo, "C")
 
+    from accounting_policy import audit_adjustments, classify_basis
+
     out = {
         "frozen": FROZEN,
         "bases": {},
         "bridge": {},
         "ledger": ledger,
+        "audit": {
+            "sec_first": audit_adjustments(sec, adjustments),
+            "provider": audit_adjustments(yahoo, adjustments),
+        },
+        "labels": {
+            "sec_first": classify_basis(sec),
+            "provider": classify_basis(yahoo),
+        },
     }
     for name, doc, assump, res in (
         ("A_reported_gaap", doc_a, assump_a, res_a),
@@ -173,7 +183,23 @@ def main():
                 f"- {row['period_end']}: revenue ${row['revenue']:,.0f}, EBIT ${row['ebit']:,.0f}, "
                 f"net ${row['net_income']:,.0f}, D&A ${row['d_and_a']:,.0f}, capex ${row['capex']:,.0f}"
             )
-    lines += ["", "## Adjustment ledger (B only)", ""]
+    lines += [
+        "",
+        "## Add-back audit (why B applies and the provider basis refuses)",
+        "",
+        f"SEC-first EBIT definition: {out['audit']['sec_first']['ebit_definition']['classification']}",
+        f"Provider EBIT definition: {out['audit']['provider']['ebit_definition']['classification']}",
+        f"Verified add-back total (A→B): ${out['audit']['sec_first']['addback_total']:,.0f}",
+        f"Refused add-back total (provider basis): ${out['audit']['provider']['rejected_total']:,.0f}",
+        "",
+        "SEC-first EBIT equals filed OperatingIncomeLoss for every loaded period, so",
+        "the disclosed charges are inside it and the add-back is evidence-backed.",
+        "The provider EBIT equals OperatingIncomeLoss plus exactly those charges, so",
+        "it already excludes them and an add-back would double count: refused.",
+        "",
+        "## Adjustment ledger (B only)",
+        "",
+    ]
     for adj in ledger["adjustments"]:
         ev = ", ".join(f"{e['tag']} {e['accession']}" for e in adj["evidence"])
         lines.append(

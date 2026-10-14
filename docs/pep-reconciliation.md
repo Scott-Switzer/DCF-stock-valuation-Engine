@@ -44,13 +44,36 @@ Yahoo's D&A is a cash-flow D&A plus operating-lease amortization measure.
   methodologically inconsistent as FCFF input even though each number traces
   to a real disclosure.
 
+## Add-back audit (verified against OperatingIncomeLoss)
+
+The provider EBIT is not just *assumed* to exclude the charges: it is tied out.
+`accounting_policy` compares each period's EBIT with SEC `OperatingIncomeLoss`
+(accession `0000077476-26-000007`), matching fiscal dates within seven days
+because Yahoo normalizes to month ends.
+
+| Period | Yahoo EBIT | SEC OperatingIncomeLoss | Disclosed charge | Verdict |
+| --- | --- | --- | --- | --- |
+| FY2023 | 12,913M | 11,986M | 927M | 11,986 + 927 = 12,913 → charges already excluded |
+| FY2024 | 12,920M | 12,887M | 33M | equal sum → charges already excluded |
+| FY2025 | 13,491M | 11,498M | 1,993M | equal sum → charges already excluded |
+
+So the provider basis earns **no** impairment add-back (refused: $2,953M), while
+the SEC-first basis earns the verified $2,953M add-back because its EBIT equals
+filed operating income with the charges inside. Refusing the provider add-back
+is what closes the 1.7× overstatement risk in the previous draft, which had
+applied normalization logic to provider data by hand.
+
 ## Corrected conclusion
 
 Yahoo's inputs are not fabrications — each reconciles exactly to a filed
-number under a different convention. The production $196.95 and the staging
+number under a different convention, and the tie-out above proves which
+convention rather than inferring it. The production $196.95 and the staging
 $163.20 are both correct evaluations of their stated bases and neither is
-the true price. The actionable finding is narrower: the provider basis mixes
-a normalization-like EBIT with an inconsistent D&A add-back, which is why it
-lands ~$15/share above the explicit normalized basis (B $181.56 vs C $196.67
-on frozen inputs). Production keeps the Yahoo fallback with the new
-incomparability warning; no packet was rewritten to match either side.
+the true price. What remains actionable is narrower: the provider basis pairs
+a pre-impairment EBIT with an ROU-loaded D&A that has no matching balance-sheet
+treatment, so it lands ~$15/share above the explicit normalized basis
+(B $181.56 vs C $196.67 on frozen inputs). The Research Brief now labels that
+snapshot `provider_defined` (never reported GAAP), refuses impairment
+add-backs on it with the tie-out as evidence, and states that comparability
+with filed GAAP is **unverified** unless a source-specific reconciliation is
+attached. Production keeps the Yahoo fallback; no packet was rewritten.
