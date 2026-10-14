@@ -22,6 +22,30 @@ const WARM_N = parseInt(args.warm || '20', 10);
 const COLD_TICKERS = (args['cold-tickers'] || '').split(',').filter(Boolean);
 const OUT = args.out || '/tmp/bench_browser.json';
 const HEADED = 'headed' in args;
+const REUSE = 'reuse' in args;
+if (args.summarize) {
+  const fs = await import('node:fs');
+  const d = JSON.parse(fs.readFileSync(args.summarize, 'utf8'));
+  const groups = new Map();
+  for (const o of d.observations) {
+    const rel = (name, idx = 0) => {
+      const hits = (o.marks || []).filter(([n]) => n === name).map(([, v]) => v - o.t0);
+      return hits.length > idx ? hits[idx] : null;
+    };
+    const load = (o.resources || []).find((r) => r.url.endsWith('load/dcf'));
+    const key = `${o.ticker} | cache=${o.loadBody?.cacheState ?? '?'} | ctx=${o.ctx ?? 'fresh'}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ value: rel('workspace:value-painted'), brief: rel('workspace:brief-visible'), wire: load?.transferSize ?? null, flask: o.serverTiming });
+  }
+  const q = (s, p) => s.length ? s.sort((a, b) => a - b)[Math.min(s.length - 1, Math.floor(p * s.length))] : null;
+  for (const [key, rows] of [...groups.entries()].sort()) {
+    const ok = rows.filter((r) => r.value !== null);
+    const v = ok.map((r) => r.value), b = ok.map((r) => r.brief).filter((x) => x !== null);
+    console.log(`${key} n=${rows.length} ok=${ok.length} value p50=${q(v, .5)} p95=${q(v, .95)} min=${q(v, 0)} max=${q(v, 1)}`);
+    console.log(`    brief-first p50=${q(b, .5)} p95=${q(b, .95)} wire=${ok[0]?.wire ?? '?'}`);
+  }
+  process.exit(0);
+}
 
 if (!BASE) throw Error('--base is required');
 
@@ -36,13 +60,16 @@ const revision = health.release;
 
 const observations = [];
 
+let sharedContext = null;
 async function observe(ticker, cond) {
-  const context = await browser.newContext();
+  const context = REUSE ? (sharedContext ??= await browser.newContext()) : await browser.newContext();
   const page = await context.newPage();
+  const ctx = REUSE ? 'reused' : 'fresh';
   const headers = {};
   let bodyInfo = null;
   page.on('response', (r) => {
     if (r.url().includes('/api/load/dcf')) {
+      headers.loadStatus = r.status();
       headers.serverTiming = r.headers()['server-timing'] || null;
       headers.cfCacheStatus = r.headers()['cf-cache-status'] || null;
       headers.contentEncoding = r.headers()['content-encoding'] || null;
@@ -55,7 +82,7 @@ async function observe(ticker, cond) {
       })).catch((e) => ({ bodyError: String(e).slice(0, 120) }));
     }
   });
-  const obs = { ticker, cond, revision: revision.commit };
+  const obs = { ticker, cond, ctx, revision: revision.commit };
   try {
     const consoleLines = [];
     page.on('console', (m) => { if (m.text().includes('[brief-sync]')) consoleLines.push(m.text()); });
@@ -102,7 +129,8 @@ async function observe(ticker, cond) {
   } catch (error) {
     obs.error = String(error).slice(0, 200);
   } finally {
-    await context.close();
+    await page.close();
+    if (!REUSE) await context.close();
   }
   observations.push(obs);
   const rel = (name) => {

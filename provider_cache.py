@@ -10,16 +10,23 @@ class EdgeStore:
 
         self.db = request.environ["workers.env"].DB
 
-    def get(self, key):
+    def get(self, key, timings=None):
         from pyodide.ffi import run_sync
 
+        started = time.monotonic()
         row = run_sync(
             self.db.prepare("SELECT value,expires FROM provider_cache WHERE key=?")
             .bind(key)
             .first()
         )
+        if timings is not None:
+            timings["d1_seconds"] = round(time.monotonic() - started, 4)
+            started = time.monotonic()
         if row and row.expires > time.time():
-            return json.loads(str(row.value))
+            value = json.loads(str(row.value))
+            if timings is not None:
+                timings["parse_seconds"] = round(time.monotonic() - started, 4)
+            return value
         return None
 
     def set(self, key, value, ttl):
