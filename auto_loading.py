@@ -488,5 +488,22 @@ def load_method(
             timings["brief_inline"] = round(time.monotonic() - began, 3)
         except ValueError as exc:
             timings["brief_skipped"] = str(exc)[:160]
+        # The initial interactive preview is the same baseline evaluation the
+        # brief just ran. Bundle it (without input_financials; the client
+        # reattaches the delivered snapshot) so first value renders with the
+        # load response instead of after the iframe's preview round trip.
+        # The iframe's own preview remains authoritative on any later edit.
+        began = time.monotonic()
+        try:
+            from app import evaluate
+            from compare import coerce_dcf_assumptions
+
+            preview_assumptions, _ = coerce_dcf_assumptions(
+                doc, None, costs.get("wacc") or 0.065
+            )
+            bundle["preview"] = evaluate(deepcopy(doc), preview_assumptions)
+            timings["preview_inline"] = round(time.monotonic() - began, 3)
+        except (ValueError, ProviderError) as exc:
+            timings["preview_skipped"] = str(exc)[:160]
         bundle["load_summary"]["stage_seconds"] = timings
     return bundle
