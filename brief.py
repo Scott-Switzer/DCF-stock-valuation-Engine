@@ -89,6 +89,12 @@ def build_brief(doc, raw_assumptions=None):
         "ticker": ticker,
         "company": d["company"].get("name", ticker),
         "valuation_date": d.get("valuation_date"),
+        "basis": "custom" if custom else "baseline",
+        "basis_note": (
+            "Custom assumptions supplied with the snapshot."
+            if custom
+            else "Baseline assumptions at load; not updated when you edit assumptions."
+        ),
         "price": {"value": price, "as_of": d["market"].get("price_as_of")},
         "dcf": {
             "intrinsic_value": result["intrinsic_value"],

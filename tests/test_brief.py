@@ -64,6 +64,13 @@ class BuildBriefTests(unittest.TestCase):
         )
         self.assertEqual(custom_brief["assumptions"]["revenue_growth_mean"], 0.10)
 
+    def test_baseline_basis_label(self):
+        from brief import build_brief
+
+        brief = build_brief(demo())
+        self.assertEqual(brief["basis"], "baseline")
+        self.assertIn("Baseline", brief["basis_note"])
+
     def test_financial_firm_is_blocked_not_raised(self):
         from brief import build_brief
 
@@ -98,6 +105,74 @@ class BriefApiTests(unittest.TestCase):
 
         response = app.test_client().post("/api/brief", json={})
         self.assertEqual(response.status_code, 400)
+
+    def test_api_marks_custom_basis(self):
+        from app import app
+        from compare import coerce_dcf_assumptions
+        from dataclasses import asdict
+
+        doc = demo()
+        assumptions, _ = coerce_dcf_assumptions(doc, None, 0.065)
+        raw = asdict(assumptions)
+        raw["revenue_growth_rates"] = [0.06] * 5
+        response = app.test_client().post(
+            "/api/brief", json={"financials": doc, "assumptions": raw}
+        )
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True)[:300])
+        body = response.get_json()
+        self.assertEqual(body["basis"], "custom")
+        self.assertIn("Custom", body["basis_note"])
+
+
+class EmbeddedBriefTests(unittest.TestCase):
+    def test_dcf_load_embeds_baseline_brief_matching_api(self):
+        import auto_loading
+        from test_yahoo_provider import MockHTTP
+
+        doc = demo()
+        bundle = auto_loading.load_method(
+            "dcf", doc["company"]["ticker"], snapshot=demo(), http=MockHTTP()
+        )
+        brief = bundle.get("brief")
+        self.assertIsNotNone(brief)
+        self.assertEqual(brief["basis"], "baseline")
+        self.assertIn("Baseline", brief["basis_note"])
+        self.assertIn("brief_inline", bundle["load_summary"]["stage_seconds"])
+        from brief import build_brief
+
+        expected = build_brief(demo())
+        self.assertEqual(brief["dcf"], expected["dcf"])
+        self.assertEqual(brief["scenarios"], expected["scenarios"])
+        self.assertEqual(
+            brief["market_implied"]["revenue_growth"]["status"],
+            expected["market_implied"]["revenue_growth"]["status"],
+        )
+
+    def test_invalid_baseline_still_loads_without_embedded_brief(self):
+        import auto_loading
+        from test_yahoo_provider import MockHTTP
+
+        snapshot = demo()
+        for row in snapshot["historical"]:
+            row["net_income"] = row["revenue"] * 1.5  # baseline margin fails validation
+        bundle = auto_loading.load_method(
+            "dcf", snapshot["company"]["ticker"], snapshot=snapshot, http=MockHTTP()
+        )
+        self.assertNotIn("brief", bundle)
+        self.assertIn("brief_skipped", bundle["load_summary"]["stage_seconds"])
+
+    def test_ddm_load_carries_no_brief(self):
+        import auto_loading
+        from test_yahoo_provider import MockHTTP
+
+        snapshot = demo()
+        snapshot["source"]["common_dividends"] = {
+            "value": 1.0, "period_end": snapshot["valuation_date"]
+        }
+        bundle = auto_loading.load_method(
+            "ddm", snapshot["company"]["ticker"], snapshot=snapshot, http=MockHTTP()
+        )
+        self.assertNotIn("brief", bundle)
 
 
 if __name__ == "__main__":
