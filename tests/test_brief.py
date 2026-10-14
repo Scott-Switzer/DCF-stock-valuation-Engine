@@ -127,7 +127,6 @@ class BriefApiTests(unittest.TestCase):
 class EmbeddedBriefTests(unittest.TestCase):
     def test_dcf_load_embeds_baseline_brief_matching_api(self):
         import auto_loading
-        from unittest import mock
         from test_yahoo_provider import MockHTTP
 
         doc = demo()
