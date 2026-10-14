@@ -275,6 +275,71 @@ def _sec_subtotal_difference(facts, total_tag, part_tag, end, cutoff, source, fo
     )
 
 
+def _sec_preferred_from_common_buildup(facts, end, cutoff, source):
+    """Derive preferred equity from a full common-equity build-up (filing identity).
+
+    Preferred equity is stockholders equity minus common equity, where common
+    equity is par/common value plus additional paid-in capital plus retained
+    earnings plus accumulated other comprehensive income minus treasury stock.
+    All six legs must come from the same 10-K accession; a negative residual
+    beyond tolerance is rejected and reported as missing, never as zero.
+    Returns an SEC-provenance field or None.
+    """
+    signs = {
+        "CommonStockValue": 1,
+        "AdditionalPaidInCapitalCommonStock": 1,
+        "RetainedEarningsAccumulatedDeficit": 1,
+        "AccumulatedOtherComprehensiveIncomeLossNetOfTax": 1,
+        "TreasuryStockValue": -1,
+    }
+    legs = {}
+    for tag in ["StockholdersEquity", *signs]:
+        candidates = [
+            r
+            for r in facts.get("facts", {})
+            .get("us-gaap", {})
+            .get(tag, {})
+            .get("units", {})
+            .get("USD", [])
+            if r.get("end") == end
+            and r.get("form") in {"10-K", "10-K/A"}
+            and r.get("filed", "9999") <= cutoff
+            and not r.get("start")
+        ]
+        if not candidates:
+            return None
+        latest = max(r["filed"] for r in candidates)
+        top = [r for r in candidates if r["filed"] == latest]
+        if len({_number(r["val"]) for r in top}) != 1:
+            return None
+        legs[tag] = top[0]
+    accessions = {r.get("accn") for r in legs.values()}
+    if len(accessions) != 1:
+        return None
+    common = sum(signs[tag] * _number(legs[tag]["val"]) for tag in signs)
+    value = _number(legs["StockholdersEquity"]["val"]) - common
+    if value < -COMMON_INCOME_TOLERANCE_USD:
+        return None
+    return _field(
+        max(value, 0.0),
+        end,
+        max(r["filed"] for r in legs.values()),
+        "USD",
+        {
+            **source,
+            "provider": "SEC companyfacts",
+            "formula": (
+                "stockholders equity minus (common value + APIC + retained "
+                "earnings + AOCI - treasury stock)"
+            ),
+            "total_tag": "StockholdersEquity",
+            "part_tags": sorted(signs),
+            "accession": next(iter(accessions)),
+            "filing_date": max(r["filed"] for r in legs.values()),
+        },
+    )
+
+
 def _derived(value, components, formula, unit="USD"):
     return _field(
         value,
@@ -500,6 +565,10 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
             cutoff,
             sec_source,
             "stockholders equity minus common equity",
+        )
+    if bridges.get("preferred_equity") is None:
+        bridges["preferred_equity"] = _sec_preferred_from_common_buildup(
+            facts, end, cutoff, sec_source
         )
     if bridges.get("minority_interest") is None:
         bridges["minority_interest"] = _sec_subtotal_difference(

@@ -771,6 +771,85 @@ def test_real_issuers_without_common_basic_tag_abstain(ticker, cik):
     assert validate_packet(p, ticker, "2026-10-07") is p
 
 
+def instant_fact(value, filed="2025-10-31", form="10-K", accn="test", end="2025-09-27"):
+    return {"val": value, "end": end, "filed": filed, "form": form, "accn": accn}
+
+
+def buildup_facts(end="2025-09-27", accn="test", **overrides):
+    legs = {
+        "StockholdersEquity": 18503,
+        "CommonStockValue": 23,
+        "AdditionalPaidInCapitalCommonStock": 4261,
+        "RetainedEarningsAccumulatedDeficit": 70035,
+        "AccumulatedOtherComprehensiveIncomeLossNetOfTax": -15534,
+        "TreasuryStockValue": 40282,
+    }
+    legs.update(overrides)
+    return sec_facts(
+        **{tag: [instant_fact(value, accn=accn, end=end)] for tag, value in legs.items()}
+    )
+
+
+def test_preferred_from_common_buildup_reports_zero_with_filing_provenance():
+    from ppe_packets import _sec_preferred_from_common_buildup
+
+    field = _sec_preferred_from_common_buildup(buildup_facts(), "2025-09-27", "2026-10-07", {})
+    assert field["value"] == 0.0
+    assert field["provenance"]["accession"] == "test"
+    assert "treasury stock" in field["provenance"]["formula"]
+
+
+def test_preferred_from_common_buildup_reports_a_positive_residual():
+    from ppe_packets import _sec_preferred_from_common_buildup
+
+    field = _sec_preferred_from_common_buildup(
+        buildup_facts(StockholdersEquity=18544), "2025-09-27", "2026-10-07", {}
+    )
+    assert field["value"] == 41.0
+
+
+def test_preferred_from_common_buildup_rejects_split_filings():
+    from ppe_packets import _sec_preferred_from_common_buildup
+
+    facts = buildup_facts()
+    facts["facts"]["us-gaap"]["TreasuryStockValue"]["units"]["USD"][0]["accn"] = "other"
+    assert (
+        _sec_preferred_from_common_buildup(facts, "2025-09-27", "2026-10-07", {}) is None
+    )
+
+
+def test_preferred_from_common_buildup_rejects_negative_residual_and_missing_legs():
+    from ppe_packets import _sec_preferred_from_common_buildup
+
+    assert (
+        _sec_preferred_from_common_buildup(
+            buildup_facts(StockholdersEquity=18000), "2025-09-27", "2026-10-07", {}
+        )
+        is None
+    )
+    facts = buildup_facts()
+    del facts["facts"]["us-gaap"]["TreasuryStockValue"]
+    assert (
+        _sec_preferred_from_common_buildup(facts, "2025-09-27", "2026-10-07", {}) is None
+    )
+
+
+def test_packet_bridge_uses_common_buildup_when_common_equity_tag_is_absent():
+    from ppe_packets import _sec_preferred_from_common_buildup
+
+    merged = {"cik": 320193, "facts": {"us-gaap": {}}}
+    for end in ("2023-09-27", "2024-09-27", "2025-09-27"):
+        for tag, rows in buildup_facts(end=end)["facts"]["us-gaap"].items():
+            merged["facts"]["us-gaap"].setdefault(tag, {"units": {"USD": []}})["units"][
+                "USD"
+            ].extend(rows["units"]["USD"])
+    p = build_packet(
+        "AAPL", "0000320193", three_year_rows(), merged, "2026-10-07", {}
+    )
+    assert p["bridge"]["preferred_equity"]["value"] == 0.0
+    assert "treasury stock" in p["bridge"]["preferred_equity"]["provenance"]["formula"]
+
+
 def test_real_jpm_common_income_flows_to_model_and_supplement():
     from ppe_packets import supplement_statement_facts
     p = real_packet("JPM", "0000019617", [2023, 2024, 2025])
