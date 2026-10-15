@@ -38,6 +38,7 @@ class DCFAssumptions:
     capex_margins: Optional[List[float]] = None
     nwc_margins: Optional[List[float]] = None
     tax_rates: Optional[List[float]] = None
+    interest_tax_shield_rate: Optional[float] = None
     net_income_margins: Optional[List[float]] = None
     book_value_margins: Optional[List[float]] = None
     terminal_mode: str = "template"
@@ -76,6 +77,10 @@ class DCFAssumptions:
             )
         if self.wacc_override is not None:
             self.wacc_override = number(self.wacc_override, "WACC", 0.001, 0.5)
+        if self.interest_tax_shield_rate is not None:
+            self.interest_tax_shield_rate = number(
+                self.interest_tax_shield_rate, "Interest tax shield rate", 0, 1
+            )
         if not isinstance(self.terminal_mode, str) or self.terminal_mode not in {
             "template",
             "normalized",
@@ -201,10 +206,13 @@ class FinancialData:
             raise ValueError(
                 "D&A, CapEx outflows, debt, cash and preferred claims must be nonnegative."
             )
-        if any(t < 0 or t > 1 for t in self.effective_tax_rate):
-            raise ValueError(
-                "Historical tax rate needs normalization to a rate between 0 and 100%."
-            )
+        # Reported history is preserved as filed, including negative rates
+        # from benefits, settlements or credits (see tax_policy). Only the
+        # *forecast* assumption is bounded: forecast_cash_flows refuses a
+        # baseline run when the latest reported rate is outside 0-1 and no
+        # explicit assumption was supplied.
+        for t in self.effective_tax_rate:
+            number(t, "Historical tax rate")
         self.shares_outstanding = number(self.shares_outstanding, "Diluted shares", 0)
         if self.shares_outstanding <= 0:
             raise ValueError("Diluted shares must be positive.")
@@ -217,6 +225,16 @@ class FinancialData:
             None if self.minority_may_be_negative else 0,
         )
         number(self.other_nonoperating_assets, "other_nonoperating_assets", 0)
+
+
+def _default_forecast_tax(history):
+    """Latest reported rate reused only inside 0-1; else an explicit assumption is required."""
+    from tax_policy import TaxPolicyError, resolve_forecast_tax
+
+    try:
+        return resolve_forecast_tax(history)["rates"]
+    except TaxPolicyError as exc:
+        raise ValueError(str(exc)) from None
 
 
 class DCFModel:
@@ -249,9 +267,27 @@ class DCFModel:
             if pref and (not d.preferred_dividends or d.preferred_dividends[-1] is None):
                 raise ValueError("Preferred dividends are missing. Enter a WACC override.")
             kp = number(d.preferred_dividends[-1], "Preferred dividends", 0) / pref if pref else 0
+            # The debt shield uses the explicit shield assumption when given,
+            # else the latest reported rate when it lies in 0-1; an unusual
+            # history without an explicit assumption refuses loudly (tax_policy)
+            # instead of shielding debt with a benefit rate.
+            from tax_policy import TaxPolicyError, resolve_forecast_tax
+
+            latest = d.effective_tax_rate[-1]
+            if a.interest_tax_shield_rate is not None:
+                shield = a.interest_tax_shield_rate
+            elif a.tax_rates:
+                shield = a.tax_rates[0]
+            elif 0 <= latest <= 1:
+                shield = latest
+            else:
+                try:
+                    resolve_forecast_tax(d.effective_tax_rate)
+                except TaxPolicyError as exc:
+                    raise ValueError(str(exc)) from None
             self.wacc = (
                 equity * (rf + beta * (rm - rf))
-                + debt * kd * (1 - d.effective_tax_rate[-1])
+                + debt * kd * (1 - shield)
                 + pref * kp
             ) / (equity + debt + pref)
         self.wacc = number(self.wacc, "WACC", 0.001, 0.5)
@@ -268,7 +304,7 @@ class DCFModel:
             "da": a.da_margins or [mean(v / r for v, r in zip(d.d_and_a, d.revenue))] * 5,
             "capex": a.capex_margins or [mean(v / r for v, r in zip(d.capex, d.revenue))] * 5,
             "nwc": a.nwc_margins or [mean(v / r for v, r in zip(d.nwc, d.revenue))] * 5,
-            "tax": a.tax_rates or [d.effective_tax_rate[-1]] * 5,
+            "tax": a.tax_rates or _default_forecast_tax(d.effective_tax_rate),
             "net_income": a.net_income_margins
             or [mean(v / r for v, r in zip(d.net_income, d.revenue))] * 5,
             "book_value": a.book_value_margins

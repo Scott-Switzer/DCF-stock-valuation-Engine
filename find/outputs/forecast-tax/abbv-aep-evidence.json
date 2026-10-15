@@ -1,0 +1,552 @@
+{
+ "sources": {
+  "abbv_fy2024_10k": {
+   "accession": "0001551152-25-000020",
+   "filed": "2025-02-14",
+   "url": "https://www.sec.gov/Archives/edgar/data/1551152/000155115225000020/abbv-20241231.htm",
+   "filing_sha256": "8ff44940f8c6efa94031f627113db1b106e3a2de037cbaf8e95e377783ae789e"
+  },
+  "abbv_fy2025_10k": {
+   "accession": "0001551152-26-000008",
+   "filed": "2026-02-20",
+   "url": "https://www.sec.gov/Archives/edgar/data/1551152/000155115226000008/abbv-20251231.htm",
+   "filing_sha256": "fd69830b16258e5db9377f96dcbfc25c18f9dc4b096dca5c36aaf810353432a8"
+  },
+  "aep_fy2024_10k": {
+   "accession": "0000004904-25-000027",
+   "filed": "2025-02-13",
+   "url": "https://www.sec.gov/Archives/edgar/data/4904/000000490425000027/aep-20241231.htm",
+   "filing_sha256": "248ebe498c860cd4f768e28ce24cf444f8c715d7d16a5020cff15c5f785e1243"
+  },
+  "aep_fy2025_10k": {
+   "accession": "0000004904-26-000013",
+   "filed": "2026-02-12",
+   "url": "https://www.sec.gov/Archives/edgar/data/4904/000000490426000013/aep-20251231.htm",
+   "filing_sha256": "5b621624907d2bc9b319d9a2a6be9054eb3bf66678492fe8e92ff101fac8bedf"
+  }
+ },
+ "histories": {
+  "ABBV": {
+   "ends": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "revenue": [
+    54318.0,
+    56334.0,
+    61160.0
+   ],
+   "ebit": [
+    12757.0,
+    9137.0,
+    15075.0
+   ],
+   "d_and_a": [
+    8698.0,
+    8386.0,
+    8139.0
+   ],
+   "capex": [
+    777.0,
+    974.0,
+    1214.0
+   ],
+   "current_assets": [
+    33002.0,
+    25582.0,
+    29062.0
+   ],
+   "cash": [
+    12814.0,
+    5524.0,
+    5229.0
+   ],
+   "current_liab": [
+    37841.0,
+    38749.0,
+    43289.0
+   ],
+   "short_term_debt": [
+    7191.0,
+    6804.0,
+    8555.0
+   ],
+   "long_term_debt": [
+    52194.0,
+    60340.0,
+    58941.0
+   ],
+   "interest": [
+    2224.0,
+    2808.0,
+    2893.0
+   ],
+   "tax_expense": [
+    1377.0,
+    -570.0,
+    2364.0
+   ],
+   "pretax": [
+    6250.0,
+    3716.0,
+    6597.0
+   ],
+   "net_income_common": [
+    4820.0,
+    4238.0,
+    4186.0
+   ],
+   "total_assets": [
+    134711.0,
+    135161.0,
+    133960.0
+   ],
+   "total_liab": [
+    124351.0,
+    131836.0,
+    137230.0
+   ],
+   "shares": 1773.0
+  },
+  "AEP": {
+   "ends": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "revenue": [
+    18982.0,
+    19721.0,
+    21876.0
+   ],
+   "ebit": [
+    3556.0,
+    4304.0,
+    5319.0
+   ],
+   "d_and_a": [
+    2927.5,
+    3149.0,
+    3325.0
+   ],
+   "capex": [
+    7378.0,
+    7631.0,
+    8453.0
+   ],
+   "current_assets": [
+    6082.1,
+    5789.0,
+    6052.0
+   ],
+   "cash": [
+    330.1,
+    203.0,
+    197.0
+   ],
+   "current_liab": [
+    11583.6,
+    13009.3,
+    13314.0
+   ],
+   "short_term_debt": [
+    5320.7,
+    5859.0,
+    4702.0
+   ],
+   "long_term_debt": [
+    37652.7,
+    39308.0,
+    44128.0
+   ],
+   "interest": [
+    1807.0,
+    1863.0,
+    2026.0
+   ],
+   "tax_expense": [
+    55.0,
+    -39.2,
+    129.0
+   ],
+   "pretax": [
+    2265.8,
+    2935.2,
+    3825.0
+   ],
+   "net_income_common": [
+    2208.0,
+    2967.0,
+    3580.0
+   ],
+   "total_assets": [
+    96684.0,
+    103078.0,
+    114460.0
+   ],
+   "total_liab": [
+    71355.6,
+    76054.0,
+    82204.0
+   ],
+   "shares": 537.5
+  }
+ },
+ "companies": {
+  "ABBV": {
+   "reconciliation": {
+    "filing": "abbv_fy2024_10k",
+    "period_end": "2024-12-31",
+    "statutory_rate": 0.21,
+    "reported_rate": -0.1533907427341227,
+    "components": [
+     {
+      "label": "Foreign operations",
+      "effect_pp": 7.6,
+      "recurring": true,
+      "note": "jurisdiction mix; varies"
+     },
+     {
+      "label": "U.S. tax credits",
+      "effect_pp": -5.4,
+      "recurring": true,
+      "note": "R&D/incentive credits"
+     },
+     {
+      "label": "Stock-based compensation",
+      "effect_pp": -1.2,
+      "recurring": true,
+      "note": "excess benefits"
+     },
+     {
+      "label": "Non-deductible expenses",
+      "effect_pp": 1.1,
+      "recurring": true,
+      "note": "meals, penalties, comp limits"
+     },
+     {
+      "label": "Tax law changes and structuring",
+      "effect_pp": -0.3,
+      "recurring": false,
+      "note": "one-time structuring"
+     },
+     {
+      "label": "Tax audits, settlements and reserves",
+      "effect_pp": -51.4,
+      "recurring": false,
+      "note": "IRS exams closed, reserve releases"
+     },
+     {
+      "label": "Acquisition costs",
+      "effect_pp": 13.4,
+      "recurring": false,
+      "note": "ImmunoGen/Cerevel deal costs"
+     },
+     {
+      "label": "All other, net",
+      "effect_pp": -0.1,
+      "recurring": false,
+      "note": "residual"
+     }
+    ],
+    "recurring_only_rate": 0.231,
+    "discrete_pp": -38.4
+   },
+   "derived": {
+    "nwc": [
+     -10462.0,
+     -11887.0,
+     -10901.0
+    ],
+    "etr": [
+     0.22032,
+     -0.1533907427341227,
+     0.35834470213733516
+    ],
+    "total_debt": [
+     59385.0,
+     67144.0,
+     67496.0
+    ]
+   },
+   "normalized_scenario": {
+    "rate": 0.231,
+    "label": "FY2024 recurring-only bridge (21.0+7.6-5.4-1.2+1.1); FY2025 discrete noise cuts both ways"
+   },
+   "user_override": [
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25
+   ],
+   "variants": {
+    "OLD_refused": {
+     "error": "Historical tax rate needs normalization to a rate between 0 and 100%."
+    },
+    "BASE_latest_reported": {
+     "basis": "latest_reported",
+     "forecast_tax": 0.35834470213733516,
+     "shield": {
+      "rate": 0.35834470213733516,
+      "basis": "coherent_with_forecast:latest_reported"
+     },
+     "wacc": 0.05647175107729166,
+     "annual_fcff": [
+      18755.038438247684,
+      18683.689697336733,
+      19617.874182203574,
+      20598.76789131375,
+      21628.70628587944
+     ],
+     "annual_nopat": [
+      8839.138271208885,
+      9281.095184769329,
+      9745.149944007797,
+      10232.407441208186,
+      10744.027813268598
+     ],
+     "pv_stage1": 84098.44272660685,
+     "terminal_value": 604886.789363207,
+     "enterprise_value": 543703.3476096585,
+     "equity_value": 481436.3476096585,
+     "intrinsic": 271.5377031075344,
+     "delta_vs_BASE": 0.0
+    },
+    "NORM_recurring_only": {
+     "basis": "normalized_scenario",
+     "forecast_tax": 0.231,
+     "shield": {
+      "rate": 0.231,
+      "basis": "coherent_with_forecast:normalized_scenario"
+     },
+     "wacc": 0.05797671122077158,
+     "annual_fcff": [
+      20509.2785014829,
+      20525.641763733714,
+      21551.9238519204,
+      22629.520044516423,
+      23760.99604674225
+     ],
+     "annual_nopat": [
+      10593.378334444104,
+      11123.04725116631,
+      11679.199613724626,
+      12263.15959441086,
+      12876.317574131404
+     ],
+     "pv_stage1": 91910.73149323766,
+     "terminal_value": 638186.2775526744,
+     "enterprise_value": 573378.171157265,
+     "equity_value": 511111.17115726497,
+     "intrinsic": 288.2747722263198,
+     "delta_vs_BASE": 16.73706911878537
+    },
+    "USER_override": {
+     "basis": "user_override",
+     "forecast_tax": 0.25,
+     "shield": {
+      "rate": 0.25,
+      "basis": "coherent_with_forecast:user_override"
+     },
+     "wacc": 0.057752169153090734,
+     "annual_fcff": [
+      20247.54353613253,
+      20250.82005011582,
+      21263.361052621614,
+      22326.529105252695,
+      23442.85556051533
+     ],
+     "annual_nopat": [
+      10331.64336909373,
+      10848.225537548416,
+      11390.636814425838,
+      11960.168655147132,
+      12558.177087904489
+     ],
+     "pv_stage1": 90749.38276146518,
+     "terminal_value": 633386.4572062081,
+     "enterprise_value": 569103.0966590518,
+     "equity_value": 506836.09665905184,
+     "intrinsic": 285.8635626954607,
+     "delta_vs_BASE": 14.325859587926288
+    }
+   }
+  },
+  "AEP": {
+   "reconciliation": {
+    "filing": "aep_fy2024_10k",
+    "period_end": "2024-12-31",
+    "statutory_rate": 0.21,
+    "reported_rate": -0.01335513763968384,
+    "components": [
+     {
+      "label": "Origination flow-through reversal",
+      "effect_pp": 0.7,
+      "recurring": true,
+      "note": "regulator-required flow-through"
+     },
+     {
+      "label": "Investment tax credit amortization",
+      "effect_pp": -2.0,
+      "recurring": true,
+      "note": "deferral methodology, declines with assets"
+     },
+     {
+      "label": "Production tax credits",
+      "effect_pp": -7.3,
+      "recurring": true,
+      "note": "earned as wind MWh produced; IRA visibility, output varies"
+     },
+     {
+      "label": "State/local, net",
+      "effect_pp": 0.6,
+      "recurring": true,
+      "note": "primarily Ohio local"
+     },
+     {
+      "label": "Removal costs",
+      "effect_pp": -0.5,
+      "recurring": true,
+      "note": "utility cost-of-removal"
+     },
+     {
+      "label": "AFUDC equity",
+      "effect_pp": -1.6,
+      "recurring": true,
+      "note": "non-taxable equity allowance; non-cash"
+     },
+     {
+      "label": "Tax reform excess ADIT reversal",
+      "effect_pp": -3.1,
+      "recurring": true,
+      "note": "TCJA excess returned via rates; declining balance"
+     },
+     {
+      "label": "Remeasurement of excess ADIT",
+      "effect_pp": -8.9,
+      "recurring": false,
+      "note": "Arkansas/Michigan + NOLC PLRs; discrete"
+     },
+     {
+      "label": "Other",
+      "effect_pp": -0.2,
+      "recurring": false,
+      "note": "residual"
+     }
+    ],
+    "recurring_only_rate": 0.07800000000000001,
+    "discrete_pp": -9.1
+   },
+   "derived": {
+    "nwc": [
+     -510.90000000000055,
+     -1564.2999999999993,
+     -2757.0
+    ],
+    "etr": [
+     0.024273987112719567,
+     -0.01335513763968384,
+     0.03372549019607843
+    ],
+    "total_debt": [
+     42973.399999999994,
+     45167.0,
+     48830.0
+    ]
+   },
+   "normalized_scenario": {
+    "rate": 0.078,
+    "label": "FY2024 recurring-only bridge; FY2025 recurring-equivalent 13.0% shows credit variability"
+   },
+   "user_override": [
+    0.12,
+    0.12,
+    0.12,
+    0.12,
+    0.12
+   ],
+   "variants": {
+    "OLD_refused": {
+     "error": "Historical tax rate needs normalization to a rate between 0 and 100%."
+    },
+    "BASE_latest_reported": {
+     "basis": "latest_reported",
+     "forecast_tax": 0.03372549019607843,
+     "shield": {
+      "rate": 0.03372549019607843,
+      "basis": "coherent_with_forecast:latest_reported"
+     },
+     "wacc": 0.05707298846619951,
+     "annual_fcff": [
+      -1509.2187810084602,
+      -468.1901633673624,
+      -491.5996715357337,
+      -516.1796551125199,
+      -541.9886378681445
+     ],
+     "annual_nopat": [
+      4799.49797349203,
+      5039.472872166632,
+      5291.446515774964,
+      5556.018841563712,
+      5833.819783641898
+     ],
+     "intrinsic": null,
+     "terminal_unavailable": "Terminal free cash flow must be positive. Revise normalized operations or use a different valuation model."
+    },
+    "NORM_recurring_only": {
+     "basis": "normalized_scenario",
+     "forecast_tax": 0.078,
+     "shield": {
+      "rate": 0.078,
+      "basis": "coherent_with_forecast:normalized_scenario"
+     },
+     "wacc": 0.05619854747514136,
+     "annual_fcff": [
+      -1729.130843186726,
+      -699.0978286545433,
+      -734.0527200872725,
+      -770.7553560916358,
+      -809.2931238962178
+     ],
+     "annual_nopat": [
+      4579.585911313763,
+      4808.565206879452,
+      5048.993467223425,
+      5301.443140584596,
+      5566.515297613825
+     ],
+     "intrinsic": null,
+     "terminal_unavailable": "Terminal free cash flow must be positive. Revise normalized operations or use a different valuation model."
+    },
+    "USER_override": {
+     "basis": "user_override",
+     "forecast_tax": 0.12,
+     "shield": {
+      "rate": 0.12,
+      "basis": "coherent_with_forecast:user_override"
+     },
+     "wacc": 0.05536902905049718,
+     "annual_fcff": [
+      -1937.7453857845344,
+      -918.1430983822411,
+      -964.0502533013546,
+      -1012.252765966422,
+      -1062.8654042647436
+     ],
+     "annual_nopat": [
+      4370.971368715956,
+      4589.519937151755,
+      4818.995934009343,
+      5059.945730709809,
+      5312.943017245299
+     ],
+     "intrinsic": null,
+     "terminal_unavailable": "Terminal free cash flow must be positive. Revise normalized operations or use a different valuation model."
+    }
+   }
+  }
+ }
+}

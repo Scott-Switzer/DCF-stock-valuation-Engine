@@ -42,6 +42,7 @@ module_names = [
     "brief.py",
     "sec_first.py",
     "accounting_policy.py",
+    "tax_policy.py",
     "decision_support.py",
     "issuer_classification.py",
     "guidance.py",

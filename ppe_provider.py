@@ -237,7 +237,14 @@ def prefer_ppe(document, ticker, asof, *, deadline=None, packet=_UNSET, packet_e
 
             try:
                 parse_document(candidate)
-            except ValueError:
+                # Reported history may be signed, but the baseline run still
+                # needs a resolvable forecast tax assumption (tax_policy).
+                from tax_policy import TaxPolicyError, resolve_forecast_tax
+
+                resolve_forecast_tax(
+                    [row["tax_rate"] for row in candidate["historical"]]
+                )
+            except (ValueError, TaxPolicyError, KeyError, TypeError):
                 raise ProviderError(
                     "PPE fields do not meet the valuation model's input requirements."
                 ) from None
