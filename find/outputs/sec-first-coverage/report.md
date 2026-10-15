@@ -328,3 +328,32 @@ valuations — are numerically unchanged (full-suite parity).
 - R2/SEC-archive access stays bounded (range reads, 16 MB fact cap); screening
   cost is ~1 min per 40 companies on the operator machine. No production
   traffic impact: no production writes, no Worker changes.
+
+## Batch 5: live tax integration + release candidate (PR #47, `b9993a3`)
+
+The offline framework is now wired into the application. `eligibility_gate`
+resolves default forecasts from the latest year alone (ABBV's 2024 −15.3%
+stays signed, never blocks its 2025-based forecast); an unusable latest
+default blocks only the default run — `load_sec_first` and `prefer_ppe`
+accept explicit overrides/scenarios and record them in
+`source.tax_policy` without touching history, including coherent capital
+costs under an explicit shield. Yahoo keeps the signed filed ratio beside
+its labeled `TaxRateForCalcs` fallback. `compare` resolves baselines
+through the policy and runs recalculated (frozen inputs + selected shield,
+parity-exact when unchanged) vs fixed-WACC sensitivity modes, labeled by
+`wacc_basis_note` and surfaced in the brief; the workspace recomputes a
+stale loaded WACC on tax edits and records the switch. FY2025 bridges are
+encoded: ABBV recurring 42.3% adopted-flags vs 21.0% PR-pair-discrete (no
+stable point, none adopted), AEP 13.4% (3.37 + 10.01 sole discrete item —
+the earlier 13.0% corrected). TS engine tax parity done (signed history,
+latest-only default, shield chain; runtime-verified); a pre-existing TS
+margin-averaging drift was found and left for a dedicated pass.
+
+Staging (`b9993a3`, version `1e1af6ca`): CAT 213.05, PEP 170.11, T 76.14,
+PAYX 88.01 — exact vs the pre-change build; PAYX brief carries reported
+23.79/23.83/23.83%, `latest_reported`, recalculated-WACC label; ORCL/BAC
+still honestly blocked; Chromium PAYX load with 0 console errors; 24/24
+live account checks. Production `CURRENT.json` (`ecf1e1c4…`) untouched.
+Recommendation A (code-only); packets separate. Evidence:
+`find/outputs/tax-integration/staging-verification.json`; release record:
+`docs/production-release-candidate.md`.
