@@ -14,7 +14,8 @@ exposed **one decisive defect that no in-process test could have found**: the Zi
 not have, so **the endpoint answers `SOURCE_CONTEXT_INVALID` (503) for every filer,
 including all three plan companies**. Until that is repaired the required end-to-end
 per-share demonstration through the Worker cannot succeed, and a staging release of this
-route would ship a broken endpoint.
+route would ship a broken endpoint. The repair is described in §9: implemented and verified
+in process, and still undeployed.
 
 Comparing the two independent bridge paths also exposed a quieter defect on the DCF side:
 the public-SEC bridge missed Alphabet's 7,100,000,000 noncontrolling interest and overstated
@@ -85,6 +86,10 @@ claim came from the real immutable archive, not a simulator.
 | unknown query parameter | `400 INVALID_PARAMETER` |
 | pinned release that is not the served one | `409 SOURCE_VERSION_CHANGED` |
 | correctly authorized | `503 SOURCE_CONTEXT_INVALID` ← the defect |
+
+Two rows above are superseded by §9: a date-only `as_of` is now the route's documented
+whole-day request rather than a rejected one, and the `503` row is the defect the companion
+Company Facts release repairs.
 
 The scoped service credential is **not** widened to bearer-only routes: the same
 credential on `POST /private/v1/query` is refused `401 UNAUTHORIZED`, while the corporate
@@ -261,10 +266,10 @@ the `SOURCE_CONTEXT_INVALID` defect to staging, and the repair choice in §4 cha
 the release pin attests to — both are decisions for the operator. No secret was set, no
 version was uploaded, no route was changed, and no production credential was retrieved.
 
-Minimum operator action once the repair is chosen:
+Minimum operator action, with the §9 repair now implemented but not deployed:
 
-1. Apply the repair and re-run the authorization matrix above; the last row must become
-   `200` with real claims for each planned filer.
+1. Deploy the repaired Zion Workers and re-run the authorization matrix above; the last row
+   must become `200` with real claims for each planned filer.
 2. `wrangler d1 migrations apply DB --env staging` (adds
    `0009_equity_claims.sql`; without it the bridge route returns 503 on save).
 3. Set `ZION_SERVICE_TOKEN` on `zion-financial-serving-v2-thin-staging` with
@@ -284,3 +289,240 @@ credential. In this run the claims leg, the binding, the authorization boundary 
 saved-record plumbing were exercised in the runtime; the claims → enterprise → bridge →
 per-share → saved record chain was exercised in process over the real SEC-backed contract
 (28 focused tests, 788 suite tests).
+
+## 9. Follow-up: the §4 defect repaired, and the cutoff convention made explicit
+
+The repair follows the first §4 option in its own shape: rather than mutate the published
+engine release or widen its metric registry, the raw Company Facts members are published as a
+**separate immutable companion release** derived from the same pinned public SEC bulk archive.
+
+| File (repo) | Change |
+| --- | --- |
+| Zion `src/sec_companyfacts.py` | New. Reads the companion release manifest, its approved previous releases and one member by CIK; only the companion prefix is read and no caller-supplied key is accepted. |
+| Zion `scripts/publish_sec_companyfacts.py` | New. Extracts exactly the archive member bytes the engine release pinned, re-verifies zip CRC32, size and `materialized.member_sha256` against the engine release's own pin, and publishes with `--immutable`. |
+| Zion `src/equity_claims_api.py` | The route reads the companion member, requires the engine pin and the companion member to name the same bytes (`SOURCE_BUNDLE_MEMBER_MISMATCH` otherwise), applies the availability filter at the serving boundary, and returns a `source_bundle` plus the resolved `cutoff` report. |
+| Zion `src/equity_claims.py` | `AVAILABILITY_POLICY`, `end_of_day_utc`, `restrict_to_available`; the claims block records the policy and the rule. |
+| Zion `thin/wrangler.jsonc`, `thin/wrangler.dev.jsonc` | Both thin environments name the companion manifest key and digest. |
+| DCF `equity_claims_provider.py` | Verifies the dual-release bundle, asks for a day-level cutoff, and reads back the cutoff the source resolved. |
+| DCF `zion_equity_claims_service.py` | Carries `source_asof` and `expected_source_release_id`, and records the companion release, the evidence ceiling and the served cutoff in the attestation. |
+| DCF `scripts/verify_equity_claims.py` | Wraps the fixture the way the route now does (availability filter, dual release blocks, resolved cutoff) and pins both releases. |
+
+### The cutoff convention, and why an instant is the wrong request
+
+SEC Company Facts carries a filing date but no acceptance time, so the route publishes one
+rule: a filing dated D is available once day D has ended in UTC. A date-only `as_of` is the
+whole of that day (`DATE_ONLY_END_OF_DAY_UTC_V1`, `day_complete: true`); an explicit instant
+is honoured as given and therefore **excludes** filings dated that day. End of day is the last
+nanosecond, not `23:59:59.000`, so a request spelled `2026-10-14T23:59:59Z` is an intraday
+request that silently drops the day's own filings.
+
+That was the defect this follow-up found, in the consumer rather than the producer: the DCF
+consumer asked for `<date>T23:59:59Z`, so a valuation dated D would have been served with D's
+filings missing while still being labelled D. The consumer now asks for the evidence date
+itself and reads the resolution back — the requested cutoff, the resolved instant, the
+valuation date, the named policy and `day_complete` must all agree, or the claims are refused
+(`an intraday cutoff leaves the evidence day incomplete`).
+
+### Verification after the repair
+
+* Zion: `python3 -m pytest tests/unit/test_equity_claims.py tests/unit/test_equity_claims_api.py tests/unit/test_dataset_registry.py tests/unit/test_sec_history_api.py -q` → **80 passed**. The route tests pin the whole cutoff report, that a filing dated the valuation day is `REPORTED` for a day-level request and not for an intraday one, and that releases pinning different bytes for one filer are a conflict.
+* DCF: `.venv/bin/python -m pytest tests -q` → **800 passed, 10 subtests passed**.
+* DCF reconciliation re-run: `scripts/verify_equity_claims.py --output-dir artifacts/zero-subscription-integration` → `failures: []`, Apple 119.217, Microsoft 271.573, Alphabet 188.186 (the §5 numbers, unchanged), with every receipt now carrying the served cutoff and both release identities.
+
+Limitations: nothing was deployed — no secret set, no version uploaded — so the repaired route
+has still never answered over a real runtime, and the operator list in §7 stands. The Zion
+suite could not be run in full on this machine: the only interpreter holding the project's
+`diskcache` is the repository `.venv`, which has no `pytest`, so the covering modules were run
+under the global pytest 8.4.2 (18 unrelated test modules fail collection for missing
+third-party deps in that interpreter). The `tests/unit/test_sec_universe_basin.py` disk-guard
+failure recorded in §6 is unaffected.
+
+## 10. The repaired code answers through a real Workerd runtime
+
+Everything in §9 is now observed, not asserted: the repaired DCF consumer and the Zion claims
+route ran together in three local Workerd processes, and the whole chain executed over HTTP.
+
+| Process | Config | Port |
+| --- | --- | --- |
+| Zion thin financial-data Worker | `{zion}/deploy/cloudflare-query/thin/wrangler.dev.jsonc` | 8790 |
+| DDFI benchmark Worker (assumptions leg) | `{ddfi}/deploy/cloudflare-query/thin-benchmark/wrangler.dev.jsonc` | 8792 |
+| DCF valuation engine | `dcf-zero-subscription/wrangler.dev.jsonc` | 8791 |
+
+The DCF Worker reaches Zion through the `ZION_FINANCIAL_QUERY` service binding, so the claims
+and the native history both resolve inside the account; the private bearer and the scoped
+service credential are the only credentials used. `migrations/0009_equity_claims.sql` was
+applied to the local D1 first, without which the bridge route cannot save.
+
+### 10.1 The blocker, and why the dev harness now owns a local copy of the releases
+
+The first live attempt failed on the **native-history** leg, not the claims route:
+
+```
+financials fetch failed: 503 {"error":"Zion equity claims service: the internal service
+refused the request with HTTP 409 (CACHE_INTEGRITY_FAILURE)"}
+```
+
+`sec_engine_api.stored()` authenticates every derived query-cache envelope with the
+deployment's private credential (`env.ZION_PRIVATE_API_TOKEN`). The shared bucket already held
+the exact object for this query — key
+`gold/sec-engine/releases/b39a670b…/queries/fa3ac589…json` — and its `mac` does **not** verify
+under the local credential:
+
+```
+envelope keys ['mac', 'value']
+local-private raw mac match False
+```
+
+so a local run is refused before it can read the cache, and `persist()` is create-only with
+`etagDoesNotMatch: "*"`, so it cannot repair one either. The same object fetched with the
+pinning manifest confirmed what it is: the engine's own cache for the identical query
+fingerprint, written under a different credential (the fingerprint `fa3ac589…` the local
+runtime then reported as `cache.state = MISS` is the same value).
+
+Two consequences were separated:
+
+* **For local development**, `thin/wrangler.dev.jsonc` now binds `MARKET_DATA` to a local
+  simulator, while `SEC_CORPUS` and `SEC_ARCHIVE` stay on their real read-only buckets. The
+  local store is seeded from the pinned releases by the new
+  `{zion}/scripts/seed_dev_market_data.py`, which verifies every object against the digest its
+  manifest names — the same check the Worker performs — and re-reads it from the local store
+  before reporting it:
+
+  ```
+  python3 scripts/seed_dev_market_data.py --ciks 0000320193,0000789019,0001652044 \
+      --persist-to /tmp/zion-dev-r2
+  -> 11 objects, 17,038,461 bytes (engine manifest + 3 catalogs + 3 engine members +
+     companion manifest + 3 companion members), every digest re-verified
+  ```
+
+  `tests/unit/test_dev_harness_config.py` (4 tests) now fails if the dev harness drifts from
+  `thin/wrangler.jsonc` pins, if `MARKET_DATA` becomes remote again, or if the source archives
+  stop being remote.
+
+* **For the deployment**, this is an operational landmine worth its own fix: every derived
+  cache envelope is bound to one secret value, so rotating `ZION_PRIVATE_API_TOKEN` (or reading
+  the shared bucket with any other credential) turns every cached query into a permanent
+  `CACHE_INTEGRITY_FAILURE` 409 that the create-only writer cannot repair. Namespacing the
+  derived-cache key with a keyed digest of the credential — so each credential sees its own
+  cache namespace — would remove the failure mode; a documented purge is the interim
+  mitigation. §7 is unchanged by this: nothing was deployed to any environment.
+
+### 10.2 Priority 1 — three filers, HTTP 200, whole contract
+
+`POST /api/financials` (`provider=zion_history`) and `POST /api/equity-claims/bridge` through
+the real Worker, with the DCF asking at valuation date `2026-10-15` and evidence cutoff
+`2026-09-24`:
+
+| Filer | CIK | HTTP | Enterprise value | Equity value | Per share |
+| --- | --- | --- | --- | --- | --- |
+| Apple | 0000320193 | 201 | 1,678,931,860,843.83 | 1,739,874,860,843.83 | **119.21703451950214** |
+| Microsoft | 0000789019 | 201 | 2,046,624,766,262.03 | 2,016,579,766,262.03 | **271.57328289297936** |
+| Alphabet | 0001652044 | 201 | 2,179,137,903,112.57 | 2,311,757,903,112.57 | **188.18558019134235** |
+
+The §5 numbers are reproduced through the Worker boundary. Every receipt carries:
+
+* engine release `b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb` and its
+  manifest digest `4e0d6b9e…`, plus the companion Company Facts release
+  `f4f81944fbf79e2cac8b119b457fd8e45b92f2171e783ecd36f85b18df80b25b` and manifest digest
+  `032d432d…`;
+* `reconciliation_status = MEMBER_SHA256_AGREES_WITH_ENGINE_PINNED_MEMBER`, with engine and
+  companion member digests equal (`73a86c6a…` Apple, `f8aae296…` Microsoft, `a017f26e…`
+  Alphabet);
+* `cutoff_policy = DATE_ONLY_END_OF_DAY_UTC_V1`, `evidence_cutoff = 2026-09-24`,
+  `served_cutoff_utc = 2026-09-24T23:59:59.999999999Z`, `bridge_valuation_date = 2026-10-15`,
+  `snapshot_date = 2026-09-24`, bulk archive etag `8e09f7f4e3577b361c2bcf09f9edab6f-27`;
+* `attestation.transport = CLOUDFLARE_SERVICE_BINDING`,
+  `attestation.binding = ZION_FINANCIAL_QUERY`, caller `dcf-valuation-engine`,
+  `authenticated_via = SERVICE_CREDENTIAL`.
+
+The valuation date and the evidence cutoff are therefore separately named on the receipt: a
+September 24 snapshot is never presented as though it contained all information available on
+October 15.
+
+Evidence states across the three filers (live): Apple and Microsoft each 6 `REPORTED` +
+2 `REVIEWED_ABSENT` (`noncontrolling_interests`, `preferred_equity` — absent with the candidate
+concepts reviewed and named); Alphabet 8 `REPORTED`. No claim was zeroed to fill a gap, and
+every `REPORTED` claim carries its own `available_at` filing date.
+
+### 10.3 Priority 2 — the cutoff convention, measured against real filings
+
+The live archive has a filing dated **2026-07-31**, so the rule was measured on that day rather
+than on a synthetic one. Same route, same release, six cutoffs:
+
+| Requested `as_of` | `day_complete` | Apple `cash` claim | `available_at` |
+| --- | --- | --- | --- |
+| `2026-07-30` (day before) | true | 45,572,000,000 (period 2026-03-28) | 2026-05-01 |
+| `2026-07-31` (date-only) | true | **39,544,000,000 (period 2026-06-27)** | **2026-07-31** |
+| `2026-07-31T12:00:00Z` (intraday) | false | 45,572,000,000 (period 2026-03-28) | 2026-05-01 |
+| `2026-07-31T20:00:00Z` (16:00 New York) | false | 45,572,000,000 (period 2026-03-28) | 2026-05-01 |
+| `2026-08-01T02:00:00Z` (next UTC day) | true | 39,544,000,000 (period 2026-06-27) | 2026-07-31 |
+| `2026-08-01` (date-only) | true | 39,544,000,000 (period 2026-06-27) | 2026-07-31 |
+
+A filing dated the cutoff day is included exactly when that UTC day has ended, and a request
+inside the filing day falls back to the earlier filing instead of assuming an intraday
+acceptance time. The `20:00Z` row is the UTC-versus-New-York boundary: 16:00 in New York is
+after the filing was accepted in practice, and it is still excluded, because the contract is
+deliberately conservative rather than claiming exact intraday availability. Repeated identical
+requests returned byte-identical claims (`sha256 03c1044f…` three times).
+
+Boundaries observed on the same route: a cutoff after the pinned release ceiling is refused
+(`2026-10-14` and `2026-09-25T00:30:00Z` → **422 `CUTOFF_EXCEEDS_SOURCE_RELEASE`**), so a
+source archive older than the requested date cannot be silently served as if it were current.
+
+### 10.4 Priority 4 — refusals, substitution and isolation, all live
+
+| Probe | Result |
+| --- | --- |
+| No credential | **401 `UNAUTHORIZED`** |
+| Wrong bearer | **401 `UNAUTHORIZED`** |
+| Service credential naming an unapproved caller | **403 `SERVICE_CALLER_NOT_PERMITTED`** |
+| Approved service credential (`dcf-valuation-engine`) | **200** |
+| `recipient=automated_agent` | **403 `RECIPIENT_NOT_PERMITTED`** |
+| Unknown query parameter | **400 `INVALID_PARAMETER`** |
+| Malformed date (`2026-9-24`) | **400 `INVALID_AVAILABILITY_CUTOFF`** |
+| Wrong engine release pin | **409 `SOURCE_VERSION_CHANGED`** |
+| Wrong companion release pin | **409 `SOURCE_RELEASE_CHANGED`** |
+| Foreign `Origin` on the DCF write | **403 `Cross-site writes are not allowed.`** |
+| Malformed CIK at the DCF route | **400** |
+| DCF request with a bad engine pin | **503** wrapping the internal **409 `SOURCE_VERSION_CHANGED`** |
+| Bundle with one attested page edited | **400** `evidence attestation mismatch; caller-supplied bundle rejected` |
+| Bundle with a forged attestation | **400** `evidence attestation mismatch; caller-supplied bundle rejected` |
+| Bundle with an edited *derived* float, genuine attestation | **201**, and the valuation is recomputed from the attested pages: enterprise value and per-share identical to the untampered run (1,678,931,860,843.83 / 119.21703451950214), so the edit is ignored rather than trusted |
+
+The research export ran through the library identity that saved it:
+`GET /api/equity-claims/bridges/<id>/export/json` → **200**,
+`Content-Disposition: attachment; filename="AAPL-equity-claims-<id>.json"`, carrying CIK,
+both release identities, member digests, `snapshot_date`, `evidence_cutoff`,
+`served_cutoff_utc`, `cutoff_policy`, `bridge_valuation_date`, enterprise and equity values,
+per-share, the unresolved advisory list and the scenario set. A second library identity and an
+anonymous caller both receive **404** for the same record.
+
+Environment separation was re-checked from the deployment configuration itself:
+`wrangler deploy --dry-run` on the default (production) environment lists `ZION_VALUATIONS` and
+`ZION_DATASET_CATALOG` and **no** `ZION_FINANCIAL_QUERY`; the same command with `--env staging`
+lists `ZION_FINANCIAL_QUERY (zion-financial-serving-v2-thin-staging)`. No production binding,
+route or publication pointer was changed by this work.
+
+### 10.5 Test environments
+
+* DCF: `.venv/bin/python -m pytest -q` → **808 passed, 10 subtests passed**.
+* Zion: `python3 -m pytest tests/unit/test_equity_claims.py tests/unit/test_equity_claims_api.py
+  tests/unit/test_sec_history_api.py tests/unit/test_dataset_registry.py -q` → **80 passed**,
+  plus `tests/unit/test_dev_harness_config.py` → **4 passed**.
+* One real defect was found by the DCF suite and fixed rather than worked around:
+  `tests/test_worker_bundle.py` failed because `app.py` imports `bottom_up_capm` and
+  `scripts/embed_assets.py` did not bundle it, so the CAPM route would have raised
+  `ImportError` inside Workerd. `bottom_up_capm.py` is now in `module_names`, the bundle was
+  rebuilt, and the suite is green.
+
+### 10.6 What this still does not establish
+
+* Nothing is deployed. §7 stands unchanged: no staging Worker version was uploaded and no
+  environment secret was set, so "works in local Workerd" is not "works in staging".
+* The Zion route is still pointed at a pinned weekly snapshot whose ceiling is
+  `2026-09-24T23:59:59.999999999Z`. A valuation dated later than that is refused today; making
+  October valuations possible means publishing a newer immutable release, not relaxing the
+  cutoff.
+* `available_at` comes from the Company Facts `filed` date, which carries no acceptance time.
+  The route's conservative rule is the contract's answer to that; an acceptance-time-backed
+  point-in-time signal would need filing headers or the SEC index and is not implemented.

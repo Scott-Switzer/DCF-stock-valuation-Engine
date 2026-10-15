@@ -1,0 +1,467 @@
+{
+ "as_of": "2026-10-14",
+ "failures": [],
+ "filer": {
+  "AAPL": {
+   "balance_identity": {
+    "assets": "383266000000",
+    "equity": "107520000000",
+    "identity_holds": true,
+    "liabilities": "275746000000",
+    "period": "2026-06-27",
+    "residual_decimal": "0"
+   },
+   "bridge": {
+    "add_decimal": "186061000000",
+    "deduct_decimal": "85574000000",
+    "verified_absent": [
+     "noncontrolling_interests",
+     "preferred_equity"
+    ]
+   },
+   "cash": {
+    "accession": "0000320193-26-000020",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "CashAndCashEquivalentsAtCarryingValue",
+      "value": "39544000000"
+     }
+    ],
+    "contract_decimal": "39544000000",
+    "evidence_state": "REPORTED",
+    "form": "10-Q",
+    "independent_decimal": "39544000000",
+    "period": "2026-06-27"
+   },
+   "debt": {
+    "accession": "0000320193-26-000020",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "CommercialPaper",
+      "value": "1997000000"
+     },
+     {
+      "concept": "LongTermDebtCurrent",
+      "value": "11007000000"
+     },
+     {
+      "concept": "LongTermDebtNoncurrent",
+      "value": "71340000000"
+     }
+    ],
+    "contract_decimal": "84344000000",
+    "evidence_state": "REPORTED",
+    "form": "10-Q",
+    "independent_decimal": "84344000000",
+    "period": "2026-06-27"
+   },
+   "finance_leases": {
+    "accession": "0000320193-25-000079",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "FinanceLeaseLiability",
+      "value": "1230000000"
+     }
+    ],
+    "contract_decimal": "1230000000",
+    "evidence_state": "REPORTED",
+    "form": "10-K",
+    "independent_decimal": "1230000000",
+    "period": "2025-09-27"
+   },
+   "leases": {
+    "finance_in_bridge": true,
+    "finance_lease": "1230000000",
+    "note": "Operating lease liabilities are excluded because EBIT is after operating lease cost; finance leases are a financing claim and are deducted.",
+    "operating_in_bridge": false,
+    "operating_lease": "12490000000"
+   },
+   "noncontrolling_interests": {
+    "accession": null,
+    "agrees_with_filing": true,
+    "concepts": [],
+    "contract_decimal": null,
+    "evidence_state": "REVIEWED_ABSENT",
+    "form": null,
+    "independent_decimal": "0",
+    "period": null
+   },
+   "noncontrolling_scope": {
+    "apic_decimal": null,
+    "consolidated_equity": null,
+    "deducted_from_a_consolidated_value": true,
+    "nci_concept": "us-gaap:MinorityInterest",
+    "nci_decimal": null,
+    "nci_is_separate_equity_line": false,
+    "note": "A noncontrolling interest is a claim on the consolidated cash flows the enterprise value measures, so it is deducted once. It is never part of the interest-bearing debt claim unless the filing puts it there.",
+    "parent_equity": "107520000000"
+   },
+   "nonoperating_assets": {
+    "accession": "0000320193-26-000020",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "CashAndCashEquivalentsAtCarryingValue",
+      "value": "39544000000"
+     },
+     {
+      "concept": "MarketableSecuritiesCurrent",
+      "value": "22855000000"
+     },
+     {
+      "concept": "MarketableSecuritiesNoncurrent",
+      "value": "84118000000"
+     }
+    ],
+    "contract_decimal": "146517000000",
+    "evidence_state": "REPORTED",
+    "form": "10-Q",
+    "independent_decimal": "146517000000",
+    "period": "2026-06-27"
+   },
+   "nonoperating_breakdown": {
+    "cash_counted_once": true,
+    "cash_decimal": "39544000000",
+    "cash_is_a_constituent": true,
+    "constituents": {
+     "CashAndCashEquivalentsAtCarryingValue": "39544000000",
+     "MarketableSecuritiesCurrent": "22855000000",
+     "MarketableSecuritiesNoncurrent": "84118000000"
+    },
+    "excluded_long_term_investments": {},
+    "non_cash_decimal": "106973000000",
+    "total": "146517000000"
+   },
+   "preferred": {
+    "carrying_concept": null,
+    "carrying_decimal": null,
+    "conversion_terms_present": false,
+    "evidence_state": "REVIEWED_ABSENT",
+    "max_converted_common_shares": null,
+    "rule": "As-converted scenarios add converted common shares and deduct no preferred claim; the liquidation scenario deducts the preference and adds no shares.",
+    "shares_outstanding_decimal": null
+   },
+   "preferred_equity": {
+    "accession": null,
+    "agrees_with_filing": true,
+    "concepts": [],
+    "contract_decimal": null,
+    "evidence_state": "REVIEWED_ABSENT",
+    "form": null,
+    "independent_decimal": "0",
+    "period": null
+   },
+   "status": "VALIDATED"
+  },
+  "GOOGL": {
+   "balance_identity": {
+    "assets": "921983000000",
+    "equity": "640480000000",
+    "identity_holds": true,
+    "liabilities": "281503000000",
+    "period": "2026-06-30",
+    "residual_decimal": "0"
+   },
+   "bridge": {
+    "add_decimal": "298385000000",
+    "deduct_decimal": "127877000000",
+    "verified_absent": []
+   },
+   "cash": {
+    "accession": "0001652044-26-000071",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "CashAndCashEquivalentsAtCarryingValue",
+      "value": "55911000000"
+     }
+    ],
+    "contract_decimal": "55911000000",
+    "evidence_state": "REPORTED",
+    "form": "10-Q",
+    "independent_decimal": "55911000000",
+    "period": "2026-06-30"
+   },
+   "debt": {
+    "accession": "0001652044-26-000071",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "CommercialPaper",
+      "value": "0"
+     },
+     {
+      "concept": "LongTermDebtCurrent",
+      "value": "1999000000"
+     },
+     {
+      "concept": "LongTermDebtNoncurrent",
+      "value": "98165000000"
+     }
+    ],
+    "contract_decimal": "100164000000",
+    "evidence_state": "REPORTED",
+    "form": "10-Q",
+    "independent_decimal": "100164000000",
+    "period": "2026-06-30"
+   },
+   "finance_leases": {
+    "accession": "0001652044-26-000071",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "FinanceLeaseLiability",
+      "value": "2590000000"
+     }
+    ],
+    "contract_decimal": "2590000000",
+    "evidence_state": "REPORTED",
+    "form": "10-Q",
+    "independent_decimal": "2590000000",
+    "period": "2026-06-30"
+   },
+   "leases": {
+    "finance_in_bridge": true,
+    "finance_lease": "2590000000",
+    "note": "Operating lease liabilities are excluded because EBIT is after operating lease cost; finance leases are a financing claim and are deducted.",
+    "operating_in_bridge": false,
+    "operating_lease": "18037000000"
+   },
+   "noncontrolling_interests": {
+    "accession": "0001652044-26-000071",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "NoncontrollingInterestInVariableInterestEntity",
+      "value": "7100000000"
+     }
+    ],
+    "contract_decimal": "7100000000",
+    "evidence_state": "REPORTED",
+    "form": "10-Q",
+    "independent_decimal": "7100000000",
+    "period": "2026-06-30"
+   },
+   "noncontrolling_scope": {
+    "apic_decimal": null,
+    "consolidated_equity": null,
+    "deducted_from_a_consolidated_value": true,
+    "nci_concept": "us-gaap:MinorityInterest",
+    "nci_decimal": null,
+    "nci_is_separate_equity_line": false,
+    "note": "A noncontrolling interest is a claim on the consolidated cash flows the enterprise value measures, so it is deducted once. It is never part of the interest-bearing debt claim unless the filing puts it there.",
+    "parent_equity": "640480000000"
+   },
+   "nonoperating_assets": {
+    "accession": "0001652044-26-000071",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "CashAndCashEquivalentsAtCarryingValue",
+      "value": "55911000000"
+     },
+     {
+      "concept": "MarketableSecuritiesCurrent",
+      "value": "186563000000"
+     }
+    ],
+    "contract_decimal": "242474000000",
+    "evidence_state": "REPORTED",
+    "form": "10-Q",
+    "independent_decimal": "242474000000",
+    "period": "2026-06-30"
+   },
+   "nonoperating_breakdown": {
+    "cash_counted_once": true,
+    "cash_decimal": "55911000000",
+    "cash_is_a_constituent": true,
+    "constituents": {
+     "CashAndCashEquivalentsAtCarryingValue": "55911000000",
+     "MarketableSecuritiesCurrent": "186563000000"
+    },
+    "excluded_long_term_investments": {
+     "EquityMethodInvestments": "2300000000"
+    },
+    "non_cash_decimal": "186563000000",
+    "total": "242474000000"
+   },
+   "preferred": {
+    "carrying_concept": "us-gaap:ConvertiblePreferredStockNonredeemableOrRedeemableIssuerOptionValue",
+    "carrying_decimal": "18023000000",
+    "conversion_terms_present": false,
+    "evidence_state": "REPORTED",
+    "max_converted_common_shares": null,
+    "rule": "As-converted scenarios add converted common shares and deduct no preferred claim; the liquidation scenario deducts the preference and adds no shares.",
+    "shares_outstanding_decimal": "19000000"
+   },
+   "preferred_equity": {
+    "accession": "0001652044-26-000071",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "ConvertiblePreferredStockNonredeemableOrRedeemableIssuerOptionValue",
+      "value": "18023000000"
+     }
+    ],
+    "contract_decimal": "18023000000",
+    "evidence_state": "REPORTED",
+    "form": "10-Q",
+    "independent_decimal": "18023000000",
+    "period": "2026-06-30"
+   },
+   "status": "VALIDATED"
+  },
+  "MSFT": {
+   "balance_identity": {
+    "assets": "758376000000",
+    "equity": "442387000000",
+    "identity_holds": true,
+    "liabilities": "315989000000",
+    "period": "2026-06-30",
+    "residual_decimal": "0"
+   },
+   "bridge": {
+    "add_decimal": "97778000000",
+    "deduct_decimal": "106888000000",
+    "verified_absent": [
+     "noncontrolling_interests",
+     "preferred_equity"
+    ]
+   },
+   "cash": {
+    "accession": "0001193125-26-323660",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "CashAndCashEquivalentsAtCarryingValue",
+      "value": "20935000000"
+     }
+    ],
+    "contract_decimal": "20935000000",
+    "evidence_state": "REPORTED",
+    "form": "10-K",
+    "independent_decimal": "20935000000",
+    "period": "2026-06-30"
+   },
+   "debt": {
+    "accession": "0001193125-26-323660",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "LongTermDebtCurrent",
+      "value": "9227000000"
+     },
+     {
+      "concept": "LongTermDebtNoncurrent",
+      "value": "31067000000"
+     }
+    ],
+    "contract_decimal": "40294000000",
+    "evidence_state": "REPORTED",
+    "form": "10-K",
+    "independent_decimal": "40294000000",
+    "period": "2026-06-30"
+   },
+   "finance_leases": {
+    "accession": "0001193125-26-323660",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "FinanceLeaseLiability",
+      "value": "66594000000"
+     }
+    ],
+    "contract_decimal": "66594000000",
+    "evidence_state": "REPORTED",
+    "form": "10-K",
+    "independent_decimal": "66594000000",
+    "period": "2026-06-30"
+   },
+   "leases": {
+    "finance_in_bridge": true,
+    "finance_lease": "66594000000",
+    "note": "Operating lease liabilities are excluded because EBIT is after operating lease cost; finance leases are a financing claim and are deducted.",
+    "operating_in_bridge": false,
+    "operating_lease": "21925000000"
+   },
+   "noncontrolling_interests": {
+    "accession": null,
+    "agrees_with_filing": true,
+    "concepts": [],
+    "contract_decimal": null,
+    "evidence_state": "REVIEWED_ABSENT",
+    "form": null,
+    "independent_decimal": "0",
+    "period": null
+   },
+   "noncontrolling_scope": {
+    "apic_decimal": null,
+    "consolidated_equity": null,
+    "deducted_from_a_consolidated_value": true,
+    "nci_concept": "us-gaap:MinorityInterest",
+    "nci_decimal": null,
+    "nci_is_separate_equity_line": false,
+    "note": "A noncontrolling interest is a claim on the consolidated cash flows the enterprise value measures, so it is deducted once. It is never part of the interest-bearing debt claim unless the filing puts it there.",
+    "parent_equity": "442387000000"
+   },
+   "nonoperating_assets": {
+    "accession": "0001193125-26-323660",
+    "agrees_with_filing": true,
+    "concepts": [
+     {
+      "concept": "CashAndCashEquivalentsAtCarryingValue",
+      "value": "20935000000"
+     },
+     {
+      "concept": "ShortTermInvestments",
+      "value": "55908000000"
+     }
+    ],
+    "contract_decimal": "76843000000",
+    "evidence_state": "REPORTED",
+    "form": "10-K",
+    "independent_decimal": "76843000000",
+    "period": "2026-06-30"
+   },
+   "nonoperating_breakdown": {
+    "cash_counted_once": true,
+    "cash_decimal": "20935000000",
+    "cash_is_a_constituent": true,
+    "constituents": {
+     "CashAndCashEquivalentsAtCarryingValue": "20935000000",
+     "ShortTermInvestments": "55908000000"
+    },
+    "excluded_long_term_investments": {
+     "EquityMethodInvestments": "12000000000",
+     "LongTermInvestments": "36348000000"
+    },
+    "non_cash_decimal": "55908000000",
+    "total": "76843000000"
+   },
+   "preferred": {
+    "carrying_concept": null,
+    "carrying_decimal": null,
+    "conversion_terms_present": false,
+    "evidence_state": "REVIEWED_ABSENT",
+    "max_converted_common_shares": null,
+    "rule": "As-converted scenarios add converted common shares and deduct no preferred claim; the liquidation scenario deducts the preference and adds no shares.",
+    "shares_outstanding_decimal": null
+   },
+   "preferred_equity": {
+    "accession": null,
+    "agrees_with_filing": true,
+    "concepts": [],
+    "contract_decimal": null,
+    "evidence_state": "REVIEWED_ABSENT",
+    "form": null,
+    "independent_decimal": "0",
+    "period": null
+   },
+   "status": "VALIDATED"
+  }
+ },
+ "status": "VALIDATED"
+}
