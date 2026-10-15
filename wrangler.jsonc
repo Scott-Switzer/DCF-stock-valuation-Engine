@@ -14,10 +14,14 @@
     {"name": "WRITE_LIMIT", "namespace_id": "1946100603", "simple": {"limit": 10, "period": 60}},
     {"name": "MCP_LIMIT", "namespace_id": "1946100604", "simple": {"limit": 60, "period": 60}}
   ],
+  // Production environment. ZION_FINANCIAL_QUERY is deliberately absent: every Zion
+  // financial-data Worker in this account is a staging deployment, so binding it here
+  // would make a production release depend on a staging data plane. The equity-claims
+  // route returns 503 without a binding. Add the binding only when a production Zion
+  // thin Worker exists -- see the staging block below for the arming that is intended.
   "services": [
     {"binding": "ZION_VALUATIONS", "service": "zion-valuation"},
-    {"binding": "ZION_DATASET_CATALOG", "service": "zion-datasets", "entrypoint": "Catalog"},
-    {"binding": "ZION_FINANCIAL_QUERY", "service": "zion-financial-serving-v2-thin-staging"}
+    {"binding": "ZION_DATASET_CATALOG", "service": "zion-datasets", "entrypoint": "Catalog"}
   ],
   "r2_buckets": [{"binding": "PPE_DATA", "bucket_name": "financial-system-datasets"}],
   "d1_databases": [
@@ -53,6 +57,9 @@
         {"name": "WRITE_LIMIT", "namespace_id": "1946200603", "simple": {"limit": 10, "period": 60}},
         {"name": "MCP_LIMIT", "namespace_id": "1946200604", "simple": {"limit": 60, "period": 60}}
       ],
+      // The only scoped internal dependency on the Zion equity-claims route. It reaches
+      // the staging thin Worker over a Cloudflare service binding, so no public hostname,
+      // no bearer credential and no egress leave this account.
       "services": [
         {"binding": "ZION_VALUATIONS", "service": "zion-valuation"},
         {"binding": "ZION_DATASET_CATALOG", "service": "zion-datasets", "entrypoint": "Catalog"},
