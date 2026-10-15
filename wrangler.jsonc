@@ -89,7 +89,12 @@
         "EDGAR_IDENTITY": "Scott Switzer scswitzer@chapman.edu",
         "DEPLOY_ENVIRONMENT": "staging",
         "PPE_POINTER_OVERRIDE": "control/valuation/CANDIDATE-staging.json",
-        "ZION_EQUITY_CLAIMS_CALLER": "dcf-valuation-engine"
+        "ZION_EQUITY_CLAIMS_CALLER": "dcf-valuation-engine",
+        // Benchmark assumptions are a separate Zion dependency from the equity-claims route:
+        // they resolve over HTTPS against the staging DDFI benchmark Worker, which authenticates
+        // with the same staging private bearer the history leg uses. The credential itself is a
+        // Worker secret (ZION_BENCHMARK_TOKEN); only the origin is configuration.
+        "ZION_BENCHMARK_BASE_URL": "https://zion-ddfi-benchmark-staging.scswitzer.workers.dev"
       },
       "build": {
         "command": "python3 scripts/embed_assets.py"
