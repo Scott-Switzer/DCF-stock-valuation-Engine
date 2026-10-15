@@ -96,6 +96,41 @@ def test_transport_times_out_instead_of_returning_a_partial_answer():
 def test_transport_without_a_binding_never_issues_a_request():
     with pytest.raises(ProviderError, match="no internal service binding"):
         service.ServiceBindingHTTP(None).get("https://zion.internal/x")
+    with pytest.raises(ProviderError, match="no internal service binding"):
+        service.ServiceBindingHTTP(None).post("https://zion.internal/private/v1/query", json={})
+
+
+class PostingTransport(service.ServiceBindingHTTP):
+    """A binding double that records the prepared POST instead of dispatching it."""
+
+    def __init__(self, response):
+        super().__init__(object())
+        self.response = response
+        self.sent = []
+
+    async def dispatch(self, target, headers, body=None):
+        self.sent.append(dict(target=target, headers=headers, body=body))
+        return self.response
+
+
+def test_transport_posts_a_json_body_and_returns_a_requests_shaped_response():
+    body = {"schema_version": "zion-private-query-v1", "operation": "benchmark_context"}
+    transport = PostingTransport(BoundResponse(200, json.dumps(body)))
+
+    response = transport.post("https://zion.internal/private/v1/query",
+                              headers={"Authorization": "Bearer scoped-benchmark-bearer"},
+                              json={"operation": "benchmark_context", "measures": ["wacc"]})
+
+    sent = transport.sent[0]
+    assert sent["target"] == "https://zion.internal/private/v1/query"
+    assert sent["headers"]["Authorization"] == "Bearer scoped-benchmark-bearer"
+    assert sent["headers"]["content-type"] == "application/json"
+    assert json.loads(sent["body"]) == {"operation": "benchmark_context", "measures": ["wacc"]}
+    # The provider reads status_code, json() and content bytes, exactly as it would from requests.
+    assert response.status_code == 200
+    assert response.json() == body
+    assert response.content == json.dumps(body).encode()
+    assert json.loads(response.text) == body
 
 
 def test_binding_dispatch_builds_the_javascript_request_init(monkeypatch):

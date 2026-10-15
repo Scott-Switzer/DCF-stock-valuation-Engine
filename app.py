@@ -854,16 +854,30 @@ def resolve_benchmark_selections(selections, valuation_date, *, max_selections=4
             raise ValueError('Current benchmark selection cannot be backdated.')
         source = selection.get('source', 'release')
         if source == 'zion':
-            import requests
             from zion_benchmark_provider import fetch_benchmark_row
+            from zion_equity_claims_service import (BENCHMARK_BINDING_NAME, BINDING_ORIGIN,
+                                                    ServiceBindingHTTP, service_binding)
             base = provider_value('ZION_BENCHMARK_BASE_URL') or provider_value('ZION_HISTORY_BASE_URL')
             token = provider_value('ZION_BENCHMARK_TOKEN') or provider_value('ZION_HISTORY_TOKEN')
+            binding = service_binding(BENCHMARK_BINDING_NAME)
+            if binding is not None:
+                # The benchmark Worker is a sibling in this account, and a Worker's subrequest
+                # to another Worker's public hostname on the same zone is refused by the edge
+                # with a plain-text `error code: 1042`. The binding is therefore the only
+                # transport that reaches it; the bearer credential below is still the one the
+                # private route verifies, and the host is ignored by the binding.
+                http = ServiceBindingHTTP(binding)
+                base = base or BINDING_ORIGIN
+            else:
+                import requests
+
+                http = requests
             if not base or not token:
                 raise ValueError('Zion benchmark provider is not configured in this runtime.')
             result[target] = fetch_benchmark_row(
                 base=base, token=token, subject=selection['subject'],
                 measure=selection['measure'], release_id=selection['release_id'],
-                mode=mode, valuation_date=valuation_date, http=requests,
+                mode=mode, valuation_date=valuation_date, http=http,
                 dataset_id=selection.get('dataset_id'))
         elif source == 'release':
             root = provider_value('DAMODARAN_RELEASE_ROOT')

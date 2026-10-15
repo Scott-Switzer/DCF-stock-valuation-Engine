@@ -51,6 +51,9 @@ from equity_claims_provider import (
 from equity_claims_provider import ProviderError as ClaimsError
 
 BINDING_NAME = 'ZION_FINANCIAL_QUERY'
+# The DDFI assumption releases are served by their own sibling Worker, so the benchmark leg
+# binds to that Worker rather than reusing the financial query binding.
+BENCHMARK_BINDING_NAME = 'ZION_BENCHMARK_QUERY'
 SERVICE_TOKEN_SETTING = 'ZION_SERVICE_TOKEN'
 CALLER_SETTING = 'ZION_EQUITY_CLAIMS_CALLER'
 # A service binding ignores the request host: the binding itself selects the Worker.
@@ -85,13 +88,13 @@ def request_target(url, headers, params):
             {str(key): str(value) for key, value in (headers or {}).items()})
 
 
-def service_binding():
-    """The bound Zion service object, or None when this runtime is not bound."""
+def service_binding(name=BINDING_NAME):
+    """The named bound Zion service object, or None when this runtime is not bound."""
     try:
         from flask import current_app, has_request_context, request
 
         if current_app.config.get('CLOUDFLARE') and has_request_context():
-            return getattr(request.environ.get('workers.env'), BINDING_NAME, None)
+            return getattr(request.environ.get('workers.env'), name, None)
     except (ImportError, RuntimeError, KeyError):
         return None
     return None
@@ -103,11 +106,15 @@ def configured_caller():
 
 
 class ServiceBindingHTTP:
-    """A requests-compatible ``get`` that never leaves the account.
+    """A requests-compatible ``get``/``post`` that never leaves the account.
 
     The claims provider owns the credential headers and the response verification; this
     class owns only the transport, so an ordinary HTTPS session, a binding and a test
     double all run the exact same provider checks.
+
+    A subrequest from one Worker to another Worker's public hostname is refused by the
+    edge on the same zone (plain-text `error code: 1042`), so an in-account sibling Worker
+    is only reachable from here, through the binding.
     """
 
     def __init__(self, binding, *, timeout_ms=TIMEOUT_MS):
@@ -119,7 +126,19 @@ class ServiceBindingHTTP:
             fail('no internal service binding is configured on this deployment')
         return sync(self._request(url, headers, params))
 
-    async def dispatch(self, target, headers):
+    def post(self, url, headers=None, json=None):
+        """Send one JSON body over the binding and return a `requests`-shaped response.
+
+        Providers written against ``requests`` read ``status_code``, ``content`` and call
+        ``json()``; the body is handed back unparsed so the provider owns every check it
+        would have made against a live HTTP session. Error bodies are returned rather than
+        raised for the same reason: only the caller can decide what a status means.
+        """
+        if self.binding is None:
+            fail('no internal service binding is configured on this deployment')
+        return sync(self._post(url, headers, json))
+
+    async def dispatch(self, target, headers, body=None):
         """Send one request through the binding; the only runtime-specific step.
 
         `Request.new` takes a JavaScript init object. A plain Python dict reaches it as a
@@ -130,8 +149,32 @@ class ServiceBindingHTTP:
         from js import Object, Request
         from pyodide.ffi import to_js
 
-        init = to_js({'headers': dict(headers)}, dict_converter=Object.fromEntries)
-        return await self.binding.fetch(Request.new(target, init))
+        init = {'headers': dict(headers)}
+        if body is not None:
+            init['method'] = 'POST'
+            init['body'] = body
+        return await self.binding.fetch(
+            Request.new(target, to_js(init, dict_converter=Object.fromEntries)))
+
+    async def _post(self, url, headers, payload):
+        import asyncio
+
+        if payload is None:
+            payload = {}
+        try:
+            body = json.dumps(payload, allow_nan=False)
+        except ValueError:
+            fail('the benchmark request body is not representable as JSON')
+        prepared = {str(key): str(value) for key, value in (headers or {}).items()}
+        prepared['content-type'] = 'application/json'
+        target, prepared = request_target(url, prepared, None)
+        try:
+            response = await asyncio.wait_for(self.dispatch(target, prepared, body),
+                                              self.timeout_ms / 1000)
+        except TimeoutError:
+            fail(f'the internal service did not answer within {self.timeout_ms} ms')
+        raw = (await response.text()).encode('utf-8')
+        return BindingResponse(response.status, raw)
 
     async def _request(self, url, headers, params):
         import asyncio
@@ -161,6 +204,21 @@ class ServiceBindingHTTP:
             fail(f'the internal service refused the request with HTTP {response.status}'
                  + (f' ({code})' if code else ''))
         return payload
+
+
+class BindingResponse:
+    """A `requests`-shaped view of one binding response: status, bytes and `json()`."""
+
+    def __init__(self, status_code, content):
+        self.status_code = status_code
+        self.content = content
+
+    @property
+    def text(self):
+        return self.content.decode('utf-8', 'replace')
+
+    def json(self):
+        return json.loads(self.content)
 
 
 def load_claims(ticker, asof, *, cik, http=None, expected_release_id=None, source_asof=None,

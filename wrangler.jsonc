@@ -63,7 +63,12 @@
       "services": [
         {"binding": "ZION_VALUATIONS", "service": "zion-valuation"},
         {"binding": "ZION_DATASET_CATALOG", "service": "zion-datasets", "entrypoint": "Catalog"},
-        {"binding": "ZION_FINANCIAL_QUERY", "service": "zion-financial-serving-v2-thin-staging"}
+        // Both Zion dependencies are siblings in this account. A Worker's subrequest to
+        // another Worker's public hostname on the same zone is refused by the edge (plain-text
+        // `error code: 1042`), so the benchmark leg reaches its Worker over a binding too --
+        // the public origin stays configuration for runtimes that have no binding.
+        {"binding": "ZION_FINANCIAL_QUERY", "service": "zion-financial-serving-v2-thin-staging"},
+        {"binding": "ZION_BENCHMARK_QUERY", "service": "zion-ddfi-benchmark-staging"}
       ],
       "r2_buckets": [{"binding": "PPE_DATA", "bucket_name": "financial-system-datasets"}],
       "d1_databases": [
