@@ -291,9 +291,10 @@ def load_method(
             began = time.monotonic()
             dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None), packet=packet, packet_error=packet_error,
                              tax_override=tax_override, tax_scenario=tax_scenario)
-            if (tax_override is not None or tax_scenario is not None) and "tax_policy" not in dcf["source"]:
-                # Yahoo baseline kept (no packet): still record the explicit
-                # selection without mutating the reported history.
+            existing_policy = (dcf.get("source") or {}).get("tax_policy") or {}
+            if (tax_override is not None or tax_scenario is not None) and not existing_policy.get("explicit"):
+                # Yahoo baseline kept (no packet merge recorded a selection):
+                # still record the explicit selection without mutating history.
                 from tax_policy import TaxPolicyError, document_tax_policy
 
                 try:
