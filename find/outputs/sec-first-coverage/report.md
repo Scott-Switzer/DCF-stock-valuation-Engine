@@ -137,9 +137,16 @@ production pointer byte-identical. Staging `/api/load/dcf`: **SEC-first, DCF
 intrinsic 86.69, target 89.32, WACC 8.74%**; parity holds (staging net_income
 equals the direct common tags; bridge identical to the dollar).
 
-Note: the republished PAYX packet carries corrected provenance wording under
-the same accounting values; its content hash changes while every financial
-input stays identical.
+Note: the republished PAYX packet (`3b1577c8…`, 46,406 bytes, candidate-only;
+production pointer still byte-identical `ecf1e1c4…`) carries corrected
+provenance wording under the same accounting values — bridge, common income
+(1690.4/1657.3/1760.1M), historical NWC (492.2/750.0/684.5M) and shares all
+verified byte-identical old-vs-new. Live staging re-verification 2026-10-15:
+**SEC-first, intrinsic 88.11, target 90.77, WACC 8.64%** at live price 111.88
+(vs 86.69/89.32/8.74% earlier — the move is live market inputs repricing
+market-cap weights, not accounting: no accounting input changed, so no
+accounting recompute was warranted). Staging net_income equals the direct
+common tags; bridge identical to the dollar.
 
 ### ORCL: mandatory convertible preferred stays blocked (correctly)
 
