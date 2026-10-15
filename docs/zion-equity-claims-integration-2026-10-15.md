@@ -526,3 +526,87 @@ route or publication pointer was changed by this work.
 * `available_at` comes from the Company Facts `filed` date, which carries no acceptance time.
   The route's conservative rule is the contract's answer to that; an acceptance-time-backed
   point-in-time signal would need filing headers or the SEC index and is not implemented.
+
+## 11. Private staging: the Zion Worker is deployed and verified; the DCF side is blocked
+
+### 11.1 What was deployed
+
+| Item | Value |
+| --- | --- |
+| Worker | `zion-financial-serving-v2-thin-staging` |
+| Candidate version | `b193fa48-773b-44e9-aeca-d529d68b5a1f` (uploaded from `codex/private-existing-financials` @ `a46a6db`) |
+| Activated | 2026-10-15T22:40:46Z at 100%, message `Promote companion-source claims route to staging` |
+| Previous active version (rollback target) | `3361eacb-877f-4a6b-aa8e-479062d4f555` |
+| Rollback command | `cd {zion}/deploy/cloudflare-query && npx wrangler versions deploy 3361eacb-877f-4a6b-aa8e-479062d4f555 -c thin/wrangler.jsonc -y` |
+| Preview URL used for pre-activation verification | `https://b193fa48-zion-financial-serving-v2-thin-staging.scswitzer.workers.dev` |
+
+Nothing was deployed to production, no production binding or publication pointer was touched,
+and the Zion Worker carries the same single secret it already had
+(`ZION_PRIVATE_API_TOKEN`); no staging credential was created or rotated.
+
+The candidate was verified on its own preview URL *before* activation, so the promotion was
+gated on the checks passing: `/healthz` 200, `/v1/capabilities` 200, the claims route 200 for
+Apple, Microsoft and Alphabet, `/private/v1/financial-history` 200 with the pinned engine
+release, and the refusals (no credential 401, wrong engine pin `SOURCE_VERSION_CHANGED`,
+cutoff beyond the release ceiling `CUTOFF_EXCEEDS_SOURCE_RELEASE`).
+
+### 11.2 Live verification of the deployed staging route
+
+Against the main staging origin `https://zion-financial-serving-v2-thin-staging.scswitzer.workers.dev`:
+
+| Check | Result |
+| --- | --- |
+| `/healthz` | 200 |
+| `/private/v1/equity-claims` Apple `0000320193` | 200, 6 `REPORTED` + 2 `REVIEWED_ABSENT`, `DATE_ONLY_END_OF_DAY_UTC_V1` |
+| … Microsoft `0000789019` | 200, 6 `REPORTED` + 2 `REVIEWED_ABSENT`, `DATE_ONLY_END_OF_DAY_UTC_V1` |
+| … Alphabet `0001652044` | 200, 8 `REPORTED`, `DATE_ONLY_END_OF_DAY_UTC_V1` |
+| Engine / companion release identity | `b39a670b…` / `f4f81944…`, members `73a86c6a…` Apple (equal engine and companion digests) |
+| `/private/v1/financial-history` (Microsoft, annual revenue) | 200, 7 observations, release `b39a670b…` — unchanged, so the promotion did not regress the existing route |
+| No credential | 401 |
+| Wrong engine pin | 409 `SOURCE_VERSION_CHANGED` |
+| Cutoff past the source ceiling | 422 `CUTOFF_EXCEEDS_SOURCE_RELEASE` |
+| Service caller not on the allowlist | 401 |
+
+Edge propagation was visible: the preview URL answered the claims route immediately after
+upload, while the main origin returned 404 for roughly 45 seconds after activation and then
+answered 200 — the same lag the repository's `EDGE_VERSION_NOT_PROPAGATED` guard exists for.
+
+### 11.3 The DCF staging Worker: exact prerequisites, not deployed
+
+The DCF staging Worker (`dcf-valuation-engine-staging`, workers.dev, D1 `dcf-valuations-staging`)
+was **not** deployed, because the chain cannot complete there and a half-configured promotion
+would advertise a working integration that cannot finish. Evidence, from the deployment
+configuration and the Workers themselves:
+
+| Requirement | State |
+| --- | --- |
+| `ZION_FINANCIAL_QUERY` → `zion-financial-serving-v2-thin-staging` binding | present in `env.staging` |
+| Zion staging accepts a private bearer | yes (verified above) |
+| Zion staging accepts the scoped service credential | **no** — the Worker has no `ZION_SERVICE_TOKEN` secret, and the DCF consumer presents only the service credential for claims (`authorize()` therefore answers `SERVICE_AUTH_UNCONFIGURED`/401) |
+| DCF staging secrets | only `RECORD_SALT` is set: **`ZION_HISTORY_TOKEN` and `ZION_SERVICE_TOKEN` are missing**, so the attested native-history leg cannot be verified and the claims leg cannot authenticate |
+| Benchmark assumptions leg (`source: 'zion'`) | **not configured**: `env.staging` sets neither `ZION_BENCHMARK_BASE_URL` nor `ZION_BENCHMARK_TOKEN`, and `resolve_benchmark_selections` refuses with "Zion benchmark provider is not configured in this runtime." Neither the deployed benchmark origin nor its credential is available to me |
+| `equity_claims_bridges` table | migration `0009_equity_claims.sql` has not been applied to the remote staging D1 |
+
+The remaining steps are therefore mechanical but need one operator decision and one value only
+Cloudflare holds:
+
+1. `ZION_SERVICE_TOKEN` must be set to the **same** staging-only value on both Workers, and
+   `ZION_HISTORY_TOKEN` on the DCF staging must be the staging private token that the Zion
+   Worker already holds as `ZION_PRIVATE_API_TOKEN` (the private token is write-only in
+   Cloudflare, so it has to come from the operator).
+   ```
+   cd {zion}/deploy/cloudflare-query
+   npx wrangler secret put ZION_SERVICE_TOKEN -c thin/wrangler.jsonc      # new staging-only value
+   npx wrangler secret put ZION_SERVICE_TOKEN -c {dcf}/wrangler.jsonc --env staging  # same value
+   npx wrangler secret put ZION_HISTORY_TOKEN -c {dcf}/wrangler.jsonc --env staging  # = staging private token
+   ```
+2. Decide the benchmark leg for staging: set `ZION_BENCHMARK_BASE_URL` (the deployed DDFI
+   benchmark Worker origin) and `ZION_BENCHMARK_TOKEN` in `env.staging`, or use the `release`
+   source for staging selections.
+3. `npx wrangler d1 migrations apply dcf-valuations-staging --env staging --remote`
+4. `npx wrangler deploy -c wrangler.jsonc --env staging`, then verify with the public routes
+   (`GET /api/equity-claims/status`, `POST /api/financials` with `provider=zion_history`) and
+   one full bridge scenario, exactly as §10 did locally.
+
+Re-run this document's §10 checks against the deployed staging pair after those four steps;
+until then the milestone's staging criterion is met for Zion and open for the DCF.
