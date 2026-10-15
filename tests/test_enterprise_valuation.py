@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 from test_zion_history_provider import make_leaf, page
 from zion_history_provider import history_document, sign_evidence
-from enterprise_valuation import value_enterprise
+from enterprise_valuation import equity_bridge, value_enterprise
 
 SECRET = 'test-zion-evidence-secret'
 
@@ -44,6 +44,42 @@ def test_actual_operating_inputs_value_enterprise_without_inventing_bridge():
     assert result['source']['release_id']=='r1'
 
 
+def complete_bridge(**overrides):
+    bridge=dict(short_term_debt=10.0,long_term_debt=20.0,cash=5.0,preferred_equity=0.0,
+                minority_interest=0.0,other_nonoperating_assets=1.0)
+    bridge.update(overrides)
+    return bridge
+
+
+def test_equity_bridge_reports_every_missing_claim_and_never_zeroes_them():
+    result=equity_bridge(dict(cash=35.9e9,short_term_debt=None,long_term_debt=None,
+                              preferred_equity=None,minority_interest=None,
+                              other_nonoperating_assets=None),181.5e9)
+    assert result['status']=='UNAVAILABLE' and result['equity_value'] is None
+    assert result['value_per_share'] is None
+    assert set(result['missing'])=={'short_term_debt','long_term_debt','preferred_equity','minority_interest','other_nonoperating_assets','shares_outstanding'}
+
+
+def test_equity_bridge_rejects_weighted_average_shares():
+    with pytest.raises(ValueError, match='point-in-time'):
+        equity_bridge(complete_bridge(),100.0,shares_outstanding=10.0,shares_basis='WEIGHTED_AVERAGE_DILUTED')
+
+
+def test_equity_bridge_computes_per_share_only_when_complete():
+    result=equity_bridge(complete_bridge(),100.0,shares_outstanding=10.0,shares_basis='COMMON_SHARES_OUTSTANDING')
+    assert result['status']=='AVAILABLE' and result['missing']==[]
+    # 100 + cash 5 + other 1 - debt 30 - preferred 0 - minority 0 = 76 equity
+    assert result['equity_value']==pytest.approx(76.0)
+    assert result['value_per_share']==pytest.approx(7.6)
+
+
+def test_enterprise_result_keeps_equity_null_when_bridge_is_incomplete():
+    result=value_enterprise(document(),benchmarks(),[0]*5,0,.15,valuation_date='2026-09-24',suitable=True,evidence_secret=SECRET)
+    assert result['equity_value'] is None and result['intrinsic_value'] is None
+    assert result['equity_bridge']['status']=='UNAVAILABLE'
+    assert 'shares_outstanding' in result['equity_bridge']['missing']
+
+
 def test_enterprise_requires_suitability_confirmation():
     with pytest.raises(ValueError):value_enterprise(document(),benchmarks(),[0]*5,0,.15,valuation_date='2026-09-24',suitable=False,evidence_secret=SECRET)
 
@@ -78,6 +114,22 @@ def test_unattested_or_tampered_caller_evidence_bundle_is_rejected():
     raw_page['source_records'][forged_sid] = forged_leaf
     with pytest.raises(ValueError, match='attestation mismatch'):
         value_enterprise(tampered, benchmarks(), [0]*5, 0, .15, valuation_date='2026-09-24', suitable=True, evidence_secret=SECRET)
+
+
+def test_caller_edited_bridge_or_subject_cannot_alter_attested_result():
+    base=value_enterprise(document(),benchmarks(),[0]*5,0,.15,valuation_date='2026-09-24',suitable=True,evidence_secret=SECRET)
+    # Editing the caller-visible bridge does not change the verified cash used for the equity bridge.
+    forged=document();forged['bridge']['cash']=1e15
+    assert value_enterprise(forged,benchmarks(),[0]*5,0,.15,valuation_date='2026-09-24',suitable=True,evidence_secret=SECRET)['equity_bridge']['missing']==base['equity_bridge']['missing']
+    # Changing the subject (ticker) invalidates the server signature over the evidence.
+    relabelled=document();relabelled['company']['ticker']='MSFT'
+    with pytest.raises(ValueError, match='attestation mismatch'):
+        value_enterprise(relabelled,benchmarks(),[0]*5,0,.15,valuation_date='2026-09-24',suitable=True,evidence_secret=SECRET)
+
+
+def test_valuation_date_before_financial_cutoff_is_rejected():
+    with pytest.raises(ValueError, match='cutoff'):
+        value_enterprise(document(),benchmarks(),[0]*5,0,.15,valuation_date='2026-01-01',suitable=True,evidence_secret=SECRET)
 
 
 def test_calculate_enterprise_api_enforces_server_evidence_attestation(tmp_path, monkeypatch):

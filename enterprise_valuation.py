@@ -11,6 +11,28 @@ from dcf_loader import ProviderError
 from zion_history_provider import verify_evidence
 
 
+BRIDGE_MANDATORY=('short_term_debt','long_term_debt','cash','preferred_equity','minority_interest','other_nonoperating_assets')
+
+
+def equity_bridge(bridge, enterprise_value, shares_outstanding=None, shares_basis=None):
+    """Enterprise-to-equity bridge. Every claim must be explicit; absence is never zero.
+
+    Weighted-average diluted shares are rejected: they are not a point-in-time share count.
+    """
+    missing=[k for k in BRIDGE_MANDATORY if not isinstance(bridge,dict) or bridge.get(k) is None]
+    if shares_outstanding is None:
+        missing.append('shares_outstanding')
+    elif shares_basis!='COMMON_SHARES_OUTSTANDING':
+        raise ValueError('Shares must be a point-in-time common share count, not weighted-average diluted shares.')
+    if missing:
+        return dict(status='UNAVAILABLE',missing=missing,equity_value=None,value_per_share=None)
+    claims=sum(number(bridge[k],k) for k in ('short_term_debt','long_term_debt','preferred_equity','minority_interest'))
+    equity=number(enterprise_value,'Enterprise value')+number(bridge['cash'],'Cash')+number(bridge['other_nonoperating_assets'],'Other nonoperating assets')-claims
+    if shares_outstanding<=0:
+        raise ValueError('Shares outstanding must be positive.')
+    return dict(status='AVAILABLE',missing=[],equity_value=equity,value_per_share=equity/shares_outstanding)
+
+
 def value_enterprise(doc, benchmarks, growth_rates, terminal_growth, terminal_roic, *, valuation_date, suitable, evidence_secret=None):
     if suitable is not True:
         raise ValueError('Confirm operating-company suitability for FCFF.')
@@ -75,4 +97,5 @@ def value_enterprise(doc, benchmarks, growth_rates, terminal_growth, terminal_ro
                   'Historical facts retain their actual period and availability; no freshness substitution.',
                   'Debt, other claims and share inputs remain incomplete. Equity and per-share values are unavailable.',
                   'Industry tax, WACC and capital efficiency are selected assumptions, not company observations.'])
+    result['equity_bridge']=equity_bridge(verified.get('bridge'),result['enterprise_value'])
     return result
