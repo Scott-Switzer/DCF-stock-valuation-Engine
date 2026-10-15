@@ -325,6 +325,45 @@ def test_api_tax_selection_bypasses_shared_cache(monkeypatch):
     assert bad2.status_code == 400
 
 
+def test_explicit_selection_applies_over_yahoo_default_policy(monkeypatch):
+    import auto_loading
+    from test_yahoo_provider import MockHTTP as YahooHTTP, TODAY as YAHOO_TODAY
+
+    from yahoo_provider import load_yahoo
+
+    http = YahooHTTP()
+    doc = load_yahoo("TEST", YAHOO_TODAY, http)
+    assert doc["source"]["tax_policy"]["explicit"] is False
+
+    def fake_yahoo(ticker, asof, *args, **kwargs):
+        from copy import deepcopy
+
+        return deepcopy(doc)
+
+    monkeypatch.setattr(auto_loading, "load_yahoo", fake_yahoo)
+    monkeypatch.setattr(auto_loading, "company_classification", lambda ticker, http: None)
+    import issuer_classification
+
+    monkeypatch.setattr(
+        issuer_classification, "resolve_classification",
+        lambda ticker, sec: {"status": "unconfirmed", "sic": "", "description": "",
+                             "source": "test", "source_url": "", "registry_version": ""},
+    )
+    bundle = auto_loading.load_method(
+        "dcf", "TEST", YAHOO_TODAY, http=http,
+        tax_scenario={"rates": [0.231] * 5,
+                      "evidence": {"filing": "f", "period_end": "2024-12-31"}},
+    )
+    policy = bundle["financials"]["source"]["tax_policy"]
+    assert policy["explicit"] is True
+    assert policy["selected"]["basis"] == "normalized_scenario"
+    assert policy["selected"]["rates"] == [0.231] * 5
+    # Reported history is preserved, not overwritten by the scenario.
+    assert [r["rate"] for r in policy["reported"]] == [
+        r["tax_rate"] for r in doc["historical"]
+    ]
+
+
 def test_scenario_verification_labels_citation_quality():
     from tax_policy import document_tax_policy
 
