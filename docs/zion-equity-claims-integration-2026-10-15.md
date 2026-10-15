@@ -16,6 +16,10 @@ including all three plan companies**. Until that is repaired the required end-to
 per-share demonstration through the Worker cannot succeed, and a staging release of this
 route would ship a broken endpoint.
 
+Comparing the two independent bridge paths also exposed a quieter defect on the DCF side:
+the public-SEC bridge missed Alphabet's 7,100,000,000 noncontrolling interest and overstated
+common equity by that amount. It is repaired, and the paths now agree to the last digit (§5).
+
 ## 2. What changed
 
 | File | Change |
@@ -27,7 +31,9 @@ route would ship a broken endpoint.
 | `scripts/embed_assets.py` | Bundles `equity_claims_provider`, `zion_equity_claims_service` and the public-SEC bridge helper the provider imports. |
 | `migrations/0009_equity_claims.sql`, `library.py` | Store for saved bridge records, plus the route paths added to the library identity and same-origin write guards. |
 | `app.py` | Registers the new routes; adds them to the cross-site write guard and the rate-limit prefixes. |
+| `scripts/public_sec_equity_bridge.py` | Carries the caller's offering terms into as-converted and liquidation scenarios, and resolves the noncontrolling interest from the filed total or the VIE disclosure, never both (Priority 3). |
 | `scripts/validate_equity_bridge.py` | New independent balance-level validation (Priority 3). |
+| `tests/test_public_sec_equity_bridge.py` | Adds the preferred-terms scenarios and the minority-claim cases, including the fail-closed guards. |
 | `tests/test_zion_equity_claims_service.py` | New. Transport, fail-closed and record tests. |
 | `tests/test_equity_claims_contract_e2e.py` | Adds the service-binding flow over the real SEC-backed contract and the refusal cases. |
 | `tests/test_equity_claims_provider.py` | Corrects the request-cutoff assertion. |
@@ -164,6 +170,42 @@ Reconciliation, re-run and reproduced: `failures: []`, Apple $119.217, Microsoft
 Alphabet $188.186 per share. These remain assumption-dependent scenarios, not certified
 fair values.
 
+### The reconciliation found a real defect, and it is fixed
+
+The two paths did **not** agree when first compared, and the gap was not an assumption:
+
+| Path | Artifact | Apple | Microsoft | Alphabet (as-converted, max rate) |
+| --- | --- | --- | --- | --- |
+| Independent validator (`scripts/validate_equity_bridge.py`) | `artifacts/validation/equity-bridge.json` | `VALIDATED` | `VALIDATED` | `VALIDATED` |
+| Claims contract → enterprise → bridge (in-process) | `GOOGL-equity-claims.json` | 119.217 | 271.573 | 188.186 |
+| Bridge receipt, before the fix | `public-sec-bridge-GOOGL-preferred.json` | 119.217 | 271.573 | 188.764 |
+| Bridge receipt, after the fix | `public-sec-bridge-GOOGL-preferred.json` | 119.217 | 271.573 | **188.186** |
+
+The difference was exactly Alphabet's 7,100,000,000 noncontrolling interest. The claims
+contract reads `us-gaap:NoncontrollingInterestInVariableInterestEntity` when the filer does
+not file a `us-gaap:MinorityInterest` total, and Alphabet files only the VIE disclosure. The
+public-SEC bridge script looked only for the total, so it recorded the claim as
+`NOT_REPORTED_ASSUMED_ABSENT`, deducted nothing, and overstated Alphabet's common equity by
+7,100,000,000 (\$0.578 per share) — the same class of silent error the validator exists to
+catch, found by comparing the two paths rather than by trusting either.
+
+`scripts/public_sec_equity_bridge.py` now resolves the minority claim the same way, the
+filed total when present and otherwise the VIE disclosure, never both, and records which
+row was used plus the rule in `result.minority_interest`. Apple and Microsoft receipts are
+unchanged (they file no such row); the Alphabet receipts were regenerated and are
+byte-stable under re-run.
+
+| Alphabet scenario, corrected | Per share | Artifact |
+| --- | --- | --- |
+| Preferred absent, NCI deducted | 189.024 | `public-sec-bridge-GOOGL.json` |
+| As-converted at the maximum rate (primary) | 188.186 | `public-sec-bridge-GOOGL-preferred.json`, `GOOGL-equity-claims.json` |
+| As-converted at the minimum rate | 188.353 | same |
+| At the liquidation preference, no shares added | 187.470 | same |
+
+The contract's liquidation scenario deducts 19,000,000,000 (the reported 19,000,000
+preferred shares) where the bridge deducts 19,250,000,000 (the offering terms' 19,250,000);
+the 250,000-share difference is the documented rounding tolerance, and both are labelled.
+
 ## 6. Priority 4 — test environments
 
 The Zion failure was an interpreter problem, not a dependency problem: the repository's
@@ -183,7 +225,34 @@ which raises `STOP_DISK_RESERVE` from its own `disk_guard` because this machine 
 unrelated to this change.
 
 DCF, after every change: `.venv-ddfi-test/bin/python -m pytest -q -p no:randomly` →
-**788 passed, 10 subtests passed in 16.44s** (773 before this work).
+**788 passed, 10 subtests passed in 18.31s** (773 before this work).
+
+Re-verified at the end of the milestone (this is the run the receipts in §5 came from):
+
+* `.venv-ddfi-test/bin/python -m pytest -q -p no:randomly` → **788 passed** before the
+  minority-claim repair below, **790 passed** after it (two new tests cover the VIE
+  fallback and the never-sum rule).
+* `.venv-ddfi-test/bin/python scripts/validate_equity_bridge.py --output /tmp/equity-bridge.json`
+  → `status: VALIDATED`, `failures: []`, byte-identical to the committed receipt.
+* `scripts/public_sec_equity_bridge.py` re-run for AAPL, MSFT and GOOGL (the last with
+  `--preferred-terms`) → each receipt byte-identical to the stored one, so the bridge
+  numbers in §5 are reproducible from the pinned filings and the caller's terms. The
+  Alphabet receipts were regenerated once, for the minority-claim repair, and then
+  reproduced byte-identically.
+* Zion claims and private-route modules: `.venv-ddfi-test/bin/python -m pytest
+  tests/unit/test_equity_claims.py tests/unit/test_equity_claims_api.py
+  tests/unit/test_private_api.py tests/unit/test_private_api_routes.py
+  tests/unit/test_private_financials.py tests/unit/test_sec_history_api.py -q` →
+  **94 passed**. A borrowed interpreter (the DCF venv, Python 3.12) is used deliberately
+  here: it documents that these modules need nothing beyond `pytest`, and it avoids both
+  editing the locked dependencies and spending the ~200 MiB free at the time.
+* The full Zion suite result above (1045 passed, 1 disk-guard failure) was not re-run:
+  `.venv-test312` was removed when the milestone closed and the volume is again at 95%
+  (735 MiB free). The only Zion commit after that run, `6365d8f`, touches `.gitignore`
+  and the new `thin/wrangler.dev.jsonc` and no Python, so the recorded coverage still
+  describes the committed Python. Two limitations to carry: the recorded full-suite figure
+  is not freshly reproducible on this machine, and `tests/unit/test_sec_universe_basin.py`
+  cannot pass under disk pressure.
 
 ## 7. Priority 5 — staging deployment: not performed
 

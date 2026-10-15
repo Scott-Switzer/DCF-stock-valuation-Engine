@@ -4,10 +4,12 @@ import pytest
 
 from scripts.public_sec_equity_bridge import (
     build_components,
+    build_receipt,
     debt_and_lease_claims,
     equity_per_share,
     nonoperating_assets,
     pit_instant,
+    preferred_terms_scenarios,
     share_count,
 )
 
@@ -120,3 +122,92 @@ def test_nonoperating_assets_use_short_term_or_current_securities_not_both():
         MarketableSecuritiesNoncurrent=[fact(40, '2026-06-30', '2026-07-01')],
     )
     assert nonoperating_assets(build_components(facts, ASOF)) == 10 + 20 + 40
+
+
+COVER_SHARES = {'EntityCommonStockSharesOutstanding': {'units': {'shares': [
+    dict(val=12_230_000_000, end='2026-07-17', filed='2026-07-23', form='10-Q', accn='x')]}}}
+
+
+def test_noncontrolling_interest_falls_back_to_the_vie_disclosure():
+    """Alphabet files only the VIE disclosure; it is the claim and must be deducted once."""
+    facts = companyfacts(
+        CashAndCashEquivalentsAtCarryingValue=[fact(100, '2026-06-30', '2026-07-23')],
+        NoncontrollingInterestInVariableInterestEntity=[fact(7_100_000_000, '2026-06-30', '2026-07-23')],
+    )
+    result = equity_per_share(2_179_137_903_112.5725,
+                             build_components(facts, ASOF),
+                             dict(value=12_230_000_000.0),
+                             102_754_000_000, 242_474_000_000)
+    assert result['preferred_and_minority_claims']['MinorityInterest'] == 7_100_000_000
+    assert result['claim_statuses']['MinorityInterest'] == 'REPORTED_VIA_VIE_DISCLOSURE'
+    assert result['minority_interest']['source_concept'] == 'NoncontrollingInterestInVariableInterestEntity'
+    assert result['minority_interest']['row']['accession'] == '0000000000-26-000001'
+    # The same claims as the attested contract path: enterprise + nonoperating - debt - NCI.
+    assert result['common_equity_value'] == pytest.approx(2_311_757_903_112.5725)
+    assert result['value_per_share'] == pytest.approx(2_311_757_903_112.5725 / 12_230_000_000.0)
+
+
+def test_reported_total_is_used_and_never_summed_with_the_vie_disclosure():
+    facts = companyfacts(
+        CashAndCashEquivalentsAtCarryingValue=[fact(100, '2026-06-30', '2026-07-23')],
+        MinorityInterest=[fact(8_000_000_000, '2026-06-30', '2026-07-23')],
+        NoncontrollingInterestInVariableInterestEntity=[fact(7_100_000_000, '2026-06-30', '2026-07-23')],
+    )
+    result = equity_per_share(1000.0, build_components(facts, ASOF), dict(value=5.0), 0, 100.0)
+    assert result['preferred_and_minority_claims']['MinorityInterest'] == 8_000_000_000
+    assert result['claim_statuses']['MinorityInterest'] == 'REPORTED'
+    assert result['minority_interest']['vie_row']['value'] == 7_100_000_000
+    assert result['value_per_share'] == pytest.approx((1000.0 + 100.0 - 8_000_000_000) / 5.0)
+
+GOOGL_TERMS = {'series': [
+    dict(name='A', depositary_shares=192_500_000, depositary_per_preferred=20,
+         liquidation_preference_per_share=1000, min_rate_per_preferred=2.2520, max_rate_per_preferred=2.8160),
+    dict(name='B', depositary_shares=192_500_000, depositary_per_preferred=20,
+         liquidation_preference_per_share=1000, min_rate_per_preferred=2.2740, max_rate_per_preferred=2.8420),
+]}
+
+
+def test_preferred_scenarios_use_offering_terms_and_never_double_count():
+    shares = dict(value=12_230_000_000.0)
+    s = preferred_terms_scenarios(GOOGL_TERMS, 2_318_800_000_000.0, shares)
+    assert s['preferred_shares'] == pytest.approx(19_250_000)
+    assert s['liquidation_preference_total'] == pytest.approx(19_250_000_000)
+    max_added = 9_625_000 * 2.8160 + 9_625_000 * 2.8420
+    assert s['as_converted_max_rate']['shares_added'] == pytest.approx(max_added)
+    assert s['as_converted_max_rate']['claim'] == 0.0
+    assert s['as_converted_max_rate']['value_per_share'] == pytest.approx(
+        2_318_800_000_000.0 / (12_230_000_000.0 + max_added))
+    assert s['as_converted_min_rate']['shares_added'] < max_added
+    assert s['liquidation_preference_claim']['shares_added'] == 0.0
+
+
+def test_receipt_with_preferred_terms_replaces_assumed_absent_claim():
+    facts = companyfacts(CashAndCashEquivalentsAtCarryingValue=[fact(100, '2026-06-30', '2026-07-23')])
+    facts['us-gaap']['PreferredStockSharesOutstanding'] = {'units': {'shares': [
+        fact(19_000_000, '2026-06-30', '2026-07-23')]}}
+    facts['dei'] = {'EntityCommonStockSharesOutstanding': {'units': {'shares': [
+        dict(val=12_230_000_000, end='2026-07-17', filed='2026-07-23', form='10-Q', accn='x')]}}}
+    enterprise = dict(enterprise_value=1000.0, valuation_date='2026-10-14',
+                      analyst_assumptions={})
+    receipt = build_receipt('GOOGL', facts, enterprise, ASOF, preferred_terms=GOOGL_TERMS)
+    assert receipt['preferred']['primary'] == 'as_converted_max_rate'
+    assert receipt['preferred']['legacy_assumed_absent_value_per_share'] == pytest.approx(1100.0 / 12_230_000_000.0)
+    assert receipt['preferred']['reported_shares_outstanding']['value'] == 19_000_000
+
+
+def test_preferred_terms_fail_closed_when_reported_carrying_amount_exists():
+    facts = companyfacts(PreferredStockValue=[fact(18_023_000_000, '2026-06-30', '2026-07-23')])
+    facts['dei'] = COVER_SHARES
+    enterprise = dict(enterprise_value=1000.0, valuation_date='2026-10-14', analyst_assumptions={})
+    with pytest.raises(ValueError, match='PreferredStockValue is reported'):
+        build_receipt('GOOGL', facts, enterprise, ASOF, preferred_terms=GOOGL_TERMS)
+
+
+def test_preferred_terms_fail_closed_when_reported_share_count_conflicts():
+    facts = companyfacts()
+    facts['dei'] = COVER_SHARES
+    facts['us-gaap']['PreferredStockSharesOutstanding'] = {'units': {'shares': [
+        fact(12_000_000, '2026-06-30', '2026-07-23')]}}
+    enterprise = dict(enterprise_value=1000.0, valuation_date='2026-10-14', analyst_assumptions={})
+    with pytest.raises(ValueError, match='conflict with terms'):
+        build_receipt('GOOGL', facts, enterprise, ASOF, preferred_terms=GOOGL_TERMS)
