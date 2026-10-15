@@ -1179,11 +1179,30 @@ def payx_claim_facts(**overrides):
     return facts
 
 
+def test_disclosure(cik=320193, accn="test", **overrides):
+    entry = {
+        "cik": str(cik).zfill(10),
+        "accession": accn,
+        "location": "Note A (Basis of presentation)",
+        "quote": "The consolidated financial statements include the accounts of the Company and its wholly owned subsidiaries.",
+        "source_url": "https://www.sec.gov/test",
+        "filed": "2025-10-31",
+        "filing_sha256": "abc123",
+        "verified_at": "2026-10-15",
+    }
+    entry.update(overrides)
+    return entry
+
+
 def test_dual_identity_establishes_zero_claims_atomically():
     from ppe_packets import _sec_zero_claims_from_dual_identity
 
     preferred, nci = _sec_zero_claims_from_dual_identity(
-        payx_claim_facts(), "2025-09-27", "2026-10-07", {}
+        payx_claim_facts(),
+        "2025-09-27",
+        "2026-10-07",
+        {},
+        ownership_disclosures=[test_disclosure()],
     )
     assert preferred["value"] == 0.0
     assert nci["value"] == 0.0
@@ -1198,6 +1217,117 @@ def test_dual_identity_establishes_zero_claims_atomically():
     assert preferred["provenance"]["income_period_start"] == "2024-09-29"
     assert preferred["provenance"]["claim"] == "preferred_equity"
     assert nci["provenance"]["claim"] == "minority_interest"
+    # Zero NCI income alone never establishes zero NCI equity: the packet
+    # must cite its equity-level evidence and provenance.
+    assert preferred["provenance"]["nci_equity_evidence"] == "ownership_disclosure"
+    assert preferred["provenance"]["ownership_disclosure"]["location"] == "Note A (Basis of presentation)"
+    assert "wholly owned-subsidiaries disclosure" in preferred["provenance"]["formula"]
+
+
+def test_dual_identity_refuses_zero_nci_earnings_without_nci_equity_evidence():
+    # Consolidated ProfitLoss equals parent NetIncomeLoss (zero NCI income)
+    # with a valid buildup and clean scan, but no total-equity tag and no
+    # ownership disclosure: minority-owned equity could sit idle, so both
+    # claims are refused atomically.
+    from ppe_packets import _sec_zero_claims_from_dual_identity
+
+    assert _sec_zero_claims_from_dual_identity(
+        payx_claim_facts(), "2025-09-27", "2026-10-07", {}, ownership_disclosures=[]
+    ) == (None, None)
+    assert _sec_zero_claims_from_dual_identity(
+        payx_claim_facts(), "2025-09-27", "2026-10-07", {}
+    ) == (None, None)
+
+
+def test_dual_identity_accepts_exact_total_equity_reconciliation():
+    # Filed total equity including NCI equals parent stockholders equity in
+    # the same accession: affirmative numeric proof of zero NCI equity, no
+    # disclosure needed.
+    from ppe_packets import _sec_zero_claims_from_dual_identity
+
+    facts = payx_claim_facts()
+    facts["facts"]["us-gaap"]["StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"] = {
+        "units": {"USD": [instant_fact(3735100000)]}
+    }
+    preferred, nci = _sec_zero_claims_from_dual_identity(
+        facts, "2025-09-27", "2026-10-07", {}, ownership_disclosures=[]
+    )
+    assert preferred["value"] == 0.0
+    assert nci["value"] == 0.0
+    assert preferred["provenance"]["nci_equity_evidence"] == "total_equity_reconciliation"
+    assert "total equity including NCI equals parent stockholders equity" in preferred["provenance"]["formula"]
+    # A total-equity leg from another filing proves nothing.
+    split = payx_claim_facts()
+    split["facts"]["us-gaap"]["StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"] = {
+        "units": {"USD": [instant_fact(3735100000, accn="other")]}
+    }
+    assert _sec_zero_claims_from_dual_identity(
+        split, "2025-09-27", "2026-10-07", {}, ownership_disclosures=[]
+    ) == (None, None)
+
+
+def test_dual_identity_refuses_nonzero_nci_equity_despite_disclosure():
+    # Filed numbers beat text: total equity including NCI above parent
+    # stockholders equity is a nonzero NCI claim no disclosure can override.
+    from ppe_packets import _sec_zero_claims_from_dual_identity
+
+    facts = payx_claim_facts()
+    facts["facts"]["us-gaap"]["StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"] = {
+        "units": {"USD": [instant_fact(3735200000)]}
+    }
+    assert _sec_zero_claims_from_dual_identity(
+        facts, "2025-09-27", "2026-10-07", {}, ownership_disclosures=[test_disclosure()]
+    ) == (None, None)
+
+
+def test_dual_identity_rejects_incomplete_ownership_disclosures():
+    # Disclosures bound to another accession, or missing any provenance
+    # field, are ignored: the derivation refuses instead of weakening.
+    from ppe_packets import _sec_zero_claims_from_dual_identity
+
+    assert _sec_zero_claims_from_dual_identity(
+        payx_claim_facts(),
+        "2025-09-27",
+        "2026-10-07",
+        {},
+        ownership_disclosures=[test_disclosure(accn="other")],
+    ) == (None, None)
+    assert _sec_zero_claims_from_dual_identity(
+        payx_claim_facts(),
+        "2025-09-27",
+        "2026-10-07",
+        {},
+        ownership_disclosures=[test_disclosure(cik=1)],
+    ) == (None, None)
+    incomplete = test_disclosure()
+    del incomplete["quote"]
+    assert _sec_zero_claims_from_dual_identity(
+        payx_claim_facts(), "2025-09-27", "2026-10-07", {}, ownership_disclosures=[incomplete]
+    ) == (None, None)
+
+
+def test_dual_identity_rejects_custom_taxonomy_nci_claims():
+    # A noncontrolling claim tagged under a company-extension namespace is
+    # invisible to the standard-tag scan, so any such tag refuses even with
+    # a valid disclosure: extension tags are never assumed to be zero.
+    from ppe_packets import _sec_zero_claims_from_dual_identity
+
+    facts = payx_claim_facts()
+    facts["facts"]["payx"] = {
+        "PayxNoncontrollingInterestInSubsidiary": {"units": {"USD": [instant_fact(100)]}}
+    }
+    assert _sec_zero_claims_from_dual_identity(
+        facts, "2025-09-27", "2026-10-07", {}, ownership_disclosures=[test_disclosure()]
+    ) == (None, None)
+
+
+def test_ownership_registry_missing_file_means_no_evidence_and_corrupt_raises():
+    from ppe_packets import _verified_ownership_disclosure
+
+    assert _verified_ownership_disclosure(320193, "test", registry=[]) is None
+    assert _verified_ownership_disclosure(None, "test", registry=[test_disclosure()]) is None
+    with pytest.raises(ProviderError, match="disclosures list"):
+        _verified_ownership_disclosure(320193, "test", registry="not-a-list")
 
 
 def test_dual_identity_rejects_filed_claims_oracle_and_t_patterns():
@@ -1273,13 +1403,36 @@ def test_dual_identity_requires_affirmative_nci_evidence():
     assert _sec_zero_claims_from_dual_identity(parent_shifted, "2025-09-27", "2026-10-07", {}) == (None, None)
 
 
-def test_packet_bridge_sets_both_zero_claims_from_dual_identity():
+def test_packet_bridge_sets_both_zero_claims_from_dual_identity(tmp_path, monkeypatch):
+    import json
+
+    import ppe_packets
+
+    # Zero NCI equity needs registry evidence bound to this packet's CIK and
+    # accession; the packet build reads the registry file like production.
+    registry = tmp_path / "ownership_disclosures.json"
+    registry.write_text(json.dumps({"disclosures": [test_disclosure()]}))
+    monkeypatch.setattr(ppe_packets, "OWNERSHIP_DISCLOSURE_REGISTRY", registry)
     p = build_packet(
         "AAPL", "0000320193", three_year_rows(), payx_claim_facts(), "2026-10-07", {}
     )
     assert p["bridge"]["preferred_equity"]["value"] == 0.0
     assert p["bridge"]["minority_interest"]["value"] == 0.0
     assert p["bridge"]["preferred_equity"]["provenance"]["accession"] == "test"
+    assert p["bridge"]["minority_interest"]["provenance"]["nci_equity_evidence"] == "ownership_disclosure"
+
+
+def test_packet_bridge_refuses_zero_claims_without_registry_evidence(tmp_path, monkeypatch):
+    import ppe_packets
+
+    monkeypatch.setattr(
+        ppe_packets, "OWNERSHIP_DISCLOSURE_REGISTRY", tmp_path / "absent.json"
+    )
+    p = build_packet(
+        "AAPL", "0000320193", three_year_rows(), payx_claim_facts(), "2026-10-07", {}
+    )
+    assert p["bridge"]["preferred_equity"] is None
+    assert p["bridge"]["minority_interest"] is None
 
 
 def test_client_funds_never_become_distributable_cash():

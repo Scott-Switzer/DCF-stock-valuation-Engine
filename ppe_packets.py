@@ -2,7 +2,9 @@
 
 from copy import deepcopy
 from datetime import date, datetime, timezone
+import json
 import math
+from pathlib import Path
 import re
 from dcf_loader import HISTORY_FIELDS, BRIDGE_FIELDS, TAGS, DURATION, ProviderError, ticker_symbol
 
@@ -586,11 +588,140 @@ CLAIM_TAGS = frozenset({
     "DividendsPreferredStock",
     "DividendsPreferredStockCash",
     "CommonStockEquity",
-    "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+    # NOTE: StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest
+    # is deliberately NOT a blanket block: filed total equity including NCI is
+    # affirmative evidence about NCI equity (see _sec_total_equity_reconciliation
+    # below). A nonzero gap to StockholdersEquity refuses the derivation there;
+    # an exact match proves zero NCI equity. Tag absence alone proves nothing.
 })
 
 
-def _sec_zero_claims_from_dual_identity(facts, end, cutoff, source):
+# Verified subsidiary-ownership disclosures that affirmatively support zero
+# noncontrolling-interest equity at a filing measurement date. Income equality
+# (consolidated ProfitLoss == parent NetIncomeLoss) proves zero NCI *income*
+# for the period, but a subsidiary can hold minority-owned equity without
+# generating minority-attributable earnings in the year -- so zero NCI equity
+# additionally requires either an exact filed total-equity reconciliation or
+# one of these registry entries. Each entry is keyed by CIK + filing accession
+# (never by ticker alone, never hardcoded per issuer in the derivation) and
+# must carry the disclosure location, exact quote, source URL, filing date,
+# filing hash and verification date; an entry missing any of these, or bound
+# to a different accession than the packet legs, is ignored and the
+# derivation is refused. The registry is generic: any issuer's verified
+# disclosure can be added following the same schema.
+OWNERSHIP_DISCLOSURE_REGISTRY = Path(__file__).resolve().parent / "evidence" / "ownership_disclosures.json"
+OWNERSHIP_DISCLOSURE_FIELDS = (
+    "cik",
+    "accession",
+    "location",
+    "quote",
+    "source_url",
+    "filed",
+    "filing_sha256",
+    "verified_at",
+)
+
+
+def _load_ownership_disclosures(registry=None):
+    """Load verified ownership disclosures, or [] when the registry is absent.
+
+    A missing registry file means no disclosure evidence, never an implicit
+    pass: the derivation then refuses for lack of equity-level evidence. A
+    present-but-corrupt registry raises loudly instead of shipping packets
+    that silently lack evidence.
+    """
+    if registry is not None:
+        entries = registry
+    else:
+        try:
+            raw = OWNERSHIP_DISCLOSURE_REGISTRY.read_text()
+        except FileNotFoundError:
+            return []
+        try:
+            entries = json.loads(raw).get("disclosures", [])
+        except (ValueError, AttributeError) as exc:
+            raise ProviderError(f"Ownership disclosure registry is corrupt: {exc}") from None
+    if not isinstance(entries, list):
+        raise ProviderError("Ownership disclosure registry must hold a disclosures list.")
+    return entries
+
+
+def _verified_ownership_disclosure(cik, accession, registry=None):
+    """Return the registry entry verifying wholly owned subsidiaries, or None.
+
+    The entry's CIK (zero-padded) and accession must match the packet legs'
+    filing exactly, and every provenance field must be present and non-empty.
+    Matching is generic -- no issuer is special-cased here.
+    """
+    if cik is None or accession is None:
+        return None
+    want_cik = str(cik).zfill(10)
+    for entry in _load_ownership_disclosures(registry):
+        if not isinstance(entry, dict):
+            continue
+        if str(entry.get("cik", "")).zfill(10) != want_cik:
+            continue
+        if entry.get("accession") != accession:
+            continue
+        if any(not entry.get(field) for field in OWNERSHIP_DISCLOSURE_FIELDS):
+            continue
+        return entry
+    return None
+
+
+def _custom_taxonomy_nci_claim(facts):
+    """Detect noncontrolling-claim tags outside the standard US GAAP scan.
+
+    Companyfacts members carry standard taxonomies, but a filing can tag
+    noncontrolling claims under a company-specific extension namespace that
+    the CLAIM_TAGS scan cannot see. Any tag in any namespace whose name
+    evidences a noncontrolling or minority claim refuses the derivation:
+    extension tags are never assumed to be zero. Returns True when such a
+    tag is present.
+    """
+    namespaces = facts.get("facts", {}) or {}
+    if not isinstance(namespaces, dict):
+        return False
+    # Tags already handled with numeric discipline -- blanket CLAIM_TAGS
+    # blocks and the total-equity reconciliation -- never trip this guard.
+    handled = set(CLAIM_TAGS) | {
+        "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"
+    }
+    for tags in namespaces.values():
+        if not isinstance(tags, dict):
+            continue
+        for tag in tags:
+            if tag in handled:
+                continue
+            name = str(tag).lower()
+            if "noncontrolling" in name or "minorityinterest" in name or "minority_interest" in name:
+                return True
+    return False
+
+
+def _sec_total_equity_reconciliation(facts, end, cutoff, se_row, accession):
+    """Prove zero NCI equity from filed total equity including NCI.
+
+    When the filer reports ``StockholdersEquityIncludingPortionAttributableTo-
+    NoncontrollingInterest`` (total equity including NCI) for the same period
+    in the same 10-K accession as parent ``StockholdersEquity`` and the two
+    agree within $1, NCI equity is affirmatively zero. A nonzero gap is a
+    filed NCI claim and refuses; absence leaves NCI equity unavailable (never
+    zero by default). Returns the total-equity row on a match, else None.
+    """
+    total = _instant_leg(
+        facts, "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", end, cutoff
+    )
+    if total is None:
+        return None
+    if total.get("accn") != accession:
+        return None
+    if abs(_number(total["val"]) - _number(se_row["val"])) > COMMON_INCOME_TOLERANCE_USD:
+        return None
+    return total
+
+
+def _sec_zero_claims_from_dual_identity(facts, end, cutoff, source, cik=None, ownership_disclosures=None):
     """Establish zero preferred and zero noncontrolling claims from two identities.
 
     Taxonomy (US GAAP): ``NetIncomeLoss`` is income attributable to the
@@ -608,19 +739,29 @@ def _sec_zero_claims_from_dual_identity(facts, end, cutoff, source):
     share counts) establishes preferred equity at zero -- it says nothing
     about noncontrolling interest, because ``StockholdersEquity`` excludes
     noncontrolling claims by definition; the income identity establishes
-    zero NCI affirmatively, by reconciling filed consolidated ``ProfitLoss``
-    to filed parent ``NetIncomeLoss`` for the same annual period in the
-    same accession (equal values mean zero NCI income), supported by the
-    valid balance identity plus the member-wide claim-tag scan. The direct
-    common tag equaling parent income shows no preferred distribution was
-    deducted. Either residual beyond $1, any claim tag anywhere in the
-    member, legs from more than one accession, mismatched annual periods,
-    or a missing consolidated leg refuses the derivation -- a lone zero
-    residual is never enough, because offsetting unverified components
-    could mimic it, and tag absence alone is never proof of zero. Returns
+    zero NCI *income* affirmatively, by reconciling filed consolidated
+    ``ProfitLoss`` to filed parent ``NetIncomeLoss`` for the same annual
+    period in the same accession (equal values mean zero NCI income),
+    supported by the valid balance identity plus the member-wide claim-tag
+    scan. The direct common tag equaling parent income shows no preferred
+    distribution was deducted. Zero NCI *equity* -- which zero NCI income
+    alone cannot establish, since minority-owned equity can sit idle for a
+    year -- additionally requires equity-level evidence from exactly one of
+    two reusable paths: an exact same-accession filed total-equity
+    reconciliation (total equity including NCI equals parent stockholders
+    equity), or a verified wholly owned-subsidiaries ownership disclosure
+    from the registry bound to the same CIK and accession. Either residual
+    beyond $1, any claim tag anywhere in the member (including
+    company-extension namespaces), legs from more than one accession,
+    mismatched annual periods, a missing consolidated leg, or missing
+    equity-level evidence refuses the derivation -- a lone zero residual is
+    never enough, because offsetting unverified components could mimic it,
+    and tag absence alone is never proof of zero. Returns
     (preferred_field, nci_field) or (None, None) atomically: the two claims
     are never split from partial evidence.
     """
+    if _custom_taxonomy_nci_claim(facts):
+        return None, None
     us_gaap = facts.get("facts", {}).get("us-gaap", {})
     for tag in CLAIM_TAGS:
         if tag in us_gaap:
@@ -705,7 +846,40 @@ def _sec_zero_claims_from_dual_identity(facts, end, cutoff, source):
     # preferred distributions.
     if abs(_number(consolidated["val"]) - _number(parent["val"])) > COMMON_INCOME_TOLERANCE_USD:
         return None, None
+    # Equity-level NCI evidence: zero NCI income does not establish zero NCI
+    # equity. Prefer the filed total-equity reconciliation when the filer
+    # reports it (numbers beat text); otherwise accept a verified wholly
+    # owned-subsidiaries disclosure bound to this CIK and accession. Filed
+    # nonzero NCI equity refuses outright and no disclosure can override it.
+    resolved_cik = cik if cik is not None else facts.get("cik")
+    total_row = _instant_leg(
+        facts, "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", end, cutoff
+    )
+    nci_equity_evidence = None
+    ownership = None
+    if total_row is not None:
+        matched = _sec_total_equity_reconciliation(facts, end, cutoff, se_row, accession)
+        if matched is None:
+            return None, None
+        nci_equity_evidence = "total_equity_reconciliation"
+        legs["StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"] = matched
+    else:
+        ownership = _verified_ownership_disclosure(resolved_cik, accession, ownership_disclosures)
+        if ownership is None:
+            return None, None
+        nci_equity_evidence = "ownership_disclosure"
     filed = max([r["filed"] for r in legs.values()] + [r["filed"] for r in income_legs])
+    if nci_equity_evidence == "total_equity_reconciliation":
+        equity_note = (
+            "filed total equity including NCI equals parent stockholders equity "
+            "in the same accession (NCI equity zero)"
+        )
+    else:
+        equity_note = (
+            "verified wholly owned-subsidiaries disclosure at "
+            + ownership["location"]
+            + " in " + ownership["accession"] + " (NCI equity zero)"
+        )
     provenance = {
         **source,
         "provider": "SEC companyfacts",
@@ -715,8 +889,10 @@ def _sec_zero_claims_from_dual_identity(facts, end, cutoff, source):
             "consolidated ProfitLoss equals filed parent NetIncomeLoss for the same "
             "annual period in the same accession (NCI income zero), with the filed "
             "direct common basic tag equal to parent (no preferred distribution); "
-            "no preferred/NCI tag anywhere in the member (" + ", ".join(sorted(legs)) + ")"
+            "no preferred/NCI tag anywhere in the member (" + ", ".join(sorted(legs)) + "); "
+            + equity_note
         ),
+        "nci_equity_evidence": nci_equity_evidence,
         "part_tags": sorted(legs),
         "income_identity_tags": [
             "NetIncomeLoss",
@@ -726,6 +902,20 @@ def _sec_zero_claims_from_dual_identity(facts, end, cutoff, source):
         "income_period_start": next(iter(starts)),
         "accession": accession,
         "filing_date": filed,
+        **(
+            {
+                "ownership_disclosure": {
+                    "location": ownership["location"],
+                    "quote": ownership["quote"],
+                    "source_url": ownership["source_url"],
+                    "filed": ownership["filed"],
+                    "filing_sha256": ownership["filing_sha256"],
+                    "verified_at": ownership["verified_at"],
+                }
+            }
+            if ownership is not None
+            else {}
+        ),
     }
     return (
         _field(0.0, end, filed, "USD", {**provenance, "claim": "preferred_equity"}),
@@ -1031,11 +1221,14 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
         # atomically: the balance identity proves preferred zero only, and
         # zero NCI additionally requires affirmative same-accession
         # consolidated-ProfitLoss-equals-parent-NetIncomeLoss evidence plus a
-        # member-wide claim-tag scan. Tag absence alone never proves zero;
-        # a missing consolidated leg leaves NCI unavailable and the packet
+        # member-wide claim-tag scan (standard and extension namespaces) plus
+        # equity-level NCI evidence (filed total-equity reconciliation or a
+        # verified ownership disclosure for this CIK and accession). Tag
+        # absence alone never proves zero; a missing consolidated leg or
+        # missing equity-level evidence leaves NCI unavailable and the packet
         # ineligible. Never splits one identity across claims.
         zero_preferred, zero_nci = _sec_zero_claims_from_dual_identity(
-            facts, end, cutoff, sec_source
+            facts, end, cutoff, sec_source, cik=cik
         )
         if zero_preferred is not None:
             bridges["preferred_equity"] = zero_preferred
