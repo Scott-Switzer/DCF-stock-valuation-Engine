@@ -209,6 +209,52 @@ def football_field(ticker, asof=None, dcf_assumptions=None, snapshot=None, http=
                 "warnings": [],
             }
         )
+    try:
+        from fcfe_valuation import fcfe_value
+
+        fcfe_ke = costs.get("cost_of_equity")
+        if not isinstance(fcfe_ke, (int, float)):
+            raise ValueError(
+                "Cost of equity is unavailable from the loaded capital-cost inputs."
+            )
+        fcfe_projections = DCFModel(
+            parse_document(deepcopy(doc), minority_may_be_negative=True),
+            deepcopy(dcf_assumptions),
+        ).forecast_cash_flows()
+        # Financing policy is explicit: the compare baseline assumes zero net
+        # borrowing and says so, rather than inferring one from history.
+        fcfe = fcfe_value(
+            fcfe_projections,
+            cost_of_equity=fcfe_ke,
+            terminal_growth=dcf_assumptions.terminal_growth_rate,
+            shares=doc["market"]["diluted_shares"],
+            net_borrowing=None,
+            market_price=doc["market"]["price"],
+        )
+        lanes.append(
+            {
+                "method": "fcfe",
+                "label": "FCFE equity (today)",
+                "value": fcfe["intrinsic_value"],
+                "detail": (
+                    f"Cost of equity {fcfe_ke:.1%}, "
+                    f"{fcfe['net_borrowing_policy'].replace('_', ' ').lower()}"
+                ),
+                "warnings": fcfe["warnings"][:1],
+                "basis": "equity",
+            }
+        )
+    except (ValueError, KeyError, TypeError) as exc:
+        lanes.append(
+            {
+                "method": "fcfe",
+                "label": "FCFE",
+                "value": None,
+                "detail": str(exc),
+                "warnings": [],
+                "basis": "equity",
+            }
+        )
     rel_doc = None
     try:
         rel_bundle = load_method(

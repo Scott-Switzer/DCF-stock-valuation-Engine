@@ -79,6 +79,47 @@ def facts_of(cik):
     return document['facts']
 
 
+SOURCE_RELEASE = 'a' * 64
+SOURCE_MANIFEST = 'f' * 64
+CEILING = '2026-09-24T23:59:59.999999999Z'
+
+
+def route_envelope(**overrides):
+    """The blocks the Zion route adds to the claims contract it serves.
+
+    The route extracts from a companion Company Facts release and separately confirms that
+    the engine release pins the digest of the same raw archive member, so the consumer sees
+    two independently published releases that must name the same bytes.
+    """
+    envelope = {
+        'source_release_id': SOURCE_RELEASE,
+        'source_schema_version': 'sec-companyfacts-source-v1',
+        'source_manifest_sha256': SOURCE_MANIFEST,
+        'source_bundle': {
+            'issuer': {'cik': None, 'entity_name': None, 'engine_label': None},
+            'engine_release': {'release_id': RELEASE, 'raw_archive_member_sha256': MEMBER,
+                               'registry_sha256': 'd' * 64},
+            'companyfacts_release': {'release_id': SOURCE_RELEASE, 'member_sha256': MEMBER,
+                                     'schema_version': 'sec-companyfacts-source-v1',
+                                     'snapshot_date': '2026-09-24', 'rights': 'PUBLIC_SEC_ONLY',
+                                     'manifest_sha256': SOURCE_MANIFEST},
+            'reconciliation': {'status': 'MEMBER_SHA256_AGREES_WITH_ENGINE_PINNED_MEMBER',
+                               'engine_raw_member_sha256': MEMBER,
+                               'companion_member_sha256': MEMBER,
+                               'bulk_archive': 'etag-27',
+                               'bulk_archive_declared_sha256': 'e' * 64},
+            'cutoff_ceiling_utc': CEILING,
+            'extraction': {'claims_schema_version': VERSION,
+                           'availability_policy': 'DATE_ONLY_END_OF_DAY_UTC_V1'},
+        },
+        'cutoff': {'requested': ASOF_TEXT, 'policy': 'DATE_ONLY_END_OF_DAY_UTC_V1',
+                   'resolved_utc': ASOF_TEXT + 'T23:59:59.999999999Z', 'day_complete': True,
+                   'valuation_date': ASOF_TEXT, 'source_ceiling_utc': CEILING},
+    }
+    envelope.update(overrides)
+    return envelope
+
+
 def contract(cik, *, preferred_terms=None):
     """Build upstream claims and wrap them the way the Zion route does."""
     payload = build_claims(facts_of(cik), ASOF, cik=cik, preferred_terms=preferred_terms)
@@ -86,7 +127,8 @@ def contract(cik, *, preferred_terms=None):
     return dict(payload, release_id=RELEASE, member_sha256=MEMBER,
                 registry_sha256='d' * 64, manifest_sha256='e' * 64,
                 company_label='SEC company facts fixture',
-                provenance={'source_lineage': {'rights': 'PUBLIC_SEC_ONLY', 'licensed_sources_used': False}})
+                provenance={'source_lineage': {'rights': 'PUBLIC_SEC_ONLY', 'licensed_sources_used': False}},
+                **route_envelope())
 
 
 def amount(claim):
@@ -333,10 +375,14 @@ def test_service_credential_transport_replaces_the_production_bearer():
     assert call['headers']['x-zion-service-token'] == 'scoped-service-token'
     assert call['headers']['x-zion-service-caller'] == SERVICE_CALLER == 'dcf-valuation-engine'
     assert 'Authorization' not in call['headers'], 'a service credential must not send the private bearer'
-    # A date-only cutoff is not a valid availability instant; the route would answer
-    # INVALID_AVAILABILITY_CUTOFF before reading any archive.
-    assert call['params'] == dict(cik=GOOGL, as_of=ASOF_TEXT + 'T00:00:00Z',
+    # The route resolves a date-only cutoff as the whole UTC day (its named
+    # DATE_ONLY_END_OF_DAY_UTC_V1 policy), which is the resolution this consumer requires; an
+    # explicit instant inside the day would be honoured and would drop the day's filings.
+    assert call['params'] == dict(cik=GOOGL, as_of=ASOF_TEXT,
                                   recipient='human_research', expected_release_id=RELEASE)
+    # What the source resolved is read back, not assumed from what was asked for.
+    assert loaded['source']['cutoff_policy'] == 'DATE_ONLY_END_OF_DAY_UTC_V1'
+    assert loaded['source']['served_cutoff_utc'] == ASOF_TEXT + 'T23:59:59.999999999Z'
 
     # A release pin that is not what the source served is refused, and neither transport
     # nor caller mismatch can silently fall back to an unpinned read.
@@ -430,7 +476,7 @@ def test_service_binding_carries_the_verified_contract_to_a_per_share_scenario()
     # One request, over the binding, with the scoped service credential and no bearer.
     assert len(binding.requests) == 1
     assert binding.requests[0] == 'https://zion.internal/private/v1/equity-claims?' + urlencode(
-        dict(cik=GOOGL, as_of=ASOF_TEXT + 'T00:00:00Z', recipient='human_research',
+        dict(cik=GOOGL, as_of=ASOF_TEXT, recipient='human_research',
              expected_release_id=RELEASE))
     assert transport.headers['x-zion-service-token'] == 'scoped-service-token'
     assert transport.headers['x-zion-service-caller'] == SERVICE_CALLER
@@ -456,10 +502,30 @@ def test_service_binding_carries_the_verified_contract_to_a_per_share_scenario()
 
 
 def test_service_binding_refuses_a_substituted_release_before_bridging():
+    # A substituted release is one that is internally consistent: both the engine pin and the
+    # bundle agree on a release that is simply not the one this consumer asked for. Changing
+    # only the top-level pin would leave a self-contradictory payload, which the bundle check
+    # refuses first, so the pin comparison is exercised on a payload that has no other fault.
     other = contract(GOOGL)
     other['release_id'] = 'f' * 64
+    other['source_bundle']['engine_release']['release_id'] = 'f' * 64
     with pytest.raises(ServiceError, match='release mismatch'):
         bridge_over_binding(other)
+
+
+def test_service_binding_refuses_a_cutoff_resolved_inside_the_evidence_day():
+    # The served contract names its own resolution, and a resolution that never completed the
+    # evidence day would silently drop every filing dated it.
+    intraday = contract(GOOGL)
+    intraday['cutoff'] = dict(intraday['cutoff'], policy='EXPLICIT_INSTANT', day_complete=False,
+                              resolved_utc=ASOF_TEXT + 'T12:00:00Z')
+    with pytest.raises(ServiceError, match='evidence day incomplete'):
+        bridge_over_binding(intraday)
+
+    other_day = contract(GOOGL)
+    other_day['cutoff'] = dict(other_day['cutoff'], requested='2026-10-13')
+    with pytest.raises(ServiceError, match='different cutoff than the requested evidence date'):
+        bridge_over_binding(other_day)
 
 
 def test_service_binding_refuses_a_payload_whose_claims_were_edited_in_flight():

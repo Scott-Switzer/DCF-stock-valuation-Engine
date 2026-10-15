@@ -18,7 +18,6 @@ from equity_claims_provider import (
     DEDUCT_CLAIMS,
     ADD_CLAIMS,
     NONCONTROLLING_POLICIES,
-    REQUIRED_CLAIMS,
     SERVICE_CALLER,
     ProviderError,
     bridge_inputs,
@@ -146,6 +145,46 @@ def base_claims():
     }
 
 
+SOURCE_RELEASE = 'e' * 64
+SOURCE_MANIFEST = 'a' * 64
+CEILING = '2026-09-24T23:59:59.999999999Z'
+
+
+def source_bundle(**overrides):
+    """The bundle the route publishes: two immutable releases naming the same bytes."""
+    bundle = {
+        'issuer': {'cik': CIK, 'entity_name': 'Alphabet Inc.', 'engine_label': 'Alphabet Inc.'},
+        'engine_release': {
+            'release_id': RELEASE,
+            'manifest_sha256': 'd' * 64,
+            'registry_sha256': 'c' * 64,
+            'raw_archive_member_sha256': MEMBER,
+            'normalized_member_sha256': '9' * 64,
+            'source_eligibility': {'classification': 'ELIGIBLE_US_PERIODIC_SOURCE', 'eligible': True},
+        },
+        'companyfacts_release': {
+            'release_id': SOURCE_RELEASE,
+            'schema_version': 'sec-companyfacts-source-v1',
+            'manifest_sha256': SOURCE_MANIFEST,
+            'member_sha256': MEMBER,
+            'snapshot_date': '2026-09-24',
+            'rights': 'PUBLIC_SEC_ONLY',
+        },
+        'reconciliation': {
+            'status': 'MEMBER_SHA256_AGREES_WITH_ENGINE_PINNED_MEMBER',
+            'engine_raw_member_sha256': MEMBER,
+            'companion_member_sha256': MEMBER,
+            'bulk_archive': 'etag-27',
+            'bulk_archive_declared_sha256': 'f' * 64,
+        },
+        'cutoff_ceiling_utc': CEILING,
+        'extraction': {'claims_schema_version': ADAPTER_VERSION,
+                       'availability_policy': 'DATE_ONLY_END_OF_DAY_UTC_V1'},
+    }
+    bundle.update(overrides)
+    return bundle
+
+
 def payload(claims=None, **overrides):
     claims = base_claims() if claims is None else claims
     root = {
@@ -155,6 +194,13 @@ def payload(claims=None, **overrides):
         'member_sha256': MEMBER,
         'registry_sha256': 'c' * 64,
         'manifest_sha256': 'd' * 64,
+        'source_release_id': SOURCE_RELEASE,
+        'source_schema_version': 'sec-companyfacts-source-v1',
+        'source_manifest_sha256': SOURCE_MANIFEST,
+        'source_bundle': source_bundle(),
+        'cutoff': {'requested': ASOF, 'policy': 'DATE_ONLY_END_OF_DAY_UTC_V1',
+                   'resolved_utc': ASOF + 'T23:59:59.999999999Z', 'day_complete': True,
+                   'valuation_date': ASOF, 'source_ceiling_utc': CEILING},
         'cik': CIK,
         'valuation_date': ASOF,
         'company_label': 'Alphabet Inc.',
@@ -263,9 +309,38 @@ def test_tampered_claim_value_source_token_or_state_fails_closed():
     ('absent_with_value', 'reviewed-absent claim preferred_equity must not carry a value'),
     ('negative_add', 'nonoperating claim nonoperating_assets is negative'),
     ('share_basis', 'share count basis must be a point-in-time common share count'),
+    ('no_source_release', 'missing companion source release identity'),
+    ('no_source_manifest', 'missing companion source manifest digest'),
+    ('no_bundle', 'the source bundle block is required'),
+    ('unreconciled_bundle', 'the companion source is not corroborated by the engine release pin'),
+    ('split_bundle', 'the two source releases do not name the same member digest'),
+    ('wrong_source_release', 'the source bundle names a different companion release id'),
+    ('wrong_engine_release', 'the source bundle names a different engine release id'),
+    ('no_ceiling', 'the source bundle must report the release evidence ceiling'),
 ])
 def test_invalid_payloads_are_rejected(mutation, message):
     broken = payload()
+    if mutation in ('no_source_release', 'no_source_manifest', 'no_bundle', 'unreconciled_bundle',
+                    'split_bundle', 'wrong_source_release', 'wrong_engine_release', 'no_ceiling'):
+        if mutation == 'no_source_release':
+            del broken['source_release_id']
+        elif mutation == 'no_source_manifest':
+            broken['source_manifest_sha256'] = 'not-a-hash'
+        elif mutation == 'no_bundle':
+            del broken['source_bundle']
+        elif mutation == 'unreconciled_bundle':
+            broken['source_bundle']['reconciliation']['status'] = 'COMPANION_VOUCHES_FOR_ITSELF'
+        elif mutation == 'split_bundle':
+            broken['source_bundle']['companyfacts_release']['member_sha256'] = '7' * 64
+        elif mutation == 'wrong_source_release':
+            broken['source_bundle']['companyfacts_release']['release_id'] = '7' * 64
+        elif mutation == 'wrong_engine_release':
+            broken['source_bundle']['engine_release']['release_id'] = '7' * 64
+        elif mutation == 'no_ceiling':
+            del broken['source_bundle']['cutoff_ceiling_utc']
+        with pytest.raises(ProviderError, match=message):
+            verify_claims(broken)
+        return
     if mutation == 'schema':
         broken['schema_version'] = 'zion-equity-claims-v2'
     elif mutation == 'rights':
@@ -524,9 +599,11 @@ def test_load_equity_claims_uses_the_scoped_transport_and_pins_the_served_identi
                                 token='owned-token')
     assert http.calls[0]['url'] == 'https://zion.example' + CLAIMS_PATH
     assert http.calls[0]['headers']['Authorization'] == 'Bearer owned-token'
-    # The route parses `as_of` as a timezone-aware RFC3339 instant; a date-only cutoff is
-    # refused as an invalid availability cutoff, so the consumer must send an instant.
-    assert http.calls[0]['params'] == {'cik': CIK, 'as_of': ASOF + 'T00:00:00Z',
+    # The route treats a valuation date as a whole UTC day: a date-only `as_of` resolves to
+    # the end of that day under its named DATE_ONLY_END_OF_DAY_UTC_V1 policy, so the whole
+    # day's filings are eligible. An explicit instant is honoured as given instead and would
+    # silently drop every filing dated that day, so the request must stay at day level.
+    assert http.calls[0]['params'] == {'cik': CIK, 'as_of': ASOF,
                                        'recipient': 'human_research'}
     assert loaded['source']['ticker'] == 'GOOGL'
     assert loaded['source']['company_label'] == 'Alphabet Inc.'
@@ -567,3 +644,38 @@ def test_load_equity_claims_fails_closed_on_identity_mismatch():
 
     with pytest.raises(ProviderError, match='a private bearer credential or an internal service credential'):
         load_equity_claims('GOOGL', ASOF, FakeHttp(payload()), cik=CIK, base='https://zion.example')
+
+
+def test_load_equity_claims_verifies_the_cutoff_the_source_resolved():
+    # The served cutoff is read back rather than assumed: a source that resolved the request
+    # to an intraday instant would report the same valuation date while dropping every filing
+    # dated it, so the day-level policy and a completed day are both required.
+    loaded = load_equity_claims('GOOGL', ASOF, FakeHttp(payload()), cik=CIK,
+                                base='https://zion.example', token='t')
+    assert loaded['source']['requested_cutoff'] == ASOF
+    assert loaded['source']['cutoff_policy'] == 'DATE_ONLY_END_OF_DAY_UTC_V1'
+    assert loaded['source']['served_cutoff_utc'] == ASOF + 'T23:59:59.999999999Z'
+
+    # A day the source has not finished (a valuation requested for today) is refused rather
+    # than served with one day of missing filings.
+    with pytest.raises(ProviderError, match='evidence day incomplete'):
+        load_equity_claims('GOOGL', ASOF, FakeHttp(payload(cutoff=dict(
+            requested=ASOF, policy='EXPLICIT_INSTANT', day_complete=False,
+            resolved_utc=ASOF + 'T12:00:00Z', valuation_date=ASOF))),
+            cik=CIK, base='https://zion.example', token='t')
+
+    with pytest.raises(ProviderError, match='must report the cutoff it resolved'):
+        load_equity_claims('GOOGL', ASOF, FakeHttp(payload(cutoff=None)), cik=CIK,
+                           base='https://zion.example', token='t')
+
+    # A source that resolved a different day than the one asked for cannot be reconciled by
+    # arithmetic afterwards.
+    with pytest.raises(ProviderError, match='different cutoff than the requested evidence date'):
+        load_equity_claims('GOOGL', ASOF, FakeHttp(payload()), cik=CIK,
+                           base='https://zion.example', token='t', source_asof='2026-10-13')
+
+    with pytest.raises(ProviderError, match='does not fall on the evidence date'):
+        load_equity_claims('GOOGL', ASOF, FakeHttp(payload(cutoff=dict(
+            requested=ASOF, policy='DATE_ONLY_END_OF_DAY_UTC_V1', day_complete=True,
+            resolved_utc='2026-10-15T23:59:59.999999999Z', valuation_date=ASOF))),
+            cik=CIK, base='https://zion.example', token='t')

@@ -53,11 +53,17 @@ def value_enterprise(doc, benchmarks, growth_rates, terminal_growth, terminal_ro
     if date.fromisoformat(doc['valuation_date'])>value_date:
         raise ValueError('Financial cutoff exceeds valuation date.')
     verified['source']['evidence_attestation']=deepcopy(source.get('evidence_attestation'))
-    expected={'wacc':('wacc','fraction'),'tax_rate':('tax_rate','fraction'),'sales_capital':('sales_capital','ratio')}
+    # The model names the three reference assumptions it needs. The served DDFI corpus names
+    # the sales/capital ratio `sales_to_invested_capital`, while the earlier file-based DDFI
+    # releases named the same measure from the same source bytes `sales_capital`; both names
+    # describe the one concept, so both are accepted and the served name is what the result
+    # records. Any other measure name is still refused.
+    expected={'wacc':(('wacc',),'fraction'),'tax_rate':(('tax_rate',),'fraction'),
+              'sales_capital':(('sales_capital','sales_to_invested_capital'),'ratio')}
     values={}
-    for target,(measure,unit) in expected.items():
+    for target,(measures,unit) in expected.items():
         row=benchmarks.get(target,{})
-        if (row.get('measure')!=measure or row.get('unit')!=unit or not row.get('release_id')
+        if (row.get('measure') not in measures or row.get('unit')!=unit or not row.get('release_id')
                 or row.get('classification')!='BENCHMARK_ASSUMPTION_NOT_COMPANY_FACT'):
             raise ValueError('Explicit compatible benchmark required: '+target)
         if row.get('published_at'):

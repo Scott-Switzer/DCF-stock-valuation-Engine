@@ -11,7 +11,6 @@ The Zion checkout must be importable: set ZION_CLAIMS_SRC or rely on the sibling
 """
 import argparse
 from datetime import date
-from decimal import Decimal
 import hashlib
 import json
 import os
@@ -26,7 +25,6 @@ from equity_claims_provider import (  # noqa: E402
     term_consistency,
     unresolved_claims,
     value_per_share,
-    verify_claims,
 )
 
 # CIK 0001045810 is NVIDIA CORP; Microsoft is CIK 0000789019. Each document's own cik is
@@ -50,21 +48,84 @@ def zion(name):
     return importlib.import_module(name)
 
 
+SOURCE_SCHEMA_VERSION = 'sec-companyfacts-source-v1'
+SOURCE_RELEASE = 'b' * 64
+SOURCE_MANIFEST = 'e' * 64
+AVAILABILITY_POLICY = 'DATE_ONLY_END_OF_DAY_UTC_V1'
+
+
+def newest_filing(facts, valuation_date):
+    """The newest filing date the served day can contain, which is the snapshot's reach."""
+    filed = [date.fromisoformat(row['filed'])
+             for taxonomy in facts.values() if isinstance(taxonomy, dict)
+             for definition in taxonomy.values() if isinstance(definition, dict)
+             for rows in (definition.get('units') or {}).values() if isinstance(rows, list)
+             for row in rows if isinstance(row, dict) and isinstance(row.get('filed'), str)]
+    inside = [day for day in filed if day <= valuation_date]
+    if not inside:
+        raise SystemExit('no filing dated on or before ' + valuation_date.isoformat())
+    return max(inside)
+
+
 def contract(cik, document, valuation_date, terms=None, release='a' * 64):
-    """Wrap the upstream claims the way the Zion route does, including its provenance pins."""
-    facts = document['facts']
-    claims = zion('equity_claims').build_claims(facts, valuation_date, cik=cik, preferred_terms=terms)
+    """Wrap the upstream claims the way the Zion route does, including its provenance pins.
+
+    The route derives claims from the companion Company Facts release after applying its
+    availability policy at the serving boundary, so the fixture applies the same filter to
+    the downloaded facts: a filing dated the valuation day is eligible because the request is
+    a whole-day request, and a filing dated later is not. The response then reports that
+    resolution, which is what the consumer reads back.
+    """
+    claims_module = zion('equity_claims')
+    facts = claims_module.restrict_to_available(document['facts'],
+                                               claims_module.end_of_day_utc(valuation_date))
+    claims = claims_module.build_claims(facts, valuation_date, cik=cik, preferred_terms=terms)
+    member = hashlib.sha256(json.dumps(facts, sort_keys=True).encode()).hexdigest()
+    day = valuation_date.isoformat()
+    ceiling = zion('temporal_core').from_epoch_ns(
+        claims_module.end_of_day_utc(newest_filing(facts, valuation_date))).iso_utc
     return dict(
         claims,
         release_id=release,
         registry_sha256='c' * 64,
         manifest_sha256='d' * 64,
-        member_sha256=hashlib.sha256(json.dumps(facts, sort_keys=True).encode()).hexdigest(),
+        member_sha256=member,
+        source_release_id=SOURCE_RELEASE,
+        source_schema_version=SOURCE_SCHEMA_VERSION,
+        source_manifest_sha256=SOURCE_MANIFEST,
         company_label=document.get('entityName'),
         audit={'authenticated_via': 'SERVICE_CREDENTIAL', 'caller': 'dcf-valuation-engine'},
+        cutoff={
+            'requested': day,
+            'precision': 'date',
+            'policy': AVAILABILITY_POLICY,
+            'resolved_utc': day + 'T23:59:59.999999999Z',
+            'valuation_date': day,
+            'day_complete': True,
+            'source_ceiling_utc': ceiling,
+        },
+        source_bundle={
+            'issuer': {'cik': cik, 'entity_name': document.get('entityName'),
+                       'engine_label': document.get('entityName')},
+            'engine_release': {'release_id': release, 'manifest_sha256': 'd' * 64,
+                               'registry_sha256': 'c' * 64, 'raw_archive_member_sha256': member},
+            'companyfacts_release': {'release_id': SOURCE_RELEASE,
+                                     'schema_version': SOURCE_SCHEMA_VERSION,
+                                     'manifest_sha256': SOURCE_MANIFEST,
+                                     'member_sha256': member,
+                                     'snapshot_date': newest_filing(facts, valuation_date).isoformat(),
+                                     'rights': 'PUBLIC_SEC_ONLY'},
+            'reconciliation': {'status': 'MEMBER_SHA256_AGREES_WITH_ENGINE_PINNED_MEMBER',
+                               'engine_raw_member_sha256': member,
+                               'companion_member_sha256': member},
+            'cutoff_ceiling_utc': ceiling,
+            'extraction': {'claims_schema_version': claims['schema_version'],
+                           'availability_policy': AVAILABILITY_POLICY,
+                           'availability_applied_at_serving_boundary': True},
+        },
         provenance={
             'engine': 'NATIVE_IMMUTABLE_SEC_EQUITY_CLAIMS',
-            'source': 'SEC_COMPANY_FACTS_PINNED_ARCHIVE_MEMBER',
+            'source': 'SEC_COMPANY_FACTS_COMPANION_PINNED_ARCHIVE_MEMBER',
             'source_lineage': {'rights': 'PUBLIC_SEC_ONLY', 'licensed_sources_used': False},
         },
     )
@@ -124,7 +185,8 @@ def main():
                                         base='https://zion.invalid',
                                         service_token='local-service-credential',
                                         caller='dcf-valuation-engine',
-                                        expected_release_id=page['release_id'])
+                                        expected_release_id=page['release_id'],
+                                        expected_source_release_id=page['source_release_id'])
         except ProviderError as error:
             failures.append(dict(ticker=ticker, reason='CLAIMS_REJECTED', detail=str(error)))
             continue
@@ -150,6 +212,7 @@ def main():
             enterprise_artifact=enterprise_path.name,
             claims=_claim_summary(claims),
             aggregate_claims=claims['aggregate_claims'],
+            cutoff=claims['cutoff'],
             preferred_treatment=_preferred_treatment(claims),
             noncontrolling_treatment=_noncontrolling_treatment(claims),
             valuation=dict(

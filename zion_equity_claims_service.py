@@ -120,10 +120,18 @@ class ServiceBindingHTTP:
         return sync(self._request(url, headers, params))
 
     async def dispatch(self, target, headers):
-        """Send one request through the binding; the only runtime-specific step."""
-        from js import Request
+        """Send one request through the binding; the only runtime-specific step.
 
-        return await self.binding.fetch(Request.new(target, {'headers': headers}))
+        `Request.new` takes a JavaScript init object. A plain Python dict reaches it as a
+        Map, which the constructor rejects with a fatal isolate error rather than a typed
+        failure, so the init is converted with `to_js(..., Object.fromEntries)` for the
+        object shape the constructor requires.
+        """
+        from js import Object, Request
+        from pyodide.ffi import to_js
+
+        init = to_js({'headers': dict(headers)}, dict_converter=Object.fromEntries)
+        return await self.binding.fetch(Request.new(target, init))
 
     async def _request(self, url, headers, params):
         import asyncio
@@ -155,7 +163,8 @@ class ServiceBindingHTTP:
         return payload
 
 
-def load_claims(ticker, asof, *, cik, http=None, expected_release_id=None):
+def load_claims(ticker, asof, *, cik, http=None, expected_release_id=None, source_asof=None,
+                expected_source_release_id=None):
     """Fetch, verify and normalise Zion claims for one filer over the binding."""
     transport = http if http is not None else ServiceBindingHTTP(service_binding())
     caller = configured_caller()
@@ -165,17 +174,21 @@ def load_claims(ticker, asof, *, cik, http=None, expected_release_id=None):
         return load_equity_claims(
             ticker_symbol(ticker), asof, transport, cik=cik, base=BINDING_ORIGIN,
             service_token=provider_setting(SERVICE_TOKEN_SETTING), caller=caller,
-            expected_release_id=expected_release_id)
+            expected_release_id=expected_release_id, source_asof=source_asof,
+            expected_source_release_id=expected_source_release_id)
     except ClaimsError as exc:
         raise ProviderError(str(exc)) from exc
 
 
 def bridge_scenario(ticker, asof, *, cik, enterprise_value, http=None, expected_release_id=None,
                     preferred_terms=None, scenario='AS_CONVERTED_MAX_RATE',
-                    noncontrolling_policy='DEDUCT_REPORTED'):
+                    noncontrolling_policy='DEDUCT_REPORTED', source_asof=None,
+                    expected_source_release_id=None):
     """One per-share common equity scenario from verified claims and an enterprise value.
 
     The enterprise value arrives from the server-side DCF engine, never from the client.
+    `source_asof` pins the SEC evidence cutoff, which may be older than the valuation date
+    when the valuation runs past the newest immutable SEC snapshot.
     """
     if isinstance(enterprise_value, bool) or not isinstance(enterprise_value, (int, float)):
         raise ValueError('A finite positive enterprise value is required.')
@@ -183,7 +196,8 @@ def bridge_scenario(ticker, asof, *, cik, enterprise_value, http=None, expected_
     if not number > 0 or number in (float('inf'), float('-inf')) or number != number:
         raise ValueError('A finite positive enterprise value is required.')
     claims = load_claims(ticker, asof, cik=cik, http=http,
-                         expected_release_id=expected_release_id)
+                         expected_release_id=expected_release_id, source_asof=source_asof,
+                         expected_source_release_id=expected_source_release_id)
     result = value_per_share(number, claims, preferred_terms=preferred_terms,
                              scenario=scenario, noncontrolling_policy=noncontrolling_policy)
     if not isinstance(result.get('source', {}).get('release_id'), str):
@@ -199,12 +213,27 @@ def bridge_scenario(ticker, asof, *, cik, enterprise_value, http=None, expected_
                     member_sha256=result['source'].get('member_sha256'),
                     registry_sha256=result['source'].get('registry_sha256'),
                     manifest_sha256=result['source'].get('manifest_sha256'),
+                    # Claims come from a companion Company Facts release, and the engine
+                    # release separately pins the digest of the raw archive member. Both
+                    # are recorded, and the consumer has already required them to agree.
+                    source_release_id=result['source'].get('source_bundle', {}).get('source_release_id'),
+                    source_manifest_sha256=result['source'].get('source_bundle', {}).get(
+                        'source_manifest_sha256'),
+                    source_reconciliation=result['source'].get('source_bundle', {}).get(
+                        'reconciliation_status'),
+                    bulk_archive_etag=result['source'].get('source_bundle', {}).get(
+                        'bulk_archive_etag'),
+                    evidence_ceiling_utc=result['source'].get('source_bundle', {}).get(
+                        'evidence_ceiling_utc'),
+                    evidence_cutoff=result['source'].get('evidence_cutoff'),
+                    bridge_valuation_date=result['source'].get('bridge_valuation_date'),
                     claim_evidence_digests='RECOMPUTED_BY_CONSUMER',
                     digest_proves_authenticity=False,
                     interpretation=(
                         'Claim digests detect tampering with a received payload. '
-                        'Authenticity comes from the scoped service credential and the release '
-                        'pin, which name the answering service and the immutable archive.'),
+                        'Authenticity comes from the scoped service credential and the dual '
+                        'release pins, which name the answering service and the immutable '
+                        'archives.'),
                 ))
 
 
@@ -299,13 +328,22 @@ def register_equity_claims(app):
                 raw.get('terminal_growth'), raw.get('terminal_roic'),
                 valuation_date=valuation_date, suitable=raw.get('suitable'),
                 evidence_secret=provider_value('ZION_HISTORY_TOKEN'))
+            source_asof = raw.get('source_asof')
+            if source_asof is not None:
+                iso_date(source_asof, 'Evidence cutoff')
+            expected_source_release_id = raw.get('expected_source_release_id')
+            if expected_source_release_id is not None and not re.fullmatch(
+                    r'[0-9a-f]{64}', str(expected_source_release_id)):
+                raise ValueError('expected_source_release_id must be a 64-character hex release id.')
             record = bridge_scenario(
                 symbol, valuation_date, cik=cik,
                 enterprise_value=enterprise['enterprise_value'],
                 expected_release_id=raw.get('expected_release_id'),
                 preferred_terms=raw.get('preferred_terms'),
                 scenario=raw.get('scenario', 'AS_CONVERTED_MAX_RATE'),
-                noncontrolling_policy=raw.get('noncontrolling_policy', 'DEDUCT_REPORTED'))
+                noncontrolling_policy=raw.get('noncontrolling_policy', 'DEDUCT_REPORTED'),
+                source_asof=source_asof,
+                expected_source_release_id=expected_source_release_id)
             record['enterprise_scenario'] = {
                 'schema_version': enterprise.get('schema_version'),
                 'model_version': enterprise.get('model_version'),

@@ -98,6 +98,67 @@ def test_transport_without_a_binding_never_issues_a_request():
         service.ServiceBindingHTTP(None).get("https://zion.internal/x")
 
 
+def test_binding_dispatch_builds_the_javascript_request_init(monkeypatch):
+    """A Python dict reaches `Request.new` as a Map, which crashes the isolate.
+
+    The runtime is the only place this can fail, so the fake `js`/`pyodide.ffi` modules
+    here record exactly what `dispatch` hands to the constructor: a converted init object
+    and the dict converter that produced it.
+    """
+    import sys
+    import types
+
+    recorded = {}
+    fake_request = types.SimpleNamespace(
+        new=lambda target, init: recorded.update(target=target, init=init) or 'js-request')
+    fake_js = types.ModuleType('js')
+    fake_js.Request = fake_request
+    fake_js.Object = types.SimpleNamespace(fromEntries='Object.fromEntries')
+    fake_ffi = types.ModuleType('pyodide.ffi')
+    fake_ffi.to_js = lambda value, dict_converter=None: recorded.update(
+        value=value, dict_converter=dict_converter) or 'js-init'
+    fake_pyodide = types.ModuleType('pyodide')
+    fake_pyodide.ffi = fake_ffi
+    monkeypatch.setitem(sys.modules, 'js', fake_js)
+    monkeypatch.setitem(sys.modules, 'pyodide', fake_pyodide)
+    monkeypatch.setitem(sys.modules, 'pyodide.ffi', fake_ffi)
+
+    class Bound:
+        async def fetch(self, request):
+            return request
+
+    transport = service.ServiceBindingHTTP(Bound())
+    result = asyncio.run(transport.dispatch('https://zion.internal/private/v1/x',
+                                            {'Authorization': 'Bearer t'}))
+    assert result == 'js-request'
+    assert recorded['init'] == 'js-init'
+    assert recorded['dict_converter'] == 'Object.fromEntries'
+    assert recorded['value'] == {'headers': {'Authorization': 'Bearer t'}}
+
+
+def test_native_history_leg_prefers_the_binding_and_still_requires_a_credential(monkeypatch):
+    # The attached native-history leg reads the same private API, so a bound deployment
+    # reaches it without egress while an unbound one still needs an HTTPS origin.
+    import dcf_loader
+
+    monkeypatch.setattr(service, 'service_binding', lambda: object())
+    transport, base = dcf_loader.zion_history_endpoint()
+    assert isinstance(transport, service.ServiceBindingHTTP)
+    assert base == dcf_loader.ZION_BINDING_ORIGIN
+
+    monkeypatch.setattr(service, 'service_binding', lambda: None)
+    monkeypatch.setenv('ZION_HISTORY_BASE_URL', 'https://zion.example')
+    transport, base = dcf_loader.zion_history_endpoint()
+    assert not isinstance(transport, service.ServiceBindingHTTP)
+    assert base == 'https://zion.example'
+
+    # A binding does not remove the credential: the private route accepts only the bearer,
+    # and the same value signs the evidence the enterprise valuation verifies.
+    monkeypatch.delenv('ZION_HISTORY_TOKEN', raising=False)
+    with pytest.raises(ProviderError, match='private bearer credential required'):
+        dcf_loader.load_document('zion_history', 'AAPL', '2026-09-24', cik='0000320193')
+
+
 def test_claims_without_a_configured_binding_fail_closed(monkeypatch):
     monkeypatch.setattr(service, "service_binding", lambda: None)
     monkeypatch.setenv("ZION_SERVICE_TOKEN", "scoped-test-token")

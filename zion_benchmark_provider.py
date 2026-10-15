@@ -33,6 +33,17 @@ TARGET_MEASURES = {
     'ebit_margins': 'operating_margin',
     'tax_rates': 'tax_rate',
     'net_income_margins': 'net_margin',
+    'unlevered_beta_ex_cash': 'unlevered_beta_ex_cash',
+    'unlevered_beta': 'unlevered_beta',
+    'cash_to_firm_value': 'cash_to_firm_value',
+    'debt_to_equity': 'debt_to_equity',
+    'cost_of_debt': 'cost_of_debt',
+    'equity_risk_premium': 'equity_risk_premium',
+    'equity_risk_premium_cds': 'equity_risk_premium_cds',
+    'country_risk_premium': 'country_risk_premium',
+    'country_risk_premium_cds': 'country_risk_premium_cds',
+    'implied_erp_fcfe': 'implied_erp_fcfe',
+    'implied_erp_ddm': 'implied_erp_ddm',
 }
 
 

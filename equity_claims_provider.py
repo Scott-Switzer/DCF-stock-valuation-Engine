@@ -12,7 +12,9 @@ Discipline borrowed from the native history consumer:
 - nothing is fetched twice and no fallback source is substituted;
 - a claim that is not in a certified evidence state is not used;
 - a conflicting claim fails closed instead of being reconciled silently;
-- verified-absent claims are documented zeros, and unknown claims stay unknown.
+- verified-absent claims are documented zeros, and unknown claims stay unknown;
+- the cutoff the source actually resolved is read back and verified, never assumed from the
+  cutoff that was requested.
 """
 from datetime import date
 from decimal import Decimal, InvalidOperation
@@ -35,6 +37,7 @@ REQUIRED_CLAIMS = ('debt', 'finance_leases', 'operating_leases', 'cash', 'nonope
                    'preferred_equity', 'noncontrolling_interests', 'common_shares')
 DEDUCT_CLAIMS = ('debt', 'finance_leases', 'preferred_equity', 'noncontrolling_interests')
 ADD_CLAIMS = ('cash', 'nonoperating_assets')
+SERVED_CUTOFF_POLICY = 'DATE_ONLY_END_OF_DAY_UTC_V1'
 NONCONTROLLING_POLICIES = ('DEDUCT_REPORTED', 'EXCLUDE_WITH_SENSITIVITY')
 PREFERRED_SCENARIOS = ('AS_CONVERTED_MAX_RATE', 'AS_CONVERTED_MIN_RATE', 'LIQUIDATION_PREFERENCE')
 
@@ -113,6 +116,53 @@ def verify_claim(claim, name):
     return claim
 
 
+def verify_source_bundle(payload):
+    """Verify that both pinned releases name the same Company Facts bytes.
+
+    Claims arrive from a companion source release, and the engine release separately pins
+    the digest of the raw archive member it was normalized from. A response that names only
+    one of them, or whose two digests disagree, cannot be attributed to an immutable source
+    and is refused rather than consumed.
+    """
+    source_release = payload.get('source_release_id')
+    if not isinstance(source_release, str) or not re.fullmatch(r'[0-9a-f]{64}', source_release):
+        fail('missing companion source release identity')
+    source_manifest = payload.get('source_manifest_sha256')
+    if not isinstance(source_manifest, str) or not re.fullmatch(r'[0-9a-f]{64}', source_manifest):
+        fail('missing companion source manifest digest')
+    bundle = payload.get('source_bundle')
+    if not isinstance(bundle, dict):
+        fail('the source bundle block is required')
+    reconciliation = bundle.get('reconciliation') or {}
+    if reconciliation.get('status') != 'MEMBER_SHA256_AGREES_WITH_ENGINE_PINNED_MEMBER':
+        fail('the companion source is not corroborated by the engine release pin')
+    member = payload.get('member_sha256')
+    companion = (bundle.get('companyfacts_release') or {}).get('member_sha256')
+    engine = (bundle.get('engine_release') or {}).get('raw_archive_member_sha256')
+    if not (member == companion == engine):
+        fail('the two source releases do not name the same member digest')
+    if (bundle.get('companyfacts_release') or {}).get('release_id') != source_release:
+        fail('the source bundle names a different companion release id')
+    if (bundle.get('engine_release') or {}).get('release_id') != payload.get('release_id'):
+        fail('the source bundle names a different engine release id')
+    cutoff = bundle.get('cutoff_ceiling_utc')
+    if not isinstance(cutoff, str):
+        fail('the source bundle must report the release evidence ceiling')
+    return {
+        'source_release_id': source_release,
+        'source_manifest_sha256': source_manifest,
+        'source_schema_version': payload.get('source_schema_version'),
+        'member_sha256': member,
+        'engine_raw_member_sha256': engine,
+        'companion_member_sha256': reconciliation.get('companion_member_sha256'),
+        'bulk_archive_etag': reconciliation.get('bulk_archive'),
+        'bulk_archive_declared_sha256': reconciliation.get('bulk_archive_declared_sha256'),
+        'snapshot_date': (bundle.get('companyfacts_release') or {}).get('snapshot_date'),
+        'evidence_ceiling_utc': cutoff,
+        'reconciliation_status': reconciliation.get('status'),
+    }
+
+
 def verify_claims(payload):
     """Verify a Zion equity claims response and return it with a normalized source block."""
     if not isinstance(payload, dict):
@@ -127,6 +177,7 @@ def verify_claims(payload):
         fail('missing release identity')
     if not isinstance(member, str) or not re.fullmatch(r'[0-9a-f]{64}', member):
         fail('missing archive member identity')
+    bundle = verify_source_bundle(payload)
     provenance = payload.get('provenance') or {}
     if provenance.get('source_lineage', {}).get('licensed_sources_used') is not False:
         fail('only public-SEC-only claims are supported')
@@ -151,6 +202,7 @@ def verify_claims(payload):
         'valuation_date': payload.get('valuation_date'),
         'audit': payload.get('audit'),
         'certification': payload.get('certification'),
+        'source_bundle': bundle,
         'warnings': [
             'Claim evidence states are filing-derived; a scenario is not source-certified merely '
             'because its arithmetic reconciles.',
@@ -205,37 +257,103 @@ def claims_headers(*, token=None, service_token=None, caller=None):
     fail('a private bearer credential or an internal service credential is required')
 
 
+def evidence_cutoff(asof, source_asof=None):
+    """The evidence date a claims request is pinned to, and the cutoff it is asked with.
+
+    The claims route treats a valuation date as a whole UTC day: a date-only `as_of` resolves
+    to the last instant of that day, so a filing dated that day is eligible, and the response
+    reports that resolution as the named DATE_ONLY_END_OF_DAY_UTC_V1 policy. An explicit
+    instant is honoured as given instead, and because a filing date carries no acceptance
+    time the route only counts a same-day filing once its own day has ended; an instant
+    inside the day therefore drops every filing dated that day while still reporting that
+    date as the valuation date. This consumer asks for the day itself and reads back the
+    resolution it was served (`verify_served_cutoff`) rather than assuming it.
+
+    The *evidence* cutoff stays separate from the DCF valuation date so that a valuation run
+    whose date is newer than the newest pinned SEC snapshot still pins the snapshot it used.
+    """
+    if not isinstance(asof, str):
+        fail('valuation date must be an ISO date string')
+    valuation_date = date.fromisoformat(asof)
+    if source_asof is None:
+        evidence_date = valuation_date
+    else:
+        if not isinstance(source_asof, str):
+            fail('evidence cutoff must be an ISO date string')
+        evidence_date = date.fromisoformat(source_asof)
+    if evidence_date > valuation_date:
+        fail('the evidence cutoff must not be later than the valuation date')
+    return valuation_date, evidence_date, evidence_date.isoformat()
+
+
+def verify_served_cutoff(claims, evidence_date, cutoff):
+    """The served cutoff resolution, or a refusal.
+
+    A request is only as good as the resolution the source applied to it: an intraday
+    resolution would exclude every filing dated the evidence date while still naming that
+    date as the valuation date, so the response is refused unless it states the whole-day
+    policy and reports the day complete and resolved on the requested date.
+    """
+    served = claims.get('cutoff')
+    if not isinstance(served, dict):
+        fail('the response must report the cutoff it resolved')
+    if served.get('requested') != cutoff:
+        fail('the source resolved a different cutoff than the requested evidence date')
+    if served.get('valuation_date') != evidence_date.isoformat():
+        fail('the source resolved a different valuation date than the evidence cutoff')
+    if served.get('policy') != SERVED_CUTOFF_POLICY or served.get('day_complete') is not True:
+        fail('an intraday cutoff leaves the evidence day incomplete, so a filing dated it '
+             'would be dropped')
+    resolved = served.get('resolved_utc')
+    if not isinstance(resolved, str) or not resolved.startswith(evidence_date.isoformat() + 'T'):
+        fail('the resolved cutoff instant does not fall on the evidence date')
+    return served
+
+
 def load_equity_claims(ticker, asof, http, *, cik, base, token=None, service_token=None,
-                       caller=None, expected_release_id=None):
+                       caller=None, expected_release_id=None, source_asof=None,
+                       expected_source_release_id=None):
     """Fetch and verify the Zion equity claims contract for one filer.
 
     `http` is the caller's transport with a requests-compatible `get`, exactly as the
     native history consumer uses it, so the same local, service-binding or staging
-    transport works here.
+    transport works here. `asof` is the valuation date; `source_asof` is the evidence
+    cutoff that pins the immutable release when the two differ.
     """
     if not isinstance(cik, str) or not re.fullmatch(r'\d{10}', cik):
         fail('explicit ten-digit CIK required')
-    if not isinstance(asof, str):
-        fail('valuation date must be an ISO date string')
-    asof_date = date.fromisoformat(asof)
+    valuation_date, evidence_date, cutoff = evidence_cutoff(asof, source_asof)
     headers = claims_headers(token=token, service_token=service_token, caller=caller)
-    # The route parses `as_of` as a timezone-aware RFC3339 instant, exactly as the native
-    # history consumer does; a date-only cutoff is refused as an invalid availability
-    # cutoff before any source archive is read.
-    params = dict(cik=cik, as_of=f'{asof_date.isoformat()}T00:00:00Z', recipient='human_research')
+    params = dict(cik=cik, as_of=cutoff, recipient='human_research')
     if expected_release_id:
         params['expected_release_id'] = expected_release_id
+    if expected_source_release_id:
+        params['expected_source_release_id'] = expected_source_release_id
     page = http.get(base.rstrip('/') + CLAIMS_PATH, headers=headers, params=dict(params))
     claims = verify_claims(page)
-    if claims.get('valuation_date') != asof:
-        fail('claims were extracted at a different valuation date')
+    # The source's own report of the cutoff it resolved is verified before anything in the
+    # claims is used, so a resolution this consumer did not ask for cannot look like a
+    # normally extracted contract.
+    served_cutoff = verify_served_cutoff(claims, evidence_date, cutoff)
+    if claims.get('valuation_date') != evidence_date.isoformat():
+        fail('claims were extracted at a different valuation date than the evidence cutoff')
     if claims.get('cik') != cik:
         fail('claims identity does not match the requested CIK')
     if expected_release_id and claims['source']['release_id'] != expected_release_id:
         fail('release mismatch; the pinned release was not served')
-    claims['source'].update(ticker=ticker,
-                            company_label=claims.get('company_label'),
-                            identity_status='EXPLICIT_USER_CIK_NOT_TICKER_CERTIFIED')
+    if (expected_source_release_id
+            and claims['source']['source_bundle']['source_release_id'] != expected_source_release_id):
+        fail('source release mismatch; the pinned Company Facts release was not served')
+    claims['source'].update(
+        ticker=ticker,
+        company_label=claims.get('company_label'),
+        identity_status='EXPLICIT_USER_CIK_NOT_TICKER_CERTIFIED',
+        evidence_cutoff=evidence_date.isoformat(),
+        bridge_valuation_date=valuation_date.isoformat(),
+        requested_cutoff=cutoff,
+        served_cutoff_utc=served_cutoff.get('resolved_utc'),
+        cutoff_policy=served_cutoff.get('policy'),
+    )
     return claims
 
 

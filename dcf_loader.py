@@ -13,6 +13,9 @@ from dcf_code import FinancialData, number
 from storage import Store
 
 SCHEMA = "dcf-financials-v1"
+# Origin used only to shape the request the internal service binding carries; nothing
+# resolves it and no request leaves the account.
+ZION_BINDING_ORIGIN = "https://zion.internal"
 HISTORY_FIELDS = (
     "revenue",
     "ebit",
@@ -766,6 +769,26 @@ def configured_url(name):
     return base
 
 
+def zion_history_endpoint():
+    """Transport and origin for the attested native-history leg.
+
+    A runtime that carries the internal Zion service binding reaches the private history API
+    without leaving the account, so the binding is preferred and no public HTTPS origin is
+    required for it. The credential is unchanged either way: the private route accepts only
+    the private bearer, and that same value signs the evidence the enterprise valuation
+    verifies. A deployment with no binding still needs an HTTPS base URL.
+    """
+    try:
+        from zion_equity_claims_service import ServiceBindingHTTP, service_binding
+
+        binding = service_binding()
+    except ImportError:
+        binding = None
+    if binding is not None:
+        return ServiceBindingHTTP(binding), ZION_BINDING_ORIGIN
+    return JsonHTTP(), configured_url("ZION_HISTORY_BASE_URL")
+
+
 def load_document(source, ticker, asof, *, cik=None, expected_release_id=None):
     iso_date(asof, "Valuation date")
     if source == "sample":
@@ -792,8 +815,9 @@ def load_document(source, ticker, asof, *, cik=None, expected_release_id=None):
         return load_sec(ticker, asof, http)
     if source == "zion_history":
         from zion_history_provider import load_history
-        return load_history(ticker, asof, http, cik=cik,
-                            base=configured_url('ZION_HISTORY_BASE_URL'),
+
+        transport, base = zion_history_endpoint()
+        return load_history(ticker, asof, transport, cik=cik, base=base,
                             token=provider_setting('ZION_HISTORY_TOKEN'),
                             expected_release_id=expected_release_id)
     if source == "zion":

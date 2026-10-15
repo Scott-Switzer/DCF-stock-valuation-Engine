@@ -48,10 +48,20 @@
   "vars": {
     "DEPLOY_ENVIRONMENT": "staging",
     "ZION_EQUITY_CLAIMS_CALLER": "dcf-valuation-engine",
-    // Benchmark assumptions are a separate, pre-existing Zion dependency: the route
-    // resolves them through Zion's private query API rather than this binding, because
-    // a Worker has no release directory to read. Point it at the second local Worker.
-    "ZION_BENCHMARK_BASE_URL": "http://127.0.0.1:8790"
+    // Benchmark assumptions are a separate Zion dependency: the route resolves them through
+    // Zion's private query API rather than this binding, because a Worker has no release
+    // directory to read. They are served by the isolated DDFI benchmark Worker, which is a
+    // different Worker from the SEC claims one, so this points at that third local worker:
+    //
+    //   wrangler dev -c {zion-ddfi-benchmark}/deploy/cloudflare-query/thin-benchmark/wrangler.dev.jsonc --port 8792
+    "ZION_BENCHMARK_BASE_URL": "http://127.0.0.1:8792",
+    // The attested native history leg reads the same thin SEC Worker's private API, so the
+    // valuation inputs and the claims come from one source plane.
+    // Served over HTTPS because the app requires an HTTPS base URL for this leg:
+    //
+    //   wrangler dev -c thin/wrangler.dev.jsonc --port 8793 --local-protocol https \
+    //     --https-cert-path /tmp/thin-tls/cert.pem --https-key-path /tmp/thin-tls/key.pem
+    "ZION_HISTORY_BASE_URL": "https://127.0.0.1:8793"
   },
   "preview_urls": false
 }

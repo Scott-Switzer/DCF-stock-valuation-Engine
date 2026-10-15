@@ -44,6 +44,26 @@ def test_actual_operating_inputs_value_enterprise_without_inventing_bridge():
     assert result['source']['release_id']=='r1'
 
 
+def test_served_sales_capital_measure_name_is_accepted_and_other_names_are_not():
+    # The published DDFI corpus names the sales/capital ratio `sales_to_invested_capital`; the
+    # earlier file-based releases named the same measure, from the same source bytes,
+    # `sales_capital`. The served name is recorded on the result as served, and a different
+    # concept selected into the same target is still refused.
+    served=benchmarks()
+    served['sales_capital']=dict(served['sales_capital'],measure='sales_to_invested_capital')
+    result=value_enterprise(document(),served,[0]*5,0,.15,valuation_date='2026-09-24',suitable=True,evidence_secret=SECRET)
+    assert result['benchmark_assumptions']['sales_capital']['measure']=='sales_to_invested_capital'
+    assert result['enterprise_value']==pytest.approx(181.5)
+    wrong=benchmarks()
+    wrong['sales_capital']=dict(wrong['sales_capital'],measure='net_capex_to_sales')
+    with pytest.raises(ValueError,match='Explicit compatible benchmark required: sales_capital'):
+        value_enterprise(document(),wrong,[0]*5,0,.15,valuation_date='2026-09-24',suitable=True,evidence_secret=SECRET)
+    substituted=benchmarks()
+    substituted['wacc']=dict(substituted['wacc'],measure='cost_of_equity')
+    with pytest.raises(ValueError,match='Explicit compatible benchmark required: wacc'):
+        value_enterprise(document(),substituted,[0]*5,0,.15,valuation_date='2026-09-24',suitable=True,evidence_secret=SECRET)
+
+
 def complete_bridge(**overrides):
     bridge=dict(short_term_debt=10.0,long_term_debt=20.0,cash=5.0,preferred_equity=0.0,
                 minority_interest=0.0,other_nonoperating_assets=1.0)

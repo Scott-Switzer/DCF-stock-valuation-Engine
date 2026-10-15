@@ -273,6 +273,10 @@ def evaluate(doc, a):
     result = model.calculate()
     result["method"] = "dcf"
     result["model_version"] = "cuig-dcf-v1"
+    if isinstance(doc.get("source"), dict) and "bottom_up_capm" in doc["source"]:
+        result["bottom_up_capm"] = deepcopy(doc["source"]["bottom_up_capm"])
+    if isinstance(doc.get("source"), dict) and "benchmark_assumptions" in doc["source"]:
+        result["benchmark_assumptions"] = deepcopy(doc["source"]["benchmark_assumptions"])
     growths, matrix = model.generate_sensitivity_table()
     result["sensitivity"] = {
         "growth_rates": growths,
@@ -324,13 +328,17 @@ def payload():
             raise ValueError("Provide a financials document.")
         doc = deepcopy(raw['financials'])
         assumptions = raw.get('assumptions')
+        if not isinstance(assumptions, dict):
+            raise ValueError('Assumptions must be a JSON object.')
+        assumptions = deepcopy(assumptions)
         if raw.get('benchmark_selections'):
             from valuation_benchmarks import apply_benchmarks
-            if not isinstance(assumptions, dict):
-                raise ValueError('Assumptions must be a JSON object.')
             selected = resolve_benchmark_selections(raw['benchmark_selections'], doc['valuation_date'])
             assumptions = apply_benchmarks(assumptions, selected)
             doc['source']['benchmark_assumptions'] = assumptions.pop('benchmark_sources')
+        if raw.get('bottom_up_beta'):
+            capm_res = resolve_bottom_up_beta_payload(raw['bottom_up_beta'], doc, assumptions)
+            doc['source']['bottom_up_capm'] = capm_res
         return doc, assumptions_from_json(assumptions)
     return form_payload(request.form)
 
@@ -492,6 +500,7 @@ def limit_expensive_work():
                 "/api/assemble/",
                 "/api/peer",
                 "/api/calculate",
+                "/api/capm/",
                 "/api/compare",
                 "/api/reverse",
                 "/mcp",
@@ -825,18 +834,18 @@ def calculate_api():
         return jsonify(error=str(e)), 400
 
 
-def resolve_benchmark_selections(selections, valuation_date):
+def resolve_benchmark_selections(selections, valuation_date, *, max_selections=4):
     """Resolve explicit benchmark selections through the canonical Zion interface
     ('source': 'zion', preferred when configured) or the standalone release loader
     ('source': 'release', the default — existing behavior is unchanged)."""
     from valuation_benchmarks import load_benchmark
-    if not isinstance(selections, dict) or not 1 <= len(selections) <= 4:
-        raise ValueError('Select one to four explicit benchmark inputs.')
+    if not isinstance(selections, dict) or not 1 <= len(selections) <= max_selections:
+        raise ValueError(f'Select one to {max_selections} explicit benchmark inputs.')
     result = {}
     for target, selection in selections.items():
         if (not isinstance(selection, dict)
                 or not {'release_id','subject','measure','mode'} <= set(selection)
-                or not set(selection) <= {'release_id','subject','measure','mode','source'}):
+                or not set(selection) <= {'release_id','subject','measure','mode','source','dataset_id'}):
             raise ValueError('Select exact release, subject, measure and current/historical mode.')
         mode = selection['mode']
         if mode not in {'current','historical'}:
@@ -854,7 +863,8 @@ def resolve_benchmark_selections(selections, valuation_date):
             result[target] = fetch_benchmark_row(
                 base=base, token=token, subject=selection['subject'],
                 measure=selection['measure'], release_id=selection['release_id'],
-                mode=mode, valuation_date=valuation_date, http=requests)
+                mode=mode, valuation_date=valuation_date, http=requests,
+                dataset_id=selection.get('dataset_id'))
         elif source == 'release':
             root = provider_value('DAMODARAN_RELEASE_ROOT')
             if not root:
@@ -869,6 +879,71 @@ def resolve_benchmark_selections(selections, valuation_date):
     return result
 
 
+def resolve_bottom_up_beta_payload(spec, doc, assumptions=None):
+    """Resolve benchmark selections inside a bottom_up_beta specification, compute
+    relevered beta, CAPM cost of equity, and optionally propagate WACC into assumptions."""
+    from bottom_up_capm import compute_bottom_up_capm
+
+    if not isinstance(spec, dict):
+        raise ValueError("bottom_up_beta must be a JSON object.")
+    val_date = doc.get("valuation_date") or datetime.now(timezone.utc).date().isoformat()
+    selections_to_resolve = {}
+    for key in (
+        "beta_benchmark",
+        "erp_benchmark",
+        "crp_benchmark",
+        "cash_benchmark",
+        "cost_of_debt_benchmark",
+        "tax_benchmark",
+    ):
+        val = spec.get(key)
+        if isinstance(val, dict) and "value_decimal" not in val:
+            selections_to_resolve[key] = val
+    resolved = (
+        resolve_benchmark_selections(selections_to_resolve, val_date, max_selections=6)
+        if selections_to_resolve
+        else {}
+    )
+    merged_spec = deepcopy(spec)
+    if "tax_benchmark" in resolved:
+        merged_spec["tax_benchmark"] = resolved["tax_benchmark"]
+    capm_result = compute_bottom_up_capm(
+        doc,
+        merged_spec,
+        beta_benchmark=resolved.get("beta_benchmark") or spec.get("beta_benchmark"),
+        erp_benchmark=resolved.get("erp_benchmark") or spec.get("erp_benchmark"),
+        crp_benchmark=resolved.get("crp_benchmark") or spec.get("crp_benchmark"),
+        cash_benchmark=resolved.get("cash_benchmark") or spec.get("cash_benchmark"),
+        cost_of_debt_benchmark=resolved.get("cost_of_debt_benchmark") or spec.get("cost_of_debt_benchmark"),
+    )
+    if spec.get("propagate_to_wacc") is True and isinstance(assumptions, dict):
+        if assumptions.get("wacc_override") is not None:
+            raise ValueError(
+                "Conflicting explicit assumption: wacc_override is already set; "
+                "cannot propagate bottom-up CAPM WACC simultaneously."
+            )
+        wacc_build = capm_result.get("wacc_build") or {}
+        if wacc_build.get("wacc") is None:
+            raise ValueError("Bottom-up WACC could not be computed for propagation.")
+        assumptions["wacc_override"] = wacc_build["wacc"]
+    return capm_result
+
+
+@app.post("/api/capm/preview")
+def capm_preview_api():
+    """Preview bottom-up beta, CAPM cost of equity, and optional WACC build with lineage."""
+    try:
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict) or not isinstance(raw.get("financials"), dict):
+            raise ValueError("Send financials and bottom_up_beta specification.")
+        doc = deepcopy(raw["financials"])
+        parse_document(doc)
+        res = resolve_bottom_up_beta_payload(raw.get("bottom_up_beta"), doc)
+        return jsonify(res)
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+
+
 @app.get('/api/assumptions/damodaran/<release>')
 def damodaran_assumption_api(release):
     try:
@@ -880,6 +955,49 @@ def damodaran_assumption_api(release):
         response.headers['Cache-Control'] = 'no-store'
         return response
     except (ValueError, TypeError) as exc:
+        return jsonify(error=str(exc)), 400
+
+
+@app.post('/api/calculate/fcfe')
+def calculate_fcfe_api():
+    """Selectable FCFE equity valuation: equity cash flow discounted at the cost of equity.
+
+    Shares the exact DCF forecast drivers with the FCFF lane; the value basis is
+    equity, so no net-debt bridge is applied. Financing policy (net borrowing) is
+    explicit and never inferred from history.
+    """
+    try:
+        from fcfe_valuation import fcfe_value
+
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict):
+            raise ValueError('Send financials, assumptions and explicit FCFE inputs.')
+        doc, a = payload()
+        d = parse_document(doc, minority_may_be_negative=True)
+        projections = DCFModel(d, a).forecast_cash_flows()
+        costs = (doc.get('source') or {}).get('capital_costs') or {}
+        ke = raw.get('cost_of_equity', costs.get('cost_of_equity'))
+        result = fcfe_value(
+            projections,
+            cost_of_equity=ke,
+            terminal_growth=a.terminal_growth_rate,
+            shares=d.diluted_shares,
+            net_borrowing=raw.get('net_borrowing'),
+            market_price=d.stock_price,
+        )
+        result['assumptions'] = asdict(a)
+        result['cost_of_equity_source'] = (
+            raw.get('cost_of_equity_source', 'explicit')
+            if 'cost_of_equity' in raw
+            else 'snapshot_capital_costs'
+        )
+        result['model_limitations'] = [
+            'FCFE depends on an explicit financing policy; changing net borrowing changes equity value.',
+            'The terminal value applies Gordon growth to final-year FCFE and is unstable near cost of equity.',
+            'Equity value from FCFE is not comparable line-for-line with enterprise values from FCFF.',
+        ]
+        return jsonify(result)
+    except (ValueError, KeyError, TypeError) as exc:
         return jsonify(error=str(exc)), 400
 
 
