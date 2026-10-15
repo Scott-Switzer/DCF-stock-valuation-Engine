@@ -10,10 +10,10 @@ import sys
 import time
 import urllib.request
 
-BASE = sys.argv[1].rstrip('/')
-LABEL = sys.argv[2]
 TICKERS = ['AAPL', 'MSFT', 'NVDA']
 GAP_SECONDS = 3.5
+DEFAULT_BASE = 'https://dcf-valuation-engine-staging.scswitzer.workers.dev'
+DEFAULT_LABEL = 'manual'
 
 
 def classify_cache(state):
@@ -31,10 +31,10 @@ def classify_cache(state):
     return "UNKNOWN"
 
 
-def load(ticker):
+def load(ticker, base=DEFAULT_BASE):
     body = json.dumps({'ticker': ticker}).encode()
     request = urllib.request.Request(
-        BASE + '/api/load/dcf', data=body, method='POST',
+        base + '/api/load/dcf', data=body, method='POST',
         headers={'Content-Type': 'application/json', 'Accept': 'application/json',
                  'User-Agent': 'Mozilla/5.0'})
     started = time.monotonic()
@@ -64,11 +64,11 @@ def summarize(rows):
     }
 
 
-def main():
+def main(base=DEFAULT_BASE, label=DEFAULT_LABEL):
     rows = []
     for ticker in TICKERS:
         for attempt in (1, 2):
-            row = load(ticker)
+            row = load(ticker, base)
             row['attempt'] = attempt
             rows.append(row)
             print(json.dumps(row), flush=True)
@@ -77,9 +77,10 @@ def main():
                                              'do not read attempt order as cold/warm evidence',
                                   'ticker': ticker}), flush=True)
             time.sleep(GAP_SECONDS)
-    print(json.dumps({'label': LABEL, 'base': BASE, 'rows': rows,
+    print(json.dumps({'label': label, 'base': base, 'rows': rows,
                       'by_cache_class': summarize(rows)}))
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1].rstrip('/') if len(sys.argv) > 1 else DEFAULT_BASE,
+         sys.argv[2] if len(sys.argv) > 2 else DEFAULT_LABEL)
