@@ -253,6 +253,148 @@
     "recurring_only_rate": 0.231,
     "discrete_pp": -38.4
    },
+   "reconciliation_2025": {
+    "filing": "abbv_fy2025_10k",
+    "period_end": "2025-12-31",
+    "statutory_rate": 0.21,
+    "reported_rate": 0.35834470213733516,
+    "components": [
+     {
+      "label": "Puerto Rico earnings differential",
+      "effect_pp": 21.6,
+      "recurring": true,
+      "note": "jurisdiction mix; varies with PR share"
+     },
+     {
+      "label": "Puerto Rico industrial development income",
+      "effect_pp": -45.3,
+      "recurring": false,
+      "note": "one-time benefit; pairs with elevated differential"
+     },
+     {
+      "label": "Other Puerto Rico provisions",
+      "effect_pp": -0.3,
+      "recurring": true,
+      "note": "routine PR true-ups"
+     },
+     {
+      "label": "Bermuda operations",
+      "effect_pp": 1.6,
+      "recurring": true,
+      "note": "jurisdiction mix"
+     },
+     {
+      "label": "Bermuda valuation allowance",
+      "effect_pp": 4.3,
+      "recurring": false,
+      "note": "loss DTA realizability; uncertain"
+     },
+     {
+      "label": "Other Bermuda",
+      "effect_pp": -0.2,
+      "recurring": true,
+      "note": "routine"
+     },
+     {
+      "label": "Ireland operations",
+      "effect_pp": -1.7,
+      "recurring": true,
+      "note": "jurisdiction mix"
+     },
+     {
+      "label": "Ireland NOL benefit",
+      "effect_pp": 1.5,
+      "recurring": true,
+      "note": "recognized loss benefit"
+     },
+     {
+      "label": "Other Ireland",
+      "effect_pp": -0.1,
+      "recurring": true,
+      "note": "routine"
+     },
+     {
+      "label": "Malta operations",
+      "effect_pp": -1.8,
+      "recurring": true,
+      "note": "jurisdiction mix"
+     },
+     {
+      "label": "Equity compensation",
+      "effect_pp": -1.9,
+      "recurring": true,
+      "note": "excess benefits"
+     },
+     {
+      "label": "Non-deductible expenses",
+      "effect_pp": 3.7,
+      "recurring": true,
+      "note": "deal and comp limits"
+     },
+     {
+      "label": "Other provision",
+      "effect_pp": 0.5,
+      "recurring": true,
+      "note": "routine"
+     },
+     {
+      "label": "Other provision true-up",
+      "effect_pp": 1.4,
+      "recurring": true,
+      "note": "routine"
+     },
+     {
+      "label": "GILTI inclusion",
+      "effect_pp": 16.9,
+      "recurring": false,
+      "note": "elevated foreign inclusion; corroborate structural level"
+     },
+     {
+      "label": "Branch operations",
+      "effect_pp": -2.3,
+      "recurring": true,
+      "note": "routine"
+     },
+     {
+      "label": "Other foreign",
+      "effect_pp": 1.5,
+      "recurring": true,
+      "note": "routine"
+     },
+     {
+      "label": "U.S. tax credits",
+      "effect_pp": -2.2,
+      "recurring": true,
+      "note": "R&D/incentive credits"
+     },
+     {
+      "label": "UTB change",
+      "effect_pp": 9.9,
+      "recurring": false,
+      "note": "uncertain-position reserve build"
+     },
+     {
+      "label": "Valuation allowance change",
+      "effect_pp": -1.4,
+      "recurring": false,
+      "note": "DTA realizability; uncertain"
+     },
+     {
+      "label": "Acquisition-related",
+      "effect_pp": 9.8,
+      "recurring": false,
+      "note": "deal costs"
+     },
+     {
+      "label": "Other, net",
+      "effect_pp": -0.7,
+      "recurring": false,
+      "note": "residual"
+     }
+    ],
+    "recurring_only_rate": 0.423,
+    "discrete_pp": -6.499999999999997
+   },
    "derived": {
     "nwc": [
      -10462.0,
@@ -272,7 +414,7 @@
    },
    "normalized_scenario": {
     "rate": 0.231,
-    "label": "FY2024 recurring-only bridge (21.0+7.6-5.4-1.2+1.1); FY2025 discrete noise cuts both ways"
+    "label": "FY2024 recurring-only bridge (21.0+7.6-5.4-1.2+1.1); FY2025 discrete items dominate both ways (-45.3 benefit vs +21.6/+16.9/+9.9/+9.8 charges), so no FY2025-based rate is stable"
    },
    "user_override": [
     0.25,
@@ -372,6 +514,11 @@
      "intrinsic": 285.8635626954607,
      "delta_vs_BASE": 14.325859587926288
     }
+   },
+   "fy2025_recurring_sensitivity": {
+    "adopted_flags": 0.423,
+    "pr_pair_discrete": 0.21,
+    "note": "discrete dominates both ways; neither FY2025 point is adopted"
    }
   },
   "AEP": {
@@ -439,6 +586,76 @@
     "recurring_only_rate": 0.07800000000000001,
     "discrete_pp": -9.1
    },
+   "reconciliation_2025": {
+    "filing": "aep_fy2025_10k",
+    "period_end": "2025-12-31",
+    "statutory_rate": 0.21,
+    "reported_rate": 0.03372549019607843,
+    "components": [
+     {
+      "label": "State and local, net",
+      "effect_pp": 0.81,
+      "recurring": true,
+      "note": "primarily Ohio local"
+     },
+     {
+      "label": "Production tax credits",
+      "effect_pp": -6.38,
+      "recurring": true,
+      "note": "earned as wind MWh produced; output varies"
+     },
+     {
+      "label": "Investment tax credit amortization",
+      "effect_pp": -0.08,
+      "recurring": true,
+      "note": "deferral methodology"
+     },
+     {
+      "label": "Other credits",
+      "effect_pp": -0.1,
+      "recurring": true,
+      "note": "routine credits"
+     },
+     {
+      "label": "UTB change",
+      "effect_pp": 0.08,
+      "recurring": true,
+      "note": "routine reserve true-up"
+     },
+     {
+      "label": "Origination flow-through reversal",
+      "effect_pp": 0.47,
+      "recurring": true,
+      "note": "regulator-required flow-through"
+     },
+     {
+      "label": "Tax reform excess ADIT reversal",
+      "effect_pp": -1.62,
+      "recurring": true,
+      "note": "TCJA excess returned via rates; declining"
+     },
+     {
+      "label": "Remeasurement of excess ADIT",
+      "effect_pp": -10.01,
+      "recurring": false,
+      "note": "Oklahoma + NOLC PLRs; discrete"
+     },
+     {
+      "label": "AFUDC equity",
+      "effect_pp": -1.07,
+      "recurring": true,
+      "note": "non-taxable equity allowance; non-cash"
+     },
+     {
+      "label": "Other",
+      "effect_pp": 0.29,
+      "recurring": true,
+      "note": "routine residual"
+     }
+    ],
+    "recurring_only_rate": 0.134,
+    "discrete_pp": -10.01
+   },
    "derived": {
     "nwc": [
      -510.90000000000055,
@@ -458,7 +675,7 @@
    },
    "normalized_scenario": {
     "rate": 0.078,
-    "label": "FY2024 recurring-only bridge; FY2025 recurring-equivalent 13.0% shows credit variability"
+    "label": "FY2024 recurring-only bridge; FY2025 recurring-equivalent 13.4% (3.37 reported + 10.01 discrete remeasurement) shows credit variability"
    },
    "user_override": [
     0.12,

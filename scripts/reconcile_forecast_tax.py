@@ -135,12 +135,69 @@ RECONCILIATIONS = {
             ("Other", -0.2, False, "residual"),
         ],
     },
+    # FY2025 corroboration: discrete items dominate in BOTH directions, so no
+    # single FY2025-based recurring rate is stable. The adopted scenario stays
+    # FY2024-based; FY2025 is encoded here to pin that claim, not to average.
+    # Filed pp from the FY2025 10-K (Exhibit 13, Income Taxes note, p.57).
+    "ABBV_2025": {
+        "statutory": 0.21,
+        "reported": 2364.0 / 6597.0,
+        "filing": "abbv_fy2025_10k",
+        "period_end": "2025-12-31",
+        "components": [
+            ("Puerto Rico earnings differential", 21.6, True, "jurisdiction mix; varies with PR share"),
+            ("Puerto Rico industrial development income", -45.3, False, "one-time benefit; pairs with elevated differential"),
+            ("Other Puerto Rico provisions", -0.3, True, "routine PR true-ups"),
+            ("Bermuda operations", 1.6, True, "jurisdiction mix"),
+            ("Bermuda valuation allowance", 4.3, False, "loss DTA realizability; uncertain"),
+            ("Other Bermuda", -0.2, True, "routine"),
+            ("Ireland operations", -1.7, True, "jurisdiction mix"),
+            ("Ireland NOL benefit", 1.5, True, "recognized loss benefit"),
+            ("Other Ireland", -0.1, True, "routine"),
+            ("Malta operations", -1.8, True, "jurisdiction mix"),
+            ("Equity compensation", -1.9, True, "excess benefits"),
+            ("Non-deductible expenses", 3.7, True, "deal and comp limits"),
+            ("Other provision", 0.5, True, "routine"),
+            ("Other provision true-up", 1.4, True, "routine"),
+            ("GILTI inclusion", 16.9, False, "elevated foreign inclusion; corroborate structural level"),
+            ("Branch operations", -2.3, True, "routine"),
+            ("Other foreign", 1.5, True, "routine"),
+            ("U.S. tax credits", -2.2, True, "R&D/incentive credits"),
+            ("UTB change", 9.9, False, "uncertain-position reserve build"),
+            ("Valuation allowance change", -1.4, False, "DTA realizability; uncertain"),
+            ("Acquisition-related", 9.8, False, "deal costs"),
+            ("Other, net", -0.7, False, "residual"),
+        ],
+    },
+    # AEP FY2025 (10-K p.210): reported 129/3825 = 3.37%. The ONLY discrete
+    # item is excess-ADIT remeasurement (-10.01pp); everything else recurs in
+    # kind (credits vary with output, but the mechanism recurs). So the
+    # recurring-equivalent is 3.37 + 10.01 = 13.38 ~= 13.4% -- NOT 13.0%.
+    # (An earlier draft wrote 13.0%; the filed bridge supports 13.4%.)
+    "AEP_2025": {
+        "statutory": 0.21,
+        "reported": 129.0 / 3825.0,
+        "filing": "aep_fy2025_10k",
+        "period_end": "2025-12-31",
+        "components": [
+            ("State and local, net", 0.81, True, "primarily Ohio local"),
+            ("Production tax credits", -6.38, True, "earned as wind MWh produced; output varies"),
+            ("Investment tax credit amortization", -0.08, True, "deferral methodology"),
+            ("Other credits", -0.10, True, "routine credits"),
+            ("UTB change", 0.08, True, "routine reserve true-up"),
+            ("Origination flow-through reversal", 0.47, True, "regulator-required flow-through"),
+            ("Tax reform excess ADIT reversal", -1.62, True, "TCJA excess returned via rates; declining"),
+            ("Remeasurement of excess ADIT", -10.01, False, "Oklahoma + NOLC PLRs; discrete"),
+            ("AFUDC equity", -1.07, True, "non-taxable equity allowance; non-cash"),
+            ("Other", 0.29, True, "routine residual"),
+        ],
+    },
 }
 
 # Normalized scenarios adopted explicitly for the frozen runs (evidence, not claims).
 SCENARIOS = {
-    "ABBV": {"rate": 0.231, "label": "FY2024 recurring-only bridge (21.0+7.6-5.4-1.2+1.1); FY2025 discrete noise cuts both ways"},
-    "AEP": {"rate": 0.078, "label": "FY2024 recurring-only bridge; FY2025 recurring-equivalent 13.0% shows credit variability"},
+    "ABBV": {"rate": 0.231, "label": "FY2024 recurring-only bridge (21.0+7.6-5.4-1.2+1.1); FY2025 discrete items dominate both ways (-45.3 benefit vs +21.6/+16.9/+9.9/+9.8 charges), so no FY2025-based rate is stable"},
+    "AEP": {"rate": 0.078, "label": "FY2024 recurring-only bridge; FY2025 recurring-equivalent 13.4% (3.37 reported + 10.01 discrete remeasurement) shows credit variability"},
 }
 USER_OVERRIDE = {"ABBV": [0.25] * 5, "AEP": [0.12] * 5}
 
@@ -233,21 +290,26 @@ def run_variant(ticker, data, tax_rates, basis):
     return variant
 
 
+def build_recon(key):
+    spec = RECONCILIATIONS[key]
+    return build_tax_reconciliation(
+        spec["statutory"],
+        [
+            {"label": label, "effect_pp": pp, "recurring": rec, "note": note}
+            for label, pp, rec, note in spec["components"]
+        ],
+        spec["reported"],
+        spec["filing"],
+        spec["period_end"],
+    )
+
+
 def main():
     out = {"sources": SOURCES, "histories": HISTORY, "companies": {}}
     for ticker in ("ABBV", "AEP"):
-        key = f"{ticker}_2024"
-        spec = RECONCILIATIONS[key]
-        recon = build_tax_reconciliation(
-            spec["statutory"],
-            [
-                {"label": label, "effect_pp": pp, "recurring": rec, "note": note}
-                for label, pp, rec, note in spec["components"]
-            ],
-            spec["reported"],
-            spec["filing"],
-            spec["period_end"],
-        )
+        spec = RECONCILIATIONS[f"{ticker}_2024"]
+        recon = build_recon(f"{ticker}_2024")
+        recon25 = build_recon(f"{ticker}_2025")
         data, derived = build_data(ticker)
         etr = derived["etr"]
         # OLD behavior: negative history invalidates the statement.
@@ -281,13 +343,29 @@ def main():
         for name, variant in variants.items():
             if variant.get("intrinsic") is not None and base_iv is not None:
                 variant["delta_vs_BASE"] = variant["intrinsic"] - base_iv
-        out["companies"][ticker] = {
+        company = {
             "reconciliation": recon,
+            "reconciliation_2025": recon25,
             "derived": derived,
             "normalized_scenario": scen,
             "user_override": USER_OVERRIDE[ticker],
             "variants": variants,
         }
+        if ticker == "ABBV":
+            # Sensitivity: FY2025 recurring-only under the adopted flags, and
+            # with the whole PR pair treated as one-time (differential moved
+            # to discrete alongside the industrial benefit).
+            pr_pair = sum(
+                c["effect_pp"]
+                for c in recon25["components"]
+                if "Puerto Rico" in c["label"] and c["recurring"]
+            )
+            company["fy2025_recurring_sensitivity"] = {
+                "adopted_flags": recon25["recurring_only_rate"],
+                "pr_pair_discrete": recon25["recurring_only_rate"] - pr_pair / 100,
+                "note": "discrete dominates both ways; neither FY2025 point is adopted",
+            }
+        out["companies"][ticker] = company
         fmt = lambda v: f"{v:.2f}" if v is not None else "n/a (template refusal)"
         b, n, u = (variants[k]["intrinsic"] for k in ("BASE_latest_reported", "NORM_recurring_only", "USER_override"))
         print(f"{ticker}: OLD refused ({any(not 0 <= t <= 1 for t in etr)}); BASE {fmt(b)} NORM {fmt(n)} USER {fmt(u)}")

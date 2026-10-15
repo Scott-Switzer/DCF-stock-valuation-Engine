@@ -157,7 +157,11 @@ def build_brief(doc, raw_assumptions=None):
         }
     costs = (d.get("source") or {}).get("capital_costs", {}) or {}
     wacc = costs.get("wacc") or 0.065
-    assumptions, custom = coerce_dcf_assumptions(d, raw_assumptions, wacc)
+    from compare import wacc_basis_note
+
+    assumptions, custom = coerce_dcf_assumptions(
+        d, raw_assumptions, wacc, costs=costs
+    )
 
     from app import evaluate
 
@@ -217,6 +221,15 @@ def build_brief(doc, raw_assumptions=None):
             "ebit_margins": margins,
             "ebit_margin_mean": sum(margins) / len(margins) if margins else None,
             "wacc": result["wacc"],
+            "wacc_basis": wacc_basis_note(d, assumptions, costs, "recalculated"),
+            "forecast_tax_rates": list(assumptions.tax_rates or []),
+            "forecast_tax_basis": ((d.get("source") or {}).get("tax_policy") or {}).get(
+                "selected", {}
+            ).get("basis"),
+            "reported_tax_rates": [
+                {"period_end": r.get("period_end"), "rate": r.get("tax_rate")}
+                for r in historical
+            ],
             "terminal_growth_rate": assumptions.terminal_growth_rate,
             "custom": custom,
         },

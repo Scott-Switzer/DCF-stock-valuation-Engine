@@ -222,8 +222,14 @@ def load_packet(ticker, asof=None, *, deadline=None):
     return _transport_receipt(packet, "DIRECT_R2", service_state, started)
 
 
-def prefer_ppe(document, ticker, asof, *, deadline=None, packet=_UNSET, packet_error=None):
-    """Retain an explicit baseline when the public packet cannot be used."""
+def prefer_ppe(document, ticker, asof, *, deadline=None, packet=_UNSET, packet_error=None,
+               tax_override=None, tax_scenario=None):
+    """Retain an explicit baseline when the public packet cannot be used.
+
+    ``tax_override``/``tax_scenario`` select an explicit forecast policy
+    (tax_policy) that the merged candidate must satisfy; the selection is
+    recorded on the candidate without mutating its reported history.
+    """
     from ppe_packets import apply_packet
 
     try:
@@ -237,13 +243,28 @@ def prefer_ppe(document, ticker, asof, *, deadline=None, packet=_UNSET, packet_e
 
             try:
                 parse_document(candidate)
-                # Reported history may be signed, but the baseline run still
-                # needs a resolvable forecast tax assumption (tax_policy).
+                # Reported history may be signed, but the run still needs a
+                # resolvable forecast tax assumption: the latest default or
+                # the caller's explicit policy (tax_policy).
                 from tax_policy import TaxPolicyError, resolve_forecast_tax
 
-                resolve_forecast_tax(
-                    [row["tax_rate"] for row in candidate["historical"]]
+                resolved = resolve_forecast_tax(
+                    [row["tax_rate"] for row in candidate["historical"]],
+                    user_override=tax_override,
+                    scenario=tax_scenario,
                 )
+                candidate["source"]["tax_policy"] = {
+                    "reported": [
+                        {"period_end": row.get("period_end"), "rate": row.get("tax_rate")}
+                        for row in candidate["historical"]
+                    ],
+                    "selected": {
+                        "basis": resolved["basis"],
+                        "rates": resolved["rates"],
+                        "evidence": resolved["evidence"],
+                    },
+                    "explicit": tax_override is not None or tax_scenario is not None,
+                }
             except (ValueError, TaxPolicyError, KeyError, TypeError):
                 raise ProviderError(
                     "PPE fields do not meet the valuation model's input requirements."

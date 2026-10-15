@@ -241,6 +241,10 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc
             da = v("DepreciationAndAmortization")
         pretax, provision = v("PretaxIncome", True), v("TaxProvision", True)
         tax_rate = provision / pretax if provision is not None and pretax not in {None, 0} else None
+        # The filed ratio is retained signed as its own observation, even
+        # when the effective assumption below falls back to a provider
+        # convention. Never silently replaced.
+        reported_tax_rate = tax_rate
         tax_provenance = {
             "derived_from": ["annualTaxProvision", "annualPretaxIncome"],
             "period_end": end,
@@ -278,6 +282,7 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc
             ),
             "book_value": v("StockholdersEquity"),
             "tax_rate": tax_rate,
+            "reported_tax_rate": reported_tax_rate,
             "provenance": {m: p for (d, m), (_, p) in facts.items() if d == end},
         }
         row["provenance"]["tax_rate"] = tax_provenance
@@ -443,6 +448,11 @@ def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc
         bridge_provenance={m: p for (d, m), (_, p) in facts.items() if d == end},
         market_observation={"price": price, "currency": "USD", "as_of": price_day},
     )
+    # Reported-vs-forecast tax position: the signed filed ratio rides along
+    # even where the effective rate uses the labeled provider fallback.
+    from tax_policy import document_tax_policy
+
+    doc["source"]["tax_policy"] = document_tax_policy(doc["historical"])
     for key, value in costs.items():
         if isinstance(value, (int, float)):
             finite(value, key)
