@@ -9,11 +9,15 @@ consumer's recomputation ever disagree.
 Every expected value below is the reported filing value for the 2026 valuation date.
 The source concept is named in a comment wherever a constant is asserted.
 """
+import asyncio
+import contextlib
 from datetime import date
 from decimal import Decimal
+import hashlib
 import json
 from pathlib import Path
 import sys
+from urllib.parse import urlencode
 
 import pytest
 
@@ -36,6 +40,17 @@ from equity_claims_provider import (  # noqa: E402
     value_per_share,
     verify_claims,
 )
+import zion_equity_claims_service as zion_service  # noqa: E402
+# The service module translates every claims-contract failure into the transport error
+# the DCF app already maps to HTTP 503, so the refusal tests assert on that type.
+from dcf_loader import ProviderError as ServiceError  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def scoped_service_credential(monkeypatch):
+    """The staging-scoped credential this deployment is configured with."""
+    monkeypatch.setenv('ZION_SERVICE_TOKEN', 'scoped-service-token')
+    monkeypatch.delenv('ZION_EQUITY_CLAIMS_CALLER', raising=False)
 
 ASOF = date(2026, 10, 14)
 ASOF_TEXT = '2026-10-14'
@@ -318,8 +333,10 @@ def test_service_credential_transport_replaces_the_production_bearer():
     assert call['headers']['x-zion-service-token'] == 'scoped-service-token'
     assert call['headers']['x-zion-service-caller'] == SERVICE_CALLER == 'dcf-valuation-engine'
     assert 'Authorization' not in call['headers'], 'a service credential must not send the private bearer'
-    assert call['params'] == dict(cik=GOOGL, as_of=ASOF_TEXT, recipient='human_research',
-                                  expected_release_id=RELEASE)
+    # A date-only cutoff is not a valid availability instant; the route would answer
+    # INVALID_AVAILABILITY_CUTOFF before reading any archive.
+    assert call['params'] == dict(cik=GOOGL, as_of=ASOF_TEXT + 'T00:00:00Z',
+                                  recipient='human_research', expected_release_id=RELEASE)
 
     # A release pin that is not what the source served is refused, and neither transport
     # nor caller mismatch can silently fall back to an unpinned read.
@@ -348,3 +365,124 @@ def test_tampered_evidence_is_refused_rather_than_reconciled():
     payload['claims']['noncontrolling_interests']['value_decimal'] = None
     with pytest.raises(ProviderError):
         verify_claims(payload)
+
+
+# --- the DCF Worker's own service-binding transport ----------------------------------
+#
+# `dispatch` is the only step that needs a Worker runtime, so the transport, the scoped
+# credential headers, the contract verification and the bridge arithmetic below run as
+# written in production. A binding double stands in for `env.ZION_FINANCIAL_QUERY`.
+
+
+class _BindingResponse:
+    status = 200
+
+    def __init__(self, payload):
+        self.payload = payload
+
+    async def text(self):
+        return json.dumps(self.payload)
+
+
+class _Binding:
+    """Stands in for the JS Fetcher on the other side of the service binding."""
+
+    def __init__(self, payload):
+        self.payload = payload
+        self.requests = []
+
+    async def fetch(self, target):
+        self.requests.append(target)
+        return _BindingResponse(self.payload)
+
+
+class _Transport(zion_service.ServiceBindingHTTP):
+    async def dispatch(self, target, headers):
+        self.headers = headers
+        return await self.binding.fetch(target)
+
+
+@contextlib.contextmanager
+def worker_runtime():
+    """The Worker's async-to-sync bridge, without the Pyodide runtime."""
+    original = zion_service.sync
+    zion_service.sync = lambda awaitable: asyncio.run(awaitable)
+    try:
+        yield
+    finally:
+        zion_service.sync = original
+
+
+def bridge_over_binding(payload, **overrides):
+    binding = _Binding(payload)
+    transport = _Transport(binding)
+    options = dict(cik=GOOGL, enterprise_value=GOOGL_ENTERPRISE_VALUE, http=transport,
+                   expected_release_id=RELEASE, preferred_terms=TERMS)
+    options.update(overrides)
+    with worker_runtime():
+        result = zion_service.bridge_scenario('GOOGL', ASOF_TEXT, **options)
+    return result, binding, transport
+
+
+def test_service_binding_carries_the_verified_contract_to_a_per_share_scenario():
+    result, binding, transport = bridge_over_binding(contract(GOOGL, preferred_terms=TERMS))
+
+    # One request, over the binding, with the scoped service credential and no bearer.
+    assert len(binding.requests) == 1
+    assert binding.requests[0] == 'https://zion.internal/private/v1/equity-claims?' + urlencode(
+        dict(cik=GOOGL, as_of=ASOF_TEXT + 'T00:00:00Z', recipient='human_research',
+             expected_release_id=RELEASE))
+    assert transport.headers['x-zion-service-token'] == 'scoped-service-token'
+    assert transport.headers['x-zion-service-caller'] == SERVICE_CALLER
+    assert 'Authorization' not in transport.headers
+
+    # The consumer recomputed every digest over the real filing-backed contract, and the
+    # release pin it recorded is the one the source actually served.
+    assert result['attestation']['transport'] == 'CLOUDFLARE_SERVICE_BINDING'
+    assert result['attestation']['release_id'] == RELEASE
+    assert result['attestation']['member_sha256'] == MEMBER
+    assert result['attestation']['digest_proves_authenticity'] is False
+    assert result['attestation']['claim_evidence_digests'] == 'RECOMPUTED_BY_CONSUMER'
+    assert result['cik'] == GOOGL and result['valuation_date'] == ASOF_TEXT
+    assert result['source']['release_id'] == RELEASE
+
+    # The binding path produces exactly the scenario the direct contract produces.
+    direct = value_per_share(GOOGL_ENTERPRISE_VALUE, verify_claims(contract(GOOGL, preferred_terms=TERMS)),
+                             preferred_terms=TERMS, scenario='AS_CONVERTED_MAX_RATE')
+    assert result['primary'] == direct['primary']
+    assert result['scenarios'] == direct['scenarios']
+    assert result['term_consistency']['status'] == 'CONSISTENT'
+    assert result['unresolved'] == direct['unresolved']
+
+
+def test_service_binding_refuses_a_substituted_release_before_bridging():
+    other = contract(GOOGL)
+    other['release_id'] = 'f' * 64
+    with pytest.raises(ServiceError, match='release mismatch'):
+        bridge_over_binding(other)
+
+
+def test_service_binding_refuses_a_payload_whose_claims_were_edited_in_flight():
+    tampered = contract(GOOGL)
+    tampered['claims']['finance_leases']['value_decimal'] = '2590000001'
+    with pytest.raises(ServiceError, match='evidence digest mismatch'):
+        bridge_over_binding(tampered)
+
+
+def test_service_binding_refuses_a_claim_that_stops_being_certified():
+    # Demoting a certified claim to an assumption cannot silently become a
+    # zero-or-ignored bridge input: the aggregate block stops agreeing with it.
+    demoted = contract(GOOGL, preferred_terms=TERMS)
+    preferred = demoted['claims']['preferred_equity']
+    preferred['evidence_state'] = 'ASSUMED'
+    reseal_claim(preferred)
+    with pytest.raises(ServiceError, match='aggregate claim block'):
+        bridge_over_binding(demoted)
+
+
+def reseal_claim(claim):
+    claim.pop('evidence_digest', None)
+    claim['evidence_digest'] = hashlib.sha256(
+        json.dumps({key: value for key, value in claim.items()}, sort_keys=True,
+                   separators=(',', ':'), ensure_ascii=False).encode()).hexdigest()
+    return claim

@@ -524,7 +524,10 @@ def test_load_equity_claims_uses_the_scoped_transport_and_pins_the_served_identi
                                 token='owned-token')
     assert http.calls[0]['url'] == 'https://zion.example' + CLAIMS_PATH
     assert http.calls[0]['headers']['Authorization'] == 'Bearer owned-token'
-    assert http.calls[0]['params'] == {'cik': CIK, 'as_of': ASOF, 'recipient': 'human_research'}
+    # The route parses `as_of` as a timezone-aware RFC3339 instant; a date-only cutoff is
+    # refused as an invalid availability cutoff, so the consumer must send an instant.
+    assert http.calls[0]['params'] == {'cik': CIK, 'as_of': ASOF + 'T00:00:00Z',
+                                       'recipient': 'human_research'}
     assert loaded['source']['ticker'] == 'GOOGL'
     assert loaded['source']['company_label'] == 'Alphabet Inc.'
     assert loaded['source']['identity_status'] == 'EXPLICIT_USER_CIK_NOT_TICKER_CERTIFIED'

@@ -21,7 +21,11 @@ import json
 import re
 
 from enterprise_valuation import equity_bridge
-from scripts.public_sec_equity_bridge import preferred_terms_scenarios
+
+try:  # A Workers bundle is flat; the repository keeps the helper under scripts/.
+    from public_sec_equity_bridge import preferred_terms_scenarios
+except ImportError:  # pragma: no cover - exercised by the bundled-runtime test
+    from scripts.public_sec_equity_bridge import preferred_terms_scenarios
 
 ADAPTER_VERSION = 'zion-equity-claims-v1'
 CLAIMS_PATH = '/private/v1/equity-claims'
@@ -215,7 +219,10 @@ def load_equity_claims(ticker, asof, http, *, cik, base, token=None, service_tok
         fail('valuation date must be an ISO date string')
     asof_date = date.fromisoformat(asof)
     headers = claims_headers(token=token, service_token=service_token, caller=caller)
-    params = dict(cik=cik, as_of=asof_date.isoformat(), recipient='human_research')
+    # The route parses `as_of` as a timezone-aware RFC3339 instant, exactly as the native
+    # history consumer does; a date-only cutoff is refused as an invalid availability
+    # cutoff before any source archive is read.
+    params = dict(cik=cik, as_of=f'{asof_date.isoformat()}T00:00:00Z', recipient='human_research')
     if expected_release_id:
         params['expected_release_id'] = expected_release_id
     page = http.get(base.rstrip('/') + CLAIMS_PATH, headers=headers, params=dict(params))

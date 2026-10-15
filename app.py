@@ -384,7 +384,7 @@ def assign_library_identity():
     ensure_identity()
 
 
-COOKIE_WRITE_PATHS = ("/api/research", "/api/templates", "/api/share", "/api/watchlist", "/api/account", "/account")
+COOKIE_WRITE_PATHS = ("/api/research", "/api/templates", "/api/share", "/api/watchlist", "/api/account", "/account", "/api/equity-claims")
 
 
 @app.before_request
@@ -502,6 +502,7 @@ def limit_expensive_work():
                 "/api/account",
                 "/account/",
                 "/export/",
+                "/api/equity-claims",
             )
         )
     ):
@@ -1865,6 +1866,10 @@ register_suite(app)
 from research import register_research
 
 register_research(app)
+
+from zion_equity_claims_service import register_equity_claims
+
+register_equity_claims(app)
 
 
 if __name__ == "__main__":
