@@ -41,7 +41,9 @@ ASOF = date(2026, 10, 14)
 ASOF_TEXT = '2026-10-14'
 RELEASE = 'b' * 64
 MEMBER = 'c' * 64
-GOOGL, AAPL, MSFT = '0001652044', '0000320193', '0001045810'
+# CIK 0001045810 is NVIDIA CORP, not Microsoft. Microsoft is CIK 0000789019; the identity is
+# asserted against the downloaded document below so a mislabelled file can never pass silently.
+GOOGL, AAPL, MSFT = '0001652044', '0000320193', '0000789019'
 
 # Offering terms are a caller-supplied document selection, never an XBRL fact. They match
 # the terms already used by tests/test_public_sec_equity_bridge.py.
@@ -57,7 +59,9 @@ GOOGL_ENTERPRISE_VALUE = 2_500_000_000_000.0
 
 
 def facts_of(cik):
-    return json.loads((FACTS / (cik + '.json')).read_bytes())['facts']
+    document = json.loads((FACTS / (cik + '.json')).read_bytes())
+    assert str(document['cik']).zfill(10) == cik, (cik, document.get('entityName'))
+    return document['facts']
 
 
 def contract(cik, *, preferred_terms=None):
@@ -192,41 +196,37 @@ def test_apple_and_microsoft_absent_claims_are_reviewed_not_assumed():
         assert noncontrolling['permitted_for_valuation'] is not False
         assert 'not evidence of a zero claim' in ' '.join(noncontrolling['notes'])
         preferred = claims['preferred_equity']
+        # Neither Apple nor Microsoft files a preferred carrying amount, so the claim is reviewed
+        # absent for both; a filed zero would be REPORTED instead, which the upstream claim tests pin.
+        assert preferred['evidence_state'] == 'REVIEWED_ABSENT', cik
+        assert preferred['value_decimal'] is None
+        assert preferred['verified_absent'] is True
+        assert 'not evidence of a zero claim' in ' '.join(preferred['notes'])
         if cik == MSFT:
-            # us-gaap:PreferredStockValueOutstanding is filed as zero, so the carrying amount is a
-            # reported zero rather than an absence; a filed zero is not a missing tag.
-            assert preferred['evidence_state'] == 'REPORTED'
-            assert preferred['value_decimal'] == '0'
-            assert amount(preferred) == Decimal('0')
-        else:
-            # Apple files no preferred equity concept at all, so the claim is reviewed absent.
-            assert preferred['evidence_state'] == 'REVIEWED_ABSENT'
-            assert preferred['value_decimal'] is None
-            assert preferred['verified_absent'] is True
-            assert 'not evidence of a zero claim' in ' '.join(preferred['notes'])
-        if cik == MSFT:
-            # Microsoft reports operating lease liabilities but no finance lease liability.
-            assert claims['finance_leases']['evidence_state'] == 'REVIEWED_ABSENT'
+            # us-gaap:FinanceLeaseLiability 66,594,000,000 at 2026-06-30 in the fiscal 2026 10-K.
+            assert amount(claims['finance_leases']) == Decimal('66594000000')
         else:
             # us-gaap:FinanceLeaseLiability 1,230,000,000 at 2025-09-27, still inside the age cap.
             assert amount(claims['finance_leases']) == Decimal('1230000000')
 
 
-def test_debt_claims_never_double_count_a_repeated_current_total():
+def test_debt_claims_agree_with_the_reported_total_without_netting_it():
     microsoft = verify_claims(contract(MSFT))['claims']['debt']
-    # us-gaap:DebtCurrent and us-gaap:LongTermDebtCurrent are both 1,000,000,000 at 2026-07-26;
-    # us-gaap:LongTermDebtNoncurrent is 32,366,000,000, so the claim is 33,366,000,000 once.
+    # us-gaap:LongTermDebtCurrent 9,227,000,000 at 2026-06-30 plus
+    # us-gaap:LongTermDebtNoncurrent 31,067,000,000; the reported us-gaap:LongTermDebt total of
+    # 40,294,000,000 equals that sum exactly, so no disagreement is recorded.
     assert microsoft['evidence_state'] == 'REPORTED'
-    assert amount(microsoft) == Decimal('33366000000')
-    assert microsoft['current_decimal'] == '1000000000'
-    assert 'us-gaap:LongTermDebtCurrent' in microsoft['potential_duplicate_concepts']
+    assert amount(microsoft) == Decimal('40294000000')
+    assert microsoft['current_decimal'] == '9227000000'
+    assert microsoft['noncurrent_decimal'] == '31067000000'
+    assert not microsoft['notes']
+    assert microsoft['potential_duplicate_concepts'] == []
     apple = verify_claims(contract(AAPL))['claims']['debt']
     # us-gaap:LongTermDebtCurrent 11,007,000,000 + us-gaap:CommercialPaper 1,997,000,000 +
     # us-gaap:LongTermDebtNoncurrent 71,340,000,000; the combined us-gaap:LongTermDebt total of
-    # 82,300,000,000 is 47,000,000 below the component sum and is reported, not netted.
+    # 82,300,000,000 is 47,000,000 below the long-term component sum and is reported, not netted.
     assert amount(apple) == Decimal('84344000000')
-    assert 'us-gaap:DebtCurrent' in {source['concept'] for source in microsoft['sources']}
-    assert any('differs from the reported components by ' in note for note in apple['notes'])
+    assert any('differs from the reported components by -47000000' in note for note in apple['notes'])
 
 
 def test_share_count_basis_matches_each_filers_disclosure():
@@ -236,19 +236,23 @@ def test_share_count_basis_matches_each_filers_disclosure():
     assert amount(apple) == Decimal('14594180000')
     microsoft = verify_claims(contract(MSFT))['claims']['common_shares']
     # dei:EntityCommonStockSharesOutstanding 24,100,000,000 at 2026-08-21 (cover page)
+    # dei:EntityCommonStockSharesOutstanding 7,425,545,491 at 2026-07-23 (cover page)
     assert microsoft['basis'] == 'COVER_PAGE_DEI'
-    assert amount(microsoft) == Decimal('24100000000')
+    assert amount(microsoft) == Decimal('7425545491')
     assert verify_claims(contract(GOOGL))['claims']['common_shares']['basis'] == 'BALANCE_SHEET_ALL_CLASSES'
 
 
-def test_microsoft_excludes_equity_securities_from_nonoperating_assets():
+def test_microsoft_nonoperating_assets_use_only_the_concepts_it_reports():
     claims = verify_claims(contract(MSFT))['claims']
-    # us-gaap:CashAndCashEquivalentsAtCarryingValue 22,443,000,000 plus
-    # us-gaap:MarketableSecuritiesCurrent 49,122,000,000; us-gaap:EquitySecuritiesFvNi 42,783,000,000
-    # is excluded by policy and recorded as excluded rather than silently dropped.
-    assert amount(claims['nonoperating_assets']) == Decimal('71565000000')
-    assert 'us-gaap:EquitySecuritiesFvNi' in claims['nonoperating_assets']['excluded_concepts']
-    assert 'us-gaap:EquitySecuritiesFvNi' in ' '.join(claims['nonoperating_assets']['notes'])
+    # us-gaap:CashAndCashEquivalentsAtCarryingValue 20,935,000,000 plus
+    # us-gaap:ShortTermInvestments 55,908,000,000 at 2026-06-30. Microsoft reports no marketable
+    # securities concept and no long-term investment concept in the eligible window, so nothing is
+    # invented and nothing is silently dropped.
+    assert amount(claims['nonoperating_assets']) == Decimal('76843000000')
+    assert claims['nonoperating_assets']['excluded_concepts'] == ['us-gaap:LongTermInvestments']
+    assert 'us-gaap:LongTermInvestments' in ' '.join(claims['nonoperating_assets']['notes'])
+    assert {source['concept'] for source in claims['nonoperating_assets']['sources']} == {
+        'us-gaap:CashAndCashEquivalentsAtCarryingValue', 'us-gaap:ShortTermInvestments'}
 
 
 def test_end_to_end_bridge_matches_independent_decimal_arithmetic():

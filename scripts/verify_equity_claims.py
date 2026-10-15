@@ -29,9 +29,11 @@ from equity_claims_provider import (  # noqa: E402
     verify_claims,
 )
 
+# CIK 0001045810 is NVIDIA CORP; Microsoft is CIK 0000789019. Each document's own cik is
+# checked against this table below, so a mislabelled facts file fails instead of being valued.
 COMPANIES = (
     ('AAPL', '0000320193'),
-    ('MSFT', '0001045810'),
+    ('MSFT', '0000789019'),
     ('GOOGL', '0001652044'),
 )
 DEFAULT_ZION_SRC = '/Users/scottthomasswitzer/Documents/zion-valuation-service/deploy/cloudflare-query/src'
@@ -110,6 +112,11 @@ def main():
             failures.append(dict(ticker=ticker, reason='MISSING_COMPANY_FACTS',
                                  path=str(args.facts_dir)))
         document = json.loads(facts_path.read_bytes())
+        if str(document.get('cik')).zfill(10) != cik:
+            failures.append(dict(ticker=ticker, reason='COMPANY_IDENTITY_MISMATCH',
+                                 expected_cik=cik, document_cik=document.get('cik'),
+                                 entity_name=document.get('entityName')))
+            continue
         page = contract(cik, document, valuation_date, terms=terms if ticker == 'GOOGL' else None)
         transport = FixtureTransport(page)
         try:
