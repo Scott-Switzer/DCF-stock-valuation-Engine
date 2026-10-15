@@ -42,8 +42,14 @@ def _digest(bundle):
 
 
 def load_cached_method(method, ticker, asof=None, equity_risk_premium=0.05,
-                       credit_spread=0.015, *, store=None, loader=None, clock=time.time):
-    """Cache only default automatic loads. Never cache user snapshots or valuations."""
+                       credit_spread=0.015, *, store=None, loader=None, clock=time.time,
+                       tax_override=None, tax_scenario=None):
+    """Cache only default automatic loads. Never cache user snapshots or valuations.
+
+    An explicit forecast-tax selection bypasses the shared assembly cache
+    entirely (no read, no write): user-selected assumptions must never be
+    served under, or stored at, the ordinary ticker/date key.
+    """
     from auto_loading import load_method
     from flask import current_app, has_request_context
     loader = loader or load_method
@@ -51,6 +57,12 @@ def load_cached_method(method, ticker, asof=None, equity_risk_premium=0.05,
     if method not in {'dcf', 'ddm', 'relative'}:
         raise ValueError('Choose DCF, DDM or relative valuation.')
     args = (method, ticker, asof, equity_risk_premium, credit_spread)
+    if tax_override is not None or tax_scenario is not None:
+        result = loader(*args, tax_override=tax_override, tax_scenario=tax_scenario)
+        result.setdefault('load_summary', {})['assembly_cache'] = {
+            'state': 'BYPASSED', 'reason': 'explicit forecast-tax selection is never shared-cached',
+        }
+        return result
     if equity_risk_premium != 0.05 or credit_spread != 0.015:
         return loader(*args)
     if store is None:

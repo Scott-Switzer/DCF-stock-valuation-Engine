@@ -287,6 +287,103 @@ def test_brief_surfaces_tax_and_wacc_basis():
     assert "wacc_basis" in assumptions and assumptions["wacc_basis"]
 
 
+def test_api_tax_selection_bypasses_shared_cache(monkeypatch):
+    from app import app
+    import auto_loading
+
+    seen = {}
+
+    def fake_loader(method, ticker, asof=None, *args, **kwargs):
+        seen.update(kwargs)
+        return {
+            "financials": {"company": {"ticker": ticker}},
+            "form": {},
+            "load_summary": {},
+        }
+
+    monkeypatch.setattr(auto_loading, "load_method", fake_loader)
+    client = app.test_client()
+    scenario = {
+        "rates": [0.231] * 5,
+        "evidence": {"filing": "f", "period_end": "2024-12-31"},
+    }
+    response = client.post(
+        "/api/load/dcf", json={"ticker": "ABBV", "tax_scenario": scenario}
+    )
+    assert response.status_code == 200, response.get_json()
+    assert seen.get("tax_scenario") == scenario
+    assert response.get_json()["load_summary"]["assembly_cache"]["state"] == "BYPASSED"
+    # Malformed selections are 400s, never cached or loaded.
+    bad = client.post(
+        "/api/load/dcf", json={"ticker": "ABBV", "tax_override": [0.25] * 4}
+    )
+    assert bad.status_code == 400
+    bad2 = client.post(
+        "/api/load/dcf",
+        json={"ticker": "ABBV", "tax_scenario": {"rates": [0.2] * 5}},
+    )
+    assert bad2.status_code == 400
+
+
+def test_scenario_verification_labels_citation_quality():
+    from tax_policy import document_tax_policy
+
+    rows = [
+        {"period_end": "2024-12-31", "tax_rate": -0.153,
+         "provenance": {"tax_rate": {"accession": "0001551152-25-000020"}}},
+        {"period_end": "2025-12-31", "tax_rate": 0.358,
+         "provenance": {"tax_rate": {"accession": "0001551152-26-000007"}}},
+    ]
+    matched = document_tax_policy(
+        rows,
+        scenario={
+            "rates": [0.231] * 5,
+            "evidence": {
+                "filing": "abbv_fy2024_10k",
+                "period_end": "2024-12-31",
+                "accession": "0001551152-25-000020",
+            },
+        },
+    )
+    assert matched["selected"]["evidence"]["verification"] == "packet_accession_matched"
+    # An arbitrary filing string with no accession match stays unverified.
+    cited = document_tax_policy(
+        rows,
+        scenario={
+            "rates": [0.231] * 5,
+            "evidence": {"filing": "someone-says-so", "period_end": "2024-12-31"},
+        },
+    )
+    assert cited["selected"]["evidence"]["verification"] == "unverified_citation"
+    assert cited["selected"]["basis"] == "normalized_scenario"
+    override = document_tax_policy(rows, user_override=[0.25] * 5)
+    assert override["selected"]["evidence"]["verification"] == "user_assumption"
+    default = document_tax_policy(rows[1:])
+    assert default["selected"]["evidence"]["verification"] == "not_applicable_default"
+
+
+def test_equal_wacc_under_both_selected_regimes():
+    from compare import coerce_dcf_assumptions, wacc_basis_note
+
+    doc = _frozen_doc()
+    costs = doc["source"]["capital_costs"]
+    loaded = costs["wacc"]
+    recalc, _ = coerce_dcf_assumptions(doc, None, loaded, costs=costs)
+    fixed, _ = coerce_dcf_assumptions(
+        doc, {"wacc_mode": "fixed"}, loaded, costs=costs, wacc_mode="recalculated"
+    )
+    # Same numbers, different explicitly selected regimes.
+    assert recalc.wacc_override == pytest.approx(fixed.wacc_override)
+    assert recalc.wacc_mode == "recalculated" and fixed.wacc_mode == "fixed"
+    assert "Recalculated" in wacc_basis_note(doc, recalc, costs, "recalculated")
+    assert "Fixed-WACC" in wacc_basis_note(doc, fixed, costs, "fixed")
+    # The mode survives an assumptions round-trip (saves/exports/reloads).
+    from app import assumptions_from_json
+    from dataclasses import asdict
+
+    assert assumptions_from_json(asdict(fixed)).wacc_mode == "fixed"
+
+
 def _workspace_doc():
     doc = _frozen_doc()
     doc.update(
@@ -319,9 +416,34 @@ def test_workspace_recomputes_stale_wacc_on_tax_edit():
     updated, assumptions = form_payload(form)
     assert assumptions.wacc_override != pytest.approx(costs["wacc"])
     assert any("recalculated" in change for change in updated["source"]["manual_overrides"])
-    # A manually edited WACC is kept as the user's fixed rate.
+    # Fixed mode holds the entered WACC explicitly (the regime is chosen,
+    # never inferred from the number).
     form2 = default_form(doc)
     form2["wacc"] = costs["wacc"] * 100 + 1.0
+    form2["wacc_mode"] = "fixed"
     updated2, assumptions2 = form_payload(form2)
     assert assumptions2.wacc_override == pytest.approx(costs["wacc"] + 0.01)
+    assert assumptions2.wacc_mode == "fixed"
     assert any("fixed" in change for change in updated2["source"]["manual_overrides"])
+    # Recalculated mode recomputes even when the WACC field was edited.
+    form3 = default_form(doc)
+    form3["wacc"] = costs["wacc"] * 100 + 1.0
+    form3["wacc_mode"] = "recalculated"
+    updated3, assumptions3 = form_payload(form3)
+    assert assumptions3.wacc_override == pytest.approx(costs["wacc"])
+    assert any("recalculated" in change for change in updated3["source"]["manual_overrides"])
+    # A separate shield override beats the forecast tax for the debt shield.
+    form4 = default_form(doc)
+    form4["shield_override"] = 15.0
+    form4["wacc_mode"] = "recalculated"
+    updated4, assumptions4 = form_payload(form4)
+    assert assumptions4.interest_tax_shield_rate == pytest.approx(0.15)
+    from compare import recalculated_wacc
+
+    assert assumptions4.wacc_override == pytest.approx(
+        recalculated_wacc(costs, 0.15)
+    )
+    with pytest.raises(ValueError, match="WACC mode"):
+        bad = default_form(doc)
+        bad["wacc_mode"] = "inferred"
+        form_payload(bad)
