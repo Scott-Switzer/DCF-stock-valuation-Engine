@@ -83,6 +83,81 @@ def eligibility_gate(packet, ticker, asof):
     return {"eligible": not reasons, "reasons": reasons, "coverage": coverage}
 
 
+READINESS_STATES = (
+    "PACKET_BUILT",
+    "INPUTS_COMPLETE",
+    "POLICY_VALID",
+    "CAPITAL_COSTS_AVAILABLE",
+    "DCF_EVALUABLE",
+)
+
+
+def valuation_readiness(packet, ticker, asof, preferred_cost=None):
+    """Distinguish packet construction from actual valuation readiness.
+
+    A gate-eligible (READY) packet is not a working valuation: the DCF also
+    needs published accounting-policy evidence and priced capital claims.
+    Pure function: no network. Returns ordered ``states`` (each met/blocked
+    with a reason) plus ``valuation_ready``, which is True only when every
+    data-determined state is met. Brief rendering and live staging runs are
+    operational checks recorded in the coverage report, not here.
+    """
+    states = {}
+    try:
+        validate_packet(packet, ticker, asof)
+    except ProviderError as exc:
+        states["PACKET_BUILT"] = {"met": False, "reason": f"packet_contract_invalid: {exc}"}
+        for name in READINESS_STATES[1:]:
+            states[name] = {"met": False, "reason": "blocked by PACKET_BUILT"}
+        return {"states": states, "valuation_ready": False}
+    states["PACKET_BUILT"] = {"met": True, "reason": "packet contract valid"}
+    gate = eligibility_gate(packet, ticker, asof)
+    if gate["eligible"]:
+        states["INPUTS_COMPLETE"] = {"met": True, "reason": "eligibility gate passed"}
+    else:
+        states["INPUTS_COMPLETE"] = {
+            "met": False,
+            "reason": "eligibility gate failed: " + "; ".join(gate["reasons"]),
+        }
+        for name in READINESS_STATES[2:]:
+            states[name] = {"met": False, "reason": "blocked by INPUTS_COMPLETE"}
+        return {"states": states, "valuation_ready": False}
+    published = packet.get("adjustment_facts") if isinstance(packet, dict) else None
+    if isinstance(published, dict) and isinstance(published.get("facts"), dict):
+        states["POLICY_VALID"] = {"met": True, "reason": "published adjustment evidence present"}
+    else:
+        states["POLICY_VALID"] = {
+            "met": False,
+            "reason": "no published adjustment evidence; load-time fallback only",
+        }
+    bridge = packet.get("bridge", {})
+    preferred = (bridge.get("preferred_equity") or {}).get("value") or 0
+    if preferred == 0:
+        states["CAPITAL_COSTS_AVAILABLE"] = {
+            "met": True,
+            "reason": "zero preferred equity needs no preferred cost",
+        }
+    elif preferred_cost is not None and preferred_cost > 0:
+        states["CAPITAL_COSTS_AVAILABLE"] = {
+            "met": True,
+            "reason": "explicit preferred cost supplied (conventional preferred only; "
+            "mandatory-convertible instruments need conversion modeling)",
+        }
+    else:
+        states["CAPITAL_COSTS_AVAILABLE"] = {
+            "met": False,
+            "reason": f"nonzero preferred equity ({preferred:,.0f} USD) with no explicit preferred cost",
+        }
+    ready = all(states[name]["met"] for name in READINESS_STATES[:4])
+    states["DCF_EVALUABLE"] = {
+        "met": ready,
+        "reason": "inputs, policy and capital costs complete (market inputs still required)"
+        if ready
+        else "blocked by earlier states",
+    }
+    return {"states": states, "valuation_ready": states["DCF_EVALUABLE"]["met"]}
+
+
 def _packet_value(packet_row_fields, end_fields, key):
     field = end_fields.get(key)
     return field["value"] if field is not None else None

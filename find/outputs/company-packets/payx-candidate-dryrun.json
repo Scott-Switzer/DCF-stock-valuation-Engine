@@ -1,0 +1,34 @@
+{
+  "cutoff_date": "2026-10-15",
+  "pointer": "control/valuation/CANDIDATE-staging.json",
+  "published": false,
+  "companies": [
+    {
+      "ticker": "PAYX",
+      "status": "READY",
+      "periods": [
+        "2024-05-31",
+        "2025-05-31",
+        "2026-05-31"
+      ],
+      "common_income_periods": 3,
+      "has_adjustment_facts": true,
+      "bytes": 45906,
+      "sha256": "1ebe854c03768ad3c2c77ba241410dba05a489de8e4109e57903cda82a4fbd20",
+      "key": "gold/valuation/releases/1ebe854c03768ad3c2c77ba241410dba05a489de8e4109e57903cda82a4fbd20/companies/PAYX.json"
+    }
+  ],
+  "production_pointer_sha256_before": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+  "production_pointer_canonical_sha256_before": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+  "candidate_pointer_sha256_before": "5d698048574eb27805e9213e2ff7f0470fbb171d73ca512b3e4dda5b7b4ac209",
+  "candidate_companies_before": [
+    "CAT",
+    "ORCL",
+    "PEP",
+    "T"
+  ],
+  "production_pointer_sha256_after": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+  "production_pointer_canonical_sha256_after": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+  "production_pointer_untouched": true,
+  "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+}
