@@ -129,6 +129,8 @@ def default_form(doc):
         "bridge_as_of": bridge.get("as_of"),
         "mode": "sample" if d["source"]["kind"] == "synthetic" else "manual",
         "wacc": (d["source"].get("capital_costs", {}).get("wacc") or 0.065) * 100,
+        "wacc_mode": "recalculated",
+        "shield_override": "",
         "terminal_growth": 2.0,
         "terminal_mode": "template",
         "terminal_roic": 10.0,
@@ -249,43 +251,51 @@ def form_payload(form):
         "terminal_mode": form.get("terminal_mode", "template"),
     }
     base_costs = (original.get("source") or {}).get("capital_costs") or {}
-    loaded_wacc = base_costs.get("wacc")
-    base_tax = (original.get("historical") or [{}])[-1].get("tax_rate")
     for key, name in DRIVERS.items():
         if key != "growth":
             a[name] = [
                 number(form.get(f"{key}_{i}"), f"{DRIVER_LABELS[key]} year {i + 1}") / 100
                 for i in range(5)
             ]
-    # WACC/tax coherence: a manually edited WACC is the user's explicit
-    # fixed discount rate; but when the WACC field still matches the loaded
-    # capital costs while the forecast tax was edited, the loaded shield is
-    # stale, so the override is recomputed from the frozen market inputs
-    # with the selected shield and the switch is recorded. Neither regime
-    # is applied silently.
+    # WACC regime is an explicit user choice, never inferred: recalculated
+    # recomputes the override from the frozen market inputs with the
+    # selected shield (explicit shield override beats forecast tax); fixed
+    # deliberately holds the entered WACC for sensitivity analysis.
+    wacc_mode = (form.get("wacc_mode") or "recalculated").strip()
+    if wacc_mode not in ("recalculated", "fixed"):
+        raise ValueError("WACC mode must be recalculated or fixed.")
+    a["wacc_mode"] = wacc_mode
+    shield_raw = form.get("shield_override")
+    shield_override = None
+    if shield_raw not in ("", None):
+        shield_override = number(shield_raw, "Interest tax shield rate (%)", 0, 100) / 100
     new_tax = a.get("tax_rates", [None])[0] if isinstance(a.get("tax_rates"), list) else None
-    if (
-        isinstance(loaded_wacc, (int, float))
-        and abs(form_wacc - loaded_wacc) < 1e-12
-        and isinstance(new_tax, (int, float))
-        and new_tax != base_tax
-    ):
+    shield = shield_override if shield_override is not None else new_tax
+    a["interest_tax_shield_rate"] = shield_override
+    if wacc_mode == "recalculated":
         from compare import recalculated_wacc
 
+        if not isinstance(shield, (int, float)):
+            raise ValueError("A forecast tax rate is required to recalculate WACC.")
         try:
-            recalc = recalculated_wacc(base_costs, new_tax)
+            recalc = recalculated_wacc(base_costs, shield)
             a["wacc_override"] = recalc
             changes.append(
-                f"WACC recalculated {loaded_wacc:.2%} -> {recalc:.2%} with the edited "
-                f"{new_tax:.2%} tax shield (recalculated mode)"
+                f"WACC recalculated {form_wacc:.2%} -> {recalc:.2%} with the "
+                f"{shield:.2%} tax shield ({'explicit shield override' if shield_override is not None else 'coherent with forecast'}; recalculated mode)"
             )
         except ValueError:
             changes.append(
-                "WACC held at the loaded rate while forecast tax varies "
-                "(fixed-WACC sensitivity; cost components unavailable)"
+                "WACC held at the entered rate while forecast tax varies "
+                "(cost components unavailable for recalculation)"
             )
-    elif isinstance(loaded_wacc, (int, float)) and abs(form_wacc - loaded_wacc) >= 1e-12:
-        changes.append(f"WACC manually fixed at {form_wacc:.2%} (fixed-WACC sensitivity)")
+    else:
+        changes.append(
+            f"WACC manually fixed at {form_wacc:.2%} while cash-flow taxes use "
+            f"{shield:.2%} ({'explicit shield override' if shield_override is not None else 'coherent with forecast'}; fixed mode)"
+            if isinstance(shield, (int, float))
+            else f"WACC manually fixed at {form_wacc:.2%} (fixed mode)"
+        )
     if a["terminal_mode"] == "normalized":
         a["terminal_roic"] = number(form.get("terminal_roic"), "Terminal ROIC") / 100
     for k in FUTURE_LABELS:
@@ -1108,6 +1118,45 @@ def company_packet_api(ticker):
         return jsonify(error=str(exc)), 503
 
 
+def _validated_tax_override(value):
+    """Explicit forecast-tax override from API input: five rates in 0-1 or None."""
+    if value is None:
+        return None
+    if (
+        not isinstance(value, list)
+        or len(value) != 5
+        or any(not isinstance(v, (int, float)) or isinstance(v, bool) or not 0 <= v <= 1 for v in value)
+    ):
+        raise ValueError("tax_override must be five rates between 0 and 1.")
+    return [float(v) for v in value]
+
+
+def _validated_tax_scenario(value):
+    """Normalized tax scenario from API input: validated shape, labeled evidence."""
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("tax_scenario must be an object with rates and evidence.")
+    rates = value.get("rates")
+    if (
+        not isinstance(rates, list)
+        or len(rates) != 5
+        or any(not isinstance(v, (int, float)) or isinstance(v, bool) or not 0 <= v <= 1 for v in rates)
+    ):
+        raise ValueError("tax_scenario.rates must be five rates between 0 and 1.")
+    evidence = value.get("evidence")
+    if not isinstance(evidence, dict):
+        raise ValueError("tax_scenario.evidence must be an object.")
+    filing = evidence.get("filing")
+    period = evidence.get("period_end")
+    if not isinstance(filing, str) or not filing.strip() or not isinstance(period, str) or not period.strip():
+        raise ValueError("tax_scenario.evidence needs a filing citation and period end.")
+    for key, entry in evidence.items():
+        if not isinstance(entry, (str, int, float, bool)) and entry is not None:
+            raise ValueError("tax_scenario.evidence values must be JSON scalars.")
+    return {"rates": [float(v) for v in rates], "evidence": dict(evidence)}
+
+
 @app.post("/api/load/<method>")
 def load_company_api(method):
     started = time.monotonic()
@@ -1123,6 +1172,8 @@ def load_company_api(method):
             raw.get("valuation_date"),
             raw.get("equity_risk_premium", 0.05),
             raw.get("credit_spread", 0.015),
+            tax_override=_validated_tax_override(raw.get("tax_override")),
+            tax_scenario=_validated_tax_scenario(raw.get("tax_scenario")),
         )
         summary = result.get("load_summary", {})
         # The wire bundle carries financials once: drop the JSON-serialized

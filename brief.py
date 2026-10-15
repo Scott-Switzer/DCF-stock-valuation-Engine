@@ -226,6 +226,9 @@ def build_brief(doc, raw_assumptions=None):
             "forecast_tax_basis": ((d.get("source") or {}).get("tax_policy") or {}).get(
                 "selected", {}
             ).get("basis"),
+            "forecast_tax_evidence": ((d.get("source") or {}).get("tax_policy") or {}).get(
+                "selected", {}
+            ).get("evidence", {}),
             "reported_tax_rates": [
                 {"period_end": r.get("period_end"), "rate": r.get("tax_rate")}
                 for r in historical

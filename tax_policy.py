@@ -138,12 +138,29 @@ def document_tax_policy(rows, user_override=None, scenario=None):
         user_override=user_override,
         scenario=scenario,
     )
+    evidence = dict(resolved["evidence"])
+    # A scenario citation is only as strong as its match to loaded packet
+    # provenance. An arbitrary client-supplied filing string must never
+    # receive a verified-normalization label: without a matching accession
+    # it stays an explicitly unverified citation (a user assumption).
+    if scenario is not None:
+        cited = evidence.get("accession")
+        loaded = {entry.get("accession") for entry in reported}
+        evidence["verification"] = (
+            "packet_accession_matched"
+            if cited is not None and cited in loaded
+            else "unverified_citation"
+        )
+    elif user_override is not None:
+        evidence["verification"] = "user_assumption"
+    else:
+        evidence["verification"] = "not_applicable_default"
     return {
         "reported": reported,
         "selected": {
             "basis": resolved["basis"],
             "rates": resolved["rates"],
-            "evidence": resolved["evidence"],
+            "evidence": evidence,
         },
         "explicit": user_override is not None or scenario is not None,
     }

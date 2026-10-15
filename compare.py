@@ -70,15 +70,22 @@ def recalculated_wacc(costs, shield):
     return (equity * cost_equity + debt * cost_debt * (1 - shield)) / (equity + debt)
 
 
+def selected_shield(doc, assumptions):
+    """Marginal debt-tax shield: explicit override beats forecast tax beats latest."""
+    override = getattr(assumptions, "interest_tax_shield_rate", None)
+    if isinstance(override, (int, float)):
+        return float(override), "explicit_shield_override"
+    if assumptions.tax_rates:
+        return float(assumptions.tax_rates[0]), "coherent_with_forecast"
+    latest = doc["historical"][-1].get("tax_rate")
+    if isinstance(latest, (int, float)) and 0 <= latest <= 1:
+        return float(latest), "latest_reported"
+    return None, "unavailable"
+
+
 def wacc_basis_note(doc, assumptions, costs, wacc_mode):
     """Label which discount-rate regime an assumption set uses."""
-    shield = None
-    if assumptions.tax_rates:
-        shield = assumptions.tax_rates[0]
-    else:
-        latest = doc["historical"][-1].get("tax_rate")
-        if isinstance(latest, (int, float)) and 0 <= latest <= 1:
-            shield = latest
+    shield, shield_basis = selected_shield(doc, assumptions)
     expected = None
     if isinstance(costs, dict) and shield is not None:
         try:
@@ -94,11 +101,11 @@ def wacc_basis_note(doc, assumptions, costs, wacc_mode):
     ):
         return (
             f"Recalculated WACC {override:.2%} from frozen market inputs with "
-            f"the {shield:.2%} tax shield ({wacc_mode} mode)."
+            f"the {shield:.2%} tax shield ({shield_basis}; {wacc_mode} mode)."
         )
     return (
         f"Fixed-WACC sensitivity: discount rate held at {override:.2%} while "
-        f"cash-flow taxes use {shield:.2%} ({wacc_mode} mode)."
+        f"cash-flow taxes use {shield:.2%} ({shield_basis}; {wacc_mode} mode)."
         if isinstance(override, (int, float)) and shield is not None
         else f"WACC basis unavailable ({wacc_mode} mode)."
     )
@@ -139,30 +146,40 @@ def coerce_dcf_assumptions(doc, raw, wacc, costs=None, wacc_mode="recalculated")
     """
     from app import assumptions_from_json
 
+    # An explicit per-request mode travels in the raw assumptions (saves,
+    # exports, compare posts); otherwise the caller's mode applies.
+    if isinstance(raw, dict) and raw.get("wacc_mode") in WACC_MODES:
+        wacc_mode = raw["wacc_mode"]
     if wacc_mode not in WACC_MODES:
         raise ValueError(f"WACC mode must be one of {WACC_MODES}.")
     if not isinstance(raw, dict) or not raw:
         base = baseline_dcf_assumptions(doc, wacc)
+        base = replace(base, wacc_mode=wacc_mode)
         if wacc_mode == "recalculated" and isinstance(costs, dict):
-            try:
-                base = replace(base, wacc_override=recalculated_wacc(costs, base.tax_rates[0]))
-            except ValueError:
-                pass
+            shield, _ = selected_shield(doc, base)
+            if shield is not None:
+                try:
+                    base = replace(base, wacc_override=recalculated_wacc(costs, shield))
+                except ValueError:
+                    pass
         return base, False
     merged = asdict(baseline_dcf_assumptions(doc, wacc))
     merged.update({k: v for k, v in raw.items() if v is not None})
+    merged["wacc_mode"] = wacc_mode
     assumptions = assumptions_from_json(merged)
-    if wacc_mode == "recalculated" and isinstance(costs, dict) and assumptions.tax_rates:
+    if wacc_mode == "recalculated" and isinstance(costs, dict):
         # A caller-supplied wacc_override in raw is the caller's explicit
         # fixed rate; otherwise recompute with the selected shield.
-        if not isinstance(raw, dict) or raw.get("wacc_override") is None:
-            try:
-                assumptions = replace(
-                    assumptions,
-                    wacc_override=recalculated_wacc(costs, assumptions.tax_rates[0]),
-                )
-            except ValueError:
-                pass
+        if raw.get("wacc_override") is None:
+            shield, _ = selected_shield(doc, assumptions)
+            if shield is not None:
+                try:
+                    assumptions = replace(
+                        assumptions,
+                        wacc_override=recalculated_wacc(costs, shield),
+                    )
+                except ValueError:
+                    pass
     return assumptions, True
 
 

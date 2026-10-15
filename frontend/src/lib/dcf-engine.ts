@@ -1,8 +1,14 @@
 /**
- * DCF Calculation Engine - TypeScript Port
- * 
+ * DCF Calculation Engine - TypeScript Port (EXPERIMENTAL, UNUSED IN PRODUCTION)
+ *
+ * This file is not imported by the shipped workspace, worker bundle, or any
+ * test harness: the production calculation path is dcf_code.py served from
+ * the Worker. Do not cite tests of this file as proof of browser parity.
+ *
  * Deterministic five-period FCFF model, aligned with CUIG DCF - GGM.
- * Ported from dcf_code.py with 100% parity.
+ * Tax behavior (signed history, latest-only default, shield chain) matches
+ * dcf_code.py / tax_policy.py; margin averaging still drifts (year-1 ratios
+ * vs historical means) and needs a dedicated parity pass before any use.
  * 
  * All amounts and shares use absolute units. Rates are decimals.
  * Uses decimal.js for precise financial calculations (eliminates IEEE-754 float drift).

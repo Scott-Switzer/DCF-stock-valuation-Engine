@@ -193,8 +193,15 @@ def load_method(
     snapshot=None,
     forecast_assumptions=None,
     http=None,
+    tax_override=None,
+    tax_scenario=None,
 ):
-    """Load one method. ``http`` lets a caller share one request-wide deadline."""
+    """Load one method. ``http`` lets a caller share one request-wide deadline.
+
+    ``tax_override``/``tax_scenario`` select an explicit forecast-tax policy
+    recorded on the snapshot without mutating history; callers that share
+    caches must isolate explicit-policy loads (see load_cached_method).
+    """
     if method not in {"dcf", "ddm", "relative"}:
         raise ValueError("Choose DCF, DDM or relative valuation.")
     from decision_support import historical_growth, peer_fit, peer_review_status
@@ -212,6 +219,17 @@ def load_method(
         asof = dcf["valuation_date"]
         costs = dcf["source"].get("capital_costs", {})
         dcf["source"].setdefault("warnings", [])
+        if tax_override is not None or tax_scenario is not None:
+            from tax_policy import TaxPolicyError, document_tax_policy
+
+            try:
+                dcf["source"]["tax_policy"] = document_tax_policy(
+                    dcf["historical"],
+                    user_override=tax_override,
+                    scenario=tax_scenario,
+                )
+            except TaxPolicyError as exc:
+                raise ProviderError(str(exc)) from None
         needed = {"ddm": "common_dividends", "relative": "common_book_equity"}.get(method)
         if needed:
             supplemental = dcf["source"].get(needed)
@@ -245,6 +263,8 @@ def load_method(
                     packet,
                     include_capital_costs=method != "relative",
                     require_wacc=method == "dcf",
+                    tax_override=tax_override,
+                    tax_scenario=tax_scenario,
                 )
                 dcf["source"]["ppe_status"] = (
                     "SEC-first: packet statements used directly; no Yahoo annual-statement request."
@@ -269,7 +289,21 @@ def load_method(
                 raise ProviderError(reason or str(exc)) from exc
             timings["yahoo"] = round(time.monotonic() - began, 3)
             began = time.monotonic()
-            dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None), packet=packet, packet_error=packet_error)
+            dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None), packet=packet, packet_error=packet_error,
+                             tax_override=tax_override, tax_scenario=tax_scenario)
+            if (tax_override is not None or tax_scenario is not None) and "tax_policy" not in dcf["source"]:
+                # Yahoo baseline kept (no packet): still record the explicit
+                # selection without mutating the reported history.
+                from tax_policy import TaxPolicyError, document_tax_policy
+
+                try:
+                    dcf["source"]["tax_policy"] = document_tax_policy(
+                        dcf["historical"],
+                        user_override=tax_override,
+                        scenario=tax_scenario,
+                    )
+                except TaxPolicyError as exc:
+                    raise ProviderError(str(exc)) from None
             timings["ppe_apply"] = round(time.monotonic() - began, 3)
             if sec_first_error:
                 dcf["source"].setdefault("warnings", []).append(

@@ -33,6 +33,10 @@ class DCFAssumptions:
     terminal_growth_rate: float
     projection_years: int = 5
     wacc_override: Optional[float] = None
+    # Discount-rate regime, chosen explicitly by the user (never inferred):
+    # "recalculated" recomputes the override from frozen market inputs with
+    # the selected shield; "fixed" deliberately holds the entered WACC.
+    wacc_mode: str = "recalculated"
     ebit_margins: Optional[List[float]] = None
     da_margins: Optional[List[float]] = None
     capex_margins: Optional[List[float]] = None
@@ -77,6 +81,11 @@ class DCFAssumptions:
             )
         if self.wacc_override is not None:
             self.wacc_override = number(self.wacc_override, "WACC", 0.001, 0.5)
+        if not isinstance(self.wacc_mode, str) or self.wacc_mode not in {
+            "recalculated",
+            "fixed",
+        }:
+            raise ValueError("WACC mode must be recalculated or fixed.")
         if self.interest_tax_shield_rate is not None:
             self.interest_tax_shield_rate = number(
                 self.interest_tax_shield_rate, "Interest tax shield rate", 0, 1
