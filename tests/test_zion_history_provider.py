@@ -82,6 +82,16 @@ def test_incompatible_history_fails_closed(mutation):
     with pytest.raises(ProviderError): history_document(pages, 'AAPL', '2026-09-24', '0000320193')
 
 
+def test_stale_release_is_rejected_when_caller_pins_a_different_release():
+    class HTTP:
+        def get(self, url, *, headers, params):
+            # Server serves release r1 while the caller pinned r9: a stale or drifted release.
+            return page()
+    with pytest.raises(ProviderError, match='release mismatch'):
+        load_history('AAPL', '2026-09-24', HTTP(), cik='0000320193', base='https://example.test',
+                     token='t', expected_release_id='r9')
+
+
 def test_pagination_pins_release_and_collects_all_leaves():
     first, second = page(), page()
     sid0 = first['observations'][0]['source_observation_ids'][0]
