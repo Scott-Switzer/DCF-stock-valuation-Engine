@@ -825,26 +825,46 @@ def calculate_api():
 
 
 def resolve_benchmark_selections(selections, valuation_date):
+    """Resolve explicit benchmark selections through the canonical Zion interface
+    ('source': 'zion', preferred when configured) or the standalone release loader
+    ('source': 'release', the default — existing behavior is unchanged)."""
     from valuation_benchmarks import load_benchmark
-    root = provider_value('DAMODARAN_RELEASE_ROOT')
-    if not root:
-        raise ValueError('Damodaran releases are not configured in this runtime.')
     if not isinstance(selections, dict) or not 1 <= len(selections) <= 4:
         raise ValueError('Select one to four explicit benchmark inputs.')
     result = {}
     for target, selection in selections.items():
-        if not isinstance(selection, dict) or set(selection) != {'release_id','subject','measure','mode'}:
+        if (not isinstance(selection, dict)
+                or not {'release_id','subject','measure','mode'} <= set(selection)
+                or not set(selection) <= {'release_id','subject','measure','mode','source'}):
             raise ValueError('Select exact release, subject, measure and current/historical mode.')
         mode = selection['mode']
         if mode not in {'current','historical'}:
             raise ValueError('Unknown benchmark selection mode.')
         if mode == 'current' and valuation_date != datetime.now(timezone.utc).date().isoformat():
             raise ValueError('Current benchmark selection cannot be backdated.')
-        try:
-            result[target] = load_benchmark(root, selection['release_id'], selection['subject'], selection['measure'],
-                                            as_of=valuation_date if mode == 'historical' else None)
-        except (OSError, KeyError) as exc:
-            raise ValueError('Selected benchmark release is unavailable.') from exc
+        source = selection.get('source', 'release')
+        if source == 'zion':
+            import requests
+            from zion_benchmark_provider import fetch_benchmark_row
+            base = provider_value('ZION_BENCHMARK_BASE_URL') or provider_value('ZION_HISTORY_BASE_URL')
+            token = provider_value('ZION_BENCHMARK_TOKEN') or provider_value('ZION_HISTORY_TOKEN')
+            if not base or not token:
+                raise ValueError('Zion benchmark provider is not configured in this runtime.')
+            result[target] = fetch_benchmark_row(
+                base=base, token=token, subject=selection['subject'],
+                measure=selection['measure'], release_id=selection['release_id'],
+                mode=mode, valuation_date=valuation_date, http=requests)
+        elif source == 'release':
+            root = provider_value('DAMODARAN_RELEASE_ROOT')
+            if not root:
+                raise ValueError('Damodaran releases are not configured in this runtime.')
+            try:
+                result[target] = load_benchmark(root, selection['release_id'], selection['subject'], selection['measure'],
+                                                as_of=valuation_date if mode == 'historical' else None)
+            except (OSError, KeyError) as exc:
+                raise ValueError('Selected benchmark release is unavailable.') from exc
+        else:
+            raise ValueError('Unknown benchmark source.')
     return result
 
 
@@ -1567,6 +1587,15 @@ def providers():
                 "label": "Zion native SEC financial history",
                 "kind": "private_financial_history",
                 "note": "Explicit CIK and historical cutoff required; missing DCF fields remain incomplete.",
+            },
+            "zion_benchmarks": {
+                "configured": bool(
+                    (provider_value('ZION_BENCHMARK_BASE_URL') or provider_value('ZION_HISTORY_BASE_URL'))
+                    and (provider_value('ZION_BENCHMARK_TOKEN') or provider_value('ZION_HISTORY_TOKEN'))
+                ),
+                "label": "Zion DDFI benchmark context",
+                "kind": "private_benchmark_reference",
+                "note": "Immutable industry/country benchmark reference estimates; explicit release pinning required; never substitutes for issuer facts.",
             },
             "auto": {"configured": True, "label": "Automatic company data"},
             "zion_valuation": {
