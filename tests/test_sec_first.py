@@ -171,6 +171,23 @@ def test_readiness_blocks_before_inputs_complete():
     assert "missing_bridge_minority_interest" in gate_blocked["states"]["INPUTS_COMPLETE"]["reason"]
 
 
+def test_readiness_blocks_on_adjustment_conflicts():
+    packet = full_packet()
+    packet["adjustment_facts"]["conflicts"] = [{"kind": "ebit", "reason": "test conflict"}]
+    blocked = valuation_readiness(packet, "TEST", TODAY)
+    assert blocked["valuation_ready"] is False
+    assert blocked["states"]["POLICY_VALID"]["met"] is False
+    assert "conflicts" in blocked["states"]["POLICY_VALID"]["reason"]
+    assert blocked["states"]["DCF_EVALUABLE"]["met"] is False
+
+
+def test_readiness_labels_data_completeness_not_verification():
+    ready = valuation_readiness(full_packet(), "TEST", TODAY)
+    assert ready["valuation_ready"] is True
+    assert "DCF not run here" in ready["states"]["DCF_EVALUABLE"]["reason"]
+    assert "market" in ready["states"]["DCF_EVALUABLE"]["reason"]
+
+
 def test_readiness_requires_priced_preferred_claims():
     facts = full_facts()
     rows = facts["facts"]["us-gaap"]["PreferredStockValue"]["units"]["USD"]

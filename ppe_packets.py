@@ -593,16 +593,31 @@ CLAIM_TAGS = frozenset({
 def _sec_zero_claims_from_dual_identity(facts, end, cutoff, source):
     """Establish zero preferred and zero noncontrolling claims from two identities.
 
+    Taxonomy (US GAAP): ``NetIncomeLoss`` is income attributable to the
+    parent, ``ProfitLoss`` is consolidated income including noncontrolling
+    interests, and ``NetIncomeLossAvailableToCommonStockholdersBasic`` is
+    the direct common-shareholder tag. Parent income is never labeled
+    consolidated income here.
+
     For filers such as Paychex the equity statement carries only common
     components and no preferred/NCI tag exists anywhere in the member. Two
-    same-accession filing identities jointly bound both claims at zero:
+    same-accession, same-annual-period filing identities jointly bound both
+    claims at zero, each proving only what it can:
     the balance identity (stockholders equity minus built-up common equity
     is zero, with treasury proven zero by issued-equals-outstanding filed
-    share counts) and the income identity (filed consolidated net income
-    minus the filed direct common basic tag is zero). Either residual beyond
-    $1, any claim tag anywhere in the member, or legs from more than one
-    accession refuses the derivation -- a lone zero residual is never enough,
-    because offsetting unverified components could mimic it. Returns
+    share counts) establishes preferred equity at zero -- it says nothing
+    about noncontrolling interest, because ``StockholdersEquity`` excludes
+    noncontrolling claims by definition; the income identity establishes
+    zero NCI affirmatively, by reconciling filed consolidated ``ProfitLoss``
+    to filed parent ``NetIncomeLoss`` for the same annual period in the
+    same accession (equal values mean zero NCI income), supported by the
+    valid balance identity plus the member-wide claim-tag scan. The direct
+    common tag equaling parent income shows no preferred distribution was
+    deducted. Either residual beyond $1, any claim tag anywhere in the
+    member, legs from more than one accession, mismatched annual periods,
+    or a missing consolidated leg refuses the derivation -- a lone zero
+    residual is never enough, because offsetting unverified components
+    could mimic it, and tag absence alone is never proof of zero. Returns
     (preferred_field, nci_field) or (None, None) atomically: the two claims
     are never split from partial evidence.
     """
@@ -664,26 +679,51 @@ def _sec_zero_claims_from_dual_identity(facts, end, cutoff, source):
     )
     if abs(_number(se_row["val"]) - common) > COMMON_INCOME_TOLERANCE_USD:
         return None, None
-    total = _duration_leg(facts, "NetIncomeLoss", end, cutoff)
+    # Parent-attributable income, consolidated income (including NCI), and the
+    # direct common tag must all describe the same annual period in the same
+    # filing: equal end and start dates, one 10-K accession shared with the
+    # equity legs. The parent leg's accession is checked too, not just the
+    # direct leg's -- pairing income from one filing with equity from another
+    # proves nothing.
+    parent = _duration_leg(facts, "NetIncomeLoss", end, cutoff)
+    consolidated = _duration_leg(facts, "ProfitLoss", end, cutoff)
     direct = _duration_leg(facts, "NetIncomeLossAvailableToCommonStockholdersBasic", end, cutoff)
-    if total is None or direct is None:
+    if parent is None or consolidated is None or direct is None:
         return None, None
-    if direct.get("accn") not in accessions:
-        return None, None
-    if abs(_number(total["val"]) - _number(direct["val"])) > COMMON_INCOME_TOLERANCE_USD:
+    income_legs = (parent, consolidated, direct)
+    starts = {r.get("start") for r in income_legs}
+    if len(starts) != 1 or None in starts:
         return None, None
     accession = next(iter(accessions))
-    filed = max([r["filed"] for r in legs.values()] + [total["filed"], direct["filed"]])
+    if any(r.get("accn") != accession for r in income_legs):
+        return None, None
+    if abs(_number(parent["val"]) - _number(direct["val"])) > COMMON_INCOME_TOLERANCE_USD:
+        return None, None
+    # Affirmative NCI evidence: consolidated income including NCI equals
+    # parent-attributable income for the same period, so NCI income is zero.
+    # Parent-minus-direct equality alone cannot show this -- it only bounds
+    # preferred distributions.
+    if abs(_number(consolidated["val"]) - _number(parent["val"])) > COMMON_INCOME_TOLERANCE_USD:
+        return None, None
+    filed = max([r["filed"] for r in legs.values()] + [r["filed"] for r in income_legs])
     provenance = {
         **source,
         "provider": "SEC companyfacts",
         "formula": (
-            "stockholders equity minus built-up common equity is zero and filed "
-            "consolidated net income minus the filed direct common basic tag is zero; "
+            "stockholders equity minus built-up parent-common equity is zero "
+            "(preferred equity zero; stockholders equity excludes NCI) and filed "
+            "consolidated ProfitLoss equals filed parent NetIncomeLoss for the same "
+            "annual period in the same accession (NCI income zero), with the filed "
+            "direct common basic tag equal to parent (no preferred distribution); "
             "no preferred/NCI tag anywhere in the member (" + ", ".join(sorted(legs)) + ")"
         ),
         "part_tags": sorted(legs),
-        "income_identity_tags": ["NetIncomeLoss", "NetIncomeLossAvailableToCommonStockholdersBasic"],
+        "income_identity_tags": [
+            "NetIncomeLoss",
+            "ProfitLoss",
+            "NetIncomeLossAvailableToCommonStockholdersBasic",
+        ],
+        "income_period_start": next(iter(starts)),
         "accession": accession,
         "filing_date": filed,
     }
@@ -988,8 +1028,12 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
         )
     if bridges.get("preferred_equity") is None and bridges.get("minority_interest") is None:
         # Dual-identity zero claims (Paychex pattern) set both bridge claims
-        # atomically from same-accession balance and income identities plus a
-        # member-wide claim-tag scan. Never splits one identity across claims.
+        # atomically: the balance identity proves preferred zero only, and
+        # zero NCI additionally requires affirmative same-accession
+        # consolidated-ProfitLoss-equals-parent-NetIncomeLoss evidence plus a
+        # member-wide claim-tag scan. Tag absence alone never proves zero;
+        # a missing consolidated leg leaves NCI unavailable and the packet
+        # ineligible. Never splits one identity across claims.
         zero_preferred, zero_nci = _sec_zero_claims_from_dual_identity(
             facts, end, cutoff, sec_source
         )

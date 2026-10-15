@@ -93,14 +93,16 @@ READINESS_STATES = (
 
 
 def valuation_readiness(packet, ticker, asof, preferred_cost=None):
-    """Distinguish packet construction from actual valuation readiness.
+    """Distinguish packet construction from data readiness for valuation.
 
     A gate-eligible (READY) packet is not a working valuation: the DCF also
-    needs published accounting-policy evidence and priced capital claims.
-    Pure function: no network. Returns ordered ``states`` (each met/blocked
-    with a reason) plus ``valuation_ready``, which is True only when every
-    data-determined state is met. Brief rendering and live staging runs are
-    operational checks recorded in the coverage report, not here.
+    needs published accounting-policy evidence and priced capital claims,
+    plus live market inputs (price, beta, Treasury) and an actual DCF run.
+    Pure function: no network, runs no DCF. Returns ordered ``states`` (each
+    met/blocked with a reason) plus ``valuation_ready``, which means only
+    that every data-determined input state is met -- a data-completeness
+    prediction, not a verified valuation. Brief rendering and live staging
+    runs are operational checks recorded in the coverage report, not here.
     """
     states = {}
     try:
@@ -123,8 +125,18 @@ def valuation_readiness(packet, ticker, asof, preferred_cost=None):
             states[name] = {"met": False, "reason": "blocked by INPUTS_COMPLETE"}
         return {"states": states, "valuation_ready": False}
     published = packet.get("adjustment_facts") if isinstance(packet, dict) else None
-    if isinstance(published, dict) and isinstance(published.get("facts"), dict):
-        states["POLICY_VALID"] = {"met": True, "reason": "published adjustment evidence present"}
+    conflicts = (published or {}).get("conflicts") if isinstance(published, dict) else None
+    if isinstance(published, dict) and isinstance(published.get("facts"), dict) and not conflicts:
+        states["POLICY_VALID"] = {
+            "met": True,
+            "reason": "published adjustment evidence present without conflicts "
+            "(evidence presence only; DCF run and market inputs still required)",
+        }
+    elif conflicts:
+        states["POLICY_VALID"] = {
+            "met": False,
+            "reason": f"published adjustment evidence reports conflicts: {conflicts}",
+        }
     else:
         states["POLICY_VALID"] = {
             "met": False,
@@ -151,7 +163,8 @@ def valuation_readiness(packet, ticker, asof, preferred_cost=None):
     ready = all(states[name]["met"] for name in READINESS_STATES[:4])
     states["DCF_EVALUABLE"] = {
         "met": ready,
-        "reason": "inputs, policy and capital costs complete (market inputs still required)"
+        "reason": "inputs, policy evidence and capital costs data-complete "
+        "(DCF not run here; market price/beta/Treasury still required)"
         if ready
         else "blocked by earlier states",
     }

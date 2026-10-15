@@ -1148,8 +1148,9 @@ def test_long_term_debt_accepts_notes_payable_variant():
 def payx_claim_facts(**overrides):
     # Paychex FY2026 pattern, all legs in accession "test": SE 3735.1 equals
     # par 3.6 + APIC 1975.6 + retained 1805.8 + AOCI (-49.9) with issued ==
-    # outstanding shares (no treasury), and consolidated income equals the
-    # filed direct common basic tag. No preferred/NCI tag anywhere.
+    # outstanding shares (no treasury); parent NetIncomeLoss, consolidated
+    # ProfitLoss (including NCI) and the direct common basic tag agree for
+    # the same annual period. No preferred/NCI tag anywhere.
     legs = {
         "StockholdersEquity": 3735100000,
         "CommonStockValue": 3600000,
@@ -1169,6 +1170,9 @@ def payx_claim_facts(**overrides):
     us["NetIncomeLoss"] = {"units": {"USD": [
         annual_fact(1760100000, start="2024-09-29", end="2025-09-27")
     ]}}
+    us["ProfitLoss"] = {"units": {"USD": [
+        annual_fact(1760100000, start="2024-09-29", end="2025-09-27")
+    ]}}
     us["NetIncomeLossAvailableToCommonStockholdersBasic"] = {"units": {"USD": [
         annual_fact(1760100000, start="2024-09-29", end="2025-09-27")
     ]}}
@@ -1185,6 +1189,13 @@ def test_dual_identity_establishes_zero_claims_atomically():
     assert nci["value"] == 0.0
     assert preferred["provenance"]["accession"] == "test"
     assert "no preferred/NCI tag" in preferred["provenance"]["formula"]
+    assert "consolidated ProfitLoss equals filed parent NetIncomeLoss" in preferred["provenance"]["formula"]
+    assert preferred["provenance"]["income_identity_tags"] == [
+        "NetIncomeLoss",
+        "ProfitLoss",
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+    ]
+    assert preferred["provenance"]["income_period_start"] == "2024-09-29"
     assert preferred["provenance"]["claim"] == "preferred_equity"
     assert nci["provenance"]["claim"] == "minority_interest"
 
@@ -1226,6 +1237,40 @@ def test_dual_identity_rejects_split_filings():
     facts = payx_claim_facts()
     facts["facts"]["us-gaap"]["RetainedEarningsAccumulatedDeficit"]["units"]["USD"][0]["accn"] = "other"
     assert _sec_zero_claims_from_dual_identity(facts, "2025-09-27", "2026-10-07", {}) == (None, None)
+    # The parent income leg's accession is checked too, not just the direct
+    # leg's: income from one filing never pairs with equity from another.
+    for tag in (
+        "NetIncomeLoss",
+        "ProfitLoss",
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+    ):
+        split = payx_claim_facts()
+        split["facts"]["us-gaap"][tag]["units"]["USD"][0]["accn"] = "other"
+        assert _sec_zero_claims_from_dual_identity(split, "2025-09-27", "2026-10-07", {}) == (None, None)
+
+
+def test_dual_identity_requires_affirmative_nci_evidence():
+    # Parent NetIncomeLoss equals the direct common tag here, but that only
+    # bounds preferred distributions: with consolidated ProfitLoss above
+    # parent, nonzero NCI income exists and the derivation must refuse.
+    # Likewise a missing or mismatched consolidated leg leaves NCI
+    # unavailable -- tag absence alone is never proof of zero.
+    from ppe_packets import _sec_zero_claims_from_dual_identity
+
+    nonzero_nci = payx_claim_facts()
+    nonzero_nci["facts"]["us-gaap"]["ProfitLoss"]["units"]["USD"][0]["val"] = 1765100000
+    assert _sec_zero_claims_from_dual_identity(nonzero_nci, "2025-09-27", "2026-10-07", {}) == (None, None)
+    missing = payx_claim_facts()
+    del missing["facts"]["us-gaap"]["ProfitLoss"]
+    assert _sec_zero_claims_from_dual_identity(missing, "2025-09-27", "2026-10-07", {}) == (None, None)
+    wrong_period = payx_claim_facts()
+    wrong_period["facts"]["us-gaap"]["ProfitLoss"]["units"]["USD"][0]["start"] = "2024-06-01"
+    assert _sec_zero_claims_from_dual_identity(wrong_period, "2025-09-27", "2026-10-07", {}) == (None, None)
+    parent_shifted = payx_claim_facts()
+    parent_shifted["facts"]["us-gaap"]["NetIncomeLoss"]["units"]["USD"][0]["start"] = "2024-06-01"
+    parent_shifted["facts"]["us-gaap"]["ProfitLoss"]["units"]["USD"][0]["start"] = "2024-06-01"
+    parent_shifted["facts"]["us-gaap"]["NetIncomeLossAvailableToCommonStockholdersBasic"]["units"]["USD"][0]["start"] = "2024-09-29"
+    assert _sec_zero_claims_from_dual_identity(parent_shifted, "2025-09-27", "2026-10-07", {}) == (None, None)
 
 
 def test_packet_bridge_sets_both_zero_claims_from_dual_identity():
@@ -1235,6 +1280,26 @@ def test_packet_bridge_sets_both_zero_claims_from_dual_identity():
     assert p["bridge"]["preferred_equity"]["value"] == 0.0
     assert p["bridge"]["minority_interest"]["value"] == 0.0
     assert p["bridge"]["preferred_equity"]["provenance"]["accession"] == "test"
+
+
+def test_client_funds_never_become_distributable_cash():
+    # PAYX FY2026 scale (USD): FundsHeldForClients 4832.2M sits inside filed
+    # AssetsCurrent 8613.3M, offset by the filed client obligation inside
+    # LiabilitiesCurrent 6840.6M (the 10-K balance sheet carries them
+    # symmetrically; no separately-tagged obligation exists in
+    # companyfacts). Bridge cash must be plain corporate cash 1088.2M --
+    # never the client-funds tag -- and operating NWC must net the client
+    # balances symmetrically: (8613.3 - 1088.2) - (6840.6 - 0) = 684.5M.
+    p = build_with(
+        AssetsCurrent=[instant_fact(8613300000)],
+        CashAndCashEquivalentsAtCarryingValue=[instant_fact(1088200000)],
+        LiabilitiesCurrent=[instant_fact(6840600000)],
+        DebtCurrent=[instant_fact(0)],
+        FundsHeldForClients=[instant_fact(4832200000)],
+    )
+    assert p["bridge"]["cash"]["value"] == 1088200000
+    assert p["bridge"]["cash"]["provenance"]["tag"] == "CashAndCashEquivalentsAtCarryingValue"
+    assert p["historical"][-1]["fields"]["nwc"]["value"] == 684500000
 
 
 def test_ebit_accepts_explicit_before_tax_tag():

@@ -88,28 +88,58 @@ see `docs/sec-coverage-report.md`). No bank mappings were faked.
 
 Functional SEC-first issuers: **3 → 4** (CAT, PEP, T + **PAYX**).
 
-### PAYX (Paychex): dual-identity zero-claim derivation
+### PAYX (Paychex): dual-identity zero-claim derivation (corrected)
 
 New reusable `_sec_zero_claims_from_dual_identity` (`ppe_packets.py`): preferred
 and NCI are established at zero **atomically** only when, in one 10-K
-accession, (1) SE minus built-up common equity is $0 with treasury proven zero
-— filed tag, or issued-equals-outstanding filed share counts (PAYX FY2026:
-355.6M = 355.6M); (2) filed consolidated income minus the filed direct common
-basic tag is $0; and (3) a member-wide scan finds no preferred/NCI tag at all.
-A lone zero residual never suffices (offsetting components could mimic it).
+accession for one annual period, (1) SE minus built-up parent-common equity
+is $0 with treasury proven zero — filed tag, or issued-equals-outstanding
+filed share counts (PAYX FY2026: 355.6M = 355.6M) — which proves preferred
+zero only (`StockholdersEquity` excludes NCI by definition); (2) filed
+**consolidated `ProfitLoss` equals filed parent `NetIncomeLoss`** (affirmative
+NCI evidence: equal values mean zero NCI income), with the filed direct
+common basic tag equal to parent (no preferred distribution); and (3) a
+member-wide scan finds no preferred/NCI tag at all. Taxonomy is strict
+throughout: `NetIncomeLoss` is parent-attributable income, never labeled
+consolidated; parent-minus-direct equality alone cannot prove zero NCI. A
+lone zero residual never suffices (offsetting components could mimic it),
+tag absence alone never proves zero (a missing consolidated leg leaves NCI
+unavailable and blocks eligibility), and every leg — including the parent
+income leg — must share the accession and the annual start date.
 Negative counterexamples in `tests/test_ppe_packets.py`: ORCL (filed preferred),
 T (filed NCI), ABBV (missing par leg), nonzero residuals, treasury shares
-outstanding, split accessions.
+outstanding, split accessions (equity, parent, consolidated, or direct leg),
+parent-equals-direct despite nonzero NCI (`ProfitLoss` above parent), missing
+`ProfitLoss`, and mismatched annual periods.
 
-PAYX FY2026 evidence: SE 3735.1M = 3.6 + 1975.6 + 1805.8 − 49.9 exactly;
-consolidated 1760.1M = common basic 1760.1M; 19-claim-tag scan clean.
+Correction history (2026-10-15): the first version compared parent
+`NetIncomeLoss` to the direct tag and called that a consolidated identity —
+a conceptual error, since parent-minus-direct equality is consistent with
+nonzero NCI. The corrected rule adds the `ProfitLoss`-vs-`NetIncomeLoss`
+reconciliation, same-accession/start enforcement on all three income legs,
+and separated preferred/NCI evidence. Re-verified against live SEC facts:
+PAYX FY2026 (accession `0001193125-26-307785`) still establishes 0.0/0.0 —
+SE 3735.1M = 3.6 + 1975.6 + 1805.8 − 49.9 exactly, consolidated 1760.1M =
+parent 1760.1M = common basic 1760.1M, all starts 2025-06-01, 19-claim-tag
+scan clean — while a prior-period end with equity legs from a different
+accession than the income legs is correctly refused. ORCL stays blocked.
+Because the supported accounting inputs are unchanged (0.0/0.0), the
+$86.69 intrinsic value is **not** recomputed.
 Client-funds review: bridge cash 1088.2M is the plain corporate-cash tag and
-excludes the separately-tagged 4832.2M funds held for clients; NWC uses filed
-legs on both sides so the client obligation offsets the asset. Published
-`cff0e309…` (45,906 bytes) via the candidate-only workflow; production pointer
-byte-identical. Staging `/api/load/dcf`: **SEC-first, DCF intrinsic 86.69,
-target 89.32, WACC 8.74%**; parity holds (staging net_income equals the direct
-common tags; bridge identical to the dollar).
+excludes the separately-tagged 4832.2M funds held for clients (no
+separately-tagged client obligation exists in companyfacts; the filed
+`LiabilitiesCurrent` 6840.6M carries it per the 10-K balance sheet); NWC uses
+filed legs on both sides — (8613.3 − 1088.2) − (6840.6 − 0) = 684.5M — so the
+client balances offset symmetrically and never become distributable cash
+(regression test `test_client_funds_never_become_distributable_cash`).
+Published `cff0e309…` (45,906 bytes) via the candidate-only workflow;
+production pointer byte-identical. Staging `/api/load/dcf`: **SEC-first, DCF
+intrinsic 86.69, target 89.32, WACC 8.74%**; parity holds (staging net_income
+equals the direct common tags; bridge identical to the dollar).
+
+Note: the republished PAYX packet carries corrected provenance wording under
+the same accounting values; its content hash changes while every financial
+input stays identical.
 
 ### ORCL: mandatory convertible preferred stays blocked (correctly)
 
@@ -128,10 +158,13 @@ would fabricate the valuation, so the 503 stands with its truthful message.
 ### Coverage states now distinguished
 
 New `valuation_readiness` (`sec_first.py`, tested in `tests/test_sec_first.py`)
-separates data-determined states — PACKET_BUILT, INPUTS_COMPLETE (gate),
-POLICY_VALID (published adjustment evidence), CAPITAL_COSTS_AVAILABLE
-(zero preferred or explicit cost), DCF_EVALUABLE — from operational checks
-(brief, staging runs) recorded here:
+separates data-readiness states — PACKET_BUILT, INPUTS_COMPLETE (gate),
+POLICY_VALID (conflict-free published adjustment evidence; presence only),
+CAPITAL_COSTS_AVAILABLE (zero preferred or explicit cost), DCF_EVALUABLE
+(data-complete prediction: no DCF is run here, market price/beta/Treasury
+still required) — from operational checks (brief, staging runs) recorded
+here. Adjustment-evidence conflicts block POLICY_VALID, so conflicting or
+market-input-less packets can never read as fully verified:
 
 | Issuer | Packet | Inputs | Policy | Capital costs | DCF | Staging |
 | --- | --- | --- | --- | --- | --- | --- |
