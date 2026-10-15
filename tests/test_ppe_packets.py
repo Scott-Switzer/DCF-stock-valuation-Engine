@@ -977,6 +977,190 @@ def test_preferred_buildup_rejects_split_variant_filings():
     assert _sec_preferred_from_common_buildup(facts, "2025-09-27", "2026-10-07", {}) is None
 
 
+def test_preferred_buildup_accepts_generic_apic_and_common_treasury_legs():
+    # AEP/Paychex pattern: APIC in the generic AdditionalPaidInCapital tag;
+    # EOG pattern: treasury stock in TreasuryStockCommonValue. Same filing
+    # identity as the classic leg set: 18503 - (23 + 4261 + 70035 - 15534 - 40282) = 0.
+    from ppe_packets import _sec_preferred_from_common_buildup
+
+    legs = {
+        "StockholdersEquity": 18503,
+        "CommonStockValue": 23,
+        "AdditionalPaidInCapital": 4261,
+        "RetainedEarningsAccumulatedDeficit": 70035,
+        "AccumulatedOtherComprehensiveIncomeLossNetOfTax": -15534,
+        "TreasuryStockCommonValue": 40282,
+    }
+    facts = sec_facts(
+        **{tag: [instant_fact(value)] for tag, value in legs.items()}
+    )
+    field = _sec_preferred_from_common_buildup(facts, "2025-09-27", "2026-10-07", {})
+    assert field["value"] == 0.0
+    assert field["provenance"]["accession"] == "test"
+    assert "AdditionalPaidInCapital" in field["provenance"]["part_tags"]
+    assert "TreasuryStockCommonValue" in field["provenance"]["part_tags"]
+
+
+def test_long_term_debt_accepts_total_less_current_variant():
+    # AT&T pattern: total LongTermDebt filed without a Noncurrent split;
+    # the bridge carries total less the current portion from one accession.
+    p = build_with(
+        LongTermDebt=[instant_fact(100000)],
+        LongTermDebtCurrent=[instant_fact(25000)],
+    )
+    debt = p["bridge"]["long_term_debt"]
+    assert debt["value"] == 75000
+    assert debt["provenance"]["accession"] == "test"
+    assert "LongTermDebt" in debt["provenance"]["formula"]
+
+
+def test_long_term_debt_accepts_capital_lease_obligation_variant():
+    p = build_with(
+        LongTermDebtAndCapitalLeaseObligationsIncludingCurrentMaturities=[instant_fact(50000)],
+        LongTermDebtAndCapitalLeaseObligationsCurrent=[instant_fact(8000)],
+    )
+    assert p["bridge"]["long_term_debt"]["value"] == 42000
+
+
+def test_long_term_debt_accepts_mixed_branch_current_leg():
+    # Honeywell/AbbVie pattern: total in LongTermDebt, current portion only
+    # in the capital-lease-obligations branch; same-accession difference.
+    p = build_with(
+        LongTermDebt=[instant_fact(29046)],
+        LongTermDebtAndCapitalLeaseObligationsCurrent=[instant_fact(1546)],
+    )
+    debt = p["bridge"]["long_term_debt"]
+    assert debt["value"] == 27500
+    assert debt["provenance"]["accession"] == "test"
+
+
+def test_long_term_debt_rejects_split_filing_legs():
+    facts = sec_facts(
+        LongTermDebt=[instant_fact(29046)],
+        LongTermDebtAndCapitalLeaseObligationsCurrent=[instant_fact(1546, accn="other")],
+    )
+    p = build_packet(
+        "AAPL", "0000320193", three_year_rows(), facts, "2026-10-07", {}
+    )
+    assert p["bridge"]["long_term_debt"] is None
+
+
+def test_d_and_a_derives_from_depreciation_plus_intangible_amortization():
+    # Microsoft pattern: no combined D&A tag; PP&E depreciation plus
+    # intangible amortization from one filing sum to the cash-flow add-back.
+    p = build_with(
+        Depreciation=[annual_fact(22000)],
+        AmortizationOfIntangibleAssets=[annual_fact(6000)],
+    )
+    da = p["historical"][-1]["fields"]["d_and_a"]
+    assert da["value"] == 28000
+    assert da["provenance"]["accession"] == "test"
+    assert "AmortizationOfIntangibleAssets" in da["provenance"]["formula"]
+
+
+def test_d_and_a_never_partially_sums_split_filings():
+    assert build_with(Depreciation=[annual_fact(22000)])["historical"][-1]["fields"]["d_and_a"] is None
+    facts = sec_facts(
+        Depreciation=[annual_fact(22000)],
+        AmortizationOfIntangibleAssets=[annual_fact(6000, accn="other")],
+    )
+    p = build_packet(
+        "AAPL", "0000320193", three_year_rows(), facts, "2026-10-07", {}
+    )
+    assert p["historical"][-1]["fields"]["d_and_a"] is None
+
+
+def revenue_facts_packet(**tags):
+    # Lake rows carry no revenue so the packet must read the top line from
+    # SEC facts (which also drive period-end selection); facts cover the
+    # same three fiscal years as the lake rows.
+    from ppe_packets import build_packet
+
+    rows = [
+        observation(
+            "net_income", 50 + i * 10, end=f"{y}-09-27", start=f"{y - 1}-09-29",
+            available=f"{y}-10-31",
+        )
+        for i, y in enumerate([2023, 2024, 2025])
+    ]
+    full = {}
+    for tag, value in tags.items():
+        full[tag] = [
+            annual_fact(value, start=f"{y - 1}-09-29", end=f"{y}-09-27")
+            for y in (2023, 2024, 2025)
+        ]
+    return build_packet("AAPL", "0000320193", rows, sec_facts(**full), "2026-10-07", {})
+
+
+def test_revenue_accepts_regulated_utility_top_line():
+    # Duke Energy pattern: no standard revenue tag; the regulated plus
+    # unregulated operating-revenue total is the top line, lowest priority.
+    p = revenue_facts_packet(RegulatedAndUnregulatedOperatingRevenue=30357)
+    assert p["historical"][-1]["fields"]["revenue"]["value"] == 30357
+    assert "RegulatedAndUnregulatedOperatingRevenue" in json.dumps(
+        p["historical"][-1]["fields"]["revenue"]
+    )
+
+
+def test_standard_revenue_tag_beats_utility_top_line():
+    p = revenue_facts_packet(
+        Revenues=30000,
+        RegulatedAndUnregulatedOperatingRevenue=30357,
+    )
+    assert p["historical"][-1]["fields"]["revenue"]["value"] == 30000
+
+
+def test_pretax_derives_from_domestic_plus_foreign():
+    # Oracle pattern: no combined pretax tag; domestic plus foreign
+    # continuing income from one filing sum to income before taxes.
+    facts_tax = sec_facts(
+        IncomeLossFromContinuingOperationsBeforeIncomeTaxesDomestic=[annual_fact(4376)],
+        IncomeLossFromContinuingOperationsBeforeIncomeTaxesForeign=[annual_fact(9784)],
+        IncomeTaxExpenseBenefit=[annual_fact(1717)],
+    )
+    p = build_packet(
+        "AAPL", "0000320193", three_year_rows(), facts_tax, "2026-10-07", {}
+    )
+    assert p["historical"][-1]["fields"]["tax_rate"]["value"] == pytest.approx(
+        1717 / (4376 + 9784)
+    )
+
+
+def test_pretax_never_partially_sums_split_filings():
+    facts_tax = sec_facts(
+        IncomeLossFromContinuingOperationsBeforeIncomeTaxesDomestic=[annual_fact(4376)],
+        IncomeLossFromContinuingOperationsBeforeIncomeTaxesForeign=[
+            annual_fact(9784, accn="other")
+        ],
+        IncomeTaxExpenseBenefit=[annual_fact(1717)],
+    )
+    p = build_packet(
+        "AAPL", "0000320193", three_year_rows(), facts_tax, "2026-10-07", {}
+    )
+    assert p["historical"][-1]["fields"]["tax_rate"] is None
+
+
+def test_long_term_debt_accepts_notes_payable_variant():
+    p = build_with(LongTermNotesPayable=[instant_fact(122342)])
+    assert p["bridge"]["long_term_debt"]["value"] == 122342
+
+
+def test_ebit_accepts_explicit_before_tax_tag():
+    p = build_with(EarningsBeforeInterestAndTaxes=[annual_fact(41000)])
+    assert p["historical"][-1]["fields"]["ebit"]["value"] == 41000
+
+
+def test_pretax_accepts_base_continuing_operations_tag():
+    facts_tax = sec_facts(
+        IncomeLossFromContinuingOperationsBeforeIncomeTaxes=[annual_fact(38000)],
+        IncomeTaxExpenseBenefit=[annual_fact(7600)],
+    )
+    p2 = build_packet(
+        "AAPL", "0000320193", three_year_rows(), facts_tax, "2026-10-07", {}
+    )
+    assert p2["historical"][-1]["fields"]["tax_rate"]["value"] == pytest.approx(0.2)
+
+
 def test_short_term_debt_accepts_maturity_schedule_variant():
     # Caterpillar pattern: no LongTermDebtCurrent tag; current maturities come
     # from the disclosed next-twelve-months repayment schedule.

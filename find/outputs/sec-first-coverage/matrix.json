@@ -1,0 +1,4925 @@
+{
+ "generated_at": "2026-10-15T01:34:30.032542+00:00",
+ "builder_commit": "ea561b9",
+ "cutoff": "2026-10-15",
+ "sec_archive": "sec/bulk/sec-nightly-20260924/companyfacts.zip",
+ "screened": 86,
+ "ready": 52,
+ "eligible": [
+  "CAT",
+  "ORCL",
+  "PEP",
+  "T"
+ ],
+ "onboarded_staging": [
+  "CAT",
+  "ORCL",
+  "PEP",
+  "T"
+ ],
+ "candidate_pointer": "control/valuation/CANDIDATE-staging.json",
+ "candidate_companies_after": [
+  "CAT",
+  "ORCL",
+  "PEP",
+  "T"
+ ],
+ "production_pointer_untouched": true,
+ "production_pointer_sha256": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+ "onboarded_packets": {
+  "T": {
+   "key": "gold/valuation/releases/8ca66fae24eece3e2387eec5e08fe4a83e151157d1cbc3a7a8534fd972bf3e0f/companies/T.json",
+   "sha256": "8ca66fae24eece3e2387eec5e08fe4a83e151157d1cbc3a7a8534fd972bf3e0f",
+   "bytes": 41519,
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "common_income_periods": 3
+  },
+  "ORCL": {
+   "key": "gold/valuation/releases/91a9787e104c583911ebbc686e08e1f27768962af676c075116640de878d01de/companies/ORCL.json",
+   "sha256": "91a9787e104c583911ebbc686e08e1f27768962af676c075116640de878d01de",
+   "bytes": 41891,
+   "periods": [
+    "2024-05-31",
+    "2025-05-31",
+    "2026-05-31"
+   ],
+   "common_income_periods": 3
+  },
+  "CAT": {
+   "note": "published earlier (#36); preserved byte-for-byte by candidate merge"
+  },
+  "PEP": {
+   "note": "published earlier; preserved byte-for-byte by candidate merge"
+  }
+ },
+ "companies": [
+  {
+   "ticker": "AAPL",
+   "cik": "0000320193",
+   "sector_group": "technology",
+   "sic": "3571",
+   "status": "READY",
+   "periods": [
+    "2023-09-30",
+    "2024-09-28",
+    "2025-09-27"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-09-30: no bridged direct common tag",
+    "missing_common_income_2024-09-28: no bridged direct common tag",
+    "missing_common_income_2025-09-27: no bridged direct common tag",
+    "missing_bridge_preferred_equity",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000320193/fundamentals/annual.json",
+   "artifact_sha256": "2876ed0c021ca8cd9a2473adfa086b3c254878b5d7bf9e34bd0a3c5c2d5b05ef",
+   "bridge": {
+    "short_term_debt": 20329000000.0,
+    "long_term_debt": 78328000000.0,
+    "cash": 35934000000.0,
+    "preferred_equity": null,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-09-30",
+     "revenue": 383285000000.0,
+     "ebit": 114301000000.0,
+     "net_income": 96995000000.0,
+     "capex": 10959000000.0,
+     "d_and_a": 11519000000.0,
+     "nwc": -15900000000.0,
+     "book_value": 62146000000.0,
+     "tax_rate": 0.14719174228036858
+    },
+    {
+     "period_end": "2024-09-28",
+     "revenue": 391035000000.0,
+     "ebit": 123216000000.0,
+     "net_income": 93736000000.0,
+     "capex": 9447000000.0,
+     "d_and_a": 11445000000.0,
+     "nwc": -32469000000.0,
+     "book_value": 56950000000.0,
+     "tax_rate": 0.24091185164189982
+    },
+    {
+     "period_end": "2025-09-27",
+     "revenue": 416161000000.0,
+     "ebit": 133050000000.0,
+     "net_income": 112010000000.0,
+     "capex": 12715000000.0,
+     "d_and_a": 11698000000.0,
+     "nwc": -33279000000.0,
+     "book_value": 73733000000.0,
+     "tax_rate": 0.15610002335586043
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "ABBV",
+   "cik": "0001551152",
+   "sector_group": "healthcare",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "tax_rate_out_of_bounds_2024-12-31",
+    "missing_bridge_preferred_equity"
+   ],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0001551152-26-000008"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001551152/fundamentals/annual.json",
+   "artifact_sha256": "250ee5e0b43c570159db39214b5c68a0b5d529c898ae56ccca37873ed3f9c9ac",
+   "bridge": {
+    "short_term_debt": 8499000000.0,
+    "long_term_debt": 58447000000.0,
+    "cash": 5229000000.0,
+    "preferred_equity": null,
+    "minority_interest": 42000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 54318000000.0,
+     "ebit": 12757000000.0,
+     "net_income": 4863000000.0,
+     "capex": 777000000.0,
+     "d_and_a": 8698000000.0,
+     "nwc": -10483000000.0,
+     "book_value": 10397000000.0,
+     "tax_rate": 0.22032
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 56334000000.0,
+     "ebit": 9137000000.0,
+     "net_income": 4278000000.0,
+     "capex": 974000000.0,
+     "d_and_a": 8386000000.0,
+     "nwc": -11920000000.0,
+     "book_value": 3325000000.0,
+     "tax_rate": -0.1533907427341227
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 61160000000.0,
+     "ebit": 15075000000.0,
+     "net_income": 4226000000.0,
+     "capex": 1214000000.0,
+     "d_and_a": 8139000000.0,
+     "nwc": -10957000000.0,
+     "book_value": -3270000000.0,
+     "tax_rate": 0.35834470213733516
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "ABT",
+   "cik": "0000001800",
+   "sector_group": "healthcare",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_nwc_2023-12-31",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_nwc_2024-12-31",
+    "tax_rate_out_of_bounds_2024-12-31",
+    "missing_common_income_2025-12-31: no bridged direct common tag",
+    "missing_nwc_2025-12-31",
+    "missing_bridge_short_term_debt"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000001800/fundamentals/annual.json",
+   "artifact_sha256": "5b5b519c3825f23461c28fff1b1f71d1bc5616da519312bd559bcb264a4b0082",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": 9896000000.0,
+    "cash": 8522000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": 641000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 40109000000.0,
+     "ebit": 6478000000.0,
+     "net_income": 5723000000.0,
+     "capex": 2202000000.0,
+     "d_and_a": 3243000000.0,
+     "nwc": null,
+     "book_value": 38603000000.0,
+     "tax_rate": 0.14120648259303722
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 41950000000.0,
+     "ebit": 6825000000.0,
+     "net_income": 13402000000.0,
+     "capex": 2207000000.0,
+     "d_and_a": 3218000000.0,
+     "nwc": null,
+     "book_value": 47664000000.0,
+     "tax_rate": -0.9110223869955797
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 44328000000.0,
+     "ebit": 8053000000.0,
+     "net_income": 6524000000.0,
+     "capex": 2171000000.0,
+     "d_and_a": 3116000000.0,
+     "nwc": null,
+     "book_value": 52130000000.0,
+     "tax_rate": 0.22938814079848807
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "ADBE",
+   "cik": "0000796343",
+   "sector_group": "technology",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-01",
+    "2024-11-29",
+    "2025-11-28"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-12-01: no bridged direct common tag",
+    "missing_common_income_2024-11-29: no bridged direct common tag",
+    "missing_common_income_2025-11-28: no bridged direct common tag",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000796343/fundamentals/annual.json",
+   "artifact_sha256": "33635e53b3462eab04665f5023a0ea82ac573bc5003de1caf988cf2270996536",
+   "bridge": {
+    "short_term_debt": 0.0,
+    "long_term_debt": 6210000000.0,
+    "cash": 5431000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-01",
+     "revenue": 19409000000.0,
+     "ebit": 6650000000.0,
+     "net_income": 5428000000.0,
+     "capex": 360000000.0,
+     "d_and_a": 872000000.0,
+     "nwc": -4308000000.0,
+     "book_value": 16518000000.0,
+     "tax_rate": 0.2016473010736873
+    },
+    {
+     "period_end": "2024-11-29",
+     "revenue": 21505000000.0,
+     "ebit": 6741000000.0,
+     "net_income": 5560000000.0,
+     "capex": 183000000.0,
+     "d_and_a": 857000000.0,
+     "nwc": -5403000000.0,
+     "book_value": 14105000000.0,
+     "tax_rate": 0.19780695426345404
+    },
+    {
+     "period_end": "2025-11-28",
+     "revenue": 23769000000.0,
+     "ebit": 8706000000.0,
+     "net_income": 7130000000.0,
+     "capex": 179000000.0,
+     "d_and_a": 818000000.0,
+     "nwc": -5468000000.0,
+     "book_value": 11623000000.0,
+     "tax_rate": 0.18365010304556903
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "AEP",
+   "cik": "0000004904",
+   "sector_group": "utilities",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "tax_rate_out_of_bounds_2024-12-31",
+    "missing_bridge_preferred_equity"
+   ],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0000004904-26-000013"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000004904/fundamentals/annual.json",
+   "artifact_sha256": "267a5a839cab6d8c497a59f006592133eab65d97471f040884bb741218d7bde0",
+   "bridge": {
+    "short_term_debt": 4702000000.0,
+    "long_term_debt": 44128000000.0,
+    "cash": 197000000.0,
+    "preferred_equity": null,
+    "minority_interest": 1080000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 19456000000.0,
+     "ebit": 3556000000.0,
+     "net_income": 2213000000.0,
+     "capex": 155000000.0,
+     "d_and_a": 2927000000.0,
+     "nwc": -510900000.0,
+     "book_value": 25286000000.0,
+     "tax_rate": 0.024250440917107582
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 19970000000.0,
+     "ebit": 4304000000.0,
+     "net_income": 2976000000.0,
+     "capex": 399000000.0,
+     "d_and_a": 3149000000.0,
+     "nwc": -1564000000.0,
+     "book_value": 26944000000.0,
+     "tax_rate": -0.013278855975485188
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 21702000000.0,
+     "ebit": 5319000000.0,
+     "net_income": 3696000000.0,
+     "capex": 3453000000.0,
+     "d_and_a": 3325000000.0,
+     "nwc": -2757000000.0,
+     "book_value": 31138000000.0,
+     "tax_rate": 0.03372549019607843
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "APH",
+   "cik": null,
+   "sector_group": "technology",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "AVGO",
+   "cik": "0001730168",
+   "sector_group": "technology",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-10-29",
+    "2024-11-03",
+    "2025-11-02"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_nwc_2023-10-29",
+    "missing_nwc_2024-11-03",
+    "missing_common_income_2025-11-02: no bridged direct common tag",
+    "missing_nwc_2025-11-02",
+    "tax_rate_out_of_bounds_2025-11-02",
+    "missing_bridge_short_term_debt",
+    "missing_bridge_long_term_debt",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 2,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0001730168-24-000139"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001730168/fundamentals/annual.json",
+   "artifact_sha256": "17e4b81a340e7a804a90b95b7cf4434eb54848ec203399f4977eb5cbfe2efdb1",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": null,
+    "cash": 16178000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-10-29",
+     "revenue": 35819000000.0,
+     "ebit": 16207000000.0,
+     "net_income": 14082000000.0,
+     "capex": 452000000.0,
+     "d_and_a": 3749000000.0,
+     "nwc": null,
+     "book_value": 23988000000.0,
+     "tax_rate": 0.06723190037755845
+    },
+    {
+     "period_end": "2024-11-03",
+     "revenue": 51574000000.0,
+     "ebit": 13463000000.0,
+     "net_income": 5895000000.0,
+     "capex": 548000000.0,
+     "d_and_a": 9860000000.0,
+     "nwc": null,
+     "book_value": 67678000000.0,
+     "tax_rate": 0.37797498991528844
+    },
+    {
+     "period_end": "2025-11-02",
+     "revenue": 63887000000.0,
+     "ebit": 25484000000.0,
+     "net_income": 23126000000.0,
+     "capex": 623000000.0,
+     "d_and_a": 8636000000.0,
+     "nwc": null,
+     "book_value": 81292000000.0,
+     "tax_rate": -0.0174666725328875
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "BA",
+   "cik": "0000012927",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "tax_rate_out_of_bounds_2023-12-31",
+    "missing_bridge_long_term_debt"
+   ],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0001628280-26-004357"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000012927/fundamentals/annual.json",
+   "artifact_sha256": "579bd713488e101910053dc3651a32d328fbf63871cad52dae6edb23f117035b",
+   "bridge": {
+    "short_term_debt": 8461000000.0,
+    "long_term_debt": null,
+    "cash": 10921000000.0,
+    "preferred_equity": 6000000.0,
+    "minority_interest": 3000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 77794000000.0,
+     "ebit": -773000000.0,
+     "net_income": -2222000000.0,
+     "capex": 1527000000.0,
+     "d_and_a": 1861000000.0,
+     "nwc": 5961000000.0,
+     "book_value": -17228000000.0,
+     "tax_rate": -0.11820448877805487
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 66517000000.0,
+     "ebit": -10707000000.0,
+     "net_income": -11817000000.0,
+     "capex": 2230000000.0,
+     "d_and_a": 1836000000.0,
+     "nwc": 18397000000.0,
+     "book_value": -3908000000.0,
+     "tax_rate": 0.031203931203931203
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 89463000000.0,
+     "ebit": 4281000000.0,
+     "net_income": 2235000000.0,
+     "capex": 2942000000.0,
+     "d_and_a": 1953000000.0,
+     "nwc": 17884000000.0,
+     "book_value": 5454000000.0,
+     "tax_rate": 0.1506641366223909
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "BAC",
+   "cik": "0000070858",
+   "sector_group": "financial",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "incomplete_provenance_ebit_2023-12-31: missing accession or filing date",
+    "missing_ebit_2023-12-31",
+    "missing_capex_2023-12-31",
+    "missing_nwc_2023-12-31",
+    "incomplete_provenance_ebit_2024-12-31: missing accession or filing date",
+    "missing_ebit_2024-12-31",
+    "missing_capex_2024-12-31",
+    "missing_nwc_2024-12-31",
+    "incomplete_provenance_ebit_2025-12-31: missing accession or filing date",
+    "missing_ebit_2025-12-31",
+    "missing_capex_2025-12-31",
+    "missing_nwc_2025-12-31",
+    "missing_bridge_long_term_debt",
+    "missing_bridge_cash",
+    "missing_bridge_preferred_equity",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    },
+    {
+     "kind": "ebit",
+     "tag": "OperatingIncomeLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0000070858-26-000157"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000070858/fundamentals/annual.json",
+   "artifact_sha256": "64f11cb52d8a7f048d92a20970de002916fb0fe9c4434091582d7dd7855e333e",
+   "bridge": {
+    "short_term_debt": 62113000000.0,
+    "long_term_debt": null,
+    "cash": null,
+    "preferred_equity": null,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 102769000000.0,
+     "ebit": null,
+     "net_income": 26305000000.0,
+     "capex": null,
+     "d_and_a": 2057000000.0,
+     "nwc": null,
+     "book_value": 290209000000.0,
+     "tax_rate": 0.19136181985859207
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 105856000000.0,
+     "ebit": null,
+     "net_income": 26973000000.0,
+     "capex": null,
+     "d_and_a": 2189000000.0,
+     "nwc": null,
+     "book_value": 293963000000.0,
+     "tax_rate": 0.18812268609096108
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 113097000000.0,
+     "ebit": null,
+     "net_income": 30509000000.0,
+     "capex": null,
+     "d_and_a": 2314000000.0,
+     "nwc": null,
+     "book_value": 303243000000.0,
+     "tax_rate": 0.19063536278020957
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "BDX",
+   "cik": null,
+   "sector_group": "healthcare",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "CAT",
+   "cik": "0000018230",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": true,
+   "gate_reasons": [],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0000018230-26-000008"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000018230/fundamentals/annual.json",
+   "artifact_sha256": "61c69441b5972bbb257dbdf6f1b2059640d3726a564e293434974e61a9b4047f",
+   "bridge": {
+    "short_term_debt": 12634000000.0,
+    "long_term_debt": 30696000000.0,
+    "cash": 9980000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": 0.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 67060000000.0,
+     "ebit": 12966000000.0,
+     "net_income": 10332000000.0,
+     "capex": 1597000000.0,
+     "d_and_a": 2144000000.0,
+     "nwc": 18649000000.0,
+     "book_value": 19503000000.0,
+     "tax_rate": 0.21310344827586206
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 64809000000.0,
+     "ebit": 13072000000.0,
+     "net_income": 10788000000.0,
+     "capex": 1988000000.0,
+     "d_and_a": 2153000000.0,
+     "nwc": 17579000000.0,
+     "book_value": 19494000000.0,
+     "tax_rate": 0.1965901443206461
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 67589000000.0,
+     "ebit": 11151000000.0,
+     "net_income": 8882000000.0,
+     "capex": 2821000000.0,
+     "d_and_a": 2262000000.0,
+     "nwc": 18581000000.0,
+     "book_value": 21318000000.0,
+     "tax_rate": 0.23984056840828352
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "CDNS",
+   "cik": "0000813672",
+   "sector_group": "technology",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_nwc_2023-12-31",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_nwc_2024-12-31",
+    "missing_common_income_2025-12-31: no bridged direct common tag",
+    "missing_nwc_2025-12-31",
+    "missing_bridge_short_term_debt",
+    "missing_bridge_long_term_debt",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000813672/fundamentals/annual.json",
+   "artifact_sha256": "585342e829e54bdad6647ac321045bd4a1de4e30717e5226872f051cde17d610",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": null,
+    "cash": 3001317000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 4089986000.0,
+     "ebit": 1251225000.0,
+     "net_income": 1041144000.0,
+     "capex": 102337000.0,
+     "d_and_a": 145292000.0,
+     "nwc": null,
+     "book_value": 3404271000.0,
+     "tax_rate": 0.18782831458290103
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 4641264000.0,
+     "ebit": 1350763000.0,
+     "net_income": 1055484000.0,
+     "capex": 142542000.0,
+     "d_and_a": 196935000.0,
+     "nwc": null,
+     "book_value": 4673578000.0,
+     "tax_rate": 0.24382459330328646
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 5296759000.0,
+     "ebit": 1492042000.0,
+     "net_income": 1108888000.0,
+     "capex": 141871000.0,
+     "d_and_a": 227828000.0,
+     "nwc": null,
+     "book_value": 5474181000.0,
+     "tax_rate": 0.27144765292439177
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "CI",
+   "cik": "0001739940",
+   "sector_group": "healthcare",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_capex_2023-12-31",
+    "missing_capex_2024-12-31",
+    "missing_common_income_2025-12-31: no bridged direct common tag",
+    "missing_capex_2025-12-31",
+    "missing_bridge_long_term_debt"
+   ],
+   "common_income_periods": 2,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0001739940-25-000009"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001739940/fundamentals/annual.json",
+   "artifact_sha256": "38c79a6135c48f1ab34e93503a9d23c45627b33698a2aa4f65a35bd02966dbd9",
+   "bridge": {
+    "short_term_debt": 592000000.0,
+    "long_term_debt": null,
+    "cash": 7676000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": 161000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 195265000000.0,
+     "ebit": 8536000000.0,
+     "net_income": 5164000000.0,
+     "capex": null,
+     "d_and_a": 3035000000.0,
+     "nwc": -16412000000.0,
+     "book_value": 46244000000.0,
+     "tax_rate": 0.02557591148195175
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 247121000000.0,
+     "ebit": 9417000000.0,
+     "net_income": 3434000000.0,
+     "capex": null,
+     "d_and_a": 2775000000.0,
+     "nwc": -13624000000.0,
+     "book_value": 41033000000.0,
+     "tax_rate": 0.2829758967546024
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 274900000000.0,
+     "ebit": 9200000000.0,
+     "net_income": 5957000000.0,
+     "capex": null,
+     "d_and_a": 2775000000.0,
+     "nwc": -15612000000.0,
+     "book_value": 41713000000.0,
+     "tax_rate": 0.1918776506875723
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "CL",
+   "cik": "0000021665",
+   "sector_group": "staples",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_nwc_2023-12-31",
+    "missing_nwc_2024-12-31",
+    "missing_nwc_2025-12-31",
+    "missing_bridge_short_term_debt"
+   ],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0000021665-26-000006"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000021665/fundamentals/annual.json",
+   "artifact_sha256": "7fae18782777ab7c3378edecf4b8b0c19fb041961b84a0ed4a63663a6d998d42",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": 6871000000.0,
+    "cash": 1288000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": 311000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 19457000000.0,
+     "ebit": 3984000000.0,
+     "net_income": 2300000000.0,
+     "capex": 705000000.0,
+     "d_and_a": 567000000.0,
+     "nwc": null,
+     "book_value": 609000000.0,
+     "tax_rate": 0.2762382075471698
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 20101000000.0,
+     "ebit": 4268000000.0,
+     "net_income": 2889000000.0,
+     "capex": 561000000.0,
+     "d_and_a": 605000000.0,
+     "nwc": null,
+     "book_value": 212000000.0,
+     "tax_rate": 0.22927199191102124
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 20382000000.0,
+     "ebit": 3306000000.0,
+     "net_income": 2132000000.0,
+     "capex": 564000000.0,
+     "d_and_a": 630000000.0,
+     "nwc": null,
+     "book_value": 54000000.0,
+     "tax_rate": 0.2608695652173913
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "COP",
+   "cik": "0001163165",
+   "sector_group": "energy",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "incomplete_provenance_ebit_2023-12-31: missing accession or filing date",
+    "missing_ebit_2023-12-31",
+    "missing_capex_2023-12-31",
+    "incomplete_provenance_ebit_2024-12-31: missing accession or filing date",
+    "missing_ebit_2024-12-31",
+    "missing_capex_2024-12-31",
+    "incomplete_provenance_ebit_2025-12-31: missing accession or filing date",
+    "missing_ebit_2025-12-31",
+    "missing_capex_2025-12-31",
+    "missing_bridge_long_term_debt",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    },
+    {
+     "kind": "ebit",
+     "tag": "OperatingIncomeLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0001163165-26-000009"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001163165/fundamentals/annual.json",
+   "artifact_sha256": "79c0a8ecbc0dac31bc7de1e7f9f751404c1c4fa0e4792d9a5a88af01ba6d8581",
+   "bridge": {
+    "short_term_debt": 1020000000.0,
+    "long_term_debt": null,
+    "cash": 6497000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 48522000000.0,
+     "ebit": null,
+     "net_income": 10957000000.0,
+     "capex": null,
+     "d_and_a": 8270000000.0,
+     "nwc": -236000000.0,
+     "book_value": 49279000000.0,
+     "tax_rate": 0.32729616895874264
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 49418000000.0,
+     "ebit": null,
+     "net_income": 9245000000.0,
+     "capex": null,
+     "d_and_a": 9599000000.0,
+     "nwc": -1049000000.0,
+     "book_value": 64796000000.0,
+     "tax_rate": 0.32380046811000585
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 51824000000.0,
+     "ebit": null,
+     "net_income": 7988000000.0,
+     "capex": null,
+     "d_and_a": 11500000000.0,
+     "nwc": -1917000000.0,
+     "book_value": 64487000000.0,
+     "tax_rate": 0.3688369152970923
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "COST",
+   "cik": "0000909832",
+   "sector_group": "staples",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-09-03",
+    "2024-09-01",
+    "2025-08-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-09-03: no bridged direct common tag",
+    "missing_nwc_2023-09-03",
+    "missing_common_income_2024-09-01: no bridged direct common tag",
+    "missing_nwc_2024-09-01",
+    "missing_common_income_2025-08-31: no bridged direct common tag",
+    "missing_nwc_2025-08-31",
+    "missing_bridge_short_term_debt"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000909832/fundamentals/annual.json",
+   "artifact_sha256": "11bbbf5727b2027747786865adcc9ab6d5833bc567dae42962f9e357968adf26",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": 5713000000.0,
+    "cash": 14161000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": 0.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-09-03",
+     "revenue": 242290000000.0,
+     "ebit": 8114000000.0,
+     "net_income": 6292000000.0,
+     "capex": 4323000000.0,
+     "d_and_a": 2077000000.0,
+     "nwc": null,
+     "book_value": 25058000000.0,
+     "tax_rate": 0.25863084717803697
+    },
+    {
+     "period_end": "2024-09-01",
+     "revenue": 254453000000.0,
+     "ebit": 9285000000.0,
+     "net_income": 7367000000.0,
+     "capex": 4710000000.0,
+     "d_and_a": 2237000000.0,
+     "nwc": null,
+     "book_value": 23622000000.0,
+     "tax_rate": 0.24363449691991787
+    },
+    {
+     "period_end": "2025-08-31",
+     "revenue": 275235000000.0,
+     "ebit": 10383000000.0,
+     "net_income": 8099000000.0,
+     "capex": 5498000000.0,
+     "d_and_a": 2426000000.0,
+     "nwc": null,
+     "book_value": 29164000000.0,
+     "tax_rate": 0.2513403586614901
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "CRM",
+   "cik": "0001108524",
+   "sector_group": "technology",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2024-01-31",
+    "2025-01-31",
+    "2026-01-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2024-01-31: no bridged direct common tag",
+    "missing_nwc_2024-01-31",
+    "missing_common_income_2025-01-31: no bridged direct common tag",
+    "missing_nwc_2025-01-31",
+    "missing_common_income_2026-01-31: no bridged direct common tag",
+    "missing_nwc_2026-01-31",
+    "missing_bridge_short_term_debt",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001108524/fundamentals/annual.json",
+   "artifact_sha256": "cfe02c9ac315f2b80d6b3d422adc1ca3382b5890734da14485bc7540d0532781",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": 10439000000.0,
+    "cash": 7327000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2024-01-31",
+     "revenue": 34857000000.0,
+     "ebit": 5011000000.0,
+     "net_income": 4136000000.0,
+     "capex": 736000000.0,
+     "d_and_a": 1100000000.0,
+     "nwc": null,
+     "book_value": 59646000000.0,
+     "tax_rate": 0.16444444444444445
+    },
+    {
+     "period_end": "2025-01-31",
+     "revenue": 37895000000.0,
+     "ebit": 7205000000.0,
+     "net_income": 6197000000.0,
+     "capex": 658000000.0,
+     "d_and_a": 1000000000.0,
+     "nwc": null,
+     "book_value": 61173000000.0,
+     "tax_rate": 0.16684592632428072
+    },
+    {
+     "period_end": "2026-01-31",
+     "revenue": 41525000000.0,
+     "ebit": 8331000000.0,
+     "net_income": 7457000000.0,
+     "capex": 594000000.0,
+     "d_and_a": 1200000000.0,
+     "nwc": null,
+     "book_value": 59142000000.0,
+     "tax_rate": 0.21670168067226891
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "CSCO",
+   "cik": "0000858877",
+   "sector_group": "technology",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2024-07-27",
+    "2025-07-26",
+    "2026-07-25"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2024-07-27: no bridged direct common tag",
+    "missing_common_income_2025-07-26: no bridged direct common tag",
+    "missing_common_income_2026-07-25: no bridged direct common tag",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000858877/fundamentals/annual.json",
+   "artifact_sha256": "ac39e7aae4009db22989b942271c669a8b603f7d87a15e6065ea8dea2e67b306",
+   "bridge": {
+    "short_term_debt": 10161000000.0,
+    "long_term_debt": 19372000000.0,
+    "cash": 7218000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2024-07-27",
+     "revenue": 53803000000.0,
+     "ebit": 12181000000.0,
+     "net_income": 10320000000.0,
+     "capex": 670000000.0,
+     "d_and_a": 700000000.0,
+     "nwc": 111000000.0,
+     "book_value": 45457000000.0,
+     "tax_rate": 0.15644923982344286
+    },
+    {
+     "period_end": "2025-07-26",
+     "revenue": 56654000000.0,
+     "ebit": 11760000000.0,
+     "net_income": 10180000000.0,
+     "capex": 905000000.0,
+     "d_and_a": 700000000.0,
+     "nwc": -3192000000.0,
+     "book_value": 46843000000.0,
+     "tax_rate": 0.08288288288288288
+    },
+    {
+     "period_end": "2026-07-25",
+     "revenue": 63325000000.0,
+     "ebit": 15368000000.0,
+     "net_income": 13267000000.0,
+     "capex": 1410000000.0,
+     "d_and_a": 700000000.0,
+     "nwc": 83000000.0,
+     "book_value": 50285000000.0,
+     "tax_rate": 0.17127865575613718
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "CVX",
+   "cik": "0000093410",
+   "sector_group": "energy",
+   "sic": "2911",
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "incomplete_provenance_ebit_2023-12-31: missing accession or filing date",
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_ebit_2023-12-31",
+    "incomplete_provenance_ebit_2024-12-31: missing accession or filing date",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_ebit_2024-12-31",
+    "missing_nwc_2024-12-31",
+    "incomplete_provenance_ebit_2025-12-31: missing accession or filing date",
+    "missing_common_income_2025-12-31: no bridged direct common tag",
+    "missing_ebit_2025-12-31",
+    "missing_nwc_2025-12-31",
+    "missing_bridge_long_term_debt",
+    "missing_bridge_cash"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "ebit",
+     "tag": "OperatingIncomeLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000093410/fundamentals/annual.json",
+   "artifact_sha256": "f951e035e7ec671fb161ec1d7ae5a1603b88296887175b72900de0e38509a2b3",
+   "bridge": {
+    "short_term_debt": 10918000000.0,
+    "long_term_debt": null,
+    "cash": null,
+    "preferred_equity": 0.0,
+    "minority_interest": 5726000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 196913000000.0,
+     "ebit": null,
+     "net_income": 21369000000.0,
+     "capex": 15829000000.0,
+     "d_and_a": 17326000000.0,
+     "nwc": 5764000000.0,
+     "book_value": 161929000000.0,
+     "tax_rate": 0.2762641968631693
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 193414000000.0,
+     "ebit": null,
+     "net_income": 17661000000.0,
+     "capex": 16448000000.0,
+     "d_and_a": 17282000000.0,
+     "nwc": null,
+     "book_value": 152318000000.0,
+     "tax_rate": 0.35472260597687777
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 184432000000.0,
+     "ebit": null,
+     "net_income": 12299000000.0,
+     "capex": 17347000000.0,
+     "d_and_a": 20132000000.0,
+     "nwc": null,
+     "book_value": 186450000000.0,
+     "tax_rate": 0.3676239679886542
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "D",
+   "cik": null,
+   "sector_group": "utilities",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "DE",
+   "cik": "0000315189",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-10-29",
+    "2024-10-27",
+    "2025-11-02"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-10-29: no bridged direct common tag",
+    "missing_nwc_2023-10-29",
+    "missing_common_income_2024-10-27: no bridged direct common tag",
+    "missing_nwc_2024-10-27",
+    "incomplete_provenance_ebit_2025-11-02: missing accession or filing date",
+    "missing_common_income_2025-11-02: no bridged direct common tag",
+    "missing_ebit_2025-11-02",
+    "missing_nwc_2025-11-02",
+    "missing_bridge_long_term_debt",
+    "missing_bridge_preferred_equity"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000315189/fundamentals/annual.json",
+   "artifact_sha256": "f95f3a7a0bb15ad8e84f60a99ae9a811be4aebb3656b96be31942004172d363f",
+   "bridge": {
+    "short_term_debt": 13796000000.0,
+    "long_term_debt": null,
+    "cash": 8276000000.0,
+    "preferred_equity": null,
+    "minority_interest": 6000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-10-29",
+     "revenue": 61251000000.0,
+     "ebit": 12958000000.0,
+     "net_income": 10166000000.0,
+     "capex": 1498000000.0,
+     "d_and_a": 2004000000.0,
+     "nwc": null,
+     "book_value": 21789000000.0,
+     "tax_rate": 0.22052384975804593
+    },
+    {
+     "period_end": "2024-10-27",
+     "revenue": 51716000000.0,
+     "ebit": 9039000000.0,
+     "net_income": 7100000000.0,
+     "capex": 1640000000.0,
+     "d_and_a": 2118000000.0,
+     "nwc": null,
+     "book_value": 22836000000.0,
+     "tax_rate": 0.2274603519443841
+    },
+    {
+     "period_end": "2025-11-02",
+     "revenue": 45684000000.0,
+     "ebit": null,
+     "net_income": 5027000000.0,
+     "capex": 1360000000.0,
+     "d_and_a": 2229000000.0,
+     "nwc": null,
+     "book_value": 25950000000.0,
+     "tax_rate": 0.2012146396036439
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "DHI",
+   "cik": null,
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "DIS",
+   "cik": "0001744489",
+   "sector_group": "communications",
+   "sic": null,
+   "status": "BUILD_UNAVAILABLE",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001744489/fundamentals/annual.json",
+   "artifact_sha256": "f17cc9b359630c683b27c8bf2f7203f79d957516b686b94ce116a77187774da2",
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "DUK",
+   "cik": "0001326160",
+   "sector_group": "utilities",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2014-12-31",
+    "2015-12-31",
+    "2016-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2014-12-31: no bridged direct common tag",
+    "missing_common_income_2015-12-31: no bridged direct common tag",
+    "missing_common_income_2016-12-31: no bridged direct common tag",
+    "missing_bridge_preferred_equity"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001326160/fundamentals/annual.json",
+   "artifact_sha256": "6a3a2bee95f3be37eed201359a6d06e0fb001e06cf23b90afc2b59597305b227",
+   "bridge": {
+    "short_term_debt": 4806000000.0,
+    "long_term_debt": 45576000000.0,
+    "cash": 392000000.0,
+    "preferred_equity": null,
+    "minority_interest": 8000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2014-12-31",
+     "revenue": 22509000000.0,
+     "ebit": 4842000000.0,
+     "net_income": 1883000000.0,
+     "capex": 5384000000.0,
+     "d_and_a": 3507000000.0,
+     "nwc": 5200000000.0,
+     "book_value": 40899000000.0,
+     "tax_rate": 0.32553813446718044
+    },
+    {
+     "period_end": "2015-12-31",
+     "revenue": 22371000000.0,
+     "ebit": 5078000000.0,
+     "net_income": 2816000000.0,
+     "capex": 6766000000.0,
+     "d_and_a": 3613000000.0,
+     "nwc": 2198000000.0,
+     "book_value": 39771000000.0,
+     "tax_rate": 0.32122762148337597
+    },
+    {
+     "period_end": "2016-12-31",
+     "revenue": 22743000000.0,
+     "ebit": 5202000000.0,
+     "net_income": 2152000000.0,
+     "capex": 7901000000.0,
+     "d_and_a": 3880000000.0,
+     "nwc": 902000000.0,
+     "book_value": 41041000000.0,
+     "tax_rate": 0.30958757364756295
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "EA",
+   "cik": null,
+   "sector_group": "technology",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "EMR",
+   "cik": "0000032604",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-09-30",
+    "2024-09-30",
+    "2025-09-30"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "incomplete_provenance_ebit_2023-09-30: missing accession or filing date",
+    "missing_common_income_2023-09-30: no bridged direct common tag",
+    "missing_ebit_2023-09-30",
+    "missing_nwc_2023-09-30",
+    "incomplete_provenance_ebit_2024-09-30: missing accession or filing date",
+    "missing_common_income_2024-09-30: no bridged direct common tag",
+    "missing_ebit_2024-09-30",
+    "missing_nwc_2024-09-30",
+    "incomplete_provenance_ebit_2025-09-30: missing accession or filing date",
+    "missing_common_income_2025-09-30: no bridged direct common tag",
+    "missing_ebit_2025-09-30",
+    "missing_nwc_2025-09-30",
+    "missing_bridge_cash"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    },
+    {
+     "kind": "ebit",
+     "tag": "OperatingIncomeLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000032604/fundamentals/annual.json",
+   "artifact_sha256": "7441ddf0fbdcb4c2cd94638d3102d8737401506902842d1705c0f8dbdf6bbd73",
+   "bridge": {
+    "short_term_debt": 4797000000.0,
+    "long_term_debt": 8319000000.0,
+    "cash": null,
+    "preferred_equity": 0.0,
+    "minority_interest": 16000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-09-30",
+     "revenue": 15165000000.0,
+     "ebit": null,
+     "net_income": 13219000000.0,
+     "capex": 363000000.0,
+     "d_and_a": 1051000000.0,
+     "nwc": null,
+     "book_value": 26598000000.0,
+     "tax_rate": 0.2211505339304168
+    },
+    {
+     "period_end": "2024-09-30",
+     "revenue": 17492000000.0,
+     "ebit": null,
+     "net_income": 1968000000.0,
+     "capex": 419000000.0,
+     "d_and_a": 1689000000.0,
+     "nwc": null,
+     "book_value": 21636000000.0,
+     "tax_rate": 0.20544554455445543
+    },
+    {
+     "period_end": "2025-09-30",
+     "revenue": 18016000000.0,
+     "ebit": null,
+     "net_income": 2293000000.0,
+     "capex": 431000000.0,
+     "d_and_a": 1518000000.0,
+     "nwc": null,
+     "book_value": 20282000000.0,
+     "tax_rate": 0.23721881390593047
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "EOG",
+   "cik": "0000821189",
+   "sector_group": "energy",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_nwc_2023-12-31",
+    "missing_nwc_2024-12-31",
+    "missing_nwc_2025-12-31",
+    "missing_bridge_short_term_debt",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0000821189-26-000054"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000821189/fundamentals/annual.json",
+   "artifact_sha256": "31c4e35b1912284c87987d55135051eff4f03c7ee636c1165f0639f0c15cdfa1",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": 7909000000.0,
+    "cash": 3396000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 24186000000.0,
+     "ebit": 9603000000.0,
+     "net_income": 7594000000.0,
+     "capex": 5385000000.0,
+     "d_and_a": 3492000000.0,
+     "nwc": null,
+     "book_value": 28090000000.0,
+     "tax_rate": 0.21622458458045207
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 23698000000.0,
+     "ebit": 8082000000.0,
+     "net_income": 6403000000.0,
+     "capex": 5353000000.0,
+     "d_and_a": 4108000000.0,
+     "nwc": null,
+     "book_value": 29351000000.0,
+     "tax_rate": 0.22085665612071065
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 22632000000.0,
+     "ebit": 6385000000.0,
+     "net_income": 4980000000.0,
+     "capex": 6115000000.0,
+     "d_and_a": 4461000000.0,
+     "nwc": null,
+     "book_value": 29833000000.0,
+     "tax_rate": 0.2172272870166614
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "ETN",
+   "cik": "0001551182",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "incomplete_provenance_ebit_2023-12-31: missing accession or filing date",
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_ebit_2023-12-31",
+    "incomplete_provenance_ebit_2024-12-31: missing accession or filing date",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_ebit_2024-12-31",
+    "incomplete_provenance_ebit_2025-12-31: missing accession or filing date",
+    "missing_common_income_2025-12-31: no bridged direct common tag",
+    "missing_ebit_2025-12-31",
+    "missing_bridge_preferred_equity"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001551182/fundamentals/annual.json",
+   "artifact_sha256": "bf5a19d840816c29fb2e2cf3803769722301ee7f4a49f0b22a303ec9d40f8ed4",
+   "bridge": {
+    "short_term_debt": 1137000000.0,
+    "long_term_debt": 8758000000.0,
+    "cash": 622000000.0,
+    "preferred_equity": null,
+    "minority_interest": 44000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 23196000000.0,
+     "ebit": null,
+     "net_income": 3218000000.0,
+     "capex": 757000000.0,
+     "d_and_a": 926000000.0,
+     "nwc": 4465000000.0,
+     "book_value": 19069000000.0,
+     "tax_rate": 0.1578259733472694
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 24878000000.0,
+     "ebit": null,
+     "net_income": 3794000000.0,
+     "capex": 808000000.0,
+     "d_and_a": 921000000.0,
+     "nwc": 4063000000.0,
+     "book_value": 18488000000.0,
+     "tax_rate": 0.16819973718791065
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 27448000000.0,
+     "ebit": null,
+     "net_income": 4087000000.0,
+     "capex": 919000000.0,
+     "d_and_a": 1006000000.0,
+     "nwc": 3500000000.0,
+     "book_value": 19425000000.0,
+     "tax_rate": 0.1705190592051906
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "FDX",
+   "cik": "0001048911",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2024-05-31",
+    "2025-05-31",
+    "2026-05-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2024-05-31: no bridged direct common tag",
+    "missing_nwc_2024-05-31",
+    "missing_common_income_2025-05-31: no bridged direct common tag",
+    "missing_common_income_2026-05-31: no bridged direct common tag",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001048911/fundamentals/annual.json",
+   "artifact_sha256": "f1749f84652c4a850487743711bb62e66521dafdc2cf10bd2580f53f87e1a6dd",
+   "bridge": {
+    "short_term_debt": 2251000000.0,
+    "long_term_debt": 23293000000.0,
+    "cash": 13311000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2024-05-31",
+     "revenue": 87693000000.0,
+     "ebit": 5559000000.0,
+     "net_income": 4331000000.0,
+     "capex": 5176000000.0,
+     "d_and_a": 4287000000.0,
+     "nwc": null,
+     "book_value": 27582000000.0,
+     "tax_rate": 0.25788211103495545
+    },
+    {
+     "period_end": "2025-05-31",
+     "revenue": 87926000000.0,
+     "ebit": 5217000000.0,
+     "net_income": 4092000000.0,
+     "capex": 4055000000.0,
+     "d_and_a": 4264000000.0,
+     "nwc": -1156000000.0,
+     "book_value": 28074000000.0,
+     "tax_rate": 0.24793236537401214
+    },
+    {
+     "period_end": "2026-05-31",
+     "revenue": 94720000000.0,
+     "ebit": 5463000000.0,
+     "net_income": 4433000000.0,
+     "capex": 3809000000.0,
+     "d_and_a": 4369000000.0,
+     "nwc": -2069000000.0,
+     "book_value": 31647000000.0,
+     "tax_rate": 0.23476609701363715
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "GE",
+   "cik": "0000040545",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "incomplete_provenance_ebit_2023-12-31: missing accession or filing date",
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_ebit_2023-12-31",
+    "missing_nwc_2023-12-31",
+    "incomplete_provenance_ebit_2024-12-31: missing accession or filing date",
+    "missing_ebit_2024-12-31",
+    "missing_nwc_2024-12-31",
+    "incomplete_provenance_ebit_2025-12-31: missing accession or filing date",
+    "missing_ebit_2025-12-31",
+    "missing_nwc_2025-12-31",
+    "missing_bridge_long_term_debt",
+    "missing_bridge_cash",
+    "missing_bridge_preferred_equity"
+   ],
+   "common_income_periods": 2,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0000040545-26-000008"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000040545/fundamentals/annual.json",
+   "artifact_sha256": "8067f472bf3dff601ae564f4aa00765569b864dd6b7d37d7b8570941fabc344d",
+   "bridge": {
+    "short_term_debt": 1686000000.0,
+    "long_term_debt": null,
+    "cash": null,
+    "preferred_equity": null,
+    "minority_interest": 221000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 35348000000.0,
+     "ebit": null,
+     "net_income": 9482000000.0,
+     "capex": 862000000.0,
+     "d_and_a": 797000000.0,
+     "nwc": null,
+     "book_value": 28605000000.0,
+     "tax_rate": 0.09520160904127957
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 38702000000.0,
+     "ebit": null,
+     "net_income": 6556000000.0,
+     "capex": 1032000000.0,
+     "d_and_a": 834000000.0,
+     "nwc": null,
+     "book_value": 19342000000.0,
+     "tax_rate": 0.126246719160105
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 45855000000.0,
+     "ebit": null,
+     "net_income": 8704000000.0,
+     "capex": 1273000000.0,
+     "d_and_a": 863000000.0,
+     "nwc": null,
+     "book_value": 18677000000.0,
+     "tax_rate": 0.1405
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "GILD",
+   "cik": "0000882095",
+   "sector_group": "healthcare",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_nwc_2023-12-31",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_nwc_2024-12-31",
+    "missing_common_income_2025-12-31: no bridged direct common tag",
+    "missing_nwc_2025-12-31",
+    "missing_bridge_cash"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000882095/fundamentals/annual.json",
+   "artifact_sha256": "5cfc072b0f4094cbdd1f3e4d56d8e4d1eaf550a63330ecaca4b08f75e1cfbbe4",
+   "bridge": {
+    "short_term_debt": 2807000000.0,
+    "long_term_debt": 22129000000.0,
+    "cash": null,
+    "preferred_equity": 0.0,
+    "minority_interest": -84000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 27116000000.0,
+     "ebit": 7605000000.0,
+     "net_income": 5665000000.0,
+     "capex": 585000000.0,
+     "d_and_a": 2654000000.0,
+     "nwc": null,
+     "book_value": 22749000000.0,
+     "tax_rate": 0.1818049278320455
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 28754000000.0,
+     "ebit": 1662000000.0,
+     "net_income": 480000000.0,
+     "capex": 523000000.0,
+     "d_and_a": 2781000000.0,
+     "nwc": null,
+     "book_value": 19330000000.0,
+     "tax_rate": 0.30579710144927535
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 29443000000.0,
+     "ebit": 10022000000.0,
+     "net_income": 8510000000.0,
+     "capex": 563000000.0,
+     "d_and_a": 2770000000.0,
+     "nwc": null,
+     "book_value": 22703000000.0,
+     "tax_rate": 0.13127807268272765
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "GIS",
+   "cik": null,
+   "sector_group": "staples",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "GOOGL",
+   "cik": "0001652044",
+   "sector_group": "communications",
+   "sic": "7370",
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_d_and_a_2023-12-31",
+    "missing_d_and_a_2024-12-31",
+    "missing_d_and_a_2025-12-31",
+    "missing_bridge_preferred_equity",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0001652044-26-000018"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001652044/fundamentals/annual.json",
+   "artifact_sha256": "fb0feb20d8eef965bb0dc67506fb6fb39abf4dc5771e7dea38ec9b06a178ef8c",
+   "bridge": {
+    "short_term_debt": 1996000000.0,
+    "long_term_debt": 46547000000.0,
+    "cash": 30708000000.0,
+    "preferred_equity": null,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 307394000000.0,
+     "ebit": 84293000000.0,
+     "net_income": 73795000000.0,
+     "capex": 32251000000.0,
+     "d_and_a": null,
+     "nwc": 66668000000.0,
+     "book_value": 283379000000.0,
+     "tax_rate": 0.13908559562280529
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 350018000000.0,
+     "ebit": 112390000000.0,
+     "net_income": 100118000000.0,
+     "capex": 52535000000.0,
+     "d_and_a": null,
+     "nwc": 54422000000.0,
+     "book_value": 325084000000.0,
+     "tax_rate": 0.16439510912657013
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 402836000000.0,
+     "ebit": 129039000000.0,
+     "net_income": 132170000000.0,
+     "capex": 91447000000.0,
+     "d_and_a": null,
+     "nwc": 74581000000.0,
+     "book_value": 415265000000.0,
+     "tax_rate": 0.16783146336242177
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "HON",
+   "cik": "0000773840",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_common_income_2025-12-31: no bridged direct common tag",
+    "missing_bridge_preferred_equity"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000773840/fundamentals/annual.json",
+   "artifact_sha256": "916bfe3522a4db678ea9d879dba2c076f49dc9942a559ac2698aab1eb7e3ca23",
+   "bridge": {
+    "short_term_debt": 7439000000.0,
+    "long_term_debt": 27500000000.0,
+    "cash": 12487000000.0,
+    "preferred_equity": null,
+    "minority_interest": 1126000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 33009000000.0,
+     "ebit": 7563000000.0,
+     "net_income": 5658000000.0,
+     "capex": 741000000.0,
+     "d_and_a": 1004000000.0,
+     "nwc": 919000000.0,
+     "book_value": 16434000000.0,
+     "tax_rate": 0.2038442900985301
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 34717000000.0,
+     "ebit": 7667000000.0,
+     "net_income": 5705000000.0,
+     "capex": 871000000.0,
+     "d_and_a": 1153000000.0,
+     "nwc": 2366000000.0,
+     "book_value": 18619000000.0,
+     "tax_rate": 0.20003203074951953
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 37442000000.0,
+     "ebit": 8127000000.0,
+     "net_income": 4729000000.0,
+     "capex": 986000000.0,
+     "d_and_a": 1388000000.0,
+     "nwc": 1925000000.0,
+     "book_value": 13904000000.0,
+     "tax_rate": 0.18407596785975164
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "HSY",
+   "cik": null,
+   "sector_group": "staples",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "IBM",
+   "cik": "0000051143",
+   "sector_group": "technology",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "incomplete_provenance_ebit_2023-12-31: missing accession or filing date",
+    "missing_ebit_2023-12-31",
+    "incomplete_provenance_ebit_2024-12-31: missing accession or filing date",
+    "missing_ebit_2024-12-31",
+    "tax_rate_out_of_bounds_2024-12-31",
+    "incomplete_provenance_ebit_2025-12-31: missing accession or filing date",
+    "missing_ebit_2025-12-31",
+    "tax_rate_out_of_bounds_2025-12-31"
+   ],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    },
+    {
+     "kind": "ebit",
+     "tag": "OperatingIncomeLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0000051143-26-000010"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000051143/fundamentals/annual.json",
+   "artifact_sha256": "e1aec91618a02e9ee0f8c64eddb128357f9cac84bc2f36a7bc639d12e66af482",
+   "bridge": {
+    "short_term_debt": 12849000000.0,
+    "long_term_debt": 54836000000.0,
+    "cash": 13587000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": 93000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 61860000000.0,
+     "ebit": null,
+     "net_income": 7502000000.0,
+     "capex": 1245000000.0,
+     "d_and_a": 4396000000.0,
+     "nwc": -1429000000.0,
+     "book_value": 22613000000.0,
+     "tax_rate": 0.13532796317606444
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 62753000000.0,
+     "ebit": null,
+     "net_income": 6023000000.0,
+     "capex": 1048000000.0,
+     "d_and_a": 4667000000.0,
+     "nwc": -2471000000.0,
+     "book_value": 27307000000.0,
+     "tax_rate": -0.03760565809901673
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 67535000000.0,
+     "ebit": null,
+     "net_income": 10593000000.0,
+     "capex": 1091000000.0,
+     "d_and_a": 5021000000.0,
+     "nwc": -2452000000.0,
+     "book_value": 32648000000.0,
+     "tax_rate": -0.02343144848954299
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "INTU",
+   "cik": "0000896878",
+   "sector_group": "technology",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2024-07-31",
+    "2025-07-31",
+    "2026-07-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2024-07-31: no bridged direct common tag",
+    "missing_nwc_2024-07-31",
+    "missing_common_income_2025-07-31: no bridged direct common tag",
+    "missing_nwc_2025-07-31",
+    "missing_common_income_2026-07-31: no bridged direct common tag",
+    "missing_nwc_2026-07-31",
+    "missing_bridge_short_term_debt",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000896878/fundamentals/annual.json",
+   "artifact_sha256": "ab4eb1cdd81df0c836934e4d011577c51eab4a7638727b8d99246fcdf5fd8971",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": 6420000000.0,
+    "cash": 4705000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2024-07-31",
+     "revenue": 16285000000.0,
+     "ebit": 3630000000.0,
+     "net_income": 2963000000.0,
+     "capex": 191000000.0,
+     "d_and_a": 642000000.0,
+     "nwc": null,
+     "book_value": 18436000000.0,
+     "tax_rate": 0.16535211267605635
+    },
+    {
+     "period_end": "2025-07-31",
+     "revenue": 18831000000.0,
+     "ebit": 4923000000.0,
+     "net_income": 3869000000.0,
+     "capex": 84000000.0,
+     "d_and_a": 653000000.0,
+     "nwc": null,
+     "book_value": 19710000000.0,
+     "tax_rate": 0.19962763756723212
+    },
+    {
+     "period_end": "2026-07-31",
+     "revenue": 21448000000.0,
+     "ebit": 5884000000.0,
+     "net_income": 4566000000.0,
+     "capex": 175000000.0,
+     "d_and_a": 672000000.0,
+     "nwc": null,
+     "book_value": 18992000000.0,
+     "tax_rate": 0.24115007478810038
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "ITW",
+   "cik": null,
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "JNJ",
+   "cik": "0000200406",
+   "sector_group": "healthcare",
+   "sic": "2834",
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-29",
+    "2025-12-28"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "incomplete_provenance_ebit_2023-12-31: missing accession or filing date",
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_ebit_2023-12-31",
+    "incomplete_provenance_ebit_2024-12-29: missing accession or filing date",
+    "missing_common_income_2024-12-29: no bridged direct common tag",
+    "missing_ebit_2024-12-29",
+    "incomplete_provenance_ebit_2025-12-28: missing accession or filing date",
+    "missing_common_income_2025-12-28: no bridged direct common tag",
+    "missing_ebit_2025-12-28",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000200406/fundamentals/annual.json",
+   "artifact_sha256": "5c2e360915ac628cf86c0bc11c60f06f60161d1594ccdedd09b5ae89eed7f5b4",
+   "bridge": {
+    "short_term_debt": 8500000000.0,
+    "long_term_debt": 39438000000.0,
+    "cash": 19709000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 85159000000.0,
+     "ebit": null,
+     "net_income": 35153000000.0,
+     "capex": 4543000000.0,
+     "d_and_a": 7486000000.0,
+     "nwc": -11146000000.0,
+     "book_value": 68774000000.0,
+     "tax_rate": 0.11525693798964282
+    },
+    {
+     "period_end": "2024-12-29",
+     "revenue": 88821000000.0,
+     "ebit": null,
+     "net_income": 14066000000.0,
+     "capex": 4424000000.0,
+     "d_and_a": 7339000000.0,
+     "nwc": -12533000000.0,
+     "book_value": 71490000000.0,
+     "tax_rate": 0.1570683765805717
+    },
+    {
+     "period_end": "2025-12-28",
+     "revenue": 94193000000.0,
+     "ebit": null,
+     "net_income": 26804000000.0,
+     "capex": 4832000000.0,
+     "d_and_a": 7503000000.0,
+     "nwc": -9711000000.0,
+     "book_value": 81544000000.0,
+     "tax_rate": 0.177311930266106
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "JPM",
+   "cik": "0000019617",
+   "sector_group": "financial",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "incomplete_provenance_ebit_2023-12-31: missing accession or filing date",
+    "missing_ebit_2023-12-31",
+    "missing_capex_2023-12-31",
+    "missing_nwc_2023-12-31",
+    "incomplete_provenance_ebit_2024-12-31: missing accession or filing date",
+    "missing_ebit_2024-12-31",
+    "missing_capex_2024-12-31",
+    "missing_nwc_2024-12-31",
+    "incomplete_provenance_ebit_2025-12-31: missing accession or filing date",
+    "missing_ebit_2025-12-31",
+    "missing_capex_2025-12-31",
+    "missing_nwc_2025-12-31",
+    "missing_bridge_short_term_debt",
+    "missing_bridge_long_term_debt",
+    "missing_bridge_cash",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    },
+    {
+     "kind": "ebit",
+     "tag": "OperatingIncomeLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [
+    "0001628280-26-008131"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000019617/fundamentals/annual.json",
+   "artifact_sha256": "44270877807764dc6c35d3224b4ddeea10270ebe7dd2a5f40b4e62a261f5d767",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": null,
+    "cash": null,
+    "preferred_equity": 20045000000.0,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 158104000000.0,
+     "ebit": null,
+     "net_income": 49552000000.0,
+     "capex": null,
+     "d_and_a": 7512000000.0,
+     "nwc": null,
+     "book_value": 327878000000.0,
+     "tax_rate": 0.1957410893981692
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 177556000000.0,
+     "ebit": null,
+     "net_income": 58471000000.0,
+     "capex": null,
+     "d_and_a": 7938000000.0,
+     "nwc": null,
+     "book_value": 344758000000.0,
+     "tax_rate": 0.22122774070670342
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 182447000000.0,
+     "ebit": null,
+     "net_income": 57048000000.0,
+     "capex": null,
+     "d_and_a": 8821000000.0,
+     "nwc": null,
+     "book_value": 362438000000.0,
+     "tax_rate": 0.21416075487292513
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "KEYS",
+   "cik": null,
+   "sector_group": "technology",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "KMB",
+   "cik": null,
+   "sector_group": "staples",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "KO",
+   "cik": "0000021344",
+   "sector_group": "staples",
+   "sic": "2080",
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_common_income_2025-12-31: no bridged direct common tag"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000021344/fundamentals/annual.json",
+   "artifact_sha256": "11fee0ea7003489ede26fe68f85a0ffe4ce5ca011977db909d62c906c8ffd395",
+   "bridge": {
+    "short_term_debt": 3317000000.0,
+    "long_term_debt": 42119000000.0,
+    "cash": 10270000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": 2106000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 45754000000.0,
+     "ebit": 11311000000.0,
+     "net_income": 10714000000.0,
+     "capex": 1852000000.0,
+     "d_and_a": 1128000000.0,
+     "nwc": -36000000.0,
+     "book_value": 25941000000.0,
+     "tax_rate": 0.17364113650401483
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 47061000000.0,
+     "ebit": 9992000000.0,
+     "net_income": 10631000000.0,
+     "capex": 2064000000.0,
+     "d_and_a": 1075000000.0,
+     "nwc": -8293000000.0,
+     "book_value": 24856000000.0,
+     "tax_rate": 0.1862295583065872
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 47941000000.0,
+     "ebit": 13762000000.0,
+     "net_income": 13107000000.0,
+     "capex": 2112000000.0,
+     "d_and_a": 1050000000.0,
+     "nwc": 2810000000.0,
+     "book_value": 32169000000.0,
+     "tax_rate": 0.1788348543567946
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "LECO",
+   "cik": "0000059527",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_common_income_2025-12-31: no bridged direct common tag"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000059527/fundamentals/annual.json",
+   "artifact_sha256": "2c0c6c12f62b7566bbb75e0a1b2c6fb79418eeef24adebcf8b6c3ab5252f8a7a",
+   "bridge": {
+    "short_term_debt": 143780000.0,
+    "long_term_debt": 1150228000.0,
+    "cash": 308789000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": 0.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 4191636000.0,
+     "ebit": 717849000.0,
+     "net_income": 545248000.0,
+     "capex": 90987000.0,
+     "d_and_a": 86670000.0,
+     "nwc": 547153000.0,
+     "book_value": 1308852000.0,
+     "tax_rate": 0.20617995358628902
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 4008670000.0,
+     "ebit": 636462000.0,
+     "net_income": 466108000.0,
+     "capex": 116603000.0,
+     "d_and_a": 88238000.0,
+     "nwc": 499741000.0,
+     "book_value": 1327433000.0,
+     "tax_rate": 0.21550318186178888
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 4233003000.0,
+     "ebit": 718059000.0,
+     "net_income": 520533000.0,
+     "capex": 126974000.0,
+     "d_and_a": 98546000.0,
+     "nwc": 617812000.0,
+     "book_value": 1469794000.0,
+     "tax_rate": 0.22935376415722852
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "LIN",
+   "cik": "0001707925",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_common_income_2025-12-31: no bridged direct common tag"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001707925/fundamentals/annual.json",
+   "artifact_sha256": "5463b187a16b7772e958d585f6cd2c54ccc119fe2e1f95bf61706f9e9a41dfc1",
+   "bridge": {
+    "short_term_debt": 6306000000.0,
+    "long_term_debt": 20683000000.0,
+    "cash": 5056000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": 1483000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 32854000000.0,
+     "ebit": 8024000000.0,
+     "net_income": 6199000000.0,
+     "capex": 3787000000.0,
+     "d_and_a": 3816000000.0,
+     "nwc": -1785000000.0,
+     "book_value": 41082000000.0,
+     "tax_rate": 0.2270906359539309
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 33005000000.0,
+     "ebit": 8635000000.0,
+     "net_income": 6565000000.0,
+     "capex": 4497000000.0,
+     "d_and_a": 3780000000.0,
+     "nwc": -169000000.0,
+     "book_value": 38092000000.0,
+     "tax_rate": 0.2336328626444159
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 33986000000.0,
+     "ebit": 8923000000.0,
+     "net_income": 6898000000.0,
+     "capex": 5261000000.0,
+     "d_and_a": 3763000000.0,
+     "nwc": -623000000.0,
+     "book_value": 38245000000.0,
+     "tax_rate": 0.22355850286613466
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "LLY",
+   "cik": "0000059478",
+   "sector_group": "healthcare",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "incomplete_provenance_ebit_2023-12-31: missing accession or filing date",
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_ebit_2023-12-31",
+    "missing_capex_2023-12-31",
+    "incomplete_provenance_ebit_2024-12-31: missing accession or filing date",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_ebit_2024-12-31",
+    "missing_capex_2024-12-31",
+    "incomplete_provenance_ebit_2025-12-31: missing accession or filing date",
+    "missing_common_income_2025-12-31: no bridged direct common tag",
+    "missing_ebit_2025-12-31",
+    "missing_capex_2025-12-31",
+    "missing_bridge_preferred_equity",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    },
+    {
+     "kind": "ebit",
+     "tag": "OperatingIncomeLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000059478/fundamentals/annual.json",
+   "artifact_sha256": "bd054d6a8c27531d5d942da6233691d3430cd7e8e448f2efb262f99574f49ccf",
+   "bridge": {
+    "short_term_debt": 1635000000.0,
+    "long_term_debt": 40868000000.0,
+    "cash": 7268000000.0,
+    "preferred_equity": null,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 34124000000.0,
+     "ebit": null,
+     "net_income": 5240000000.0,
+     "capex": null,
+     "d_and_a": 1527000000.0,
+     "nwc": 2519700000.0,
+     "book_value": 10771900000.0,
+     "tax_rate": 0.2004882514494965
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 45043000000.0,
+     "ebit": null,
+     "net_income": 10590000000.0,
+     "capex": null,
+     "d_and_a": 1767000000.0,
+     "nwc": 6213000000.0,
+     "book_value": 14272000000.0,
+     "tax_rate": 0.16482649842271294
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 65179000000.0,
+     "ebit": null,
+     "net_income": 20640000000.0,
+     "capex": null,
+     "d_and_a": 1997000000.0,
+     "nwc": 14768000000.0,
+     "book_value": 26535000000.0,
+     "tax_rate": 0.19785472776028915
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "LMT",
+   "cik": "0000936468",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_nwc_2023-12-31",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_nwc_2024-12-31",
+    "missing_common_income_2025-12-31: no bridged direct common tag",
+    "missing_nwc_2025-12-31",
+    "missing_bridge_short_term_debt",
+    "missing_bridge_preferred_equity",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000936468/fundamentals/annual.json",
+   "artifact_sha256": "4a6bb82c49314cdafd87e71cbce399a925ce4d6404c0752d3e133647c2bf8f98",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": 20532000000.0,
+    "cash": 4121000000.0,
+    "preferred_equity": null,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 67571000000.0,
+     "ebit": 8507000000.0,
+     "net_income": 6920000000.0,
+     "capex": 1691000000.0,
+     "d_and_a": 1430000000.0,
+     "nwc": null,
+     "book_value": 6835000000.0,
+     "tax_rate": 0.14546801679427018
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 71043000000.0,
+     "ebit": 7013000000.0,
+     "net_income": 5336000000.0,
+     "capex": 1685000000.0,
+     "d_and_a": 1559000000.0,
+     "nwc": null,
+     "book_value": 6333000000.0,
+     "tax_rate": 0.14212218649517686
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 75048000000.0,
+     "ebit": 7731000000.0,
+     "net_income": 5017000000.0,
+     "capex": 1649000000.0,
+     "d_and_a": 1687000000.0,
+     "nwc": null,
+     "book_value": 6721000000.0,
+     "tax_rate": 0.15281999324552517
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "LOW",
+   "cik": "0000060667",
+   "sector_group": "staples",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2024-02-02",
+    "2025-01-31",
+    "2026-01-30"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_nwc_2025-01-31",
+    "missing_nwc_2026-01-30",
+    "missing_bridge_short_term_debt",
+    "missing_bridge_preferred_equity",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [
+    "0000060667-26-000029"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000060667/fundamentals/annual.json",
+   "artifact_sha256": "e33d64ad25b24c2bcce8653f69bad4c52e768e327b645c3277bef7e0c33ae003",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": 37490000000.0,
+    "cash": 982000000.0,
+    "preferred_equity": null,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2024-02-02",
+     "revenue": 86377000000.0,
+     "ebit": 11557000000.0,
+     "net_income": 7726000000.0,
+     "capex": 1964000000.0,
+     "d_and_a": 1923000000.0,
+     "nwc": 3032000000.0,
+     "book_value": -15050000000.0,
+     "tax_rate": 0.2406879606879607
+    },
+    {
+     "period_end": "2025-01-31",
+     "revenue": 83674000000.0,
+     "ebit": 10466000000.0,
+     "net_income": 6957000000.0,
+     "capex": 1927000000.0,
+     "d_and_a": 1972000000.0,
+     "nwc": null,
+     "book_value": -14231000000.0,
+     "tax_rate": 0.23992133726647
+    },
+    {
+     "period_end": "2026-01-30",
+     "revenue": 86286000000.0,
+     "ebit": 10153000000.0,
+     "net_income": 6654000000.0,
+     "capex": 2213000000.0,
+     "d_and_a": 2194000000.0,
+     "nwc": null,
+     "book_value": -9917000000.0,
+     "tax_rate": 0.23928203955641936
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "MCK",
+   "cik": null,
+   "sector_group": "healthcare",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "MDLZ",
+   "cik": null,
+   "sector_group": "staples",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "MDT",
+   "cik": null,
+   "sector_group": "healthcare",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "META",
+   "cik": "0001326801",
+   "sector_group": "communications",
+   "sic": "7370",
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_nwc_2023-12-31",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_nwc_2024-12-31",
+    "missing_common_income_2025-12-31: no bridged direct common tag",
+    "missing_nwc_2025-12-31",
+    "missing_bridge_short_term_debt",
+    "missing_bridge_preferred_equity",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001326801/fundamentals/annual.json",
+   "artifact_sha256": "44bc26b6f3a56ba81d20213ba2d84d5a8f4d4d47ec8bebe4d21f60db82520d9a",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": 58744000000.0,
+    "cash": 35873000000.0,
+    "preferred_equity": null,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 134902000000.0,
+     "ebit": 46751000000.0,
+     "net_income": 39098000000.0,
+     "capex": 27045000000.0,
+     "d_and_a": 11178000000.0,
+     "nwc": null,
+     "book_value": 153168000000.0,
+     "tax_rate": 0.17563464620055663
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 164501000000.0,
+     "ebit": 69380000000.0,
+     "net_income": 62360000000.0,
+     "capex": 37256000000.0,
+     "d_and_a": 15498000000.0,
+     "nwc": null,
+     "book_value": 182637000000.0,
+     "tax_rate": 0.11750137978857393
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 200966000000.0,
+     "ebit": 83276000000.0,
+     "net_income": 60458000000.0,
+     "capex": 69691000000.0,
+     "d_and_a": 18616000000.0,
+     "nwc": null,
+     "book_value": 217243000000.0,
+     "tax_rate": 0.2964436996695061
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "MIDD",
+   "cik": "0000769520",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-30",
+    "2024-12-28",
+    "2026-01-03"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-12-30: no bridged direct common tag",
+    "missing_nwc_2023-12-30",
+    "missing_common_income_2024-12-28: no bridged direct common tag",
+    "missing_nwc_2024-12-28",
+    "missing_common_income_2026-01-03: no bridged direct common tag",
+    "missing_nwc_2026-01-03",
+    "missing_bridge_short_term_debt",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000769520/fundamentals/annual.json",
+   "artifact_sha256": "e1cca1548fcb164fa3bf3052fb0c7b780f4070e13de8a563fa95bec01a4b17ec",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": 2128582000.0,
+    "cash": 222239000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-30",
+     "revenue": 3242090000.0,
+     "ebit": 652427000.0,
+     "net_income": 400882000.0,
+     "capex": 59173000.0,
+     "d_and_a": 109917000.0,
+     "nwc": null,
+     "book_value": 3249889000.0,
+     "tax_rate": 0.22958513654678406
+    },
+    {
+     "period_end": "2024-12-28",
+     "revenue": 3150239000.0,
+     "ebit": 644123000.0,
+     "net_income": 428433000.0,
+     "capex": 36690000.0,
+     "d_and_a": 104113000.0,
+     "nwc": null,
+     "book_value": 3638431000.0,
+     "tax_rate": 0.25635006014870243
+    },
+    {
+     "period_end": "2026-01-03",
+     "revenue": 3201202000.0,
+     "ebit": 574891000.0,
+     "net_income": -277731000.0,
+     "capex": 70729000.0,
+     "d_and_a": 105305000.0,
+     "nwc": null,
+     "book_value": 2776229000.0,
+     "tax_rate": 0.23846975273443574
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "MKC",
+   "cik": null,
+   "sector_group": "staples",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "MMM",
+   "cik": null,
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "MPC",
+   "cik": null,
+   "sector_group": "energy",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "MRK",
+   "cik": null,
+   "sector_group": "healthcare",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "MSFT",
+   "cik": "0000789019",
+   "sector_group": "technology",
+   "sic": "7372",
+   "status": "READY",
+   "periods": [
+    "2024-06-30",
+    "2025-06-30",
+    "2026-06-30"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2024-06-30: no bridged direct common tag",
+    "missing_common_income_2025-06-30: no bridged direct common tag",
+    "missing_common_income_2026-06-30: no bridged direct common tag",
+    "missing_nwc_2026-06-30",
+    "missing_bridge_short_term_debt",
+    "missing_bridge_preferred_equity",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000789019/fundamentals/annual.json",
+   "artifact_sha256": "1335906f9d71e5221ac8cac8c1aaeaadd83b4f5a1d3b40963f0cd4a0dd53f8fc",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": 31067000000.0,
+    "cash": 20935000000.0,
+    "preferred_equity": null,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2024-06-30",
+     "revenue": 245122000000.0,
+     "ebit": 109433000000.0,
+     "net_income": 88136000000.0,
+     "capex": 44477000000.0,
+     "d_and_a": 20000000000.0,
+     "nwc": 25075000000.0,
+     "book_value": 268477000000.0,
+     "tax_rate": 0.18231326597827197
+    },
+    {
+     "period_end": "2025-06-30",
+     "revenue": 281724000000.0,
+     "ebit": 128528000000.0,
+     "net_income": 101832000000.0,
+     "capex": 64551000000.0,
+     "d_and_a": 28000000000.0,
+     "nwc": 22670000000.0,
+     "book_value": 343479000000.0,
+     "tax_rate": 0.17629644009803683
+    },
+    {
+     "period_end": "2026-06-30",
+     "revenue": 331839000000.0,
+     "ebit": 155237000000.0,
+     "net_income": 133749000000.0,
+     "capex": 115948000000.0,
+     "d_and_a": 39000000000.0,
+     "nwc": null,
+     "book_value": 442387000000.0,
+     "tax_rate": 0.19396265985271252
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "MSI",
+   "cik": null,
+   "sector_group": "technology",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "NEE",
+   "cik": "0000753308",
+   "sector_group": "utilities",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2010-12-31",
+    "2011-12-31",
+    "2012-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2010-12-31: no bridged direct common tag",
+    "missing_capex_2010-12-31",
+    "missing_common_income_2011-12-31: no bridged direct common tag",
+    "missing_capex_2011-12-31",
+    "missing_common_income_2012-12-31: no bridged direct common tag",
+    "missing_capex_2012-12-31",
+    "missing_bridge_preferred_equity",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000753308/fundamentals/annual.json",
+   "artifact_sha256": "250af6b63bc541574a625ca74e9ebacff7d9db12853737647f9e430b97f39792",
+   "bridge": {
+    "short_term_debt": 2971000000.0,
+    "long_term_debt": 23177000000.0,
+    "cash": 438000000.0,
+    "preferred_equity": null,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2010-12-31",
+     "revenue": 15317000000.0,
+     "ebit": 3227000000.0,
+     "net_income": 1957000000.0,
+     "capex": null,
+     "d_and_a": 1788000000.0,
+     "nwc": 786000000.0,
+     "book_value": 14461000000.0,
+     "tax_rate": 0.21374045801526717
+    },
+    {
+     "period_end": "2011-12-31",
+     "revenue": 15341000000.0,
+     "ebit": 3261000000.0,
+     "net_income": 1923000000.0,
+     "capex": null,
+     "d_and_a": 1567000000.0,
+     "nwc": -1368000000.0,
+     "book_value": 14943000000.0,
+     "tax_rate": 0.21574225122349103
+    },
+    {
+     "period_end": "2012-12-31",
+     "revenue": 14256000000.0,
+     "ebit": 3276000000.0,
+     "net_income": 1911000000.0,
+     "capex": null,
+     "d_and_a": 1518000000.0,
+     "nwc": -1109000000.0,
+     "book_value": 16068000000.0,
+     "tax_rate": 0.2658470995005763
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "NKE",
+   "cik": null,
+   "sector_group": "staples",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "NVDA",
+   "cik": "0001045810",
+   "sector_group": "technology",
+   "sic": "3674",
+   "status": "READY",
+   "periods": [
+    "2024-01-28",
+    "2025-01-26",
+    "2026-01-25"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2024-01-28: no bridged direct common tag",
+    "missing_common_income_2025-01-26: no bridged direct common tag",
+    "missing_common_income_2026-01-25: no bridged direct common tag",
+    "missing_bridge_preferred_equity",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001045810/fundamentals/annual.json",
+   "artifact_sha256": "1ff2e44a702b5e42437ad16441553ca7f8eb2a692ba72e305199ac73ae824545",
+   "bridge": {
+    "short_term_debt": 999000000.0,
+    "long_term_debt": 7469000000.0,
+    "cash": 10605000000.0,
+    "preferred_equity": null,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2024-01-28",
+     "revenue": 60922000000.0,
+     "ebit": 32972000000.0,
+     "net_income": 29760000000.0,
+     "capex": 1069000000.0,
+     "d_and_a": 1508000000.0,
+     "nwc": 27684000000.0,
+     "book_value": 42978000000.0,
+     "tax_rate": 0.1199952687917677
+    },
+    {
+     "period_end": "2025-01-26",
+     "revenue": 130497000000.0,
+     "ebit": 81453000000.0,
+     "net_income": 72880000000.0,
+     "capex": 3236000000.0,
+     "d_and_a": 1864000000.0,
+     "nwc": 53490000000.0,
+     "book_value": 79327000000.0,
+     "tax_rate": 0.13264941803727417
+    },
+    {
+     "period_end": "2026-01-25",
+     "revenue": 215938000000.0,
+     "ebit": 130387000000.0,
+     "net_income": 120067000000.0,
+     "capex": 6042000000.0,
+     "d_and_a": 2843000000.0,
+     "nwc": 83836000000.0,
+     "book_value": 157293000000.0,
+     "tax_rate": 0.1511700247437257
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "ODFL",
+   "cik": "0000878927",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "BUILD_UNAVAILABLE",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000878927/fundamentals/annual.json",
+   "artifact_sha256": "6beb70a6f1cac988a38c24711d0629ee40ffce45830ead0b3671d896a98d83b8",
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "ORCL",
+   "cik": "0001341439",
+   "sector_group": "technology",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2024-05-31",
+    "2025-05-31",
+    "2026-05-31"
+   ],
+   "gate_eligible": true,
+   "gate_reasons": [],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [
+    "0001193125-26-277521"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001341439/fundamentals/annual.json",
+   "artifact_sha256": "ec8860c8f500dfbca2262d9e1d12b5389cc34a3102f4b27d7d3fadef5d5cdfae",
+   "bridge": {
+    "short_term_debt": 7199000000.0,
+    "long_term_debt": 122342000000.0,
+    "cash": 31289000000.0,
+    "preferred_equity": 4954000000.0,
+    "minority_interest": 548000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2024-05-31",
+     "revenue": 52961000000.0,
+     "ebit": 15353000000.0,
+     "net_income": 10467000000.0,
+     "capex": 6866000000.0,
+     "d_and_a": 6139000000.0,
+     "nwc": -8839000000.0,
+     "book_value": 9239000000.0,
+     "tax_rate": 0.10850864491951281
+    },
+    {
+     "period_end": "2025-05-31",
+     "revenue": 57399000000.0,
+     "ebit": 17678000000.0,
+     "net_income": 12443000000.0,
+     "capex": 21215000000.0,
+     "d_and_a": 6174000000.0,
+     "nwc": -11579000000.0,
+     "book_value": 20451000000.0,
+     "tax_rate": 0.12125706214689265
+    },
+    {
+     "period_end": "2026-05-31",
+     "revenue": 67357000000.0,
+     "ebit": 20606000000.0,
+     "net_income": 17087000000.0,
+     "capex": 55663000000.0,
+     "d_and_a": 9294000000.0,
+     "nwc": -19287000000.0,
+     "book_value": 42508000000.0,
+     "tax_rate": 0.12616344481947428
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "PAYX",
+   "cik": "0000723531",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2024-05-31",
+    "2025-05-31",
+    "2026-05-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_bridge_preferred_equity",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [
+    "0001193125-26-307785"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000723531/fundamentals/annual.json",
+   "artifact_sha256": "a4b04d0367edf51f041ce18d3d6fb1d603177539b8e4cc766fdffef079a135ed",
+   "bridge": {
+    "short_term_debt": 0.0,
+    "long_term_debt": 4556100000.0,
+    "cash": 1088200000.0,
+    "preferred_equity": null,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2024-05-31",
+     "revenue": 5132000000.0,
+     "ebit": 2174100000.0,
+     "net_income": 1690400000.0,
+     "capex": 161400000.0,
+     "d_and_a": 176500000.0,
+     "nwc": 492200000.0,
+     "book_value": 3801000000.0,
+     "tax_rate": 0.23787195671776376
+    },
+    {
+     "period_end": "2025-05-31",
+     "revenue": 5410000000.0,
+     "ebit": 2207700000.0,
+     "net_income": 1657300000.0,
+     "capex": 191800000.0,
+     "d_and_a": 209500000.0,
+     "nwc": 750000000.0,
+     "book_value": 4128000000.0,
+     "tax_rate": 0.23833815892274463
+    },
+    {
+     "period_end": "2026-05-31",
+     "revenue": 6301100000.0,
+     "ebit": 2510500000.0,
+     "net_income": 1760100000.0,
+     "capex": 234900000.0,
+     "d_and_a": 442600000.0,
+     "nwc": 684500000.0,
+     "book_value": 3735100000.0,
+     "tax_rate": 0.23834869531351421
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "PEP",
+   "cik": "0000077476",
+   "sector_group": "staples",
+   "sic": "2080",
+   "status": "READY",
+   "periods": [
+    "2023-12-30",
+    "2024-12-28",
+    "2025-12-27"
+   ],
+   "gate_eligible": true,
+   "gate_reasons": [],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [
+    "0000077476-26-000007"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000077476/fundamentals/annual.json",
+   "artifact_sha256": "a036fd35179da79fc101b6e0899f83b8155029a91d88e9bc09ebfad6006afbd9",
+   "bridge": {
+    "short_term_debt": 6861000000.0,
+    "long_term_debt": 42321000000.0,
+    "cash": 9159000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": 141000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-30",
+     "revenue": 91471000000.0,
+     "ebit": 11986000000.0,
+     "net_income": 9074000000.0,
+     "capex": 5518000000.0,
+     "d_and_a": 2948000000.0,
+     "nwc": -7898000000.0,
+     "book_value": 18637000000.0,
+     "tax_rate": 0.19812560217219935
+    },
+    {
+     "period_end": "2024-12-28",
+     "revenue": 91854000000.0,
+     "ebit": 12887000000.0,
+     "net_income": 9578000000.0,
+     "capex": 5318000000.0,
+     "d_and_a": 3160000000.0,
+     "nwc": -7133000000.0,
+     "book_value": 18041000000.0,
+     "tax_rate": 0.19420726603047045
+    },
+    {
+     "period_end": "2025-12-27",
+     "revenue": 93925000000.0,
+     "ebit": 11498000000.0,
+     "net_income": 8240000000.0,
+     "capex": 4415000000.0,
+     "d_and_a": 3451000000.0,
+     "nwc": -7113000000.0,
+     "book_value": 20406000000.0,
+     "tax_rate": 0.1902577118313159
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "PG",
+   "cik": "0000080424",
+   "sector_group": "staples",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2024-06-30",
+    "2025-06-30",
+    "2026-06-30"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_nwc_2024-06-30",
+    "missing_common_income_2025-06-30: no bridged direct common tag",
+    "missing_nwc_2025-06-30",
+    "missing_nwc_2026-06-30",
+    "missing_bridge_cash"
+   ],
+   "common_income_periods": 2,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [
+    "0000080424-26-000103"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000080424/fundamentals/annual.json",
+   "artifact_sha256": "cf803118f7ad2e72bbbe6d4ce0a1cd14c95f060feab55b15518ee69aa29cb694",
+   "bridge": {
+    "short_term_debt": 11296000000.0,
+    "long_term_debt": 22842000000.0,
+    "cash": null,
+    "preferred_equity": 160000000.0,
+    "minority_interest": 230000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2024-06-30",
+     "revenue": 84039000000.0,
+     "ebit": 18545000000.0,
+     "net_income": 14879000000.0,
+     "capex": 3322000000.0,
+     "d_and_a": 2896000000.0,
+     "nwc": null,
+     "book_value": 50559000000.0,
+     "tax_rate": 0.20185491178508608
+    },
+    {
+     "period_end": "2025-06-30",
+     "revenue": 84284000000.0,
+     "ebit": 20451000000.0,
+     "net_income": 15974000000.0,
+     "capex": 3773000000.0,
+     "d_and_a": 2847000000.0,
+     "nwc": null,
+     "book_value": 52284000000.0,
+     "tax_rate": 0.20340159666782368
+    },
+    {
+     "period_end": "2026-06-30",
+     "revenue": 87032000000.0,
+     "ebit": 19748000000.0,
+     "net_income": 16046000000.0,
+     "capex": 4409000000.0,
+     "d_and_a": 3160000000.0,
+     "nwc": null,
+     "book_value": 54311000000.0,
+     "tax_rate": 0.20773421013888207
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "PH",
+   "cik": null,
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "PPG",
+   "cik": null,
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "QCOM",
+   "cik": null,
+   "sector_group": "technology",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "ROK",
+   "cik": null,
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "SBUX",
+   "cik": null,
+   "sector_group": "staples",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "SHW",
+   "cik": null,
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "SLB",
+   "cik": null,
+   "sector_group": "energy",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "SO",
+   "cik": null,
+   "sector_group": "utilities",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "SYK",
+   "cik": null,
+   "sector_group": "healthcare",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "SYY",
+   "cik": "0000096021",
+   "sector_group": "staples",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2024-06-29",
+    "2025-06-28",
+    "2026-06-27"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2024-06-29: no bridged direct common tag",
+    "missing_nwc_2024-06-29",
+    "missing_common_income_2025-06-28: no bridged direct common tag",
+    "missing_nwc_2025-06-28",
+    "missing_common_income_2026-06-27: no bridged direct common tag",
+    "missing_nwc_2026-06-27",
+    "missing_bridge_short_term_debt",
+    "missing_bridge_long_term_debt",
+    "missing_bridge_minority_interest"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000096021/fundamentals/annual.json",
+   "artifact_sha256": "21fcaa102466e6f1be5f20c495f69b303ca9368b88b24be11e751d84ab68e998",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": null,
+    "cash": 1786000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": null,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2024-06-29",
+     "revenue": 78844000000.0,
+     "ebit": 3202000000.0,
+     "net_income": 1955000000.0,
+     "capex": 832000000.0,
+     "d_and_a": 873000000.0,
+     "nwc": null,
+     "book_value": 1860000000.0,
+     "tax_rate": 0.2378167641325536
+    },
+    {
+     "period_end": "2025-06-28",
+     "revenue": 81370000000.0,
+     "ebit": 3088000000.0,
+     "net_income": 1828000000.0,
+     "capex": 906000000.0,
+     "d_and_a": 945000000.0,
+     "nwc": null,
+     "book_value": 1830000000.0,
+     "tax_rate": 0.24306418219461698
+    },
+    {
+     "period_end": "2026-06-27",
+     "revenue": 84553000000.0,
+     "ebit": 3095000000.0,
+     "net_income": 1757000000.0,
+     "capex": 700000000.0,
+     "d_and_a": 976000000.0,
+     "nwc": null,
+     "book_value": 2666000000.0,
+     "tax_rate": 0.22803163444639718
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "T",
+   "cik": "0000732717",
+   "sector_group": "communications",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": true,
+   "gate_reasons": [],
+   "common_income_periods": 3,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [
+    "0000732717-26-000120"
+   ],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000732717/fundamentals/annual.json",
+   "artifact_sha256": "d2eb12f5de0b44a4226cea78f62a177f5e0b58aaf80ffeaae1620feb1aaef2fd",
+   "bridge": {
+    "short_term_debt": 9011000000.0,
+    "long_term_debt": 127089000000.0,
+    "cash": 18234000000.0,
+    "preferred_equity": 0.0,
+    "minority_interest": 15958000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 122428000000.0,
+     "ebit": 23461000000.0,
+     "net_income": 14400000000.0,
+     "capex": 17853000000.0,
+     "d_and_a": 18777000000.0,
+     "nwc": -11914000000.0,
+     "book_value": 117442000000.0,
+     "tax_rate": 0.2128677952438533
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 122336000000.0,
+     "ebit": 19049000000.0,
+     "net_income": 10948000000.0,
+     "capex": 20263000000.0,
+     "d_and_a": 20580000000.0,
+     "nwc": -13913000000.0,
+     "book_value": 118245000000.0,
+     "tax_rate": 0.2661995448556713
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 125648000000.0,
+     "ebit": 24162000000.0,
+     "net_income": 21953000000.0,
+     "capex": 20842000000.0,
+     "d_and_a": 20886000000.0,
+     "nwc": -14271000000.0,
+     "book_value": 126491000000.0,
+     "tax_rate": 0.13407635057577666
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "TGT",
+   "cik": null,
+   "sector_group": "staples",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "TMO",
+   "cik": null,
+   "sector_group": "healthcare",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "TSN",
+   "cik": "0000100493",
+   "sector_group": "staples",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-09-30",
+    "2024-09-28",
+    "2025-09-27"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-09-30: no bridged direct common tag",
+    "missing_common_income_2024-09-28: no bridged direct common tag",
+    "missing_common_income_2025-09-27: no bridged direct common tag",
+    "missing_bridge_long_term_debt",
+    "missing_bridge_preferred_equity"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000100493/fundamentals/annual.json",
+   "artifact_sha256": "38c1e7c2817514383127206927e076081a2648fa1478b9fb67d1406802ca242b",
+   "bridge": {
+    "short_term_debt": 909000000.0,
+    "long_term_debt": null,
+    "cash": 1229000000.0,
+    "preferred_equity": null,
+    "minority_interest": 142000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-09-30",
+     "revenue": 52881000000.0,
+     "ebit": -395000000.0,
+     "net_income": -648000000.0,
+     "capex": 1939000000.0,
+     "d_and_a": 1329000000.0,
+     "nwc": 3545000000.0,
+     "book_value": 18255000000.0,
+     "tax_rate": 0.04277286135693215
+    },
+    {
+     "period_end": "2024-09-28",
+     "revenue": 53309000000.0,
+     "ebit": 1409000000.0,
+     "net_income": 800000000.0,
+     "capex": 1132000000.0,
+     "d_and_a": 1388000000.0,
+     "nwc": 3321000000.0,
+     "book_value": 18390000000.0,
+     "tax_rate": 0.24725274725274726
+    },
+    {
+     "period_end": "2025-09-27",
+     "revenue": 54441000000.0,
+     "ebit": 1098000000.0,
+     "net_income": 474000000.0,
+     "capex": 978000000.0,
+     "d_and_a": 1350000000.0,
+     "nwc": 3207000000.0,
+     "book_value": 18085000000.0,
+     "tax_rate": 0.34070221066319895
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "UNP",
+   "cik": null,
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "NOT_IN_RESOLVER",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": null,
+   "artifact_sha256": null,
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "UPS",
+   "cik": "0001090727",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_common_income_2025-12-31: no bridged direct common tag",
+    "missing_bridge_long_term_debt",
+    "missing_bridge_preferred_equity"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0001090727/fundamentals/annual.json",
+   "artifact_sha256": "5989928e130a38e02fa48038e517bbe76833cdec6b05d22f909ee865739007b3",
+   "bridge": {
+    "short_term_debt": 608000000.0,
+    "long_term_debt": null,
+    "cash": 5887000000.0,
+    "preferred_equity": null,
+    "minority_interest": 28000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 90958000000.0,
+     "ebit": 9141000000.0,
+     "net_income": 6708000000.0,
+     "capex": 5158000000.0,
+     "d_and_a": 2800000000.0,
+     "nwc": 1879000000.0,
+     "book_value": 17306000000.0,
+     "tax_rate": 0.21754345036743264
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 91070000000.0,
+     "ebit": 8468000000.0,
+     "net_income": 5782000000.0,
+     "capex": 3909000000.0,
+     "d_and_a": 3000000000.0,
+     "nwc": -1405000000.0,
+     "book_value": 16718000000.0,
+     "tax_rate": 0.22305831765654394
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 88661000000.0,
+     "ebit": 7867000000.0,
+     "net_income": 5572000000.0,
+     "capex": 3685000000.0,
+     "d_and_a": 3000000000.0,
+     "nwc": -1854000000.0,
+     "book_value": 16227000000.0,
+     "tax_rate": 0.2222222222222222
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "WAB",
+   "cik": "0000943452",
+   "sector_group": "industrials",
+   "sic": null,
+   "status": "READY",
+   "periods": [
+    "2023-12-31",
+    "2024-12-31",
+    "2025-12-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2023-12-31: no bridged direct common tag",
+    "missing_nwc_2023-12-31",
+    "missing_common_income_2024-12-31: no bridged direct common tag",
+    "missing_nwc_2024-12-31",
+    "missing_common_income_2025-12-31: no bridged direct common tag",
+    "missing_nwc_2025-12-31",
+    "missing_bridge_short_term_debt",
+    "missing_bridge_cash"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "tag absent from published supplement"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000943452/fundamentals/annual.json",
+   "artifact_sha256": "eef1e8293413afac269681ba87fdeaddb4ca615633a3d6c1e0d70c199a6eeaee",
+   "bridge": {
+    "short_term_debt": null,
+    "long_term_debt": 4291000000.0,
+    "cash": null,
+    "preferred_equity": 0.0,
+    "minority_interest": 48000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2023-12-31",
+     "revenue": 9677000000.0,
+     "ebit": 1266000000.0,
+     "net_income": 815000000.0,
+     "capex": 186000000.0,
+     "d_and_a": 531000000.0,
+     "nwc": null,
+     "book_value": 10524000000.0,
+     "tax_rate": 0.2445054945054945
+    },
+    {
+     "period_end": "2024-12-31",
+     "revenue": 10387000000.0,
+     "ebit": 1609000000.0,
+     "net_income": 1056000000.0,
+     "capex": 207000000.0,
+     "d_and_a": 503000000.0,
+     "nwc": null,
+     "book_value": 10091000000.0,
+     "tax_rate": 0.24326241134751772
+    },
+    {
+     "period_end": "2025-12-31",
+     "revenue": 11167000000.0,
+     "ebit": 1793000000.0,
+     "net_income": 1170000000.0,
+     "capex": 260000000.0,
+     "d_and_a": 501000000.0,
+     "nwc": null,
+     "book_value": 11142000000.0,
+     "tax_rate": 0.25690954773869346
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "WMT",
+   "cik": "0000104169",
+   "sector_group": "staples",
+   "sic": "5331",
+   "status": "READY",
+   "periods": [
+    "2024-01-31",
+    "2025-01-31",
+    "2026-01-31"
+   ],
+   "gate_eligible": false,
+   "gate_reasons": [
+    "missing_common_income_2024-01-31: no bridged direct common tag",
+    "missing_common_income_2025-01-31: no bridged direct common tag",
+    "missing_common_income_2026-01-31: no bridged direct common tag",
+    "missing_bridge_preferred_equity"
+   ],
+   "common_income_periods": 0,
+   "has_adjustment_facts": true,
+   "adjustment_unavailable": [
+    {
+     "kind": "intangible_impairment",
+     "tag": "ImpairmentOfIntangibleAssetsExcludingGoodwill",
+     "reason": "no validated annual 10-K fact for the loaded periods"
+    },
+    {
+     "kind": "goodwill_impairment",
+     "tag": "GoodwillImpairmentLoss",
+     "reason": "tag absent from published supplement"
+    }
+   ],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0000104169/fundamentals/annual.json",
+   "artifact_sha256": "0e96799b2827237a1831c364d0bc76daf40a5aa1bc37c8c7bebbf6f2006fb6b7",
+   "bridge": {
+    "short_term_debt": 10138000000.0,
+    "long_term_debt": 34624000000.0,
+    "cash": 10727000000.0,
+    "preferred_equity": null,
+    "minority_interest": 6270000000.0,
+    "other_nonoperating_assets": null
+   },
+   "annual": [
+    {
+     "period_end": "2024-01-31",
+     "revenue": 642637000000.0,
+     "ebit": 27012000000.0,
+     "net_income": 15511000000.0,
+     "capex": 20606000000.0,
+     "d_and_a": 11853000000.0,
+     "nwc": -21080000000.0,
+     "book_value": 90349000000.0,
+     "tax_rate": 0.25530941047235445
+    },
+    {
+     "period_end": "2025-01-31",
+     "revenue": 674538000000.0,
+     "ebit": 29348000000.0,
+     "net_income": 19436000000.0,
+     "capex": 23783000000.0,
+     "d_and_a": 12973000000.0,
+     "nwc": -20497000000.0,
+     "book_value": 91013000000.0,
+     "tax_rate": 0.23383632977308144
+    },
+    {
+     "period_end": "2026-01-31",
+     "revenue": 706413000000.0,
+     "ebit": 29825000000.0,
+     "net_income": 21893000000.0,
+     "capex": 26642000000.0,
+     "d_and_a": 14203000000.0,
+     "nwc": -23184000000.0,
+     "book_value": 99617000000.0,
+     "tax_rate": 0.24429061047202144
+    }
+   ],
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  },
+  {
+   "ticker": "XOM",
+   "cik": "0002115436",
+   "sector_group": "energy",
+   "sic": null,
+   "status": "BUILD_UNAVAILABLE",
+   "periods": null,
+   "gate_eligible": false,
+   "gate_reasons": [],
+   "common_income_periods": null,
+   "has_adjustment_facts": null,
+   "adjustment_unavailable": [],
+   "common_income_accessions": [],
+   "artifact": "gold/serving/releases/a5fa567fc70304dc765d641f2f03937e/entities/entity_sec_cik_0002115436/fundamentals/annual.json",
+   "artifact_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+   "bridge": null,
+   "annual": null,
+   "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+  }
+ ]
+}

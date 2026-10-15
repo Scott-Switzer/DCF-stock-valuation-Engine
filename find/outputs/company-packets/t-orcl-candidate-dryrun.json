@@ -1,0 +1,46 @@
+{
+  "cutoff_date": "2026-10-15",
+  "pointer": "control/valuation/CANDIDATE-staging.json",
+  "published": false,
+  "companies": [
+    {
+      "ticker": "T",
+      "status": "READY",
+      "periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "common_income_periods": 3,
+      "has_adjustment_facts": true,
+      "bytes": 41519,
+      "sha256": "45b6d1298f6b4fd0c507abc0acb6758243ab51f01c36db4b34bf30773b9000b5",
+      "key": "gold/valuation/releases/45b6d1298f6b4fd0c507abc0acb6758243ab51f01c36db4b34bf30773b9000b5/companies/T.json"
+    },
+    {
+      "ticker": "ORCL",
+      "status": "READY",
+      "periods": [
+        "2024-05-31",
+        "2025-05-31",
+        "2026-05-31"
+      ],
+      "common_income_periods": 3,
+      "has_adjustment_facts": true,
+      "bytes": 41891,
+      "sha256": "2f3933d18d5880379f09aeee718334e9af764285ee155f67ce889696f205fcba",
+      "key": "gold/valuation/releases/2f3933d18d5880379f09aeee718334e9af764285ee155f67ce889696f205fcba/companies/ORCL.json"
+    }
+  ],
+  "production_pointer_sha256_before": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+  "production_pointer_canonical_sha256_before": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+  "candidate_pointer_sha256_before": "beee5c1431c05255fb20db051d461a3fc65d7584b2aef03c71501694e6b7c8fb",
+  "candidate_companies_before": [
+    "CAT",
+    "PEP"
+  ],
+  "production_pointer_sha256_after": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+  "production_pointer_canonical_sha256_after": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+  "production_pointer_untouched": true,
+  "producer_release": "0a318ed6667fcf4c4d80e8d1c44def7a"
+}
