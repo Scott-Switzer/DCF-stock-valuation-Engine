@@ -1,6 +1,6 @@
 {
- "generated_at": "2026-10-15T01:34:30.032542+00:00",
- "builder_commit": "ea561b9",
+ "generated_at": "2026-10-15T01:58:49.456652+00:00",
+ "builder_commit": "49ef566",
  "cutoff": "2026-10-15",
  "sec_archive": "sec/bulk/sec-nightly-20260924/companyfacts.zip",
  "screened": 86,
@@ -8,12 +8,42 @@
  "eligible": [
   "CAT",
   "ORCL",
+  "PAYX",
   "PEP",
   "T"
  ],
+ "valuation_ready": [
+  "CAT",
+  "PAYX",
+  "PEP",
+  "T"
+ ],
+ "readiness": {
+  "CAT": {
+   "valuation_ready": true,
+   "note": "staging-verified working SEC-first DCF (prior verification; still in index)"
+  },
+  "PEP": {
+   "valuation_ready": true,
+   "note": "staging-verified working SEC-first DCF (prior verification; still in index)"
+  },
+  "T": {
+   "valuation_ready": true,
+   "note": "all 5 readiness states met; staging SEC-first load verified (intrinsic 74.91)"
+  },
+  "PAYX": {
+   "valuation_ready": true,
+   "note": "all 5 readiness states met; staging SEC-first load verified (intrinsic 86.69)"
+  },
+  "ORCL": {
+   "valuation_ready": false,
+   "note": "blocked at CAPITAL_COSTS_AVAILABLE: 4954M mandatory convertible preferred, no conversion modeling"
+  }
+ },
  "onboarded_staging": [
   "CAT",
   "ORCL",
+  "PAYX",
   "PEP",
   "T"
  ],
@@ -21,39 +51,35 @@
  "candidate_companies_after": [
   "CAT",
   "ORCL",
+  "PAYX",
   "PEP",
   "T"
  ],
  "production_pointer_untouched": true,
  "production_pointer_sha256": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
  "onboarded_packets": {
+  "CAT": {
+   "note": "published in an earlier batch; preserved by candidate merge"
+  },
+  "PEP": {
+   "note": "published in an earlier batch; preserved by candidate merge"
+  },
   "T": {
-   "key": "gold/valuation/releases/8ca66fae24eece3e2387eec5e08fe4a83e151157d1cbc3a7a8534fd972bf3e0f/companies/T.json",
-   "sha256": "8ca66fae24eece3e2387eec5e08fe4a83e151157d1cbc3a7a8534fd972bf3e0f",
-   "bytes": 41519,
-   "periods": [
-    "2023-12-31",
-    "2024-12-31",
-    "2025-12-31"
-   ],
-   "common_income_periods": 3
+   "note": "published in an earlier batch; preserved by candidate merge"
   },
   "ORCL": {
-   "key": "gold/valuation/releases/91a9787e104c583911ebbc686e08e1f27768962af676c075116640de878d01de/companies/ORCL.json",
-   "sha256": "91a9787e104c583911ebbc686e08e1f27768962af676c075116640de878d01de",
-   "bytes": 41891,
+   "note": "published in an earlier batch; preserved by candidate merge"
+  },
+  "PAYX": {
+   "key": "gold/valuation/releases/cff0e309266428685a5de72a3acb59cdbbdd2e123b726a08e655d843581b7665/companies/PAYX.json",
+   "sha256": "cff0e309266428685a5de72a3acb59cdbbdd2e123b726a08e655d843581b7665",
+   "bytes": 45906,
    "periods": [
     "2024-05-31",
     "2025-05-31",
     "2026-05-31"
    ],
    "common_income_periods": 3
-  },
-  "CAT": {
-   "note": "published earlier (#36); preserved byte-for-byte by candidate merge"
-  },
-  "PEP": {
-   "note": "published earlier; preserved byte-for-byte by candidate merge"
   }
  },
  "companies": [
@@ -61,7 +87,6 @@
    "ticker": "AAPL",
    "cik": "0000320193",
    "sector_group": "technology",
-   "sic": "3571",
    "status": "READY",
    "periods": [
     "2023-09-30",
@@ -142,7 +167,6 @@
    "ticker": "ABBV",
    "cik": "0001551152",
    "sector_group": "healthcare",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -217,7 +241,6 @@
    "ticker": "ABT",
    "cik": "0000001800",
    "sector_group": "healthcare",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -296,7 +319,6 @@
    "ticker": "ADBE",
    "cik": "0000796343",
    "sector_group": "technology",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-01",
@@ -376,7 +398,6 @@
    "ticker": "AEP",
    "cik": "0000004904",
    "sector_group": "utilities",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -451,7 +472,6 @@
    "ticker": "APH",
    "cik": null,
    "sector_group": "technology",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -470,7 +490,6 @@
    "ticker": "AVGO",
    "cik": "0001730168",
    "sector_group": "technology",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-10-29",
@@ -556,7 +575,6 @@
    "ticker": "BA",
    "cik": "0000012927",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -636,7 +654,6 @@
    "ticker": "BAC",
    "cik": "0000070858",
    "sector_group": "financial",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -735,7 +752,6 @@
    "ticker": "BDX",
    "cik": null,
    "sector_group": "healthcare",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -754,7 +770,6 @@
    "ticker": "CAT",
    "cik": "0000018230",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -826,7 +841,6 @@
    "ticker": "CDNS",
    "cik": "0000813672",
    "sector_group": "technology",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -911,7 +925,6 @@
    "ticker": "CI",
    "cik": "0001739940",
    "sector_group": "healthcare",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -994,7 +1007,6 @@
    "ticker": "CL",
    "cik": "0000021665",
    "sector_group": "staples",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -1071,7 +1083,6 @@
    "ticker": "COP",
    "cik": "0001163165",
    "sector_group": "energy",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -1165,7 +1176,6 @@
    "ticker": "COST",
    "cik": "0000909832",
    "sector_group": "staples",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-09-03",
@@ -1248,7 +1258,6 @@
    "ticker": "CRM",
    "cik": "0001108524",
    "sector_group": "technology",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2024-01-31",
@@ -1332,7 +1341,6 @@
    "ticker": "CSCO",
    "cik": "0000858877",
    "sector_group": "technology",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2024-07-27",
@@ -1407,7 +1415,6 @@
    "ticker": "CVX",
    "cik": "0000093410",
    "sector_group": "energy",
-   "sic": "2911",
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -1501,7 +1508,6 @@
    "ticker": "D",
    "cik": null,
    "sector_group": "utilities",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -1520,7 +1526,6 @@
    "ticker": "DE",
    "cik": "0000315189",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-10-29",
@@ -1601,7 +1606,6 @@
    "ticker": "DHI",
    "cik": null,
    "sector_group": "industrials",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -1620,7 +1624,6 @@
    "ticker": "DIS",
    "cik": "0001744489",
    "sector_group": "communications",
-   "sic": null,
    "status": "BUILD_UNAVAILABLE",
    "periods": null,
    "gate_eligible": false,
@@ -1639,7 +1642,6 @@
    "ticker": "DUK",
    "cik": "0001326160",
    "sector_group": "utilities",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2014-12-31",
@@ -1719,7 +1721,6 @@
    "ticker": "EA",
    "cik": null,
    "sector_group": "technology",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -1738,7 +1739,6 @@
    "ticker": "EMR",
    "cik": "0000032604",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-09-30",
@@ -1832,7 +1832,6 @@
    "ticker": "EOG",
    "cik": "0000821189",
    "sector_group": "energy",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -1915,7 +1914,6 @@
    "ticker": "ETN",
    "cik": "0001551182",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -2001,7 +1999,6 @@
    "ticker": "FDX",
    "cik": "0001048911",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2024-05-31",
@@ -2077,7 +2074,6 @@
    "ticker": "GE",
    "cik": "0000040545",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -2163,7 +2159,6 @@
    "ticker": "GILD",
    "cik": "0000882095",
    "sector_group": "healthcare",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -2246,7 +2241,6 @@
    "ticker": "GIS",
    "cik": null,
    "sector_group": "staples",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -2265,7 +2259,6 @@
    "ticker": "GOOGL",
    "cik": "0001652044",
    "sector_group": "communications",
-   "sic": "7370",
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -2343,7 +2336,6 @@
    "ticker": "HON",
    "cik": "0000773840",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -2418,7 +2410,6 @@
    "ticker": "HSY",
    "cik": null,
    "sector_group": "staples",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -2437,7 +2428,6 @@
    "ticker": "IBM",
    "cik": "0000051143",
    "sector_group": "technology",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -2523,7 +2513,6 @@
    "ticker": "INTU",
    "cik": "0000896878",
    "sector_group": "technology",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2024-07-31",
@@ -2602,7 +2591,6 @@
    "ticker": "ITW",
    "cik": null,
    "sector_group": "industrials",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -2621,7 +2609,6 @@
    "ticker": "JNJ",
    "cik": "0000200406",
    "sector_group": "healthcare",
-   "sic": "2834",
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -2707,7 +2694,6 @@
    "ticker": "JPM",
    "cik": "0000019617",
    "sector_group": "financial",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -2806,7 +2792,6 @@
    "ticker": "KEYS",
    "cik": null,
    "sector_group": "technology",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -2825,7 +2810,6 @@
    "ticker": "KMB",
    "cik": null,
    "sector_group": "staples",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -2844,7 +2828,6 @@
    "ticker": "KO",
    "cik": "0000021344",
    "sector_group": "staples",
-   "sic": "2080",
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -2912,7 +2895,6 @@
    "ticker": "LECO",
    "cik": "0000059527",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -2986,7 +2968,6 @@
    "ticker": "LIN",
    "cik": "0001707925",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -3060,7 +3041,6 @@
    "ticker": "LLY",
    "cik": "0000059478",
    "sector_group": "healthcare",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -3150,7 +3130,6 @@
    "ticker": "LMT",
    "cik": "0000936468",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -3235,7 +3214,6 @@
    "ticker": "LOW",
    "cik": "0000060667",
    "sector_group": "staples",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2024-02-02",
@@ -3318,7 +3296,6 @@
    "ticker": "MCK",
    "cik": null,
    "sector_group": "healthcare",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -3337,7 +3314,6 @@
    "ticker": "MDLZ",
    "cik": null,
    "sector_group": "staples",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -3356,7 +3332,6 @@
    "ticker": "MDT",
    "cik": null,
    "sector_group": "healthcare",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -3375,7 +3350,6 @@
    "ticker": "META",
    "cik": "0001326801",
    "sector_group": "communications",
-   "sic": "7370",
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -3460,7 +3434,6 @@
    "ticker": "MIDD",
    "cik": "0000769520",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-30",
@@ -3544,7 +3517,6 @@
    "ticker": "MKC",
    "cik": null,
    "sector_group": "staples",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -3563,7 +3535,6 @@
    "ticker": "MMM",
    "cik": null,
    "sector_group": "industrials",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -3582,7 +3553,6 @@
    "ticker": "MPC",
    "cik": null,
    "sector_group": "energy",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -3601,7 +3571,6 @@
    "ticker": "MRK",
    "cik": null,
    "sector_group": "healthcare",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -3620,7 +3589,6 @@
    "ticker": "MSFT",
    "cik": "0000789019",
    "sector_group": "technology",
-   "sic": "7372",
    "status": "READY",
    "periods": [
     "2024-06-30",
@@ -3698,7 +3666,6 @@
    "ticker": "MSI",
    "cik": null,
    "sector_group": "technology",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -3717,7 +3684,6 @@
    "ticker": "NEE",
    "cik": "0000753308",
    "sector_group": "utilities",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2010-12-31",
@@ -3801,7 +3767,6 @@
    "ticker": "NKE",
    "cik": null,
    "sector_group": "staples",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -3820,7 +3785,6 @@
    "ticker": "NVDA",
    "cik": "0001045810",
    "sector_group": "technology",
-   "sic": "3674",
    "status": "READY",
    "periods": [
     "2024-01-28",
@@ -3896,7 +3860,6 @@
    "ticker": "ODFL",
    "cik": "0000878927",
    "sector_group": "industrials",
-   "sic": null,
    "status": "BUILD_UNAVAILABLE",
    "periods": null,
    "gate_eligible": false,
@@ -3915,7 +3878,6 @@
    "ticker": "ORCL",
    "cik": "0001341439",
    "sector_group": "technology",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2024-05-31",
@@ -3987,18 +3949,14 @@
    "ticker": "PAYX",
    "cik": "0000723531",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2024-05-31",
     "2025-05-31",
     "2026-05-31"
    ],
-   "gate_eligible": false,
-   "gate_reasons": [
-    "missing_bridge_preferred_equity",
-    "missing_bridge_minority_interest"
-   ],
+   "gate_eligible": true,
+   "gate_reasons": [],
    "common_income_periods": 3,
    "has_adjustment_facts": true,
    "adjustment_unavailable": [],
@@ -4011,8 +3969,8 @@
     "short_term_debt": 0.0,
     "long_term_debt": 4556100000.0,
     "cash": 1088200000.0,
-    "preferred_equity": null,
-    "minority_interest": null,
+    "preferred_equity": 0.0,
+    "minority_interest": 0.0,
     "other_nonoperating_assets": null
    },
    "annual": [
@@ -4056,7 +4014,6 @@
    "ticker": "PEP",
    "cik": "0000077476",
    "sector_group": "staples",
-   "sic": "2080",
    "status": "READY",
    "periods": [
     "2023-12-30",
@@ -4122,7 +4079,6 @@
    "ticker": "PG",
    "cik": "0000080424",
    "sector_group": "staples",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2024-06-30",
@@ -4205,7 +4161,6 @@
    "ticker": "PH",
    "cik": null,
    "sector_group": "industrials",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -4224,7 +4179,6 @@
    "ticker": "PPG",
    "cik": null,
    "sector_group": "industrials",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -4243,7 +4197,6 @@
    "ticker": "QCOM",
    "cik": null,
    "sector_group": "technology",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -4262,7 +4215,6 @@
    "ticker": "ROK",
    "cik": null,
    "sector_group": "industrials",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -4281,7 +4233,6 @@
    "ticker": "SBUX",
    "cik": null,
    "sector_group": "staples",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -4300,7 +4251,6 @@
    "ticker": "SHW",
    "cik": null,
    "sector_group": "industrials",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -4319,7 +4269,6 @@
    "ticker": "SLB",
    "cik": null,
    "sector_group": "energy",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -4338,7 +4287,6 @@
    "ticker": "SO",
    "cik": null,
    "sector_group": "utilities",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -4357,7 +4305,6 @@
    "ticker": "SYK",
    "cik": null,
    "sector_group": "healthcare",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -4376,7 +4323,6 @@
    "ticker": "SYY",
    "cik": "0000096021",
    "sector_group": "staples",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2024-06-29",
@@ -4456,7 +4402,6 @@
    "ticker": "T",
    "cik": "0000732717",
    "sector_group": "communications",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -4533,7 +4478,6 @@
    "ticker": "TGT",
    "cik": null,
    "sector_group": "staples",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -4552,7 +4496,6 @@
    "ticker": "TMO",
    "cik": null,
    "sector_group": "healthcare",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -4571,7 +4514,6 @@
    "ticker": "TSN",
    "cik": "0000100493",
    "sector_group": "staples",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-09-30",
@@ -4647,7 +4589,6 @@
    "ticker": "UNP",
    "cik": null,
    "sector_group": "industrials",
-   "sic": null,
    "status": "NOT_IN_RESOLVER",
    "periods": null,
    "gate_eligible": false,
@@ -4666,7 +4607,6 @@
    "ticker": "UPS",
    "cik": "0001090727",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -4742,7 +4682,6 @@
    "ticker": "WAB",
    "cik": "0000943452",
    "sector_group": "industrials",
-   "sic": null,
    "status": "READY",
    "periods": [
     "2023-12-31",
@@ -4826,7 +4765,6 @@
    "ticker": "WMT",
    "cik": "0000104169",
    "sector_group": "staples",
-   "sic": "5331",
    "status": "READY",
    "periods": [
     "2024-01-31",
@@ -4906,7 +4844,6 @@
    "ticker": "XOM",
    "cik": "0002115436",
    "sector_group": "energy",
-   "sic": null,
    "status": "BUILD_UNAVAILABLE",
    "periods": null,
    "gate_eligible": false,

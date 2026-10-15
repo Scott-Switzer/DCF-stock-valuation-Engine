@@ -84,6 +84,75 @@ see `docs/sec-coverage-report.md`). No bank mappings were faked.
 - 31 tickers not in the resolver index and 3 build-unavailable are recorded in
   the matrix with reasons — none silently discarded.
 
+## Batch 2: PAYX unlocked, ORCL modeled and held blocked
+
+Functional SEC-first issuers: **3 → 4** (CAT, PEP, T + **PAYX**).
+
+### PAYX (Paychex): dual-identity zero-claim derivation
+
+New reusable `_sec_zero_claims_from_dual_identity` (`ppe_packets.py`): preferred
+and NCI are established at zero **atomically** only when, in one 10-K
+accession, (1) SE minus built-up common equity is $0 with treasury proven zero
+— filed tag, or issued-equals-outstanding filed share counts (PAYX FY2026:
+355.6M = 355.6M); (2) filed consolidated income minus the filed direct common
+basic tag is $0; and (3) a member-wide scan finds no preferred/NCI tag at all.
+A lone zero residual never suffices (offsetting components could mimic it).
+Negative counterexamples in `tests/test_ppe_packets.py`: ORCL (filed preferred),
+T (filed NCI), ABBV (missing par leg), nonzero residuals, treasury shares
+outstanding, split accessions.
+
+PAYX FY2026 evidence: SE 3735.1M = 3.6 + 1975.6 + 1805.8 − 49.9 exactly;
+consolidated 1760.1M = common basic 1760.1M; 19-claim-tag scan clean.
+Client-funds review: bridge cash 1088.2M is the plain corporate-cash tag and
+excludes the separately-tagged 4832.2M funds held for clients; NWC uses filed
+legs on both sides so the client obligation offsets the asset. Published
+`cff0e309…` (45,906 bytes) via the candidate-only workflow; production pointer
+byte-identical. Staging `/api/load/dcf`: **SEC-first, DCF intrinsic 86.69,
+target 89.32, WACC 8.74%**; parity holds (staging net_income equals the direct
+common tags; bridge identical to the dollar).
+
+### ORCL: mandatory convertible preferred stays blocked (correctly)
+
+Verified against the FY2026 10-K (accession `0001193125-26-277521`): the packet
+carries the genuine $4.954B Series D 6.50% mandatory convertible preferred
+(filed `PreferredStockValue`), FY2026 common income $16.984B
+(`explained_by_preferred_dividends` over consolidated $17.087B less $103M
+preferred dividends), and pre-conversion diluted shares 2914M. The apply path
+was verified locally: the model sees the direct common observations, never the
+consolidated total. The block is purely capital-cost pricing: mandatory
+conversion (~25–31M shares, Jan 2029, price-dependent) plus interim dividends
+cannot be represented by a flat preferred cost, and no `preferred_cost` input
+plumbing exists anywhere (always `None` in both loaders) — inventing either
+would fabricate the valuation, so the 503 stands with its truthful message.
+
+### Coverage states now distinguished
+
+New `valuation_readiness` (`sec_first.py`, tested in `tests/test_sec_first.py`)
+separates data-determined states — PACKET_BUILT, INPUTS_COMPLETE (gate),
+POLICY_VALID (published adjustment evidence), CAPITAL_COSTS_AVAILABLE
+(zero preferred or explicit cost), DCF_EVALUABLE — from operational checks
+(brief, staging runs) recorded here:
+
+| Issuer | Packet | Inputs | Policy | Capital costs | DCF | Staging |
+| --- | --- | --- | --- | --- | --- | --- |
+| CAT | ✓ | ✓ | ✓ | ✓ (0 pref) | ✓ | working |
+| PEP | ✓ | ✓ | ✓ | ✓ (0 pref) | ✓ | working |
+| T | ✓ | ✓ | ✓ | ✓ (0 pref) | ✓ | working (74.91) |
+| PAYX | ✓ | ✓ | ✓ | ✓ (dual-identity 0/0) | ✓ | working (86.69) |
+| ORCL | ✓ | ✓ | ✓ | **blocked** (4954M mand. conv.) | blocked | honest 503 |
+
+The matrix `readiness` section records this per issuer; READY packet ≠ working
+valuation anywhere in the report.
+
+### Nearby companies assessed, not forced
+
+ABBV/AEP keep genuine negative historical effective tax rates (preserved, not
+clamped); a normalized forecast-tax assumption is model work for later, not a
+packet rewrite. LECO/LIN lack direct common tags; BA needs debt-branch
+semantics plus a loss-year tax bound; PAYX-style dual identity changes nothing
+for issuers with filed claims (ORCL/T correctly rejected). Full re-screen: 86
+screened, 52 READY, 5 eligible, 4 valuation-ready — no regressions.
+
 ## Packet sizes, serving, cost/latency
 
 - New packets ~41–42 KB (under the 128 KB serving limit), immutable

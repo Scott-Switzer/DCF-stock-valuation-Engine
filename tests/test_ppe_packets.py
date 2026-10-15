@@ -1145,6 +1145,98 @@ def test_long_term_debt_accepts_notes_payable_variant():
     assert p["bridge"]["long_term_debt"]["value"] == 122342
 
 
+def payx_claim_facts(**overrides):
+    # Paychex FY2026 pattern, all legs in accession "test": SE 3735.1 equals
+    # par 3.6 + APIC 1975.6 + retained 1805.8 + AOCI (-49.9) with issued ==
+    # outstanding shares (no treasury), and consolidated income equals the
+    # filed direct common basic tag. No preferred/NCI tag anywhere.
+    legs = {
+        "StockholdersEquity": 3735100000,
+        "CommonStockValue": 3600000,
+        "AdditionalPaidInCapitalCommonStock": 1975600000,
+        "RetainedEarningsAccumulatedDeficit": 1805800000,
+        "AccumulatedOtherComprehensiveIncomeLossNetOfTax": -49900000,
+    }
+    legs.update(overrides)
+    facts = sec_facts(**{tag: [instant_fact(value)] for tag, value in legs.items()})
+    us = facts["facts"]["us-gaap"]
+    us["CommonStockSharesIssued"] = {"units": {"shares": [
+        {"val": 355600000, "end": "2025-09-27", "filed": "2025-10-31", "form": "10-K", "accn": "test"}
+    ]}}
+    us["CommonStockSharesOutstanding"] = {"units": {"shares": [
+        {"val": 355600000, "end": "2025-09-27", "filed": "2025-10-31", "form": "10-K", "accn": "test"}
+    ]}}
+    us["NetIncomeLoss"] = {"units": {"USD": [
+        annual_fact(1760100000, start="2024-09-29", end="2025-09-27")
+    ]}}
+    us["NetIncomeLossAvailableToCommonStockholdersBasic"] = {"units": {"USD": [
+        annual_fact(1760100000, start="2024-09-29", end="2025-09-27")
+    ]}}
+    return facts
+
+
+def test_dual_identity_establishes_zero_claims_atomically():
+    from ppe_packets import _sec_zero_claims_from_dual_identity
+
+    preferred, nci = _sec_zero_claims_from_dual_identity(
+        payx_claim_facts(), "2025-09-27", "2026-10-07", {}
+    )
+    assert preferred["value"] == 0.0
+    assert nci["value"] == 0.0
+    assert preferred["provenance"]["accession"] == "test"
+    assert "no preferred/NCI tag" in preferred["provenance"]["formula"]
+    assert preferred["provenance"]["claim"] == "preferred_equity"
+    assert nci["provenance"]["claim"] == "minority_interest"
+
+
+def test_dual_identity_rejects_filed_claims_oracle_and_t_patterns():
+    # Oracle: filed PreferredStockValue. AT&T: filed MinorityInterest.
+    from ppe_packets import _sec_zero_claims_from_dual_identity
+
+    orcl = payx_claim_facts()
+    orcl["facts"]["us-gaap"]["PreferredStockValue"] = {"units": {"USD": [instant_fact(4954000000)]}}
+    assert _sec_zero_claims_from_dual_identity(orcl, "2025-09-27", "2026-10-07", {}) == (None, None)
+    t = payx_claim_facts()
+    t["facts"]["us-gaap"]["MinorityInterest"] = {"units": {"USD": [instant_fact(15958000000)]}}
+    assert _sec_zero_claims_from_dual_identity(t, "2025-09-27", "2026-10-07", {}) == (None, None)
+
+
+def test_dual_identity_rejects_incomplete_legs_and_nonzero_residuals():
+    # AbbVie: missing par-value leg. Offsetting residuals and treasury
+    # shares outstanding also refuse; nothing splits from partial evidence.
+    from ppe_packets import _sec_zero_claims_from_dual_identity
+
+    facts = payx_claim_facts()
+    del facts["facts"]["us-gaap"]["CommonStockValue"]
+    assert _sec_zero_claims_from_dual_identity(facts, "2025-09-27", "2026-10-07", {}) == (None, None)
+    assert _sec_zero_claims_from_dual_identity(
+        payx_claim_facts(StockholdersEquity=3735200000), "2025-09-27", "2026-10-07", {}
+    ) == (None, None)
+    mismatch = payx_claim_facts()
+    mismatch["facts"]["us-gaap"]["NetIncomeLoss"]["units"]["USD"][0]["val"] = 1760200000
+    assert _sec_zero_claims_from_dual_identity(mismatch, "2025-09-27", "2026-10-07", {}) == (None, None)
+    treasury = payx_claim_facts()
+    treasury["facts"]["us-gaap"]["CommonStockSharesOutstanding"]["units"]["shares"][0]["val"] = 350000000
+    assert _sec_zero_claims_from_dual_identity(treasury, "2025-09-27", "2026-10-07", {}) == (None, None)
+
+
+def test_dual_identity_rejects_split_filings():
+    from ppe_packets import _sec_zero_claims_from_dual_identity
+
+    facts = payx_claim_facts()
+    facts["facts"]["us-gaap"]["RetainedEarningsAccumulatedDeficit"]["units"]["USD"][0]["accn"] = "other"
+    assert _sec_zero_claims_from_dual_identity(facts, "2025-09-27", "2026-10-07", {}) == (None, None)
+
+
+def test_packet_bridge_sets_both_zero_claims_from_dual_identity():
+    p = build_packet(
+        "AAPL", "0000320193", three_year_rows(), payx_claim_facts(), "2026-10-07", {}
+    )
+    assert p["bridge"]["preferred_equity"]["value"] == 0.0
+    assert p["bridge"]["minority_interest"]["value"] == 0.0
+    assert p["bridge"]["preferred_equity"]["provenance"]["accession"] == "test"
+
+
 def test_ebit_accepts_explicit_before_tax_tag():
     p = build_with(EarningsBeforeInterestAndTaxes=[annual_fact(41000)])
     assert p["historical"][-1]["fields"]["ebit"]["value"] == 41000

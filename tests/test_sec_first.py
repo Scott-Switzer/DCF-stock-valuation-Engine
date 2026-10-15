@@ -5,7 +5,7 @@ import pytest
 
 from dcf_loader import ProviderError
 from ppe_packets import build_packet
-from sec_first import eligibility_gate, load_sec_first
+from sec_first import eligibility_gate, load_sec_first, valuation_readiness
 
 TODAY = datetime.now(timezone.utc).date().isoformat()
 ENDS = ["2023-09-27", "2024-09-27", "2025-09-27"]
@@ -150,6 +150,40 @@ def test_gate_rejects_unbridged_common_income():
     gate = eligibility_gate(packet, "TEST", TODAY)
     assert not gate["eligible"]
     assert any(r.startswith("missing_common_income_") for r in gate["reasons"])
+
+
+def test_readiness_distinguishes_packet_from_valuation():
+    ready = valuation_readiness(full_packet(), "TEST", TODAY)
+    assert ready["valuation_ready"] is True
+    assert all(v["met"] for v in ready["states"].values())
+
+
+def test_readiness_blocks_before_inputs_complete():
+    blocked = valuation_readiness(None, "TEST", TODAY)
+    assert blocked["valuation_ready"] is False
+    assert blocked["states"]["PACKET_BUILT"]["met"] is False
+    gate_blocked = valuation_readiness(
+        full_packet(without=("MinorityInterest",)), "TEST", TODAY
+    )
+    assert gate_blocked["valuation_ready"] is False
+    assert gate_blocked["states"]["PACKET_BUILT"]["met"] is True
+    assert gate_blocked["states"]["INPUTS_COMPLETE"]["met"] is False
+    assert "missing_bridge_minority_interest" in gate_blocked["states"]["INPUTS_COMPLETE"]["reason"]
+
+
+def test_readiness_requires_priced_preferred_claims():
+    facts = full_facts()
+    rows = facts["facts"]["us-gaap"]["PreferredStockValue"]["units"]["USD"]
+    for row in rows:
+        row["val"] = 100
+    packet = build_packet("TEST", "0000000001",
+        [observation("revenue", 100 + i * 10, i) for i in range(3)], facts, TODAY, {})
+    assert eligibility_gate(packet, "TEST", TODAY)["eligible"] is True
+    blocked = valuation_readiness(packet, "TEST", TODAY)
+    assert blocked["valuation_ready"] is False
+    assert blocked["states"]["CAPITAL_COSTS_AVAILABLE"]["met"] is False
+    priced = valuation_readiness(packet, "TEST", TODAY, preferred_cost=0.06)
+    assert priced["states"]["CAPITAL_COSTS_AVAILABLE"]["met"] is True
 
 
 def test_gate_rejects_absent_packet_and_bad_contract():

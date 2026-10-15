@@ -562,6 +562,164 @@ def _sec_domestic_plus_foreign_pretax(facts, end, cutoff, source):
     )
 
 
+# Tags that evidence preferred or noncontrolling claims anywhere in a filing.
+# A member containing any of these cannot use the dual-identity zero-claim
+# derivation below: real claims are always tagged somewhere on the face
+# statements, so the scan guards against misreading an incomplete build-up
+# as a zero. Balance, income, OCI and share tags.
+CLAIM_TAGS = frozenset({
+    "PreferredStockValue",
+    "PreferredStockSharesAuthorized",
+    "PreferredStockSharesOutstanding",
+    "PreferredStockSharesIssued",
+    "PreferredStockParOrStatedValuePerShare",
+    "MinorityInterest",
+    "NoncontrollingInterestInEquityOfSubsidiary",
+    "RedeemableNoncontrollingInterestEquityCarryingAmount",
+    "NetIncomeLossAttributableToNoncontrollingInterest",
+    "NetIncomeLossAttributableToParent",
+    "ComprehensiveIncomeNetOfTaxAttributableToNoncontrollingInterest",
+    "OtherComprehensiveIncomeLossNetOfTaxPortionAttributableToNoncontrollingInterest",
+    "PreferredStockDividendsIncomeStatementImpact",
+    "PreferredStockDividendsAndOtherAdjustments",
+    "PreferredStockDividends",
+    "DividendsPreferredStock",
+    "DividendsPreferredStockCash",
+    "CommonStockEquity",
+    "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+})
+
+
+def _sec_zero_claims_from_dual_identity(facts, end, cutoff, source):
+    """Establish zero preferred and zero noncontrolling claims from two identities.
+
+    For filers such as Paychex the equity statement carries only common
+    components and no preferred/NCI tag exists anywhere in the member. Two
+    same-accession filing identities jointly bound both claims at zero:
+    the balance identity (stockholders equity minus built-up common equity
+    is zero, with treasury proven zero by issued-equals-outstanding filed
+    share counts) and the income identity (filed consolidated net income
+    minus the filed direct common basic tag is zero). Either residual beyond
+    $1, any claim tag anywhere in the member, or legs from more than one
+    accession refuses the derivation -- a lone zero residual is never enough,
+    because offsetting unverified components could mimic it. Returns
+    (preferred_field, nci_field) or (None, None) atomically: the two claims
+    are never split from partial evidence.
+    """
+    us_gaap = facts.get("facts", {}).get("us-gaap", {})
+    for tag in CLAIM_TAGS:
+        if tag in us_gaap:
+            return None, None
+    legs = {}
+    common_head = None
+    for csv_tag, apic_tag in COMMON_HEAD_PAIRS:
+        candidate = [_instant_leg(facts, tag, end, cutoff) for tag in (csv_tag, apic_tag)]
+        if all(row is not None for row in candidate):
+            legs[csv_tag], legs[apic_tag] = candidate
+            common_head = _number(candidate[0]["val"]) + _number(candidate[1]["val"])
+            break
+    if common_head is None:
+        combined = _instant_leg(facts, "CommonStocksIncludingAdditionalPaidInCapital", end, cutoff)
+        if combined is None:
+            return None, None
+        legs["CommonStocksIncludingAdditionalPaidInCapital"] = combined
+        common_head = _number(combined["val"])
+    for tag in ("RetainedEarningsAccumulatedDeficit", "AccumulatedOtherComprehensiveIncomeLossNetOfTax"):
+        row = _instant_leg(facts, tag, end, cutoff)
+        if row is None:
+            return None, None
+        legs[tag] = row
+    treasury_value = None
+    for candidate_tag in ("TreasuryStockValue", "TreasuryStockCommonValue"):
+        row = _instant_leg(facts, candidate_tag, end, cutoff)
+        if row is not None:
+            legs[candidate_tag] = row
+            treasury_value = _number(row["val"])
+            break
+    if treasury_value is None:
+        issued = _shares_leg(facts, "CommonStockSharesIssued", end, cutoff)
+        outstanding = _shares_leg(facts, "CommonStockSharesOutstanding", end, cutoff)
+        if (
+            issued is None
+            or outstanding is None
+            or _number(issued["val"]) != _number(outstanding["val"])
+            or issued.get("accn") != outstanding.get("accn")
+        ):
+            return None, None
+        legs["CommonStockSharesIssued"] = issued
+        legs["CommonStockSharesOutstanding"] = outstanding
+        treasury_value = 0.0
+    se_row = _instant_leg(facts, "StockholdersEquity", end, cutoff)
+    if se_row is None:
+        return None, None
+    legs["StockholdersEquity"] = se_row
+    accessions = {r.get("accn") for r in legs.values()}
+    if len(accessions) != 1:
+        return None, None
+    common = (
+        common_head
+        + _number(legs["RetainedEarningsAccumulatedDeficit"]["val"])
+        + _number(legs["AccumulatedOtherComprehensiveIncomeLossNetOfTax"]["val"])
+        - treasury_value
+    )
+    if abs(_number(se_row["val"]) - common) > COMMON_INCOME_TOLERANCE_USD:
+        return None, None
+    total = _duration_leg(facts, "NetIncomeLoss", end, cutoff)
+    direct = _duration_leg(facts, "NetIncomeLossAvailableToCommonStockholdersBasic", end, cutoff)
+    if total is None or direct is None:
+        return None, None
+    if direct.get("accn") not in accessions:
+        return None, None
+    if abs(_number(total["val"]) - _number(direct["val"])) > COMMON_INCOME_TOLERANCE_USD:
+        return None, None
+    accession = next(iter(accessions))
+    filed = max([r["filed"] for r in legs.values()] + [total["filed"], direct["filed"]])
+    provenance = {
+        **source,
+        "provider": "SEC companyfacts",
+        "formula": (
+            "stockholders equity minus built-up common equity is zero and filed "
+            "consolidated net income minus the filed direct common basic tag is zero; "
+            "no preferred/NCI tag anywhere in the member (" + ", ".join(sorted(legs)) + ")"
+        ),
+        "part_tags": sorted(legs),
+        "income_identity_tags": ["NetIncomeLoss", "NetIncomeLossAvailableToCommonStockholdersBasic"],
+        "accession": accession,
+        "filing_date": filed,
+    }
+    return (
+        _field(0.0, end, filed, "USD", {**provenance, "claim": "preferred_equity"}),
+        _field(0.0, end, filed, "USD", {**provenance, "claim": "minority_interest"}),
+    )
+
+
+def _shares_leg(facts, tag, end, cutoff):
+    """Latest-filed 10-K instant shares-unit row for one tag, or None.
+
+    Share-count counterpart to _instant_leg for ownership evidence such as
+    CommonStockSharesIssued. Returns None on absence or contradiction.
+    """
+    candidates = [
+        r
+        for r in facts.get("facts", {})
+        .get("us-gaap", {})
+        .get(tag, {})
+        .get("units", {})
+        .get("shares", [])
+        if r.get("end") == end
+        and r.get("form") in {"10-K", "10-K/A"}
+        and r.get("filed", "9999") <= cutoff
+        and not r.get("start")
+    ]
+    if not candidates:
+        return None
+    latest = max(r["filed"] for r in candidates)
+    top = [r for r in candidates if r["filed"] == latest]
+    if len({_number(r["val"]) for r in top}) != 1:
+        return None
+    return top[0]
+
+
 def _derived(value, components, formula, unit="USD"):
     return _field(
         value,
@@ -828,6 +986,16 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
             sec_source,
             "total equity including noncontrolling interest minus stockholders equity",
         )
+    if bridges.get("preferred_equity") is None and bridges.get("minority_interest") is None:
+        # Dual-identity zero claims (Paychex pattern) set both bridge claims
+        # atomically from same-accession balance and income identities plus a
+        # member-wide claim-tag scan. Never splits one identity across claims.
+        zero_preferred, zero_nci = _sec_zero_claims_from_dual_identity(
+            facts, end, cutoff, sec_source
+        )
+        if zero_preferred is not None:
+            bridges["preferred_equity"] = zero_preferred
+            bridges["minority_interest"] = zero_nci
     bridges["short_term_debt"] = values["short_term_debt"]
     shares = values["diluted_shares"]
     interest = values["interest_expense"]
