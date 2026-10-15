@@ -117,13 +117,16 @@ def _validate_payload(payload, cik, tag):
     return None
 
 
-def _select_period_facts(payload, tag, period_ends, as_of, future, conflicts):
+def _select_period_facts(payload, tag, period_ends, as_of, future, conflicts,
+                         only_accessions=None):
     """Validated 10-K/10-K-A facts keyed by period end, conflicts rejected.
 
     Selection is deterministic: among accepted-form facts that pass duration and
     cutoff checks, the latest ``filed`` wins per period. Two live facts sharing a
     period end and a filing date with different values are an unresolved
-    conflict: the period is dropped, never guessed.
+    conflict: the period is dropped, never guessed. ``only_accessions``
+    optionally restricts candidates per period end to a set of accessions
+    (same-filing tie-outs); diagnostics for skipped facts are not duplicated.
     """
     cutoff = _as_date(as_of) if as_of else None
     candidates = {}
@@ -132,6 +135,8 @@ def _select_period_facts(payload, tag, period_ends, as_of, future, conflicts):
             continue
         end = fact.get("end")
         if end not in period_ends:
+            continue
+        if only_accessions is not None and fact.get("accn") not in only_accessions.get(end, set()):
             continue
         form = fact.get("form")
         if form not in ACCEPTED_FORMS:
@@ -407,6 +412,24 @@ def build_adjustment_facts_from_companyfacts(cik, period_ends, facts, as_of=None
         selected = _select_period_facts(
             payload, tag, wants, as_of, result["future_restatements"], result["conflicts"]
         )
+        # Prefer the filing context the adjustments were taken from: the EBIT
+        # tie-out is only meaningful within one filing, so when the
+        # latest-filed EBIT observation comes from a different accession than
+        # this period's adjustment facts, reselect within the adjustment
+        # filing under the same validation. Periods with no same-filing EBIT
+        # keep the latest observation and fail loudly at the boundary.
+        adjustment_accessions = {}
+        for kind_items in result["facts"].values():
+            for item in kind_items:
+                adjustment_accessions.setdefault(item["period_end"], set()).add(item["accession"])
+        if any(selected[end]["accession"] not in adjustment_accessions.get(end, set())
+               for end in selected if adjustment_accessions.get(end)):
+            restricted = _select_period_facts(payload, tag, wants, as_of, [], [],
+                                              only_accessions=adjustment_accessions)
+            for end, fact in restricted.items():
+                if (end in selected
+                        and selected[end]["accession"] not in adjustment_accessions.get(end, set())):
+                    selected[end] = fact
         result["ebit_facts"] = [selected[end] for end in wants if end in selected]
         break
     return result

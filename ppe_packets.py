@@ -16,12 +16,22 @@ CANONICAL = {
     "total_debt": "total_debt",
 }
 SEC_TAGS = {
-    **TAGS,
+    **{k: list(v) for k, v in TAGS.items()},
     "book_value": ["StockholdersEquity"],
     "common_dividends": ["PaymentsOfDividendsCommonStock"],
     "interest_expense": ["InterestExpense", "InterestAndDebtExpense"],
 }
+SEC_TAGS["ebit"] = ["OperatingIncomeLoss", "EarningsBeforeInterestAndTaxes"]
+SEC_TAGS["pretax_income"] = [
+    "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+    "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments",
+    "IncomeLossFromContinuingOperationsBeforeIncomeTaxes",
+]
+SEC_TAGS["interest_expense"] = ["InterestExpense", "InterestAndDebtExpense", "InterestCostsIncurred"]
 SEC_TAGS["short_term_borrowings"] = ["ShortTermBorrowings", "CommercialPaper"]
+# Regulated-utility top line, lowest priority like dcf_loader.TAGS (which this
+# module copied at import time before extending its own lists).
+SEC_TAGS["revenue"] = [*SEC_TAGS["revenue"], "RegulatedAndUnregulatedOperatingRevenue"]
 # Basic EPS numerator: income attributable to the parent after preferred dividends.
 # Direct tag only. It is never derived from NetIncomeLoss less preferred dividends or
 # noncontrolling interests: an absent tag is not zero, and that derivation needs
@@ -65,6 +75,29 @@ COMMON_INCOME_CATEGORIES = (
     ),
 )
 COMMON_INCOME_TOLERANCE_USD = 1.0
+# Reusable common-equity build-up variants for the preferred-equity and NCI
+# derivations below. Ordered most-specific first: filers that disclose APIC in
+# the generic AdditionalPaidInCapital tag (e.g. AEP, Paychex) or treasury stock
+# in TreasuryStockCommonValue (e.g. EOG) follow the same filing identity as
+# the classic leg set, and every leg must still come from one 10-K accession.
+COMMON_HEAD_PAIRS = (
+    ("CommonStockValue", "AdditionalPaidInCapitalCommonStock"),
+    ("CommonStockValue", "AdditionalPaidInCapital"),
+)
+TREASURY_TAGS = ("TreasuryStockValue", "TreasuryStockCommonValue")
+# Long-term-debt total/current tag pairs whose difference is the noncurrent
+# portion. Ordered most-standard first; each pair must agree in one accession.
+LTD_TOTAL_PAIRS = (
+    ("LongTermDebt", "LongTermDebtCurrent"),
+    (
+        "LongTermDebtAndCapitalLeaseObligationsIncludingCurrentMaturities",
+        "LongTermDebtAndCapitalLeaseObligationsCurrent",
+    ),
+    # Some filers (e.g. Honeywell, AbbVie) disclose the total in LongTermDebt
+    # but the current portion only in the capital-lease-obligations branch.
+    # Lowest priority: same total-less-current economics, one accession.
+    ("LongTermDebt", "LongTermDebtAndCapitalLeaseObligationsCurrent"),
+)
 
 
 def _number(value):
@@ -350,15 +383,16 @@ def _sec_preferred_from_common_buildup(facts, end, cutoff, source):
             ["StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", "MinorityInterest"]
         )
         se_value = _number(total["val"]) - _number(nci["val"])
-    pair = [
-        _instant_leg(facts, tag, end, cutoff)
-        for tag in ("CommonStockValue", "AdditionalPaidInCapitalCommonStock")
-    ]
-    if all(row is not None for row in pair):
-        legs["CommonStockValue"], legs["AdditionalPaidInCapitalCommonStock"] = pair
-        used_tags.extend(["CommonStockValue", "AdditionalPaidInCapitalCommonStock"])
-        common_head = _number(pair[0]["val"]) + _number(pair[1]["val"])
-    else:
+    pair = None
+    for csv_tag, apic_tag in COMMON_HEAD_PAIRS:
+        candidate = [_instant_leg(facts, tag, end, cutoff) for tag in (csv_tag, apic_tag)]
+        if all(row is not None for row in candidate):
+            pair = candidate
+            legs[csv_tag], legs[apic_tag] = pair
+            used_tags.extend([csv_tag, apic_tag])
+            common_head = _number(pair[0]["val"]) + _number(pair[1]["val"])
+            break
+    if pair is None:
         combined = _instant_leg(facts, "CommonStocksIncludingAdditionalPaidInCapital", end, cutoff)
         if combined is None:
             return None
@@ -368,7 +402,6 @@ def _sec_preferred_from_common_buildup(facts, end, cutoff, source):
     signs = {
         "RetainedEarningsAccumulatedDeficit": 1,
         "AccumulatedOtherComprehensiveIncomeLossNetOfTax": 1,
-        "TreasuryStockValue": -1,
     }
     for tag in signs:
         row = _instant_leg(facts, tag, end, cutoff)
@@ -376,10 +409,24 @@ def _sec_preferred_from_common_buildup(facts, end, cutoff, source):
             return None
         legs[tag] = row
         used_tags.append(tag)
+    treasury_row = None
+    for tag in TREASURY_TAGS:
+        row = _instant_leg(facts, tag, end, cutoff)
+        if row is not None:
+            treasury_row = row
+            legs[tag] = row
+            used_tags.append(tag)
+            break
+    if treasury_row is None:
+        return None
     accessions = {r.get("accn") for r in legs.values()}
     if len(accessions) != 1:
         return None
-    common = common_head + sum(signs[tag] * _number(legs[tag]["val"]) for tag in signs)
+    common = (
+        common_head
+        + sum(signs[tag] * _number(legs[tag]["val"]) for tag in signs)
+        - _number(treasury_row["val"])
+    )
     value = se_value - common
     if value < -COMMON_INCOME_TOLERANCE_USD:
         return None
@@ -404,6 +451,111 @@ def _sec_preferred_from_common_buildup(facts, end, cutoff, source):
             "formula": formula,
             "total_tag": "StockholdersEquity",
             "part_tags": sorted(used_tags),
+            "accession": next(iter(accessions)),
+            "filing_date": max(r["filed"] for r in legs.values()),
+        },
+    )
+
+
+def _duration_leg(facts, tag, end, cutoff):
+    """Latest-filed 10-K annual-duration USD row for one tag, or None.
+
+    Duration counterpart to _instant_leg for cash-flow statement tags such as
+    Depreciation: the row must carry a start date spanning roughly one year.
+    Returns None on absence or contradictory values at the latest filing date.
+    """
+    candidates = [
+        r
+        for r in facts.get("facts", {})
+        .get("us-gaap", {})
+        .get(tag, {})
+        .get("units", {})
+        .get("USD", [])
+        if r.get("end") == end
+        and r.get("form") in {"10-K", "10-K/A"}
+        and r.get("filed", "9999") <= cutoff
+        and _annual(r.get("start"), end)
+    ]
+    if not candidates:
+        return None
+    latest = max(r["filed"] for r in candidates)
+    top = [r for r in candidates if r["filed"] == latest]
+    if len({_number(r["val"]) for r in top}) != 1:
+        return None
+    return top[0]
+
+
+def _sec_depreciation_plus_amortization(facts, end, cutoff, source):
+    """Derive D&A as PP&E depreciation plus intangible amortization.
+
+    Filers such as Microsoft, Alphabet, Broadcom and Abbott report no combined
+    cash-flow D&A tag; they disclose Depreciation (PP&E) and
+    AmortizationOfIntangibleAssets as separate annual duration tags. Their sum
+    is the same cash-flow add-back the combined tag reports. Both legs must
+    come from the same 10-K accession; either leg absent or contradictory
+    means no derivation, never a partial sum. Returns an SEC-provenance field
+    or None.
+    """
+    legs = {}
+    for tag in ("Depreciation", "AmortizationOfIntangibleAssets"):
+        row = _duration_leg(facts, tag, end, cutoff)
+        if row is None:
+            return None
+        legs[tag] = row
+    accessions = {r.get("accn") for r in legs.values()}
+    if len(accessions) != 1:
+        return None
+    return _field(
+        sum(_number(r["val"]) for r in legs.values()),
+        end,
+        max(r["filed"] for r in legs.values()),
+        "USD",
+        {
+            **source,
+            "provider": "SEC companyfacts",
+            "formula": "Depreciation + AmortizationOfIntangibleAssets",
+            "part_tags": sorted(legs),
+            "accession": next(iter(accessions)),
+            "filing_date": max(r["filed"] for r in legs.values()),
+        },
+    )
+
+
+def _sec_domestic_plus_foreign_pretax(facts, end, cutoff, source):
+    """Derive pretax income as domestic plus foreign continuing income.
+
+    Filers such as Oracle disclose IncomeLossFromContinuingOperationsBefore-
+    IncomeTaxesDomestic and ...Foreign instead of a combined pretax tag.
+    Their sum is the same income-before-taxes line the combined tag reports.
+    Both legs must be annual-duration rows from the same 10-K accession;
+    either leg absent or contradictory means no derivation, never a partial
+    sum. Returns an SEC-provenance field or None.
+    """
+    legs = {}
+    for tag in (
+        "IncomeLossFromContinuingOperationsBeforeIncomeTaxesDomestic",
+        "IncomeLossFromContinuingOperationsBeforeIncomeTaxesForeign",
+    ):
+        row = _duration_leg(facts, tag, end, cutoff)
+        if row is None:
+            return None
+        legs[tag] = row
+    accessions = {r.get("accn") for r in legs.values()}
+    if len(accessions) != 1:
+        return None
+    return _field(
+        sum(_number(r["val"]) for r in legs.values()),
+        end,
+        max(r["filed"] for r in legs.values()),
+        "USD",
+        {
+            **source,
+            "provider": "SEC companyfacts",
+            "formula": (
+                "IncomeLossFromContinuingOperationsBeforeIncomeTaxesDomestic + "
+                "IncomeLossFromContinuingOperationsBeforeIncomeTaxesForeign"
+            ),
+            "part_tags": sorted(legs),
             "accession": next(iter(accessions)),
             "filing_date": max(r["filed"] for r in legs.values()),
         },
@@ -605,6 +757,10 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
             if all(nwc)
             else None
         )
+        if values["pretax_income"] is None:
+            values["pretax_income"] = _sec_domestic_plus_foreign_pretax(
+                facts, end, cutoff, sec_source
+            )
         tax = [values[k] for k in ["tax_expense", "pretax_income"]]
         f["tax_rate"] = (
             _derived(
@@ -613,6 +769,10 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
             if all(tax) and tax[1]["value"]
             else None
         )
+        if f.get("d_and_a") is None:
+            derived_da = _sec_depreciation_plus_amortization(facts, end, cutoff, sec_source)
+            if derived_da is not None:
+                f["d_and_a"] = derived_da
         if f.get("capex"):
             f["capex"]["value"] = abs(f["capex"]["value"])
         f["diluted_shares"] = values["diluted_shares"]
@@ -626,6 +786,24 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
             if bridge_accepted(verdict):
                 common_income.append(values["common_income"])
         bridges = {k: g.get(k) or _sec(facts, k, end, cutoff, sec_source) for k in BRIDGE_FIELDS}
+        if bridges.get("long_term_debt") is None:
+            # Filers such as AT&T disclose total LongTermDebt (including current)
+            # but no Noncurrent split; the noncurrent portion is total less the
+            # current portion from the same 10-K accession. Ordered most-standard
+            # first; never inferred as zero.
+            for total_tag, part_tag in LTD_TOTAL_PAIRS:
+                derived = _sec_subtotal_difference(
+                    facts,
+                    total_tag,
+                    part_tag,
+                    end,
+                    cutoff,
+                    sec_source,
+                    f"{total_tag} minus {part_tag}",
+                )
+                if derived is not None:
+                    bridges["long_term_debt"] = derived
+                    break
     if bridges.get("preferred_equity") is None:
         bridges["preferred_equity"] = _sec_subtotal_difference(
             facts,

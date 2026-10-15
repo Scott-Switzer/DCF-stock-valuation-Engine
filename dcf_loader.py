@@ -378,10 +378,13 @@ TAGS = {
         "Revenues",
         "SalesRevenueNet",
         # Broker-dealer/bank top line (total revenues less interest expense).
-        # Lowest priority: only used when no standard revenue tag is reported.
         "RevenuesNetOfInterestExpense",
+        # Regulated-utility top line (regulated plus unregulated operating
+        # revenue, e.g. Duke Energy). Lowest priority: only used when no
+        # standard revenue tag is reported.
+        "RegulatedAndUnregulatedOperatingRevenue",
     ],
-    "ebit": ["OperatingIncomeLoss"],
+    "ebit": ["OperatingIncomeLoss", "EarningsBeforeInterestAndTaxes"],
     "net_income": ["NetIncomeLoss", "ProfitLoss"],
     "d_and_a": [
         "DepreciationDepletionAndAmortization",
@@ -395,6 +398,9 @@ TAGS = {
         "PaymentsToAcquirePropertyPlantAndEquipment",
         # PepsiCo labels PP&E additions as productive assets.
         "PaymentsToAcquireProductiveAssets",
+        # Exploration-and-production issuers (e.g. EOG) capitalize drilling
+        # as oil-and-gas properties instead of plant and equipment.
+        "PaymentsToAcquireOilAndGasPropertyAndEquipment",
     ],
     "current_assets": ["AssetsCurrent"],
     "current_liabilities": ["LiabilitiesCurrent"],
@@ -409,13 +415,17 @@ TAGS = {
         "LongTermDebtMaturitiesRepaymentsOfPrincipalInNextTwelveMonths",
     ],
     "short_term_borrowings": ["ShortTermBorrowings"],
-    "long_term_debt": ["LongTermDebtNoncurrent"],
+    # Issuers that fund with notes (e.g. Oracle) file LongTermNotesPayable
+    # instead of LongTermDebtNoncurrent. Lowest priority: only used when the
+    # standard noncurrent tag is absent.
+    "long_term_debt": ["LongTermDebtNoncurrent", "LongTermNotesPayable"],
     "total_assets": ["Assets"],
     "total_liabilities": ["Liabilities"],
     "tax_expense": ["IncomeTaxExpenseBenefit"],
     "pretax_income": [
         "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
         "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments",
+        "IncomeLossFromContinuingOperationsBeforeIncomeTaxes",
     ],
     "diluted_shares": ["WeightedAverageNumberOfDilutedSharesOutstanding"],
     "preferred_equity": ["PreferredStockValue"],

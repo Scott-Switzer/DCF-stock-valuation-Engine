@@ -419,6 +419,28 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(result["ebit_facts"], [])
         self.assertTrue(any("does not match" in u["reason"] for u in result["unavailable"]))
 
+    def test_offline_builder_prefers_same_filing_ebit(self):
+        from copy import deepcopy
+        from accounting_policy import build_adjustment_facts_from_companyfacts
+
+        fixture = deepcopy(PEP_FIXTURE)
+        restated = []
+        for row in fixture["OperatingIncomeLoss"]["units"]["USD"]:
+            if row["end"] in PEP_PERIODS:
+                newer = dict(row, filed="2026-09-01", accn="0000077476-26-000099")
+                restated.append(newer)
+        fixture["OperatingIncomeLoss"]["units"]["USD"].extend(restated)
+        combined = {"cik": int(PEP_CIK), "facts": {"us-gaap": fixture}}
+        result = build_adjustment_facts_from_companyfacts(
+            PEP_CIK, PEP_PERIODS, combined, PEP_AS_OF
+        )
+        by_end = {f["period_end"]: f for f in result["ebit_facts"]}
+        self.assertEqual(set(by_end), set(PEP_PERIODS))
+        # Tie-out pairs the adjustment filing's own EBIT observation, not
+        # the later restatement, even though values agree.
+        self.assertTrue(all(f["accession"] != "0000077476-26-000099"
+                            for f in by_end.values()))
+
     def test_offline_builder_rejects_unauthenticated_receipt(self):
         from accounting_policy import build_adjustment_facts_from_companyfacts
 
