@@ -221,7 +221,8 @@ def build_brief(doc, raw_assumptions=None):
             "ebit_margins": margins,
             "ebit_margin_mean": sum(margins) / len(margins) if margins else None,
             "wacc": result["wacc"],
-            "wacc_basis": wacc_basis_note(d, assumptions, costs, "recalculated"),
+            "wacc_mode": assumptions.wacc_mode,
+            "wacc_basis": wacc_basis_note(d, assumptions, costs, assumptions.wacc_mode),
             "forecast_tax_rates": list(assumptions.tax_rates or []),
             "forecast_tax_basis": ((d.get("source") or {}).get("tax_policy") or {}).get(
                 "selected", {}
