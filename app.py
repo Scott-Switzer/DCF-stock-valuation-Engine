@@ -239,20 +239,53 @@ def form_payload(form):
         raise ValueError(
             "Load data for the new ticker or select manual mode. Financials cannot be reused for a different security."
         )
+    form_wacc = number(form.get("wacc"), "WACC") / 100
     a = {
         "revenue_growth_rates": [
             number(form.get(f"growth_{i}"), f"Year {i + 1} growth") / 100 for i in range(5)
         ],
         "terminal_growth_rate": number(form.get("terminal_growth"), "Terminal growth") / 100,
-        "wacc_override": number(form.get("wacc"), "WACC") / 100,
+        "wacc_override": form_wacc,
         "terminal_mode": form.get("terminal_mode", "template"),
     }
+    base_costs = (original.get("source") or {}).get("capital_costs") or {}
+    loaded_wacc = base_costs.get("wacc")
+    base_tax = (original.get("historical") or [{}])[-1].get("tax_rate")
     for key, name in DRIVERS.items():
         if key != "growth":
             a[name] = [
                 number(form.get(f"{key}_{i}"), f"{DRIVER_LABELS[key]} year {i + 1}") / 100
                 for i in range(5)
             ]
+    # WACC/tax coherence: a manually edited WACC is the user's explicit
+    # fixed discount rate; but when the WACC field still matches the loaded
+    # capital costs while the forecast tax was edited, the loaded shield is
+    # stale, so the override is recomputed from the frozen market inputs
+    # with the selected shield and the switch is recorded. Neither regime
+    # is applied silently.
+    new_tax = a.get("tax_rates", [None])[0] if isinstance(a.get("tax_rates"), list) else None
+    if (
+        isinstance(loaded_wacc, (int, float))
+        and abs(form_wacc - loaded_wacc) < 1e-12
+        and isinstance(new_tax, (int, float))
+        and new_tax != base_tax
+    ):
+        from compare import recalculated_wacc
+
+        try:
+            recalc = recalculated_wacc(base_costs, new_tax)
+            a["wacc_override"] = recalc
+            changes.append(
+                f"WACC recalculated {loaded_wacc:.2%} -> {recalc:.2%} with the edited "
+                f"{new_tax:.2%} tax shield (recalculated mode)"
+            )
+        except ValueError:
+            changes.append(
+                "WACC held at the loaded rate while forecast tax varies "
+                "(fixed-WACC sensitivity; cost components unavailable)"
+            )
+    elif isinstance(loaded_wacc, (int, float)) and abs(form_wacc - loaded_wacc) >= 1e-12:
+        changes.append(f"WACC manually fixed at {form_wacc:.2%} (fixed-WACC sensitivity)")
     if a["terminal_mode"] == "normalized":
         a["terminal_roic"] = number(form.get("terminal_roic"), "Terminal ROIC") / 100
     for k in FUTURE_LABELS:

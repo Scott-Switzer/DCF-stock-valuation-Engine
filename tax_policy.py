@@ -111,6 +111,44 @@ def shield_rate(policy, override=None):
     return {"rate": float(rate), "basis": f"coherent_with_forecast:{policy.get('basis')}"}
 
 
+def document_tax_policy(rows, user_override=None, scenario=None):
+    """Record the reported-vs-forecast tax position on a loaded document.
+
+    ``rows`` are historical records with ``period_end``, ``tax_rate`` and
+    optional ``provenance.tax_rate.accession`` (plus Yahoo's
+    ``reported_tax_rate`` filed ratio when the effective rate fell back to
+    a provider convention). History is reported as filed -- signed, never
+    substituted; the forecast selection resolves the latest default or an
+    explicit policy. Raises TaxPolicyError on an invalid explicit
+    selection instead of inventing history.
+    """
+    reported = []
+    for row in rows or []:
+        prov = ((row.get("provenance") or {}).get("tax_rate") or {}) or {}
+        entry = {
+            "period_end": row.get("period_end"),
+            "rate": row.get("tax_rate"),
+            "accession": prov.get("accession"),
+        }
+        if row.get("reported_tax_rate") is not None:
+            entry["filed_ratio"] = row.get("reported_tax_rate")
+        reported.append(entry)
+    resolved = resolve_forecast_tax(
+        [entry["rate"] for entry in reported],
+        user_override=user_override,
+        scenario=scenario,
+    )
+    return {
+        "reported": reported,
+        "selected": {
+            "basis": resolved["basis"],
+            "rates": resolved["rates"],
+            "evidence": resolved["evidence"],
+        },
+        "explicit": user_override is not None or scenario is not None,
+    }
+
+
 def build_tax_reconciliation(statutory_rate, components, reported_rate, filing, period_end):
     """Check a filed effective-tax-rate reconciliation and split it.
 

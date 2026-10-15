@@ -101,6 +101,17 @@ def test_filed_abbv_aep_reconciliations_pin_normalized_rates():
     # Filing-supported scenarios are adopted explicitly, never by default.
     assert doc["companies"]["ABBV"]["normalized_scenario"]["rate"] == 0.231
     assert doc["companies"]["AEP"]["normalized_scenario"]["rate"] == 0.078
+    # FY2025 corroboration: AEP reported 3.37% bridges to recurring-only
+    # 13.4% via the single discrete remeasurement (-10.01pp).
+    aep25 = doc["companies"]["AEP"]["reconciliation_2025"]
+    assert aep25["reported_rate"] == pytest.approx(129.0 / 3825.0)
+    assert aep25["recurring_only_rate"] == pytest.approx(0.134, abs=0.001)
+    assert aep25["discrete_pp"] == pytest.approx(-10.01, abs=0.05)
+    # ABBV FY2025 discrete dominates both ways: adopted-flags recurring
+    # 42.3% vs 21.0% with the whole PR pair discrete -- no stable point.
+    sens = doc["companies"]["ABBV"]["fy2025_recurring_sensitivity"]
+    assert sens["adopted_flags"] == pytest.approx(0.423, abs=0.002)
+    assert sens["pr_pair_discrete"] == pytest.approx(0.210, abs=0.002)
 
 
 def test_gate_names_tax_assumption_instead_of_invalidating_history():
@@ -120,6 +131,70 @@ def test_gate_names_tax_assumption_instead_of_invalidating_history():
     assert not any("tax_rate_out_of_bounds" in r for r in gate["reasons"])
     # The signed history itself is preserved in the packet.
     assert packet["historical"][-1]["fields"]["tax_rate"]["value"] == -0.153
+
+
+def test_gate_ignores_negative_middle_year_with_valid_latest():
+    import sys
+
+    sys.path.insert(0, "tests")
+    from test_sec_first import full_packet
+
+    from sec_first import eligibility_gate
+    from tax_policy import resolve_forecast_tax
+
+    # ABBV shape: 2023 +22.0%, 2024 -15.3%, 2025 +35.8%.
+    packet = full_packet()
+    taxes = [0.220, -0.153, 0.358]
+    for row, tax in zip(packet["historical"], taxes):
+        row["fields"]["tax_rate"]["value"] = tax
+    gate = eligibility_gate(packet, "TEST", packet["cutoff_date"])
+    assert not any("tax_forecast_assumption_required" in r for r in gate["reasons"])
+    assert gate["eligible"]
+    # The middle-year negative is preserved and the default forecasts from latest.
+    assert packet["historical"][1]["fields"]["tax_rate"]["value"] == -0.153
+    assert resolve_forecast_tax(taxes)["rates"] == [0.358] * 5
+
+
+def test_gate_missing_latest_tax_reports_missing_not_assumption():
+    import sys
+
+    sys.path.insert(0, "tests")
+    from test_sec_first import full_packet
+
+    from sec_first import eligibility_gate
+
+    packet = full_packet()
+    packet["historical"][-1]["fields"].pop("tax_rate")
+    gate = eligibility_gate(packet, "TEST", packet["cutoff_date"])
+    assert not gate["eligible"]
+    assert any(r.startswith("missing_tax_rate_") for r in gate["reasons"])
+    assert not any("tax_forecast_assumption_required" in r for r in gate["reasons"])
+
+
+def test_resolve_rejects_invalid_explicit_policies():
+    import sys
+
+    sys.path.insert(0, "tests")
+    from test_sec_first import full_packet
+
+    from sec_first import eligibility_gate
+    from tax_policy import TaxPolicyError, resolve_forecast_tax
+
+    history = [0.22, -0.153, 0.358]
+    # Wrong length, out-of-bounds entries, and evidence-free scenarios refuse.
+    for bad in ([0.25] * 4, [0.25] * 6, [1.5] * 5, [-0.1] * 5):
+        with pytest.raises(TaxPolicyError):
+            resolve_forecast_tax(history, user_override=bad)
+    with pytest.raises(TaxPolicyError):
+        resolve_forecast_tax(history, scenario={"rates": [0.231] * 5})
+    # The gate still blocks the unsupported default, not the explicit policy.
+    packet = full_packet()
+    packet["historical"][-1]["fields"]["tax_rate"]["value"] = 2.0
+    gate = eligibility_gate(packet, "TEST", packet["cutoff_date"])
+    assert not gate["eligible"]
+    assert resolve_forecast_tax(
+        [0.22, 0.24, 2.0], user_override=[0.25] * 5
+    )["basis"] == "user_override"
 
 
 def test_model_preserves_history_but_requires_explicit_forecast():

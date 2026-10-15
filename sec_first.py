@@ -50,6 +50,7 @@ def eligibility_gate(packet, ticker, asof):
             "historical_point_in_time_unavailable: market inputs require the current UTC date"
         )
     history = packet.get("historical", [])
+    taxes = []
     if len(history) != 3:
         reasons.append(f"annual_periods_incomplete: {len(history)} of 3 packet periods")
     common_by_end = {x["period_end"]: x for x in packet.get("common_income", [])}
@@ -69,15 +70,24 @@ def eligibility_gate(packet, ticker, asof):
             if not present:
                 reasons.append(f"missing_{key}_{end}")
         # Reported history is preserved as filed, including negative rates
-        # from benefits or settlements (see tax_policy). A baseline DCF still
-        # needs a supportable forecast assumption, so an unusual history
-        # blocks with the fix named instead of invalidating the statement.
-        tax = (fields.get("tax_rate") or {}).get("value")
-        if tax is not None and not 0 <= tax <= 1:
+        # from benefits or settlements (see tax_policy). Only the latest
+        # year governs default-forecast resolvability: a negative middle
+        # year (e.g. ABBV 2024) never blocks forecasting from a valid
+        # latest year (e.g. ABBV 2025). An unusable latest default blocks
+        # only the unsupported default run, never an explicitly supported
+        # forecast policy, and never the statement itself.
+        taxes.append(((fields.get("tax_rate") or {}).get("value"), end))
+    # Default-forecast resolvability depends on the latest year alone.
+    # Middle-year negatives stay signed in history and never block;
+    # a missing latest rate is already reported as missing_tax_rate_*.
+    present = [(tax, end) for tax, end in taxes if tax is not None]
+    if len(present) == len(history) and present:
+        latest_tax, latest_end = present[-1]
+        if not 0 <= latest_tax <= 1:
             reasons.append(
-                f"tax_forecast_assumption_required_{end}: reported {tax:.2%} is "
-                "preserved; supply an explicit user override or "
-                "filing-supported normalized scenario (tax_policy)"
+                f"tax_forecast_assumption_required_{latest_end}: reported "
+                f"{latest_tax:.2%} is preserved; supply an explicit user "
+                "override or filing-supported normalized scenario (tax_policy)"
             )
     shares = packet.get("diluted_shares")
     if not isinstance(shares, dict) or not (shares.get("value") or 0) > 0:
@@ -179,6 +189,20 @@ def valuation_readiness(packet, ticker, asof, preferred_cost=None):
     return {"states": states, "valuation_ready": states["DCF_EVALUABLE"]["met"]}
 
 
+def _doc_tax_policy(doc, tax_override=None, tax_scenario=None):
+    """Record the reported-vs-forecast tax position on a loaded document."""
+    from tax_policy import TaxPolicyError, document_tax_policy
+
+    try:
+        return document_tax_policy(
+            doc.get("historical", []),
+            user_override=tax_override,
+            scenario=tax_scenario,
+        )
+    except TaxPolicyError as exc:
+        raise ProviderError(str(exc)) from None
+
+
 def _packet_value(packet_row_fields, end_fields, key):
     field = end_fields.get(key)
     return field["value"] if field is not None else None
@@ -191,11 +215,17 @@ def load_sec_first(
     packet,
     include_capital_costs=True,
     require_wacc=True,
+    tax_override=None,
+    tax_scenario=None,
 ):
     """Build a Yahoo-shaped financial document from a qualified packet.
 
-    Raises ProviderError with the gate's machine-readable reasons when the
-    packet does not qualify, so callers can fall back with accurate warnings.
+    Reported history stays signed as filed. ``tax_override`` (five rates
+    in 0-1) or ``tax_scenario`` (rates plus filing/period evidence) select
+    an explicit forecast policy via tax_policy; the selection is recorded
+    in ``doc["source"]["tax_policy"]`` without mutating history. Raises
+    ProviderError with the gate's machine-readable reasons when the packet
+    does not qualify, so callers can fall back with accurate warnings.
     """
     ticker = ticker_symbol(ticker)
     now = datetime.now(timezone.utc)
@@ -205,9 +235,31 @@ def load_sec_first(
         )
     gate = eligibility_gate(packet, ticker, asof)
     if not gate["eligible"]:
-        raise ProviderError(
-            "SEC-first path unavailable: " + "; ".join(gate["reasons"])
+        # An unusable latest default blocks only the unsupported default run:
+        # with an explicit forecast policy supplied, a gate held up solely by
+        # tax_forecast_assumption_required_* proceeds once that selection
+        # itself resolves. Anything else still falls back with the reasons.
+        explicit = tax_override is not None or tax_scenario is not None
+        tax_only = gate["reasons"] and all(
+            r.startswith("tax_forecast_assumption_required_") for r in gate["reasons"]
         )
+        if tax_only and explicit:
+            from tax_policy import TaxPolicyError, resolve_forecast_tax
+
+            try:
+                history_rates = [
+                    ((row.get("fields") or {}).get("tax_rate") or {}).get("value")
+                    for row in packet.get("historical", [])
+                ]
+                resolve_forecast_tax(
+                    history_rates, user_override=tax_override, scenario=tax_scenario
+                )
+            except (TaxPolicyError, KeyError, TypeError) as exc:
+                raise ProviderError(str(exc)) from None
+        else:
+            raise ProviderError(
+                "SEC-first path unavailable: " + "; ".join(gate["reasons"])
+            )
     from yahoo_provider import chart, market_quote, market_beta, finite
 
     stock = chart(http, ticker)
@@ -354,9 +406,22 @@ def load_sec_first(
             )
         cost_equity = rf + beta * 0.05
         equity = finite(diluted * price, "equity market value")
-        tax = doc["historical"][-1]["tax_rate"]
-        if debt < 0 or not 0 <= tax <= 1:
-            raise ProviderError("Debt or effective tax rate is outside supported bounds.")
+        # The shield uses the selected forecast policy (latest default or an
+        # explicit override/scenario resolved in _doc_tax_policy below), so a
+        # signed latest history with an explicit policy still gets coherent
+        # capital costs instead of a bounds refusal.
+        try:
+            from tax_policy import TaxPolicyError, document_tax_policy as _document_tax_policy
+
+            _policy = _document_tax_policy(
+                doc["historical"], user_override=tax_override, scenario=tax_scenario
+            )
+            tax = _policy["selected"]["rates"][0]
+        except (TaxPolicyError, KeyError, TypeError, IndexError) as exc:
+            raise ProviderError(str(exc)) from None
+        tax_explicit = tax_override is not None or tax_scenario is not None
+        if debt < 0:
+            raise ProviderError("Debt is outside supported bounds.")
         costs = {
             "risk_free_rate": rf,
             "risk_free_rate_as_of": rf_date,
@@ -377,6 +442,9 @@ def load_sec_first(
             "debt_book_value": debt,
             "debt": debt,
             "tax_rate": tax,
+            "tax_shield_basis": (
+                "explicit forecast policy" if tax_explicit else "latest reported rate"
+            ),
             "preferred_equity": preferred,
             "preferred_cost": None,
             "reported_cost_of_debt": abs(interest) / debt
@@ -448,6 +516,7 @@ def load_sec_first(
         statement_source="SEC-first",
         ppe_release=packet["source"],
         ppe_cutoff=packet["cutoff_date"],
+        tax_policy=_doc_tax_policy(doc, tax_override, tax_scenario),
     )
     for key, value in costs.items():
         if isinstance(value, (int, float)):

@@ -8,7 +8,7 @@ the whole page.
 """
 
 from copy import deepcopy
-from dataclasses import asdict
+from dataclasses import asdict, replace
 
 from dcf_code import DCFAssumptions, DCFModel
 from dcf_loader import ProviderError, ticker_symbol
@@ -18,6 +18,92 @@ from issuer_classification import financial_block_reason
 from suite_views import suite_assumptions, suite_evaluate
 
 
+WACC_MODES = ("recalculated", "fixed")
+
+
+def resolve_tax_rates(doc):
+    """Baseline forecast tax rates via tax_policy, honoring a doc selection.
+
+    A document carrying an explicit ``source.tax_policy.selected`` policy
+    (SEC-first load or PPE merge with a user override / normalized
+    scenario) uses its rates; otherwise the latest reported rate resolves
+    the default. An unresolvable default raises ValueError naming the
+    required explicit assumption -- never an invented rate -- so existing
+    ``except ValueError`` lanes render it as an unavailable DCF.
+    """
+    from tax_policy import TaxPolicyError, resolve_forecast_tax
+
+    policy = (doc.get("source") or {}).get("tax_policy") or {}
+    selected = policy.get("selected") or {}
+    rates = selected.get("rates")
+    if isinstance(rates, list) and len(rates) == 5 and all(
+        isinstance(v, (int, float)) and 0 <= v <= 1 for v in rates
+    ):
+        return [float(v) for v in rates], selected.get("basis", "unknown")
+    try:
+        resolved = resolve_forecast_tax([r["tax_rate"] for r in doc["historical"]])
+    except TaxPolicyError as exc:
+        raise ValueError(str(exc)) from None
+    return resolved["rates"], resolved["basis"]
+
+
+def recalculated_wacc(costs, shield):
+    """Recompute WACC from frozen market inputs with the selected shield.
+
+    Same arithmetic the loaders use for ``capital_costs.wacc``; with an
+    unchanged shield it reproduces the loaded rate exactly, so the default
+    path is numerically identical and scenarios stay coherent. Raises
+    ValueError when the cost components are unavailable.
+    """
+    try:
+        equity = float(costs["market_equity_value"])
+        debt = float(costs["debt"])
+        cost_equity = float(costs["cost_of_equity"])
+        cost_debt = float(costs["cost_of_debt"])
+        shield = float(shield)
+    except (KeyError, TypeError, ValueError):
+        raise ValueError(
+            "Capital-cost components are unavailable; WACC cannot be recalculated."
+        ) from None
+    if equity + debt <= 0:
+        raise ValueError("Capital weights are unavailable; WACC cannot be recalculated.")
+    return (equity * cost_equity + debt * cost_debt * (1 - shield)) / (equity + debt)
+
+
+def wacc_basis_note(doc, assumptions, costs, wacc_mode):
+    """Label which discount-rate regime an assumption set uses."""
+    shield = None
+    if assumptions.tax_rates:
+        shield = assumptions.tax_rates[0]
+    else:
+        latest = doc["historical"][-1].get("tax_rate")
+        if isinstance(latest, (int, float)) and 0 <= latest <= 1:
+            shield = latest
+    expected = None
+    if isinstance(costs, dict) and shield is not None:
+        try:
+            expected = recalculated_wacc(costs, shield)
+        except ValueError:
+            expected = None
+    override = assumptions.wacc_override
+    if (
+        wacc_mode == "recalculated"
+        and expected is not None
+        and isinstance(override, (int, float))
+        and abs(override - expected) < 1e-9
+    ):
+        return (
+            f"Recalculated WACC {override:.2%} from frozen market inputs with "
+            f"the {shield:.2%} tax shield ({wacc_mode} mode)."
+        )
+    return (
+        f"Fixed-WACC sensitivity: discount rate held at {override:.2%} while "
+        f"cash-flow taxes use {shield:.2%} ({wacc_mode} mode)."
+        if isinstance(override, (int, float)) and shield is not None
+        else f"WACC basis unavailable ({wacc_mode} mode)."
+    )
+
+
 def baseline_dcf_assumptions(doc, wacc):
     rows = doc["historical"]
 
@@ -25,6 +111,7 @@ def baseline_dcf_assumptions(doc, wacc):
         values = [r[key] / r["revenue"] for r in rows]
         return sum(values) / len(values)
 
+    tax_rates, _ = resolve_tax_rates(doc)
     return DCFAssumptions(
         revenue_growth_rates=[0.05] * 5,
         terminal_growth_rate=0.02,
@@ -34,21 +121,49 @@ def baseline_dcf_assumptions(doc, wacc):
         da_margins=[average("d_and_a")] * 5,
         capex_margins=[average("capex")] * 5,
         nwc_margins=[average("nwc")] * 5,
-        tax_rates=[rows[-1]["tax_rate"]] * 5,
+        tax_rates=tax_rates,
         net_income_margins=[average("net_income")] * 5,
         book_value_margins=[average("book_value")] * 5,
     )
 
 
-def coerce_dcf_assumptions(doc, raw, wacc):
-    """Validate user-supplied DCF assumptions; fall back to baselines."""
+def coerce_dcf_assumptions(doc, raw, wacc, costs=None, wacc_mode="recalculated"):
+    """Validate user-supplied DCF assumptions; fall back to baselines.
+
+    ``wacc_mode`` selects the discount-rate regime: ``recalculated``
+    recomputes the WACC override from frozen market inputs
+    (``costs`` -- the loaded ``capital_costs``) with the selected tax
+    shield, so FCFF and WACC never use inconsistent rates; ``fixed``
+    deliberately holds the loaded WACC while cash-flow taxes vary. The
+    regime is labeled by ``wacc_basis_note``, never switched silently.
+    """
     from app import assumptions_from_json
 
+    if wacc_mode not in WACC_MODES:
+        raise ValueError(f"WACC mode must be one of {WACC_MODES}.")
     if not isinstance(raw, dict) or not raw:
-        return baseline_dcf_assumptions(doc, wacc), False
+        base = baseline_dcf_assumptions(doc, wacc)
+        if wacc_mode == "recalculated" and isinstance(costs, dict):
+            try:
+                base = replace(base, wacc_override=recalculated_wacc(costs, base.tax_rates[0]))
+            except ValueError:
+                pass
+        return base, False
     merged = asdict(baseline_dcf_assumptions(doc, wacc))
     merged.update({k: v for k, v in raw.items() if v is not None})
-    return assumptions_from_json(merged), True
+    assumptions = assumptions_from_json(merged)
+    if wacc_mode == "recalculated" and isinstance(costs, dict) and assumptions.tax_rates:
+        # A caller-supplied wacc_override in raw is the caller's explicit
+        # fixed rate; otherwise recompute with the selected shield.
+        if not isinstance(raw, dict) or raw.get("wacc_override") is None:
+            try:
+                assumptions = replace(
+                    assumptions,
+                    wacc_override=recalculated_wacc(costs, assumptions.tax_rates[0]),
+                )
+            except ValueError:
+                pass
+    return assumptions, True
 
 
 def scenario_band(doc, base, delta):
@@ -62,7 +177,8 @@ def scenario_band(doc, base, delta):
     )
 
 
-def football_field(ticker, asof=None, dcf_assumptions=None, snapshot=None, http=None):
+def football_field(ticker, asof=None, dcf_assumptions=None, snapshot=None, http=None,
+                   wacc_mode="recalculated"):
     """Compare lanes for one ticker.
 
     ``snapshot`` is an optional dcf-financials-v1 document, such as the
@@ -85,7 +201,9 @@ def football_field(ticker, asof=None, dcf_assumptions=None, snapshot=None, http=
     doc = bundle["financials"]
     costs = bundle["load_summary"].get("capital_costs", {})
     wacc = costs.get("wacc") or 0.065
-    dcf_assumptions, custom = coerce_dcf_assumptions(doc, dcf_assumptions, wacc)
+    dcf_assumptions, custom = coerce_dcf_assumptions(
+        doc, dcf_assumptions, wacc, costs=costs, wacc_mode=wacc_mode
+    )
     lanes = []
     band_results = {}
     result = None
