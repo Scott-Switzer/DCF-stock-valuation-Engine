@@ -54,6 +54,7 @@ const active={valid:true,result:{method:'dcf',input_financials:{company:{ticker:
    const importedForm={forecast:'custom'};
    const importContext={key,method:key,results:new Map([[key,{loaded:true,result:active.result}]]),
      message:{financials:imported,form:importedForm},render(){},status(){},baseline:{financials:{company:{ticker:'OLD'}}},
+     generation:0,ready:new Set(),editors:new Map(),location:{origin:'https://x.test'},
      request(){throw Error('Imported inputs must not be reassembled');}};
    vm.createContext(importContext);
    const importStart=source.indexOf('      if (key !== "dcf") {',source.indexOf('message.type === "editor-company"'));

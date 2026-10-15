@@ -79,7 +79,14 @@
       );
   }
   async function assemble(key, token) {
-    if (!baseline || (results.has(key) && results.get(key).loaded)) return;
+    if (!baseline) return;
+    if (results.has(key) && results.get(key).loaded) {
+      // Bundled-preview fast path: results arrived with the load response,
+      // but the editor still needs its workspace-data to fill the form.
+      // (Skipping this send leaves the assumptions editor empty.)
+      if (token === generation && ready.has(key)) send(key, results.get(key).data);
+      return;
+    }
     if (key === "relative" && results.get("dcf")?.pending) return;
     const item = results.get(key) || {};
     if (item.assembling) return;
