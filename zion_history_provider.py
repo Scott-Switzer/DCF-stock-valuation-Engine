@@ -3,6 +3,8 @@ from copy import deepcopy
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
+import hashlib
+import hmac
 import json
 import re
 
@@ -12,6 +14,94 @@ METRICS = {
     'revenue': 'revenue', 'operating_income': 'ebit', 'net_income': 'net_income',
     'capital_expenditures': 'capex', 'cash': 'cash', 'diluted_shares': 'diluted_shares',
 }
+EVIDENCE_SCHEMA = 'zion-native-evidence-mac-v1'
+
+
+def encoded(value):
+    return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False).encode()
+
+
+def leaf_hash_valid(sid, leaf):
+    concept = leaf.get('concept', '')
+    record = leaf.get('source_record', {})
+    if (not isinstance(sid, str) or not re.fullmatch(r'[0-9a-f]{64}', sid)
+            or leaf.get('source_observation_id') != sid
+            or not isinstance(concept, str) or not concept.startswith('us-gaap:')
+            or not isinstance(record, dict)
+            or record.get('end') != leaf.get('period_end')
+            or record.get('start') != leaf.get('period_start')
+            or record.get('accn') != leaf.get('accession')
+            or record.get('form') != leaf.get('form')
+            or record.get('form') not in {'10-K', '10-K/A', '10-Q', '10-Q/A'}):
+        return False
+    tag = concept.removeprefix('us-gaap:')
+    val = decimal(record.get('val'))
+    candidates = [dict(record)]
+    if val == val.to_integral_value():
+        candidates.append(dict(record, val=int(val)))
+    try:
+        candidates.append(dict(record, val=float(record['val'])))
+    except (ValueError, OverflowError):
+        pass
+    for item in candidates:
+        digest = hashlib.sha256(
+            encoded({'cik': leaf.get('cik'), 'concept': tag, 'unit': leaf.get('unit'), 'source_record': item})
+        ).hexdigest()
+        if digest == sid:
+            return True
+    return False
+
+
+def evidence_digest(pages, ticker, asof, cik):
+    pin = release_pin(pages[0]) if pages and isinstance(pages[0], dict) else ()
+    return hashlib.sha256(
+        encoded({
+            'schema': EVIDENCE_SCHEMA,
+            'ticker': ticker,
+            'valuation_date': asof,
+            'cik': cik,
+            'release_pin': list(pin),
+            'pages': pages,
+        })
+    ).hexdigest()
+
+
+def sign_evidence(pages, ticker, asof, cik, secret):
+    if not isinstance(secret, str) or not secret:
+        fail('server evidence signing key required')
+    digest = evidence_digest(pages, ticker, asof, cik)
+    key = hmac.new(secret.encode(), EVIDENCE_SCHEMA.encode(), hashlib.sha256).digest()
+    return {
+        'schema_version': EVIDENCE_SCHEMA,
+        'payload_sha256': digest,
+        'hmac_sha256': hmac.new(key, digest.encode(), hashlib.sha256).hexdigest(),
+    }
+
+
+def verify_evidence(doc, secret):
+    if not isinstance(doc, dict):
+        fail('financial document must be a JSON object')
+    if not isinstance(secret, str) or not secret:
+        fail('native Zion verification is not configured on this server')
+    source = doc.get('source', {})
+    company = doc.get('company', {})
+    pages = source.get('native_history')
+    ticker = company.get('ticker')
+    asof = doc.get('valuation_date')
+    cik = source.get('cik')
+    if (source.get('adapter_version') != 'zion-native-history-v1'
+            or not isinstance(pages, list) or not pages
+            or not isinstance(ticker, str) or not isinstance(asof, str)
+            or not isinstance(cik, str) or not re.fullmatch(r'\d{10}', cik)):
+        fail('verified native Zion input bundle required')
+    attestation = source.get('evidence_attestation')
+    if not isinstance(attestation, dict) or attestation.get('schema_version') != EVIDENCE_SCHEMA:
+        fail('unattested caller-supplied evidence bundle rejected')
+    expected = sign_evidence(pages, ticker, asof, cik, secret)
+    if (not hmac.compare_digest(str(attestation.get('payload_sha256', '')), expected['payload_sha256'])
+            or not hmac.compare_digest(str(attestation.get('hmac_sha256', '')), expected['hmac_sha256'])):
+        fail('evidence attestation mismatch; caller-supplied bundle rejected')
+    return history_document(pages, ticker, asof, cik)
 
 
 def fail(message):
@@ -91,9 +181,11 @@ def history_document(pages, ticker, asof, cik):
                 fail('missing source terms')
             reproduced = Fraction(0)
             for term in terms:
-                leaf = leaves.get(term['source_observation_id'], {})
+                sid = term['source_observation_id']
+                leaf = leaves.get(sid, {})
                 if (leaf.get('cik') != cik or leaf.get('member_sha256') != pin[3]
-                        or leaf.get('unit') != expected_unit or instant(leaf.get('available_at')) > cutoff):
+                        or leaf.get('unit') != expected_unit or instant(leaf.get('available_at')) > cutoff
+                        or not leaf_hash_valid(sid, leaf)):
                     fail('incompatible leaf source')
                 original = decimal(leaf.get('source_record', {}).get('val'))
                 if original != decimal(leaf.get('value_decimal')):
@@ -187,7 +279,9 @@ def load_history(ticker, asof, http, *, cik, base, token, expected_release_id=No
         if not cursor:
             if offset != total:
                 fail('incomplete pagination')
-            return history_document(pages, ticker, asof, cik)
+            doc = history_document(pages, ticker, asof, cik)
+            doc['source']['evidence_attestation'] = sign_evidence(pages, ticker, asof, cik, token)
+            return doc
         if cursor in seen or count == 0:
             fail('pagination loop')
         seen.add(cursor)

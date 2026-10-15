@@ -322,7 +322,16 @@ def payload():
             raise ValueError("Send a JSON object.")
         if "financials" not in raw:
             raise ValueError("Provide a financials document.")
-        return raw["financials"], assumptions_from_json(raw.get("assumptions"))
+        doc = deepcopy(raw['financials'])
+        assumptions = raw.get('assumptions')
+        if raw.get('benchmark_selections'):
+            from valuation_benchmarks import apply_benchmarks
+            if not isinstance(assumptions, dict):
+                raise ValueError('Assumptions must be a JSON object.')
+            selected = resolve_benchmark_selections(raw['benchmark_selections'], doc['valuation_date'])
+            assumptions = apply_benchmarks(assumptions, selected)
+            doc['source']['benchmark_assumptions'] = assumptions.pop('benchmark_sources')
+        return doc, assumptions_from_json(assumptions)
     return form_payload(request.form)
 
 
@@ -813,6 +822,61 @@ def calculate_api():
         return jsonify(r)
     except ValueError as e:
         return jsonify(error=str(e)), 400
+
+
+def resolve_benchmark_selections(selections, valuation_date):
+    from valuation_benchmarks import load_benchmark
+    root = provider_value('DAMODARAN_RELEASE_ROOT')
+    if not root:
+        raise ValueError('Damodaran releases are not configured in this runtime.')
+    if not isinstance(selections, dict) or not 1 <= len(selections) <= 4:
+        raise ValueError('Select one to four explicit benchmark inputs.')
+    result = {}
+    for target, selection in selections.items():
+        if not isinstance(selection, dict) or set(selection) != {'release_id','subject','measure','mode'}:
+            raise ValueError('Select exact release, subject, measure and current/historical mode.')
+        mode = selection['mode']
+        if mode not in {'current','historical'}:
+            raise ValueError('Unknown benchmark selection mode.')
+        if mode == 'current' and valuation_date != datetime.now(timezone.utc).date().isoformat():
+            raise ValueError('Current benchmark selection cannot be backdated.')
+        try:
+            result[target] = load_benchmark(root, selection['release_id'], selection['subject'], selection['measure'],
+                                            as_of=valuation_date if mode == 'historical' else None)
+        except (OSError, KeyError) as exc:
+            raise ValueError('Selected benchmark release is unavailable.') from exc
+    return result
+
+
+@app.get('/api/assumptions/damodaran/<release>')
+def damodaran_assumption_api(release):
+    try:
+        selected = resolve_benchmark_selections({'selected':{
+            'release_id':release,'subject':request.args.get('subject'),'measure':request.args.get('measure'),
+            'mode':request.args.get('mode','historical')}},
+            request.args.get('as_of',datetime.now(timezone.utc).date().isoformat()))
+        response = jsonify(selected['selected'])
+        response.headers['Cache-Control'] = 'no-store'
+        return response
+    except (ValueError, TypeError) as exc:
+        return jsonify(error=str(exc)), 400
+
+
+@app.post('/api/calculate/enterprise')
+def calculate_enterprise_api():
+    from enterprise_valuation import value_enterprise
+    try:
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict):
+            raise ValueError('Send financials, valuation_date and explicit assumptions.')
+        selected = resolve_benchmark_selections(raw.get('benchmark_selections'), raw.get('valuation_date'))
+        result = value_enterprise(raw['financials'], selected, raw['revenue_growth_rates'],
+                                 raw['terminal_growth'], raw['terminal_roic'],
+                                 valuation_date=raw['valuation_date'], suitable=raw.get('suitable'),
+                                 evidence_secret=provider_value('ZION_HISTORY_TOKEN'))
+        return jsonify(result)
+    except (ValueError, KeyError, TypeError, ProviderError) as exc:
+        return jsonify(error=str(exc)), 400
 
 
 @app.get("/api/company/<ticker>")

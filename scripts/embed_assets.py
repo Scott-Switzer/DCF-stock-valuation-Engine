@@ -31,6 +31,8 @@ module_names = [
     "dcf_code.py",
     "dcf_loader.py",
     "zion_history_provider.py",
+    "valuation_benchmarks.py",
+    "enterprise_valuation.py",
     "storage.py",
     "provider_cache.py",
     "ppe_packets.py",
