@@ -1,101 +1,130 @@
-# Production release candidate: `692d8ef` (PRs #17–#30; runtime code `63130e6`)
+# Production release candidate: `b9993a3` (code-only; packets separate)
 
-Production currently serves `c56df1d` (Worker version `3d504ea8-…`, deployed 2026-10-08).
-This manifest covers the commits between `c56df1d` and current `main` `692d8ef`
-so the release can be approved and executed as one controlled step. No production
-resources have been changed; staging carries the candidate runtime now.
+Candidate: `main` `b9993a3` (PR #47 over #46). Staging serves this exact
+commit (`tracked_dirty:false`, Worker version
+`1e1af6ca-813a-4063-8d0d-09cff03e297d`). Production serves `d1008a0` and
+is untouched. **No production deployment is authorized by this document.**
 
-Build identity note: staging `/health` currently reports runtime commit `63130e6`
-(PR #29) because #30 (`692d8ef`) is docs-only and staging was built before it.
-The build script embeds the checked-out Git HEAD, so a fresh build from current
-`main` must report `692d8ef` with `tracked_dirty:false`. Verify that value after
-deploy; `63130e6` on staging is the expected pre-release runtime, not a mismatch.
+Prior release record (PRs #17–#31, production `d1008a0`, Worker version
+`137718bd-49f6-4f88-ab68-f67fdf5dd34a`) is superseded as the running
+candidate but retained in git history (`git show d1008a0:docs/production-release-candidate.md`).
 
-## Scope (merged, CI green on 3.12 + 3.13)
+## Scope: code in staging but not in production
 
-- #17 structured transport receipts + non-saving pipeline audit
-- #18 per-stage load timings + Server-Timing headers
-- #19 isolated staging Worker environment for tracing
-- #20 common-income numerator only when bridged to the filing
-- #21 Instant Investment Research Brief in the ticker-first workspace
-- #22 preferred equity derived from filed common-equity buildup
-- #23 baseline brief in load bundle; lifecycle marks; SEC-first source label
-- #24 staging-only PPE pointer override (candidate releases)
-- #25 edge-cache packet GETs, traces, concurrency probe
-- #26 edge-cache safety (user pages `private, no-store`), load payload dedup,
-  live brief sync on assumption edits
-- #27 browser benchmark, brief-sync hardening, skipped-brief explanations
-- #28 D1 cache-hit instrumentation (current-request `hit_breakdown`)
-- #29 bundled baseline preview (first value renders with the load response)
-- #30 release manifest itself (docs-only; no runtime change — hence staging health still reports `63130e6` until rebuilt from `692d8ef`)
+Merged, CI green on 3.12 + 3.13. Grouped by area (full list:
+`git log --oneline d1008a0..b9993a3`):
 
-## Verification on staging (runtime commit `63130e6`; `main` is `692d8ef` docs-only)
+- Accounting policy + packets (#33–#35): source-independent normalization,
+  audited add-backs, filing-date/context evidence, CAT advance.
+- Candidate packet flow (#36–#40): CAT then PEP republication, staging-only
+  pointer override, candidate-miss fallback to the production R2 index.
+- PAYX (#43–#45): dual-identity zero claims, corrected income taxonomy with
+  affirmative NCI evidence, balance-sheet economics + client-funds proof.
+- Forecast-tax framework (#46): `tax_policy.py` separates signed history
+  from forecast/shield assumptions; ABBV/AEP reconciliations + frozen runs.
+- Live tax integration (#47, this release): latest-only gate resolvability;
+  packet→doc→policy→assumptions→brief route with explicit policies
+  (`source.tax_policy`, Yahoo filed-ratio retention); recalculated vs
+  fixed-WACC modes with labels (`wacc_basis_note`); workspace stale-shield
+  recomputation; FY2025 reconciliations (AEP 13.4% correction); TS parity.
+  Full suite 764 passed, `ruff check` clean, `tsc` clean.
 
-- Full suite 636 passed + 10 subtests, `ruff` clean, 3 Node harnesses green.
-- Real-Chromium benchmark, per ticker × actual cache state (evidence retained
-  under `find/outputs/perf/`, reproducible via `scripts/bench_browser.mjs`):
-  warm HIT value-painted — AAPL p50 510ms / p95 1691ms (n=11), MSFT p50 459 /
-  p95 2331 (n=12), PEP p50 255 / p95 528 (n=11). Before this sprint the same
-  harness measured warm p50s of 573–853ms and p95s near 3.1s.
-- Load responses halved vs production (decoded AAPL 231KB → 116KB, MSFT
-  192KB → 98KB, PEP 50KB → 26KB); zero `/api/brief` requests on unedited loads.
-- Bundled preview ≡ iframe-preview evaluation (Python + Node parity tests).
-- Cache safety: 8/8 live staging checks (revoked links 404 for both users,
-  `cf-cache-status: BYPASS` on user content, per-user watchlist isolation).
-- SEC-first PEP on staging: gate passes, no Yahoo annual-fundamental calls,
-  browser value renders; packet shows preferred-equity 0.0 via filed buildup
-  residual (accession 0000077476-26-000007), 3 annual periods, 1.373B diluted shares.
-- O fails fast with an explicit missing-input reason; MRX explains its skipped
-  baseline brief instead of rendering nothing.
+## Scope: data packets (NOT part of a code release)
+
+- Production `control/valuation/CURRENT.json` sha256
+  `ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1`
+  — byte-identical before, during and after this assessment. No
+  production D1/R2 writes, no migrations.
+- Staging-only `control/valuation/CANDIDATE-staging.json` lists CAT, ORCL,
+  PAYX, PEP, T. Promoting any packet set is a SEPARATE release with its own
+  pointer update and rollback file (e.g.
+  `find/outputs/company-packets/payx-pointer-rollback.json`).
+- A production code deploy does not promote candidate packets and vice versa.
+
+## Verification on staging (commit `b9993a3`)
+
+Evidence: `find/outputs/tax-integration/staging-verification.json`.
+
+- Full Python suite 764 passed (758 + 6 edge, 10 subtests), `ruff check`
+  clean, `node --check` on shipped scripts via CI, `tsc --noEmit` clean,
+  TS engine runtime parity vs Python (signed history, latest-OOB refusal
+  naming the explicit fix, explicit-case WACC 0.088648 on both).
+- SEC-first loads: CAT, PEP, T, PAYX all `latest_reported`, intrinsics
+  exactly 213.05 / 170.11 / 76.14 / 88.01 — numerically identical to the
+  pre-change staging build (recalculated-WACC default ≡ loaded rate).
+- PAYX bundled brief: reported 23.79/23.83/23.83%, forecast
+  `latest_reported`, "Recalculated WACC 8.65% … (recalculated mode)".
+- ORCL still honestly blocked (nonzero preferred, no invented cost); BAC
+  fails fast (SIC 6021 financial firm); AAPL Yahoo-only with tax policy.
+- Real-Chromium browser test: PAYX workspace renders ($88.01, WACC 8.6%,
+  brief + live result), zero console errors, zero non-200 network.
+- Live account/security cycle on staging: 24/24 (signup/login/isolation,
+  password change + prior-session revoke, foreign-origin 403, signed-out
+  401s, MCP discovery).
 
 ## Production compatibility
 
-- D1 `dcf-valuations`: `wrangler d1 migrations list --remote` reports nothing to
-  apply (migrations 0001–0008 all predate the current production build).
-- Bindings identical (Zion services, `PPE_DATA` R2, production D1). No new secrets.
-  `PPE_POINTER_OVERRIDE` exists only in the staging env; production keeps reading
-  authoritative `control/valuation/CURRENT.json` (untouched).
-- Workers Caching (`cache.enabled`) and 100% trace sampling are staging-only;
-  production keeps sampling 0.1 and no tiered cache. The `private, no-store`
-  headers ship with this release and protect production heuristic caching too.
-- `/api/diag/concurrency` returns 404 outside staging (environment-gated).
-- Rate limits use separate staging/production namespaces.
+- D1: no migration changes since production (`migrations/0001–0008`
+  untouched); nothing to apply.
+- Bindings/secrets: identical (`ZION_VALUATIONS`, `ZION_DATASET_CATALOG`,
+  `PPE_DATA` R2, production D1). `PPE_POINTER_OVERRIDE` exists only in the
+  staging env. No new secrets, env vars, or scheduled tasks.
+- Cache/auth: unchanged code paths; staging-only Workers caching/trace
+  sampling as before; user pages stay `private, no-store`.
+- User/account + D1 compatibility: account flow verified against staging D1
+  (24/24); production same-flow check remains a gap (no test identities
+  created in prod without separate authorization) — unchanged from the
+  prior release.
 
-## Deployment record (executed 2026-10-14, approved release)
+## Readiness matrix and GO/NO-GO
 
-- Commit `d1008a0` (PR #31 manifest fix on `692d8ef`), clean tree, CI green 3.12 + 3.13.
-- `python3 scripts/embed_assets.py` exit 0; `wrangler deploy` to production bindings.
-- Production Worker version `137718bd-49f6-4f88-ab68-f67fdf5dd34a`; `/health`
-  reports commit `d1008a06b7c787b050d851335f9f4c67620ee83b`, `tracked_dirty:false`.
-- Live smoke: AAPL 91.81 / MSFT 119.40 / PEP 196.95 baselines with bundled brief
-  + preview; account 401 gates, no unauth writes; unknown share 404; packet
-  export 200; BAC/O fail fast; MRX explained skip; `private, no-store` live.
-- `control/valuation/CURRENT.json` sha256 `ecf1e1c4…` byte-identical before,
-  during and after. No D1/R2 production data changes, no migrations.
-- Authenticated two-account save/share/revoke verified on staging (14/14 account
-  checks + full share→revoke→404 cycle); same flow in production remains a gap
-  (no test identities created in prod without separate authorization).
-- Rollback reference unchanged: `3d504ea8-2d06-4f88-ab68-f67fdf5dd34a`.
-  (This section is docs-only and does not affect the deployed bundle.)
+| Gate | Status | Evidence |
+| ---- | ------ | -------- |
+| Full Python suite + Ruff + embed + Node checks | PASS | 764 passed, CI 3.12/3.13 green on #47 |
+| TS/browser-engine parity (tax bounds) | PASS | tsc clean + runtime checks vs Python |
+| Staging serves candidate commit, clean tree | PASS | `/health` `b9993a3`, `tracked_dirty:false` |
+| Yahoo-only loads (AAPL) | PASS | statement Yahoo, policy recorded |
+| CAT/PEP/T/PAYX SEC-first loads + parity | PASS | intrinsics exact vs pre-change build |
+| ORCL intentional block | PASS | preferred-cost refusal, no fallback invention |
+| Negative-history docs + explicit scenarios | PASS | unit + integration tests; gate honors policy |
+| Bank/REIT exclusions | PASS | BAC SIC-6021 fail-fast live |
+| Save/share/revoke isolation (staging) | PASS | 24/24 live checks |
+| Brief/preview/scenario tax+WACC labels | PASS | PAYX brief fields live |
+| Workbook parity + security unit tests | PASS | in-suite, green |
+| Real-browser staging test | PASS | Chromium PAYX load, 0 console errors |
+| Production pointer untouched | PASS | `ecf1e1c4…` before/during/after |
+| ABBV/AEP unlocked | BLOCKED by design | preferred-equity evidence still missing; no zero-derivation |
+
+**Recommendation: A — promote corrected code only.** Rationale: every
+mandatory gate passes, default valuations are numerically identical, no
+migrations/bindings/secrets, and data packets ride a separate pointer
+with independent rollback. Packet promotion (B) waits for its own
+evidence cycle. No further fixes gate the code release (C rejected).
 
 ## Release (requires approval — do not run yet)
 
 ```sh
+git checkout main && git pull --ff-only   # expect b9993a3
 python3 scripts/embed_assets.py && wrangler deploy
 ```
 
-then verify `/health` reports commit `692d8ef` (fresh build from `main`, `tracked_dirty:false`), smoke-test one ticker load,
-one save/share/revoke cycle, and confirm `control/valuation/CURRENT.json`
-is byte-identical before and after.
+then verify `/health` reports commit `b9993a3` (`tracked_dirty:false`),
+smoke-test one SEC-first load (PAYX 88.01) + one save/share/revoke cycle,
+and confirm `control/valuation/CURRENT.json` is byte-identical before
+and after.
 
-Rollback reference: production Worker version `3d504ea8-2d06-4f88-ab68-f67fdf5dd34a`
-(`wrangler rollback` or redeploy the prior version).
+Rollback (code): `wrangler rollback` or redeploy prior version
+`137718bd-49f6-4f88-ab68-f67fdf5dd34a` (production `d1008a0`).
+Rollback (data): not applicable — production pointers are not written by
+this release; candidate pointer has its own per-publication rollback files.
 
 ## Known non-blockers
 
-- Warm p95 (1.7–2.3s on AAPL/MSFT) misses the 2s aspiration; p50s are
-  0.26–0.51s. Tail is D1 read spikes (measured 688/823ms on the two slowest
-  HITs; Python JSON/hash/copy stages measure 0.0ms), not application CPU.
-- Cold MISS carries 0.3–0.9s unattributed runtime overhead beyond provider stages.
-- XOM/MRX/O gate blockers and the BAC/JPM pointer gap are unchanged and do not
-  block release (strict fallbacks + visible explanations verified).
+- `frontend/src/lib/dcf-engine.ts` is unused by the shipped app (no
+  in-repo consumers) and carries a pre-existing margin-averaging drift vs
+  Python found while verifying tax parity (TS uses year-1 ratios where
+  Python uses historical means). Tax behavior is now at parity; the drift
+  needs a dedicated parity pass or removal — not this release.
+- Ruff format is not CI-enforced (87 files repo-wide pre-existing);
+  `ruff check` is clean.
+- Warm p95/cost notes from the prior release are unchanged.
