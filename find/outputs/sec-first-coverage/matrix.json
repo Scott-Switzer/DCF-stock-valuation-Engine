@@ -1,6 +1,6 @@
 {
- "generated_at": "2026-10-15T01:58:49.456652+00:00",
- "builder_commit": "49ef566",
+ "generated_at": "2026-10-15T18:45:30.518517+00:00",
+ "builder_commit": "5bdf0ec",
  "cutoff": "2026-10-15",
  "sec_archive": "sec/bulk/sec-nightly-20260924/companyfacts.zip",
  "screened": 86,
@@ -33,7 +33,7 @@
   },
   "PAYX": {
    "valuation_ready": true,
-   "note": "all 5 readiness states met; staging SEC-first load verified (intrinsic 86.69)"
+   "note": "corrected dual-identity proof (consolidated-ProfitLoss==parent-NetIncomeLoss affirmative NCI evidence); staging SEC-first load verified 2026-10-15 (intrinsic 88.11/target 90.77/WACC 8.64% at live price 111.88; accounting inputs byte-identical so no accounting recompute)"
   },
   "ORCL": {
    "valuation_ready": false,
@@ -71,15 +71,16 @@
    "note": "published in an earlier batch; preserved by candidate merge"
   },
   "PAYX": {
-   "key": "gold/valuation/releases/cff0e309266428685a5de72a3acb59cdbbdd2e123b726a08e655d843581b7665/companies/PAYX.json",
-   "sha256": "cff0e309266428685a5de72a3acb59cdbbdd2e123b726a08e655d843581b7665",
-   "bytes": 45906,
+   "key": "gold/valuation/releases/3b1577c818dd6b65d7bd4d368a91563c31be71b2b2162d92382c5c8f2eaea492/companies/PAYX.json",
+   "sha256": "3b1577c818dd6b65d7bd4d368a91563c31be71b2b2162d92382c5c8f2eaea492",
+   "bytes": 46406,
    "periods": [
     "2024-05-31",
     "2025-05-31",
     "2026-05-31"
    ],
-   "common_income_periods": 3
+   "common_income_periods": 3,
+   "note": "republished 2026-10-15 with corrected zero-claim provenance; every financial input byte-identical to cff0e309 (bridge/common-income/historical/shares parity verified)"
   }
  },
  "companies": [
