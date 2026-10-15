@@ -69,7 +69,7 @@ response.raise_for_status()
 print(response.json()["intrinsic_value"])
 ```
 
-Optional annual arrays: `ebit_margins`, `da_margins`, `capex_margins`, `nwc_margins`, `tax_rates`, `net_income_margins`, `book_value_margins`. Each has exactly five decimal rates. When omitted, operating ratios default to historical means and taxes to the latest historical rate. These defaults are returned in result `drivers` and are assumptions, not predictions.
+Optional annual arrays: `ebit_margins`, `da_margins`, `capex_margins`, `nwc_margins`, `tax_rates`, `net_income_margins`, `book_value_margins`. Each has exactly five decimal rates. When omitted, operating ratios default to historical means and taxes to the latest historical rate when it lies in 0-1; a latest reported rate outside 0-1 refuses the baseline run until an explicit user override or filing-supported normalized scenario is supplied (tax_policy). Reported history is preserved as filed either way. These defaults are returned in result `drivers` and are assumptions, not predictions.
 
 `terminal_mode` is `template` or `normalized`; normalized mode also requires `terminal_roic`. Optional nonnegative future bridge values: `future_debt`, `future_cash`, `future_preferred`, `future_minority`, `future_other_assets`, and positive `future_shares`. Omitted future values carry current values forward.
 

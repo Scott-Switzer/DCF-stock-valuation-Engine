@@ -68,9 +68,17 @@ def eligibility_gate(packet, ticker, asof):
             coverage[end][key] = present
             if not present:
                 reasons.append(f"missing_{key}_{end}")
+        # Reported history is preserved as filed, including negative rates
+        # from benefits or settlements (see tax_policy). A baseline DCF still
+        # needs a supportable forecast assumption, so an unusual history
+        # blocks with the fix named instead of invalidating the statement.
         tax = (fields.get("tax_rate") or {}).get("value")
         if tax is not None and not 0 <= tax <= 1:
-            reasons.append(f"tax_rate_out_of_bounds_{end}")
+            reasons.append(
+                f"tax_forecast_assumption_required_{end}: reported {tax:.2%} is "
+                "preserved; supply an explicit user override or "
+                "filing-supported normalized scenario (tax_policy)"
+            )
     shares = packet.get("diluted_shares")
     if not isinstance(shares, dict) or not (shares.get("value") or 0) > 0:
         reasons.append("missing_diluted_shares")
