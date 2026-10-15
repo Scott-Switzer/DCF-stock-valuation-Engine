@@ -209,6 +209,18 @@ class EmbeddedBriefTests(unittest.TestCase):
         self.assertNotIn("brief", bundle)
         self.assertIn("brief_skipped", bundle["load_summary"]["stage_seconds"])
 
+    def test_brief_carries_explicit_wacc_mode(self):
+        from brief import build_brief
+
+        doc = demo()
+        recalc = build_brief(deepcopy(doc))
+        self.assertEqual(recalc["assumptions"]["wacc_mode"], "recalculated")
+        self.assertIn("recalculated mode", recalc["assumptions"]["wacc_basis"])
+        fixed = build_brief(deepcopy(doc), {"wacc_mode": "fixed"})
+        self.assertEqual(fixed["assumptions"]["wacc_mode"], "fixed")
+        self.assertIn("fixed mode", fixed["assumptions"]["wacc_basis"])
+        self.assertIn("Fixed-WACC", fixed["assumptions"]["wacc_basis"])
+
     def test_ddm_load_carries_no_brief(self):
         import auto_loading
         from test_yahoo_provider import MockHTTP

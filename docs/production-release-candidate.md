@@ -1,9 +1,24 @@
-# Production release candidate: `b9993a3` (code-only; packets separate)
+# Production release candidate: `db35686` + sprint fix (code-only; packets separate)
 
-Candidate: `main` `b9993a3` (PR #47 over #46). Staging serves this exact
-commit (`tracked_dirty:false`, Worker version
-`1e1af6ca-813a-4063-8d0d-09cff03e297d`). Production serves `d1008a0` and
-is untouched. **No production deployment is authorized by this document.**
+> Release-identity correction: the prior revision of this record targeted
+> runtime commit `b9993a3` while `main` had already advanced to `2bbb92a`
+> (and now `db35686`). A build from `main` embeds the current Git SHA, so
+> the deployment and the health check must agree on the commit actually
+> released. This revision re-targets the candidate to clean `main`
+> `db35686` (PRs #49–#51 over #48) plus the sprint fix in this branch
+> (brief carries the explicit `wacc_mode`; regression test
+> `test_brief_carries_explicit_wacc_mode`). The exact release SHA is the
+> merge commit of that fix PR; staging MUST be redeployed from that clean
+> commit and `/health` MUST report it with `tracked_dirty:false` before
+> any GO decision. Production serves `d1008a0` and is untouched.
+> **No production deployment is authorized by this document.**
+>
+> Superseded candidate `b9993a3` (Worker version
+> `1e1af6ca-813a-4063-8d0d-09cff03e297d`) is retained in git history.
+
+Candidate: clean `main` at the fix-PR merge (base `db35686`). Production
+serves `d1008a0` and is untouched. **No production deployment is authorized
+by this document.**
 
 Prior release record (PRs #17–#31, production `d1008a0`, Worker version
 `137718bd-49f6-4f88-ab68-f67fdf5dd34a`) is superseded as the running
@@ -12,7 +27,23 @@ candidate but retained in git history (`git show d1008a0:docs/production-release
 ## Scope: code in staging but not in production
 
 Merged, CI green on 3.12 + 3.13. Grouped by area (full list:
-`git log --oneline d1008a0..b9993a3`):
+`git log --oneline d1008a0..db35686`, plus the sprint fix here):
+
+- Preproduction tax API (#49–#50): `/api/load/dcf` accepts and validates
+  `tax_override`/`tax_scenario`; `load_cached_method` and `load_method`
+  forward them; explicit-policy loads bypass the shared assembly cache
+  (`BYPASSED`, never stored under the ticker/date key); Yahoo path records
+  an explicit selection over the default policy without mutating history.
+- Explicit WACC mode (#49 + this fix): `recalculated` vs `fixed` travels
+  in the form, raw assumptions, saves, exports and compare posts; the
+  Research Brief now labels the selected mode (`wacc_mode` + basis note)
+  instead of hardcoding `recalculated`.
+- Scenario provenance (#49): arbitrary filing strings are accepted but
+  labeled `unverified_citation`; only an accession matching loaded packet
+  provenance earns `packet_accession_matched`; overrides are
+  `user_assumption`; defaults are `not_applicable_default`.
+- Editor fill (#51): bundled-preview fast path fills the assumptions
+  editor (negative control verified against unfixed code).
 
 - Accounting policy + packets (#33–#35): source-independent normalization,
   audited add-backs, filing-date/context evidence, CAT advance.
@@ -80,9 +111,9 @@ Evidence: `find/outputs/tax-integration/staging-verification.json`.
 
 | Gate | Status | Evidence |
 | ---- | ------ | -------- |
-| Full Python suite + Ruff + embed + Node checks | PASS | 764 passed, CI 3.12/3.13 green on #47 |
-| TS/browser-engine parity (tax bounds) | PASS | tsc clean + runtime checks vs Python |
-| Staging serves candidate commit, clean tree | PASS | `/health` `b9993a3`, `tracked_dirty:false` |
+| Full Python suite + Ruff + embed + Node checks | PENDING | rerun on the fix-PR merge SHA; prior base 764 passed, CI 3.12/3.13 green through #51 |
+| TS/browser-engine parity (tax bounds) | PASS* | tsc clean + runtime checks vs Python; *TS engine is experimental/unused — not browser-parity proof |
+| Staging serves candidate commit, clean tree | PENDING | `/health` must report the fix-PR merge SHA, `tracked_dirty:false` |
 | Yahoo-only loads (AAPL) | PASS | statement Yahoo, policy recorded |
 | CAT/PEP/T/PAYX SEC-first loads + parity | PASS | intrinsics exact vs pre-change build |
 | ORCL intentional block | PASS | preferred-cost refusal, no fallback invention |
@@ -104,11 +135,11 @@ evidence cycle. No further fixes gate the code release (C rejected).
 ## Release (requires approval — do not run yet)
 
 ```sh
-git checkout main && git pull --ff-only   # expect b9993a3
-python3 scripts/embed_assets.py && wrangler deploy
+git checkout main && git pull --ff-only   # expect the fix-PR merge SHA recorded above
+python3 scripts/embed_assets.py && wrangler deploy --env staging
 ```
 
-then verify `/health` reports commit `b9993a3` (`tracked_dirty:false`),
+then verify `/health` reports that exact merge SHA (`tracked_dirty:false`),
 smoke-test one SEC-first load (PAYX 88.01) + one save/share/revoke cycle,
 and confirm `control/valuation/CURRENT.json` is byte-identical before
 and after.
@@ -120,11 +151,14 @@ this release; candidate pointer has its own per-publication rollback files.
 
 ## Known non-blockers
 
-- `frontend/src/lib/dcf-engine.ts` is unused by the shipped app (no
-  in-repo consumers) and carries a pre-existing margin-averaging drift vs
-  Python found while verifying tax parity (TS uses year-1 ratios where
-  Python uses historical means). Tax behavior is now at parity; the drift
-  needs a dedicated parity pass or removal — not this release.
+- `frontend/src/lib/dcf-engine.ts` was introduced in PR #47 (not
+  pre-existing) and is EXPERIMENTAL and unused by the shipped workspace,
+  the Worker bundle (`scripts/embed_assets.py` `module_names`), and every
+  test harness — the file header says so explicitly. The production
+  calculation path is `dcf_code.py` served from the Worker. Tests of the
+  TS engine MUST NOT be cited as proof of production browser parity; the
+  margin-averaging drift (year-1 ratios vs historical means) needs a
+  dedicated parity pass or removal — not this release.
 - Ruff format is not CI-enforced (87 files repo-wide pre-existing);
   `ruff check` is clean.
 - Warm p95/cost notes from the prior release are unchanged.
