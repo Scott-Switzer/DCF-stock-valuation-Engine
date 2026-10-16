@@ -253,7 +253,15 @@ def load_method(
         gate = eligibility_gate(packet, ticker, asof)
         dcf = None
         sec_first_error = None
-        if gate["eligible"]:
+        # load_sec_first() permits a gate held up solely by forecast-tax
+        # resolvability when a valid explicit policy is supplied. The outer
+        # gate check must mirror that exception, otherwise the tax-only
+        # path is unreachable in real automatic loading.
+        tax_only_block = bool(gate["reasons"]) and all(
+            r.startswith("tax_forecast_assumption_required_") for r in gate["reasons"]
+        )
+        explicit_policy = tax_override is not None or tax_scenario is not None
+        if gate["eligible"] or (tax_only_block and explicit_policy):
             began = time.monotonic()
             try:
                 dcf = load_sec_first(

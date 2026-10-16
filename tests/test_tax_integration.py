@@ -486,3 +486,102 @@ def test_workspace_recomputes_stale_wacc_on_tax_edit():
         bad = default_form(doc)
         bad["wacc_mode"] = "inferred"
         form_payload(bad)
+
+
+def test_auto_loading_tax_only_gate_uses_sec_first_with_explicit_policy(monkeypatch):
+    """End-to-end load_method(): tax-only gate + explicit policy => SEC-first.
+
+    Packet latest historical ETR is negative with all other gates passing.
+    With an explicit scenario the automatic load must take SEC-first without
+    a Yahoo annual-statement fetch; without it the load must not claim
+    SEC-first (fallback/refusal). Invalid explicit evidence is rejected,
+    unrelated gate failures stay blocking, history is unmutated, and the
+    explicit load bypasses the shared assembly cache.
+    """
+    import auto_loading
+    import ppe_provider
+    from copy import deepcopy
+    from dcf_loader import ProviderError
+    from sec_first import eligibility_gate
+
+    packet = full_packet()
+    for row, tax in zip(packet["historical"], [0.22, 0.25, -0.08]):
+        row["fields"]["tax_rate"]["value"] = tax
+    asof = packet["cutoff_date"]
+    gate = eligibility_gate(packet, "TEST", asof)
+    assert not gate["eligible"]
+    assert gate["reasons"] and all(
+        r.startswith("tax_forecast_assumption_required_") for r in gate["reasons"]
+    )
+    before = deepcopy(packet["historical"])
+    scenario = {
+        "rates": [0.231] * 5,
+        "evidence": {"filing": "f", "period_end": "2024-12-31"},
+    }
+    monkeypatch.setattr(ppe_provider, "load_packet", lambda *a, **k: packet)
+
+    http = MockHTTP()
+    bundle = auto_loading.load_method(
+        "dcf", "TEST", asof, http=http, tax_scenario=scenario
+    )
+    financials = bundle["financials"]
+    assert financials["source"]["statement_source"] == "SEC-first"
+    assert not any("/timeseries/" in url for url in http.calls)
+    policy = financials["source"]["tax_policy"]
+    assert policy["explicit"] is True
+    assert policy["selected"]["basis"] == "normalized_scenario"
+    # Signed history preserved in both packet and loaded document.
+    assert [r["fields"]["tax_rate"]["value"] for r in packet["historical"]] == [0.22, 0.25, -0.08]
+    assert packet["historical"] == before
+    assert [r["tax_rate"] for r in financials["historical"]] == [0.22, 0.25, -0.08]
+
+    # Without an explicit policy there is no SEC-first claim: the Yahoo
+    # fallback runs (no /timeseries/ ban here) or the load refuses loudly.
+    yahoo_calls = {}
+
+    def fake_yahoo(ticker, asof_arg, http_arg=None, include_capital_costs=True,
+                     require_wacc=True, packet=None):
+        yahoo_calls["called"] = True
+        from test_yahoo_provider import MockHTTP as YahooHTTP
+        from yahoo_provider import load_yahoo as real_yahoo
+        return real_yahoo(ticker, asof_arg, YahooHTTP(),
+                          include_capital_costs=include_capital_costs,
+                          require_wacc=require_wacc, packet=None)
+
+    monkeypatch.setattr(auto_loading, "load_yahoo", fake_yahoo)
+    fallback = auto_loading.load_method("dcf", "TEST", asof, http=MockHTTP())
+    assert fallback["financials"]["source"]["statement_source"] != "SEC-first"
+    assert yahoo_calls.get("called") is True
+
+    # Invalid explicit evidence is rejected, never silently loaded.
+    with pytest.raises(ProviderError):
+        auto_loading.load_method(
+            "dcf", "TEST", asof, http=MockHTTP(), tax_override=[0.25] * 4
+        )
+
+    # An unrelated gate failure stays blocking even with an explicit policy.
+    broken = deepcopy(packet)
+    broken["bridge"].pop("cash")
+    broken_gate = eligibility_gate(broken, "TEST", asof)
+    assert not broken_gate["eligible"]
+    assert any(not r.startswith("tax_forecast_assumption_required_") for r in broken_gate["reasons"])
+    monkeypatch.setattr(ppe_provider, "load_packet", lambda *a, **k: broken)
+    yahoo_calls.clear()
+    non_sec = auto_loading.load_method(
+        "dcf", "TEST", asof, http=MockHTTP(), tax_scenario=scenario
+    )
+    assert non_sec["financials"]["source"]["statement_source"] != "SEC-first"
+    assert yahoo_calls.get("called") is True
+
+    # Explicit selections never touch the shared assembly cache key.
+    from company_packets import load_cached_method
+    seen = {}
+    def fake_loader(method, ticker, asof_arg=None, *args, **kwargs):
+        seen.update(kwargs)
+        return {"financials": {"company": {"ticker": ticker}, "valuation_date": asof_arg},
+                "form": {}, "load_summary": {}}
+    explicit_result = load_cached_method(
+        "dcf", "TEST", asof, loader=fake_loader, tax_scenario=scenario
+    )
+    assert seen.get("tax_scenario") == scenario
+    assert explicit_result["load_summary"]["assembly_cache"]["state"] == "BYPASSED"

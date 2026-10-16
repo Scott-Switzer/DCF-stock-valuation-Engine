@@ -1,0 +1,14 @@
+{
+  "base_sha": "655aa2f669496d47235325a1b129b0c698019bd7",
+  "base_prs_merged": [49, 50, 51, 52],
+  "release_sha": null,
+  "release_sha_status": "PENDING: fix-PR unmerged; record merge commit here post-merge without editing docs/production-release-candidate.md",
+  "fix_branch_changes": ["auto_loading.py", "tests/test_tax_integration.py", "docs/production-release-candidate.md"],
+  "tests": {"full_suite": "771 passed, 10 subtests (local, .venv Python 3.12.3)", "ruff": "clean", "worker_bundle": "2 passed", "new_regression": "test_auto_loading_tax_only_gate_uses_sec_first_with_explicit_policy PASS", "ci": "green through #52; rerun required on merge SHA"},
+  "staging": {"health_commit": "655aa2f669496d47235325a1b129b0c698019bd7", "tracked_dirty": false, "worker_version": "a5bd33fe-363c-4524-afc2-de61dc593a9f", "deployment": "5a868b60-fe6f-4bd1-a93e-277c081181a2", "cache_recheck": "AAPL MISS then HIT; explicit tax_scenario BYPASSED/normalized_scenario"},
+  "production": {"health_commit": "d1008a06b7c787b050d851335f9f4c67620ee83b", "tracked_dirty": false, "worker_version": "137718bd-49f6-4c12-ae03-9776e01e7cfc", "deployment": "483c91e5-12f3-4f26-b73a-8cf87b7dfb35", "prior_rollback_deployment": "509af4c8-6245-4ae4-b8aa-5b453358c5d5", "prior_rollback_version": "3433224f-68f1-4d97-abd2-fcf2f33d8e6f", "smoke": "scripts/smoke_public.py 7/7 PASS"},
+  "production_command": "wrangler deploy",
+  "production_command_executed": false,
+  "pointers": {"production_CURRENT_sha256": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1", "production_CURRENT_companies": 237, "candidate_staging_sha256": "ff7b1b08e6fc459468c07336543bb3b2f4dec9ac469a60a2b8d41ed91d7ad5da", "candidate_staging_companies": ["CAT", "ORCL", "PAYX", "PEP", "T"]},
+  "decision": "code-only GO subject to post-merge staging redeploy + health check (separate approval; production NOT deployed)"
+}
