@@ -375,7 +375,6 @@ def load_method(
     form = default_form(dcf)
     form.update(
         mode="auto",
-        wacc=(costs.get("wacc") or 0.065) * 100,
         equity_risk_premium=equity_risk_premium * 100,
         credit_spread=credit_spread * 100,
     )
@@ -579,7 +578,7 @@ def load_method(
             from compare import coerce_dcf_assumptions
 
             preview_assumptions, _ = coerce_dcf_assumptions(
-                doc, None, costs.get("wacc") or 0.065
+                doc, None, costs.get("wacc") or 0.065, costs=costs
             )
             bundle["preview"] = evaluate(deepcopy(doc), preview_assumptions)
             timings["preview_inline"] = round(time.monotonic() - began, 3)

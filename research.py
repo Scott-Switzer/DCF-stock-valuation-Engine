@@ -62,7 +62,7 @@ def list_research(ticker=None, financial_hash=None, before=None):
 
 
 def save_research(raw):
-    from app import assumptions_from_json, evaluate
+    from app import effective_dcf_assumptions, evaluate
     from suite_views import suite_assumptions, suite_evaluate
 
     if not isinstance(raw, dict):
@@ -88,7 +88,7 @@ def save_research(raw):
         raise ValueError("Research needs a company identity.")
     ticker = ticker_symbol(company.get("ticker"))
     company["ticker"] = ticker
-    assumptions = (assumptions_from_json(raw.get("assumptions")) if method == "dcf"
+    assumptions = (effective_dcf_assumptions(doc, raw.get("assumptions")) if method == "dcf"
                    else suite_assumptions(method, raw.get("assumptions")))
     # Caller-provided results are never trusted. No provider refresh changes the snapshot.
     result = evaluate(doc, assumptions) if method == "dcf" else suite_evaluate(method, doc, assumptions)

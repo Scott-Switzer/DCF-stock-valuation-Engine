@@ -28,3 +28,30 @@ jobs:
           for f in static/js/*.js; do
             node --check "$f"
           done
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tests/browser/package-lock.json
+      - run: pip install -r requirements-dev.txt
+      - run: npm ci --prefix tests/browser
+      - name: Type-check isolated experimental TypeScript module (not production parity)
+        run: npm --prefix tests/browser run typecheck
+      - name: Install headless Chromium
+        run: cd tests/browser && npx playwright install --with-deps chromium
+      - name: Deterministic editor, preview, save/reload and independent workbook acceptance
+        run: npm --prefix tests/browser test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-acceptance
+          path: tests/browser/artifacts/
