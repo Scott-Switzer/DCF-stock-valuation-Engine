@@ -4,10 +4,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '23 16 * * *'
-  pull_request:
-    paths:
-      - 'scripts/smoke_public.py'
-      - '.github/workflows/live-smoke.yml'
 
 permissions:
   contents: read

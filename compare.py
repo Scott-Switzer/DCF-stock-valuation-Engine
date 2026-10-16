@@ -168,9 +168,9 @@ def coerce_dcf_assumptions(doc, raw, wacc, costs=None, wacc_mode="recalculated")
     merged["wacc_mode"] = wacc_mode
     assumptions = assumptions_from_json(merged)
     if wacc_mode == "recalculated" and isinstance(costs, dict):
-        # A caller-supplied wacc_override in raw is the caller's explicit
-        # fixed rate; otherwise recompute with the selected shield.
-        if raw.get("wacc_override") is None:
+        # Explicit recalculated mode wins over a stale displayed WACC.
+        # Legacy raw overrides without a mode retain their fixed-rate behavior.
+        if raw.get("wacc_override") is None or raw.get("wacc_mode") == "recalculated":
             shield, _ = selected_shield(doc, assumptions)
             if shield is not None:
                 try:

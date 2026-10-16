@@ -110,8 +110,29 @@ def assumptions_from_json(raw):
     return a
 
 
+def effective_dcf_assumptions(doc, raw):
+    """Resolve explicit recalculated mode consistently at every input boundary."""
+    validated = assumptions_from_json(raw)
+    if raw.get("wacc_mode") != "recalculated":
+        return validated
+    from compare import coerce_dcf_assumptions
+
+    costs = (doc.get("source") or {}).get("capital_costs") or {}
+    resolved, _ = coerce_dcf_assumptions(
+        doc, raw, validated.wacc_override or costs.get("wacc") or 0.065, costs=costs
+    )
+    return resolved
+
+
 def default_form(doc):
     d = deepcopy(doc)
+    from compare import coerce_dcf_assumptions
+
+    costs = (d.get("source") or {}).get("capital_costs") or {}
+    try:
+        baseline, _ = coerce_dcf_assumptions(d, None, costs.get("wacc") or 0.065, costs=costs)
+    except (KeyError, ValueError, TypeError, ZeroDivisionError):
+        baseline = None  # Partial/manual documents must remain editable.
     company = d["company"]
     market = d["market"]
     bridge = d["bridge"]
@@ -128,7 +149,7 @@ def default_form(doc):
         "shares_basis": market.get("shares_basis", ""),
         "bridge_as_of": bridge.get("as_of"),
         "mode": "sample" if d["source"]["kind"] == "synthetic" else "manual",
-        "wacc": (d["source"].get("capital_costs", {}).get("wacc") or 0.065) * 100,
+        "wacc": (baseline.wacc_override if baseline else costs.get("wacc") or 0.065) * 100,
         "wacc_mode": "recalculated",
         "shield_override": "",
         "terminal_growth": 2.0,
@@ -163,8 +184,12 @@ def default_form(doc):
                 value = sum(r[history] / r["revenue"] for r in d["historical"]) / 3
         for i in range(5):
             form[f"{key}_{i}"] = (
-                value if key == "growth" or value is None else round(value * 100, 6)
+                value if key == "growth" or value is None else value * 100
             )
+    if baseline is not None:
+        for key, field in DRIVERS.items():
+            for i, value in enumerate(getattr(baseline, field)):
+                form[f"{key}_{i}"] = value * 100
     for k in FUTURE_LABELS:
         form[k] = ""
     return form
@@ -257,6 +282,18 @@ def form_payload(form):
                 number(form.get(f"{key}_{i}"), f"{DRIVER_LABELS[key]} year {i + 1}") / 100
                 for i in range(5)
             ]
+    # Preserve exact baseline floats through percent display/parse round trips.
+    # Only numerically identical input text receives this restoration.
+    from compare import baseline_dcf_assumptions
+    try:
+        baseline = baseline_dcf_assumptions(original, form_wacc)
+        for key, field in DRIVERS.items():
+            values = getattr(baseline, field)
+            for i, value in enumerate(values):
+                if number(form.get(f"{key}_{i}"), key) == value * 100:
+                    a[field][i] = value
+    except (KeyError, ValueError, TypeError, ZeroDivisionError):
+        pass
     # WACC regime is an explicit user choice, never inferred: recalculated
     # recomputes the override from the frozen market inputs with the
     # selected shield (explicit shield override beats forecast tax); fixed
@@ -365,7 +402,7 @@ def payload():
             raise ValueError("Send a JSON object.")
         if "financials" not in raw:
             raise ValueError("Provide a financials document.")
-        return raw["financials"], assumptions_from_json(raw.get("assumptions"))
+        return raw["financials"], effective_dcf_assumptions(raw["financials"], raw.get("assumptions"))
     return form_payload(request.form)
 
 
@@ -1267,7 +1304,7 @@ def export(format):
             if not isinstance(raw, dict):
                 raise ValueError("Export requires a valuation payload.")
             doc = raw.get("financials")
-            a = assumptions_from_json(raw.get("assumptions"))
+            a = effective_dcf_assumptions(doc, raw.get("assumptions"))
         result = evaluate(doc, a)
         if format == "json":
             body = json.dumps(

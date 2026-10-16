@@ -1,0 +1,15 @@
+{
+  "name": "dcf-browser-acceptance",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node acceptance.mjs",
+    "typecheck": "node typecheck.mjs"
+  },
+  "devDependencies": {
+    "decimal.js": "10.6.0",
+    "hyperformula": "3.5.0",
+    "playwright": "1.64.0",
+    "typescript": "5.9.3"
+  }
+}
