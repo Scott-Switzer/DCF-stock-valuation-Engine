@@ -1,3 +1,11 @@
+> **Final review completed October 15, 2026 (America/Los_Angeles).** The
+> [completed release receipt](../find/outputs/release-readiness/release-receipt.json)
+> supersedes the pending-status statements in this historical candidate record.
+> It pins the merged staging-tested runtime SHA, CI evidence, unchanged pointer
+> digests and GO for code-only production approval. Production remains unchanged
+> and requires separate user approval. This receipt update is documentation-only;
+> do not deploy its commit in place of the pinned runtime SHA.
+
 # Production release candidate: `655aa2f` + tax-route fix (code-only; packets separate)
 
 > Release-identity correction: the prior revision of this record targeted
