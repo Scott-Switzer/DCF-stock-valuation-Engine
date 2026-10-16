@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "status": "DEPLOYED_AND_VERIFIED",
+  "recorded_at": "2026-10-15T19:58:02.580486-07:00",
+  "authorization": "User explicitly approved code-only production deployment after final staging release receipt.",
+  "release_sha": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+  "approval_receipt_commit": "b5b9d3ea9099dc568bd11d5ac0008b2c49aa3d0a",
+  "production_url": "https://dcf-valuation-engine.scswitzer.workers.dev",
+  "worker_version": "0dda0817-5efc-4648-b5cb-cb502c664db3",
+  "deployment": "6e0910ec-ac33-45f7-a6bb-2bead8668a7b",
+  "previous_version": "137718bd-49f6-4c12-ae03-9776e01e7cfc",
+  "command": "uv tool run --from 'uv>=0.12.3' uv run pywrangler deploy --keep-vars",
+  "production_smoke": {
+    "base": "https://dcf-valuation-engine.scswitzer.workers.dev",
+    "results": [
+      {
+        "check": "health",
+        "seconds": 0.838,
+        "release": {
+          "commit": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+          "tracked_dirty": false,
+          "asset_sha256": "a394a135f99c89447c2ebe741cdda97dbe4095fb120a1dc33fff5e4abd920114"
+        },
+        "status": "PASS"
+      },
+      {
+        "check": "readiness",
+        "seconds": 1.572,
+        "status": "PASS"
+      },
+      {
+        "check": "providers",
+        "seconds": 0.284,
+        "status": "PASS"
+      },
+      {
+        "check": "ticker_search",
+        "seconds": 0.782,
+        "status": "PASS"
+      },
+      {
+        "check": "sample",
+        "seconds": 0.912,
+        "status": "PASS"
+      },
+      {
+        "check": "non_saving_preview",
+        "seconds": 0.247,
+        "status": "PASS"
+      },
+      {
+        "check": "json_export",
+        "seconds": 0.322,
+        "status": "PASS"
+      },
+      {
+        "check": "real_company",
+        "seconds": 3.68,
+        "status": "PASS"
+      },
+      {
+        "check": "repeat_company_load",
+        "seconds": 0.551,
+        "status": "PASS"
+      },
+      {
+        "check": "source_freshness",
+        "status": "PASS",
+        "price_age_days": 0,
+        "annual_age_days": 380,
+        "source": "PPE / SEC financials + labeled market fallbacks"
+      },
+      {
+        "check": "real_dcf_preview",
+        "seconds": 0.427,
+        "status": "PASS"
+      },
+      {
+        "check": "real_dcf_arithmetic",
+        "status": "PASS",
+        "differences": [],
+        "detail": ""
+      },
+      {
+        "check": "real_xlsx_export",
+        "status": "PASS",
+        "seconds": 0.363
+      }
+    ]
+  },
+  "production_pointer": {
+    "raw_sha256": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+    "byte_identical_before_after": true,
+    "companies": 237
+  },
+  "bindings_unchanged": true,
+  "runtime_configuration_unchanged": true,
+  "data_release": {
+    "candidate_packets_promoted": false,
+    "administrative_d1_writes_or_migrations": false,
+    "production_test_accounts_created": false,
+    "note": "Non-saving smoke exercises normal loader/cache behavior; no user valuation records were intentionally created."
+  },
+  "rollback_command": "wrangler rollback 137718bd-49f6-4c12-ae03-9776e01e7cfc --name dcf-valuation-engine",
+  "evidence_sha256": {
+    "deploy.log": "ed5624f4b3faa9180eafd7c819a37e5fdb9f48e575089cb4cfe9d7443ece854e",
+    "smoke.json": "2167ea008eb3012de3c06231d3ac831bcb7b59c996aadd4b1171a884f9b31ad6",
+    "pointer-before.json": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+    "pointer-after.json": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1"
+  },
+  "note": "This receipt is evidence only. Do not redeploy its documentation commit in place of the approved runtime SHA."
+}
