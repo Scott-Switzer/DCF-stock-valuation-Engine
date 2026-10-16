@@ -197,49 +197,50 @@ named environment. Therefore the production-targeted command is a bare
 `wrangler deploy` with NO `--env` flag. The prior revision's
 `wrangler deploy --env staging` deploys **staging**, never production.
 
-```sh
-# CORRECT production command — NOT EXECUTED (requires separate approval):
-git checkout main && git pull --ff-only   # expect the receipt SHA below
-test \"$(git rev-parse HEAD)\" = \"$(python3 -c 'import json;print(json.load(open(\"find/outputs/release-readiness/release-receipt.json\"))[\"release_sha\"])')\"
-python3 scripts/embed_assets.py && wrangler deploy
-```
-
-Guard (run before any deploy, aborts on mismatch — DO NOT RUN the deploy
-itself):
+The receipt pins an immutable **release SHA**, independently of a later
+receipt-only documentation commit. Do not deploy whatever `main` happens to
+point to after recording the receipt. Use a clean checkout of that exact SHA.
+The original tax fix reached main by direct push as `e89956e`; the subsequent
+release-control PR provides the reviewed merged staging target. No fix PR is
+retroactively claimed.
 
 ```sh
-test \"$(git rev-parse HEAD)\" = \"$(python3 -c 'import json;print(json.load(open(\"find/outputs/release-readiness/release-receipt.json\"))[\"release_sha\"])')\" \
-  && test -z \"$(git status --porcelain -- ':!find/outputs')\" \
-  && wrangler deployments list --name dcf-valuation-engine | grep -q 137718bd \
-  || { echo 'ABORT: HEAD/receipt/prior-version mismatch or wrong environment'; exit 1; }
-# NEVER pass --env staging for a production release. NEVER edit this
-# document with the merge SHA (use the receipt file instead).
+# AFTER separate production approval only. These commands were NOT executed.
+# Read the completed receipt from the operator checkout before checking out the
+# release SHA, whose in-tree receipt necessarily predates final staging evidence.
+RELEASE_SHA=$(python3 -c 'import json; print(json.load(open("find/outputs/release-readiness/release-receipt.json"))["release_sha"])')
+test "$RELEASE_SHA" != None || exit 1
+test -z "$(git status --porcelain --untracked-files=no)" || exit 1
+git checkout --detach "$RELEASE_SHA"
+test "$(git rev-parse HEAD)" = "$RELEASE_SHA" || exit 1
+# Top-level config is production; no --env production exists.
+uv tool run --from 'uv>=0.12.3' uv run pywrangler deploy --keep-vars
 ```
 
-Post-merge receipt (written once by CI/operator after the fix PR merges,
-NOT by re-editing this document):
+Staging-only command (authorized for this review):
 
-```json
-{
-  "release_sha": "<fix-PR merge commit>",
-  "base_sha": "655aa2f669496d47235325a1b129b0c698019bd7",
-  "production_command": "wrangler deploy",
-  "production_command_executed": false
-}
+```sh
+uv tool run --from 'uv>=0.12.3' uv run pywrangler deploy --env staging --keep-vars
 ```
 
-Then verify `/health` reports that exact receipt SHA
-(`tracked_dirty:false`), smoke-test one Yahoo-fallback load (AAPL) + one
-save/share/revoke cycle on staging, run the read-only production smoke
-above, and confirm `control/valuation/CURRENT.json` is byte-identical
-before and after.
+Before any separately approved production deployment, recheck production
+`/health`, the exact active Worker version, the raw `CURRENT.json` digest and
+production binding configuration against the completed receipt. Abort on drift.
+After deployment verify `/health` reports the receipt SHA with
+`tracked_dirty:false` and run non-saving smoke checks against production-source
+securities. Candidate-company SEC-first loads are not a production requirement.
 
-Rollback (code): `wrangler rollback` or redeploy prior production version
-`137718bd-49f6-4c12-ae03-9776e01e7cfc` (deployment `483c91e5-…`,
-production `d1008a0`; previous deployment `509af4c8-…` / version
-`3433224f-68f1-4d97-abd2-fcf2f33d8e6f`). Prior doc cited variant id
-`137718bd-49f6-4f88-ab68-f67fdf5dd34a`; the wrangler-observed id above is
-authoritative.
+Rollback (code, requires production authorization): explicitly target the prior
+production version recorded and freshly verified in the receipt:
+
+```sh
+wrangler rollback 137718bd-49f6-4c12-ae03-9776e01e7cfc --name dcf-valuation-engine
+```
+
+The completed receipt is committed separately after staging acceptance. Its
+commit is evidence-only, not a new runtime release target. This avoids a
+self-referential merge-SHA/receipt-update loop.
+
 Rollback (data): not applicable — production pointers are not written by
 this release; candidate pointer has its own per-publication rollback files.
 
@@ -255,6 +256,6 @@ this release; candidate pointer has its own per-publication rollback files.
   release.
 - Ruff format is not CI-enforced (87 files repo-wide pre-existing);
   `ruff check` is clean.
-- `npx tsc --noEmit` is CI-covered; no local TypeScript toolchain is
-  installed in this checkout.
+- The current validation workflow syntax-checks shipped JavaScript with
+  `node --check`; it does not run `tsc`. No TypeScript CI claim is made.
 - Warm p95/cost notes from the prior release are unchanged.
