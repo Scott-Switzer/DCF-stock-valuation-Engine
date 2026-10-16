@@ -9,7 +9,7 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 const base = 'http://127.0.0.1:5179';
 const server = spawn(process.env.PYTHON || 'python3', ['tests/browser/fixture_server.py'], {cwd:root, stdio:['ignore','pipe','pipe']});
 let serverLog = ''; server.stdout.on('data', x => serverLog += x); server.stderr.on('data', x => serverLog += x);
-let browser;
+let browser, page;
 const output = new URL('./artifacts/', import.meta.url);
 await mkdir(output, {recursive:true});
 try {
@@ -20,7 +20,7 @@ try {
   }
   browser = await chromium.launch({headless:true, ...(process.env.CHROME_EXECUTABLE ? {executablePath:process.env.CHROME_EXECUTABLE}: {})});
   const context = await browser.newContext({acceptDownloads:true});
-  const page = await context.newPage(); page.setDefaultTimeout(15000);
+  page = await context.newPage(); page.setDefaultTimeout(15000);
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base);
   await page.locator('#workspace-ticker').fill('DEMO');
@@ -52,7 +52,7 @@ try {
   await page.locator('#research-panel > summary').click();
   await page.locator('#research-title').fill('Browser scenario regression');
   const save=page.waitForResponse(r=>r.url().endsWith('/api/research') && r.request().method()==='POST');
-  await page.locator('#research-form').evaluate(form=>form.requestSubmit());
+  await page.locator('#research-save').click();
   const saved=await (await save).json();
   assert.ok(saved.id,JSON.stringify(saved));
   assert.equal(saved.snapshot.result.intrinsic_value,edited.intrinsic_value);
@@ -86,4 +86,10 @@ try {
   await page.screenshot({path:fileURLToPath(new URL('saved-research.png',output)),fullPage:true});
   const report={status:'PASS',scope:'Real headless browser, deterministic local providers, isolated local SQLite; no production writes',initial:{tax:bundle.preview.assumptions.tax_rates,wacc:bundle.preview.wacc,price:bundle.preview.intrinsic_value},edited:{tax:edited.assumptions.tax_rates,wacc:edited.wacc,price:edited.intrinsic_value},saved_reload_equal:true,xlsx_downloaded:true,page_errors:errors};
   await writeFile(new URL('acceptance.json',output),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+} catch (error) {
+  if (page) {
+    await page.screenshot({path:fileURLToPath(new URL('failure.png',output)),fullPage:true}).catch(()=>{});
+    await writeFile(new URL('failure.html',output),await page.content().catch(()=>''));
+  }
+  throw error;
 } finally { await browser?.close();server.kill('SIGTERM');await writeFile(new URL('server.log',output),serverLog); }
