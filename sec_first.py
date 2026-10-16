@@ -269,26 +269,32 @@ def load_sec_first(
     if meta.get("currency") != "USD":
         raise ProviderError("Yahoo market currency must be USD.")
     price, price_day = market_quote(meta, asof)
-    try:
-        directory = http.get(
-            "https://www.sec.gov/files/company_tickers.json",
-            headers={"User-Agent": "DCF-Valuation-Engine/1.0", "Accept": "application/json"},
-            ttl=86400,
-            cache_key="sec-directory",
-        )
-        entry = next(
-            (
-                r
-                for r in directory.values()
-                if str(r.get("ticker", "")).replace(".", "-") == ticker
-            ),
-            None,
-        )
-        name = entry.get("title", ticker) if entry else ticker
-        cik = str((entry or {}).get("cik_str", "")).zfill(10) or None
-    except ProviderError:
-        name = ticker
-        cik = None
+    from issuer_classification import reviewed_identity
+
+    identity = reviewed_identity(ticker, packet.get("cik"), asof)
+    if identity is not None:
+        name, cik = identity
+    else:
+        try:
+            directory = http.get(
+                "https://www.sec.gov/files/company_tickers.json",
+                headers={"User-Agent": "DCF-Valuation-Engine/1.0", "Accept": "application/json"},
+                ttl=86400,
+                cache_key="sec-directory",
+            )
+            entry = next(
+                (
+                    r
+                    for r in directory.values()
+                    if str(r.get("ticker", "")).replace(".", "-") == ticker
+                ),
+                None,
+            )
+            name = entry.get("title", ticker) if entry else ticker
+            cik = str((entry or {}).get("cik_str", "")).zfill(10) or None
+        except ProviderError:
+            name = ticker
+            cik = None
     doc = blank_document(ticker, name, asof, "api")
     doc["company"].update(eligible=True, security_type="EQUITY")
     warnings = [

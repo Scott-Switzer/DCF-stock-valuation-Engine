@@ -176,6 +176,28 @@ REVIEWED = {
 }
 
 
+
+def reviewed_identity(ticker, packet_cik, asof):
+    """Reuse cited name/CIK only for the already-validated packet identity.
+
+    This is metadata reuse, not a financial cache or a new eligibility gate.
+    Unsupported, undated or future registry entries retain the live lookup.
+    """
+    from datetime import date
+
+    entry = REVIEWED.get(ticker)
+    if not entry or entry.get("cik") != packet_cik:
+        return None
+    if not entry.get("entity_name") or not entry.get("source_url"):
+        return None
+    try:
+        if date.fromisoformat(entry["as_of"]) > date.fromisoformat(asof):
+            return None
+    except (KeyError, ValueError, TypeError):
+        return None
+    return entry["entity_name"], entry["cik"]
+
+
 def registry_record(ticker):
     """Reviewed classification for ``ticker`` without a network call, or None.
 
