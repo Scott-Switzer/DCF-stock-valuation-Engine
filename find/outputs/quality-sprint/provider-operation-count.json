@@ -1,0 +1,17 @@
+{
+  "scope": "frozen validated matching issuer fixture, not live origin HTTP counts",
+  "before_count": 4,
+  "after_count": 3,
+  "before": [
+    "https://query2.finance.yahoo.com/v8/finance/chart/TEST",
+    "https://www.sec.gov/files/company_tickers.json",
+    "https://query2.finance.yahoo.com/v8/finance/chart/SPY",
+    "https://query2.finance.yahoo.com/v8/finance/chart/%5ETNX"
+  ],
+  "after": [
+    "https://query2.finance.yahoo.com/v8/finance/chart/TEST",
+    "https://query2.finance.yahoo.com/v8/finance/chart/SPY",
+    "https://query2.finance.yahoo.com/v8/finance/chart/%5ETNX"
+  ],
+  "eliminated": 1
+}

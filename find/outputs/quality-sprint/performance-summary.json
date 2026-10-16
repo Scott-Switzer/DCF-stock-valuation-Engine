@@ -1,0 +1,1742 @@
+{
+  "quantile": "nearest rank ceil(p*n), not interpolated; first value-painted mark relative to submit; cold labels do not establish provider-cache misses",
+  "runs": [
+    {
+      "file": "before-browser.json",
+      "commit": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+      "groups": {
+        "MISS": {
+          "samples": 6,
+          "successful_value_paints": {
+            "n": 6,
+            "p50_ms": 924,
+            "p95_ms": 2275,
+            "min_ms": 616,
+            "max_ms": 2275
+          },
+          "request_duration": {
+            "n": 6,
+            "p50_ms": 889,
+            "p95_ms": 2138,
+            "min_ms": 599,
+            "max_ms": 2138
+          },
+          "editor_ready": {
+            "n": 6,
+            "p50_ms": 110,
+            "p95_ms": 1044,
+            "min_ms": -18,
+            "max_ms": 1044
+          }
+        },
+        "MISS/SEC-first": {
+          "samples": 4,
+          "successful_value_paints": {
+            "n": 4,
+            "p50_ms": 924,
+            "p95_ms": 2275,
+            "min_ms": 616,
+            "max_ms": 2275
+          },
+          "request_duration": {
+            "n": 4,
+            "p50_ms": 817,
+            "p95_ms": 2138,
+            "min_ms": 599,
+            "max_ms": 2138
+          },
+          "editor_ready": {
+            "n": 4,
+            "p50_ms": 65,
+            "p95_ms": 1044,
+            "min_ms": -18,
+            "max_ms": 1044
+          }
+        },
+        "MISS/Yahoo": {
+          "samples": 2,
+          "successful_value_paints": {
+            "n": 2,
+            "p50_ms": 906,
+            "p95_ms": 1543,
+            "min_ms": 906,
+            "max_ms": 1543
+          },
+          "request_duration": {
+            "n": 2,
+            "p50_ms": 889,
+            "p95_ms": 1471,
+            "min_ms": 889,
+            "max_ms": 1471
+          },
+          "editor_ready": {
+            "n": 2,
+            "p50_ms": 110,
+            "p95_ms": 156,
+            "min_ms": 110,
+            "max_ms": 156
+          }
+        },
+        "HIT": {
+          "samples": 20,
+          "successful_value_paints": {
+            "n": 20,
+            "p50_ms": 149,
+            "p95_ms": 245,
+            "min_ms": 81,
+            "max_ms": 267
+          },
+          "request_duration": {
+            "n": 20,
+            "p50_ms": 92,
+            "p95_ms": 148,
+            "min_ms": 67,
+            "max_ms": 165
+          },
+          "editor_ready": {
+            "n": 20,
+            "p50_ms": 51,
+            "p95_ms": 127,
+            "min_ms": -98,
+            "max_ms": 161
+          }
+        },
+        "HIT/Yahoo": {
+          "samples": 10,
+          "successful_value_paints": {
+            "n": 10,
+            "p50_ms": 154,
+            "p95_ms": 245,
+            "min_ms": 114,
+            "max_ms": 245
+          },
+          "request_duration": {
+            "n": 10,
+            "p50_ms": 97,
+            "p95_ms": 165,
+            "min_ms": 81,
+            "max_ms": 165
+          },
+          "editor_ready": {
+            "n": 10,
+            "p50_ms": 51,
+            "p95_ms": 58,
+            "min_ms": -94,
+            "max_ms": 58
+          }
+        },
+        "HIT/SEC-first": {
+          "samples": 10,
+          "successful_value_paints": {
+            "n": 10,
+            "p50_ms": 147,
+            "p95_ms": 267,
+            "min_ms": 81,
+            "max_ms": 267
+          },
+          "request_duration": {
+            "n": 10,
+            "p50_ms": 74,
+            "p95_ms": 140,
+            "min_ms": 67,
+            "max_ms": 140
+          },
+          "editor_ready": {
+            "n": 10,
+            "p50_ms": 63,
+            "p95_ms": 161,
+            "min_ms": -98,
+            "max_ms": 161
+          }
+        }
+      },
+      "rows": [
+        {
+          "ticker": "CAT",
+          "state": "MISS",
+          "source": "SEC-first",
+          "value_ms": 2275,
+          "editor_ready_ms": 574,
+          "brief_ms": 2275,
+          "load_response_ms": 2165,
+          "request_duration_ms": 2138,
+          "transfer_bytes": 9526,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0.224,
+            "sec_first": 0.68,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.142
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "T",
+          "state": "MISS",
+          "source": "SEC-first",
+          "value_ms": 1202,
+          "editor_ready_ms": 1044,
+          "brief_ms": 1202,
+          "load_response_ms": 1121,
+          "request_duration_ms": 1094,
+          "transfer_bytes": 9350,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0.3,
+            "sec_first": 0.426,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.038
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PAYX",
+          "state": "MISS",
+          "source": "SEC-first",
+          "value_ms": 924,
+          "editor_ready_ms": -18,
+          "brief_ms": 924,
+          "load_response_ms": 836,
+          "request_duration_ms": 817,
+          "transfer_bytes": 9595,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0.058,
+            "sec_first": 0.217,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.03
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "MSFT",
+          "state": "MISS",
+          "source": "Yahoo",
+          "value_ms": 1543,
+          "editor_ready_ms": 156,
+          "brief_ms": 1543,
+          "load_response_ms": 1484,
+          "request_duration_ms": 1471,
+          "transfer_bytes": 11051,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.307,
+            "zion_packet": 0.688
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "MISS",
+          "source": "Yahoo",
+          "value_ms": 906,
+          "editor_ready_ms": 110,
+          "brief_ms": 906,
+          "load_response_ms": 893,
+          "request_duration_ms": 889,
+          "transfer_bytes": 11377,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.352,
+            "zion_packet": 0.046
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "MISS",
+          "source": "SEC-first",
+          "value_ms": 616,
+          "editor_ready_ms": 65,
+          "brief_ms": 616,
+          "load_response_ms": 604,
+          "request_duration_ms": 599,
+          "transfer_bytes": 9499,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.225,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.028
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 149,
+          "editor_ready_ms": 57,
+          "brief_ms": 149,
+          "load_response_ms": 121,
+          "request_duration_ms": 117,
+          "transfer_bytes": 11458,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.352,
+            "zion_packet": 0.046
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 163,
+          "editor_ready_ms": 63,
+          "brief_ms": 163,
+          "load_response_ms": 79,
+          "request_duration_ms": 73,
+          "transfer_bytes": 9630,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.225,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.028
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 121,
+          "editor_ready_ms": 58,
+          "brief_ms": 121,
+          "load_response_ms": 95,
+          "request_duration_ms": 92,
+          "transfer_bytes": 11403,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.352,
+            "zion_packet": 0.046
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 102,
+          "editor_ready_ms": 47,
+          "brief_ms": 102,
+          "load_response_ms": 77,
+          "request_duration_ms": 75,
+          "transfer_bytes": 9561,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.225,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.028
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 114,
+          "editor_ready_ms": 52,
+          "brief_ms": 114,
+          "load_response_ms": 99,
+          "request_duration_ms": 97,
+          "transfer_bytes": 11415,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.352,
+            "zion_packet": 0.046
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 81,
+          "editor_ready_ms": 49,
+          "brief_ms": 81,
+          "load_response_ms": 70,
+          "request_duration_ms": 67,
+          "transfer_bytes": 9633,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.225,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.028
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 245,
+          "editor_ready_ms": -31,
+          "brief_ms": 245,
+          "load_response_ms": 180,
+          "request_duration_ms": 165,
+          "transfer_bytes": 11403,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.352,
+            "zion_packet": 0.046
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 150,
+          "editor_ready_ms": 124,
+          "brief_ms": 150,
+          "load_response_ms": 125,
+          "request_duration_ms": 73,
+          "transfer_bytes": 9632,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.225,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.028
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 157,
+          "editor_ready_ms": 54,
+          "brief_ms": 157,
+          "load_response_ms": 136,
+          "request_duration_ms": 86,
+          "transfer_bytes": 11460,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.352,
+            "zion_packet": 0.046
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 104,
+          "editor_ready_ms": 83,
+          "brief_ms": 104,
+          "load_response_ms": 85,
+          "request_duration_ms": 74,
+          "transfer_bytes": 9629,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.225,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.028
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 154,
+          "editor_ready_ms": 51,
+          "brief_ms": 154,
+          "load_response_ms": 131,
+          "request_duration_ms": 128,
+          "transfer_bytes": 11412,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.352,
+            "zion_packet": 0.046
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 147,
+          "editor_ready_ms": 4,
+          "brief_ms": 147,
+          "load_response_ms": 121,
+          "request_duration_ms": 101,
+          "transfer_bytes": 9573,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.225,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.028
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 175,
+          "editor_ready_ms": 45,
+          "brief_ms": 175,
+          "load_response_ms": 153,
+          "request_duration_ms": 148,
+          "transfer_bytes": 11405,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.352,
+            "zion_packet": 0.046
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 148,
+          "editor_ready_ms": 127,
+          "brief_ms": 148,
+          "load_response_ms": 129,
+          "request_duration_ms": 95,
+          "transfer_bytes": 9562,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.225,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.028
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 215,
+          "editor_ready_ms": -94,
+          "brief_ms": 215,
+          "load_response_ms": 108,
+          "request_duration_ms": 91,
+          "transfer_bytes": 11401,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.352,
+            "zion_packet": 0.046
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 182,
+          "editor_ready_ms": 161,
+          "brief_ms": 182,
+          "load_response_ms": 162,
+          "request_duration_ms": 140,
+          "transfer_bytes": 9629,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.225,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.028
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 139,
+          "editor_ready_ms": 51,
+          "brief_ms": 139,
+          "load_response_ms": 118,
+          "request_duration_ms": 115,
+          "transfer_bytes": 11462,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.352,
+            "zion_packet": 0.046
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 109,
+          "editor_ready_ms": 80,
+          "brief_ms": 109,
+          "load_response_ms": 87,
+          "request_duration_ms": 70,
+          "transfer_bytes": 9568,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.225,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.028
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 179,
+          "editor_ready_ms": -94,
+          "brief_ms": 179,
+          "load_response_ms": 99,
+          "request_duration_ms": 81,
+          "transfer_bytes": 11432,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.352,
+            "zion_packet": 0.046
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 267,
+          "editor_ready_ms": -98,
+          "brief_ms": 267,
+          "load_response_ms": 150,
+          "request_duration_ms": 121,
+          "transfer_bytes": 9631,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.225,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.028
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        }
+      ]
+    },
+    {
+      "file": "after-browser.json",
+      "commit": "6eb7821332b8d8ecb59e3ed55c59245b41630e23",
+      "groups": {
+        "MISS": {
+          "samples": 6,
+          "successful_value_paints": {
+            "n": 6,
+            "p50_ms": 1086,
+            "p95_ms": 2394,
+            "min_ms": 732,
+            "max_ms": 2394
+          },
+          "request_duration": {
+            "n": 6,
+            "p50_ms": 1064,
+            "p95_ms": 2292,
+            "min_ms": 710,
+            "max_ms": 2292
+          },
+          "editor_ready": {
+            "n": 6,
+            "p50_ms": 62,
+            "p95_ms": 955,
+            "min_ms": -23,
+            "max_ms": 955
+          }
+        },
+        "MISS/SEC-first": {
+          "samples": 4,
+          "successful_value_paints": {
+            "n": 4,
+            "p50_ms": 836,
+            "p95_ms": 2394,
+            "min_ms": 732,
+            "max_ms": 2394
+          },
+          "request_duration": {
+            "n": 4,
+            "p50_ms": 815,
+            "p95_ms": 2292,
+            "min_ms": 710,
+            "max_ms": 2292
+          },
+          "editor_ready": {
+            "n": 4,
+            "p50_ms": 107,
+            "p95_ms": 955,
+            "min_ms": 62,
+            "max_ms": 955
+          }
+        },
+        "MISS/Yahoo": {
+          "samples": 2,
+          "successful_value_paints": {
+            "n": 2,
+            "p50_ms": 1114,
+            "p95_ms": 1757,
+            "min_ms": 1114,
+            "max_ms": 1757
+          },
+          "request_duration": {
+            "n": 2,
+            "p50_ms": 1065,
+            "p95_ms": 1634,
+            "min_ms": 1065,
+            "max_ms": 1634
+          },
+          "editor_ready": {
+            "n": 2,
+            "p50_ms": -23,
+            "p95_ms": 50,
+            "min_ms": -23,
+            "max_ms": 50
+          }
+        },
+        "HIT": {
+          "samples": 20,
+          "successful_value_paints": {
+            "n": 20,
+            "p50_ms": 136,
+            "p95_ms": 239,
+            "min_ms": 90,
+            "max_ms": 289
+          },
+          "request_duration": {
+            "n": 20,
+            "p50_ms": 109,
+            "p95_ms": 214,
+            "min_ms": 67,
+            "max_ms": 263
+          },
+          "editor_ready": {
+            "n": 20,
+            "p50_ms": 55,
+            "p95_ms": 85,
+            "min_ms": -92,
+            "max_ms": 130
+          }
+        },
+        "HIT/Yahoo": {
+          "samples": 10,
+          "successful_value_paints": {
+            "n": 10,
+            "p50_ms": 145,
+            "p95_ms": 289,
+            "min_ms": 121,
+            "max_ms": 289
+          },
+          "request_duration": {
+            "n": 10,
+            "p50_ms": 121,
+            "p95_ms": 263,
+            "min_ms": 93,
+            "max_ms": 263
+          },
+          "editor_ready": {
+            "n": 10,
+            "p50_ms": 54,
+            "p95_ms": 84,
+            "min_ms": -17,
+            "max_ms": 84
+          }
+        },
+        "HIT/SEC-first": {
+          "samples": 10,
+          "successful_value_paints": {
+            "n": 10,
+            "p50_ms": 118,
+            "p95_ms": 203,
+            "min_ms": 90,
+            "max_ms": 203
+          },
+          "request_duration": {
+            "n": 10,
+            "p50_ms": 92,
+            "p95_ms": 180,
+            "min_ms": 67,
+            "max_ms": 180
+          },
+          "editor_ready": {
+            "n": 10,
+            "p50_ms": 55,
+            "p95_ms": 130,
+            "min_ms": -92,
+            "max_ms": 130
+          }
+        }
+      },
+      "rows": [
+        {
+          "ticker": "CAT",
+          "state": "MISS",
+          "source": "SEC-first",
+          "value_ms": 2394,
+          "editor_ready_ms": 955,
+          "brief_ms": 2394,
+          "load_response_ms": 2318,
+          "request_duration_ms": 2292,
+          "transfer_bytes": 9532,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0.311,
+            "sec_first": 0.905,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.183
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "T",
+          "state": "MISS",
+          "source": "SEC-first",
+          "value_ms": 836,
+          "editor_ready_ms": 174,
+          "brief_ms": 836,
+          "load_response_ms": 817,
+          "request_duration_ms": 815,
+          "transfer_bytes": 9383,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0.064,
+            "sec_first": 0.248,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.02
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PAYX",
+          "state": "MISS",
+          "source": "SEC-first",
+          "value_ms": 1086,
+          "editor_ready_ms": 62,
+          "brief_ms": 1086,
+          "load_response_ms": 1066,
+          "request_duration_ms": 1064,
+          "transfer_bytes": 9605,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0.05,
+            "sec_first": 0.285,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.025
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "MSFT",
+          "state": "MISS",
+          "source": "Yahoo",
+          "value_ms": 1757,
+          "editor_ready_ms": -23,
+          "brief_ms": 1757,
+          "load_response_ms": 1649,
+          "request_duration_ms": 1634,
+          "transfer_bytes": 11000,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.196,
+            "zion_packet": 0.794
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "MISS",
+          "source": "Yahoo",
+          "value_ms": 1114,
+          "editor_ready_ms": 50,
+          "brief_ms": 1114,
+          "load_response_ms": 1092,
+          "request_duration_ms": 1065,
+          "transfer_bytes": 11335,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.311,
+            "zion_packet": 0.059
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "MISS",
+          "source": "SEC-first",
+          "value_ms": 732,
+          "editor_ready_ms": 107,
+          "brief_ms": 732,
+          "load_response_ms": 713,
+          "request_duration_ms": 710,
+          "transfer_bytes": 9506,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.253,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.019
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 239,
+          "editor_ready_ms": 66,
+          "brief_ms": 239,
+          "load_response_ms": 218,
+          "request_duration_ms": 214,
+          "transfer_bytes": 11443,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.311,
+            "zion_packet": 0.059
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 145,
+          "editor_ready_ms": 73,
+          "brief_ms": 145,
+          "load_response_ms": 125,
+          "request_duration_ms": 122,
+          "transfer_bytes": 9616,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.253,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.019
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 224,
+          "editor_ready_ms": 51,
+          "brief_ms": 224,
+          "load_response_ms": 203,
+          "request_duration_ms": 156,
+          "transfer_bytes": 11413,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.311,
+            "zion_packet": 0.059
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 107,
+          "editor_ready_ms": 85,
+          "brief_ms": 107,
+          "load_response_ms": 87,
+          "request_duration_ms": 73,
+          "transfer_bytes": 9573,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.253,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.019
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 168,
+          "editor_ready_ms": 54,
+          "brief_ms": 168,
+          "load_response_ms": 147,
+          "request_duration_ms": 144,
+          "transfer_bytes": 11413,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.311,
+            "zion_packet": 0.059
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 90,
+          "editor_ready_ms": 50,
+          "brief_ms": 90,
+          "load_response_ms": 70,
+          "request_duration_ms": 67,
+          "transfer_bytes": 9628,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.253,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.019
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 145,
+          "editor_ready_ms": 62,
+          "brief_ms": 145,
+          "load_response_ms": 124,
+          "request_duration_ms": 121,
+          "transfer_bytes": 11458,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.311,
+            "zion_packet": 0.059
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 193,
+          "editor_ready_ms": 65,
+          "brief_ms": 193,
+          "load_response_ms": 173,
+          "request_duration_ms": 170,
+          "transfer_bytes": 9635,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.253,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.019
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 289,
+          "editor_ready_ms": 84,
+          "brief_ms": 289,
+          "load_response_ms": 266,
+          "request_duration_ms": 263,
+          "transfer_bytes": 11403,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.311,
+            "zion_packet": 0.059
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 110,
+          "editor_ready_ms": -34,
+          "brief_ms": 110,
+          "load_response_ms": 91,
+          "request_duration_ms": 75,
+          "transfer_bytes": 9628,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.253,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.019
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 148,
+          "editor_ready_ms": 55,
+          "brief_ms": 148,
+          "load_response_ms": 129,
+          "request_duration_ms": 125,
+          "transfer_bytes": 11404,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.311,
+            "zion_packet": 0.059
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 118,
+          "editor_ready_ms": 55,
+          "brief_ms": 118,
+          "load_response_ms": 99,
+          "request_duration_ms": 96,
+          "transfer_bytes": 9578,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.253,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.019
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 136,
+          "editor_ready_ms": -17,
+          "brief_ms": 136,
+          "load_response_ms": 97,
+          "request_duration_ms": 93,
+          "transfer_bytes": 11416,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.311,
+            "zion_packet": 0.059
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 203,
+          "editor_ready_ms": 130,
+          "brief_ms": 203,
+          "load_response_ms": 183,
+          "request_duration_ms": 180,
+          "transfer_bytes": 9577,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.253,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.019
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 124,
+          "editor_ready_ms": 50,
+          "brief_ms": 124,
+          "load_response_ms": 102,
+          "request_duration_ms": 99,
+          "transfer_bytes": 11406,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.311,
+            "zion_packet": 0.059
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 130,
+          "editor_ready_ms": 71,
+          "brief_ms": 130,
+          "load_response_ms": 111,
+          "request_duration_ms": 109,
+          "transfer_bytes": 9576,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.253,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.019
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 137,
+          "editor_ready_ms": 70,
+          "brief_ms": 137,
+          "load_response_ms": 116,
+          "request_duration_ms": 113,
+          "transfer_bytes": 11440,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.311,
+            "zion_packet": 0.059
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 115,
+          "editor_ready_ms": 49,
+          "brief_ms": 115,
+          "load_response_ms": 93,
+          "request_duration_ms": 87,
+          "transfer_bytes": 9579,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.253,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.019
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 121,
+          "editor_ready_ms": 53,
+          "brief_ms": 121,
+          "load_response_ms": 100,
+          "request_duration_ms": 97,
+          "transfer_bytes": 11396,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.311,
+            "zion_packet": 0.059
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "PEP",
+          "state": "HIT",
+          "source": "SEC-first",
+          "value_ms": 118,
+          "editor_ready_ms": -92,
+          "brief_ms": 118,
+          "load_response_ms": 97,
+          "request_duration_ms": 92,
+          "transfer_bytes": 9573,
+          "stages_s": {
+            "brief_inline": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "sec_first": 0.253,
+            "wacc_model_inputs": 0,
+            "zion_packet": 0.019
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        }
+      ]
+    },
+    {
+      "file": "production-readonly-browser.json",
+      "commit": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+      "groups": {
+        "MISS": {
+          "samples": 3,
+          "successful_value_paints": {
+            "n": 3,
+            "p50_ms": 1952,
+            "p95_ms": 4252,
+            "min_ms": 1692,
+            "max_ms": 4252
+          },
+          "request_duration": {
+            "n": 3,
+            "p50_ms": 1924,
+            "p95_ms": 4150,
+            "min_ms": 1668,
+            "max_ms": 4150
+          },
+          "editor_ready": {
+            "n": 3,
+            "p50_ms": 49,
+            "p95_ms": 437,
+            "min_ms": 48,
+            "max_ms": 437
+          }
+        },
+        "MISS/Yahoo": {
+          "samples": 3,
+          "successful_value_paints": {
+            "n": 3,
+            "p50_ms": 1952,
+            "p95_ms": 4252,
+            "min_ms": 1692,
+            "max_ms": 4252
+          },
+          "request_duration": {
+            "n": 3,
+            "p50_ms": 1924,
+            "p95_ms": 4150,
+            "min_ms": 1668,
+            "max_ms": 4150
+          },
+          "editor_ready": {
+            "n": 3,
+            "p50_ms": 49,
+            "p95_ms": 437,
+            "min_ms": 48,
+            "max_ms": 437
+          }
+        },
+        "HIT": {
+          "samples": 4,
+          "successful_value_paints": {
+            "n": 4,
+            "p50_ms": 239,
+            "p95_ms": 619,
+            "min_ms": 208,
+            "max_ms": 619
+          },
+          "request_duration": {
+            "n": 4,
+            "p50_ms": 176,
+            "p95_ms": 593,
+            "min_ms": 167,
+            "max_ms": 593
+          },
+          "editor_ready": {
+            "n": 4,
+            "p50_ms": 50,
+            "p95_ms": 286,
+            "min_ms": 43,
+            "max_ms": 286
+          }
+        },
+        "HIT/Yahoo": {
+          "samples": 4,
+          "successful_value_paints": {
+            "n": 4,
+            "p50_ms": 239,
+            "p95_ms": 619,
+            "min_ms": 208,
+            "max_ms": 619
+          },
+          "request_duration": {
+            "n": 4,
+            "p50_ms": 176,
+            "p95_ms": 593,
+            "min_ms": 167,
+            "max_ms": 593
+          },
+          "editor_ready": {
+            "n": 4,
+            "p50_ms": 50,
+            "p95_ms": 286,
+            "min_ms": 43,
+            "max_ms": 286
+          }
+        }
+      },
+      "rows": [
+        {
+          "ticker": "PEP",
+          "state": "MISS",
+          "source": "Yahoo",
+          "value_ms": 4252,
+          "editor_ready_ms": 437,
+          "brief_ms": 4252,
+          "load_response_ms": 4171,
+          "request_duration_ms": 4150,
+          "transfer_bytes": 7754,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 1.378,
+            "zion_packet": 1.212
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "MISS",
+          "source": "Yahoo",
+          "value_ms": 1952,
+          "editor_ready_ms": 48,
+          "brief_ms": 1952,
+          "load_response_ms": 1930,
+          "request_duration_ms": 1924,
+          "transfer_bytes": 11330,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.509,
+            "zion_packet": 0.068
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "MSFT",
+          "state": "MISS",
+          "source": "Yahoo",
+          "value_ms": 1692,
+          "editor_ready_ms": 49,
+          "brief_ms": 1692,
+          "load_response_ms": 1671,
+          "request_duration_ms": 1668,
+          "transfer_bytes": 10992,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.517,
+            "zion_packet": 0.034
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 208,
+          "editor_ready_ms": 50,
+          "brief_ms": 208,
+          "load_response_ms": 170,
+          "request_duration_ms": 167,
+          "transfer_bytes": 11397,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.509,
+            "zion_packet": 0.068
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "MSFT",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 619,
+          "editor_ready_ms": 286,
+          "brief_ms": 619,
+          "load_response_ms": 597,
+          "request_duration_ms": 593,
+          "transfer_bytes": 11018,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.517,
+            "zion_packet": 0.034
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "AAPL",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 239,
+          "editor_ready_ms": 43,
+          "brief_ms": 239,
+          "load_response_ms": 218,
+          "request_duration_ms": 176,
+          "transfer_bytes": 11440,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.509,
+            "zion_packet": 0.068
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        },
+        {
+          "ticker": "MSFT",
+          "state": "HIT",
+          "source": "Yahoo",
+          "value_ms": 286,
+          "editor_ready_ms": 91,
+          "brief_ms": 286,
+          "load_response_ms": 264,
+          "request_duration_ms": 262,
+          "transfer_bytes": 11001,
+          "stages_s": {
+            "brief_inline": 0,
+            "ppe_apply": 0,
+            "preview_inline": 0,
+            "sec_classification": 0,
+            "wacc_model_inputs": 0,
+            "yahoo": 0.517,
+            "zion_packet": 0.034
+          },
+          "status": 200,
+          "error": null,
+          "timeout": false
+        }
+      ]
+    }
+  ]
+}

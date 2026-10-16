@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "scope": "Real headless browser, deterministic local providers, isolated local SQLite; no production writes",
+  "initial": {
+    "tax": [
+      0.231,
+      0.24,
+      0.25,
+      0.26,
+      0.27
+    ],
+    "wacc": 0.09102333333333333,
+    "price": 19.019516765588715
+  },
+  "edited": {
+    "tax": [
+      0.3,
+      0.24,
+      0.25,
+      0.26,
+      0.27
+    ],
+    "wacc": 0.09033333333333333,
+    "price": 19.084102601020753
+  },
+  "saved_reload_equal": true,
+  "xlsx_downloaded": true,
+  "page_errors": []
+}

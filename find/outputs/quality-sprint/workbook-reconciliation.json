@@ -1,0 +1,22 @@
+[
+  {
+    "field": "terminal_value",
+    "workbook": 2249.569228652007,
+    "api": 2249.569228652007
+  },
+  {
+    "field": "enterprise_value",
+    "workbook": 2008.410260102076,
+    "api": 2008.4102601020754
+  },
+  {
+    "field": "equity_value",
+    "workbook": 1908.410260102076,
+    "api": 1908.4102601020754
+  },
+  {
+    "field": "intrinsic_value",
+    "workbook": 19.08410260102075,
+    "api": 19.084102601020753
+  }
+]

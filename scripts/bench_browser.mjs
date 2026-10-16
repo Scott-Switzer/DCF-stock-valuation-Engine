@@ -1,10 +1,11 @@
 // Real-browser latency benchmark: drives the workspace in Chromium and reads
 // the app's own performance marks (including paint-aligned marks), resource
 // timing for the load POST, and Server-Timing / Cf-Cache-Status headers.
+// Install: npm ci --prefix tests/browser; cd tests/browser && npx playwright install chromium
 // Usage: node scripts/bench_browser.mjs --base https://... --tickers AAPL,MSFT
 //   --warm 20 --cold-tickers XOM,O --out /tmp/bench.json [--headed]
 import { createRequire } from 'node:module';
-const require = createRequire('/tmp/package.json');
+const require = createRequire(new URL('../tests/browser/package.json', import.meta.url));
 const { chromium } = require('playwright-core');
 
 const rawArgs = process.argv.slice(2);
@@ -22,6 +23,7 @@ const WARM_N = parseInt(args.warm || '20', 10);
 const COLD_TICKERS = (args['cold-tickers'] || '').split(',').filter(Boolean);
 const OUT = args.out || '/tmp/bench_browser.json';
 const HEADED = 'headed' in args;
+const INTERVAL_MS = Number(args['interval-ms'] || 6500);
 const REUSE = 'reuse' in args;
 if (args.summarize) {
   const fs = await import('node:fs');
@@ -37,7 +39,7 @@ if (args.summarize) {
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push({ value: rel('workspace:value-painted'), brief: rel('workspace:brief-visible'), wire: load?.transferSize ?? null, flask: o.serverTiming });
   }
-  const q = (s, p) => s.length ? s.sort((a, b) => a - b)[Math.min(s.length - 1, Math.floor(p * s.length))] : null;
+  const q = (s, p) => s.length ? s.sort((a, b) => a - b)[Math.min(s.length - 1, Math.max(0, Math.ceil(p * s.length) - 1))] : null;
   for (const [key, rows] of [...groups.entries()].sort()) {
     const ok = rows.filter((r) => r.value !== null);
     const v = ok.map((r) => r.value), b = ok.map((r) => r.brief).filter((x) => x !== null);
@@ -50,7 +52,8 @@ if (args.summarize) {
 if (!BASE) throw Error('--base is required');
 
 const browser = await chromium.launch({
-  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  ...(process.env.CHROME_EXECUTABLE ? {executablePath:process.env.CHROME_EXECUTABLE}
+    : process.platform === 'darwin' ? {executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'} : {}),
   headless: !HEADED,
   args: ['--no-sandbox', '--disable-dev-shm-usage'],
 });
@@ -79,6 +82,7 @@ async function observe(ticker, cond) {
         briefBlocked: b.brief?.blocked || null,
         hasForm: !!b.form, hasBaseDocument: !!b.form?.base_document,
         cacheState: b.load_summary?.assembly_cache?.state || null,
+        stageSeconds: b.load_summary?.stage_seconds, hitBreakdown: b.load_summary?.hit_breakdown, statementSource: b.financials?.source?.statement_source,
       })).catch((e) => ({ bodyError: String(e).slice(0, 120) }));
     }
   });
@@ -144,12 +148,12 @@ async function observe(ticker, cond) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Cold first: each cold ticker once (server assembly-cache MISS expected).
-for (const t of COLD_TICKERS) { await observe(t, 'cold'); await sleep(3000); }
+// First touch is a sampling label, not proof of a cache miss. Read cacheState.
+for (const t of COLD_TICKERS) { await observe(t, 'cold'); await sleep(INTERVAL_MS); }
 // First touch per warm ticker counts as its cold sample, then warm repeats.
-for (const t of WARM_TICKERS) { await observe(t, 'cold'); await sleep(3000); }
+for (const t of WARM_TICKERS) { await observe(t, 'cold'); await sleep(INTERVAL_MS); }
 for (let i = 0; i < WARM_N; i++) {
-  for (const t of WARM_TICKERS) { await observe(t, 'warm'); await sleep(2000); }
+  for (const t of WARM_TICKERS) { await observe(t, 'warm'); await sleep(INTERVAL_MS); }
 }
 
 await browser.close();
