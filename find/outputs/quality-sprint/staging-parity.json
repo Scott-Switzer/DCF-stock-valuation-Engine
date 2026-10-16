@@ -1,0 +1,109 @@
+{
+  "health": {
+    "model": "cuig-dcf-v1",
+    "release": {
+      "asset_sha256": "a394a135f99c89447c2ebe741cdda97dbe4095fb120a1dc33fff5e4abd920114",
+      "commit": "6eb7821332b8d8ecb59e3ed55c59245b41630e23",
+      "tracked_dirty": false
+    },
+    "status": "healthy"
+  },
+  "checks": [
+    {
+      "ticker": "AAPL",
+      "state": "BYPASSED",
+      "source": "Yahoo",
+      "wacc": 0.10719419340443861,
+      "price": 81.42239552836381,
+      "tax_rates": [
+        0.231,
+        0.24,
+        0.25,
+        0.26,
+        0.27
+      ],
+      "historical_preserved": true,
+      "form_preview_brief_json_parity": true,
+      "stage_seconds": {
+        "brief_inline": 0.0,
+        "ppe_apply": 0.0,
+        "preview_inline": 0.0,
+        "sec_classification": 0.0,
+        "wacc_model_inputs": 0.0,
+        "yahoo": 0.1,
+        "zion_packet": 0.899
+      }
+    },
+    {
+      "ticker": "PEP",
+      "state": "BYPASSED",
+      "source": "SEC-first",
+      "wacc": 0.05576484820467267,
+      "price": 148.44554936848274,
+      "tax_rates": [
+        0.231,
+        0.24,
+        0.25,
+        0.26,
+        0.27
+      ],
+      "historical_preserved": true,
+      "form_preview_brief_json_parity": true,
+      "stage_seconds": {
+        "brief_inline": 0.0,
+        "preview_inline": 0.0,
+        "sec_classification": 0.0,
+        "sec_first": 0.041,
+        "wacc_model_inputs": 0.0,
+        "zion_packet": 0.019
+      }
+    },
+    {
+      "ticker": "CAT",
+      "status": 200,
+      "source": "SEC-first",
+      "error": null,
+      "cache": {
+        "age_seconds": 245.975,
+        "built_at": "2026-10-16T03:34:27.844000+00:00",
+        "note": "Original financial observation dates retained; not a live quote guarantee.",
+        "state": "HIT",
+        "ttl_seconds": 300
+      }
+    },
+    {
+      "ticker": "T",
+      "status": 200,
+      "source": "SEC-first",
+      "error": null,
+      "cache": {
+        "age_seconds": 243.202,
+        "built_at": "2026-10-16T03:34:37.735000+00:00",
+        "note": "Original financial observation dates retained; not a live quote guarantee.",
+        "state": "HIT",
+        "ttl_seconds": 300
+      }
+    },
+    {
+      "ticker": "PAYX",
+      "status": 200,
+      "source": "SEC-first",
+      "error": null,
+      "cache": {
+        "age_seconds": 241.124,
+        "built_at": "2026-10-16T03:34:47.032000+00:00",
+        "note": "Original financial observation dates retained; not a live quote guarantee.",
+        "state": "HIT",
+        "ttl_seconds": 300
+      }
+    },
+    {
+      "ticker": "ORCL",
+      "status": 503,
+      "source": null,
+      "error": "Nonzero preferred equity requires an explicit preferred cost assumption; Yahoo WACC cannot be completed.",
+      "cache": {}
+    }
+  ],
+  "scope": "Staging only, no accounts, research or financial-data writes"
+}

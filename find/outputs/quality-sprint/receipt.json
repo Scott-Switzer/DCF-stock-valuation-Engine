@@ -1,0 +1,54 @@
+{
+  "status": "PASS_STAGING_ONLY",
+  "verified_at": "2026-10-16T03:40:14.130034+00:00",
+  "runtime_commit": "6eb7821332b8d8ecb59e3ed55c59245b41630e23",
+  "staging_worker_version": "2bd50245-0844-480b-9358-07d93ed15614",
+  "tracked_dirty": false,
+  "fix_prs": [
+    56,
+    57
+  ],
+  "ci_run": 38846095730,
+  "tests": {
+    "python_passed": 782,
+    "subtests_passed": 10,
+    "python_versions": [
+      "3.12",
+      "3.13"
+    ],
+    "browser": "PASS",
+    "typescript": "PASS, isolated experimental module only",
+    "workbook": "independent HyperFormula reconciliation PASS"
+  },
+  "production_runtime_unchanged": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+  "production_pointer_sha256": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+  "production_company_count": 237,
+  "candidate_pointer_sha256": "ff7b1b08e6fc459468c07336543bb3b2f4dec9ac469a60a2b8d41ed91d7ad5da",
+  "production_deployed": false,
+  "financial_data_promoted": false,
+  "migrations_applied": false,
+  "new_coverage_claimed": 0,
+  "provider_operations_eliminated_per_matching_sec_first_load": 1,
+  "live_origin_request_reduction": "NOT_ESTABLISHED",
+  "cold_latency_improvement": "NOT_DEMONSTRATED",
+  "evidence": [
+    "confirmed-defects.json",
+    "browser-acceptance.json",
+    "workbook-reconciliation.json",
+    "performance-summary.json",
+    "staging-parity.json",
+    "provider-operation-count.json",
+    "pr56.json",
+    "pr57.json",
+    "merged-ci.json"
+  ],
+  "limitations": [
+    "Combined pointer/service/R2 timing only; no per-transport spans",
+    "Combined Yahoo statements/market timing only",
+    "Six cold observations per staging run; no load/capacity test",
+    "No new issuer coverage or sector methods",
+    "No Microsoft Excel visual acceptance"
+  ],
+  "rollback_scope": "Staging only: uv tool run --from \"uv>=0.12.3\" uv run pywrangler rollback c3eb4c79-ce29-4e5a-984f-e35d377eaa44 --env staging. Verify version history in staging-deployments.json first; no production rollback.",
+  "prior_staging_worker_version": "c3eb4c79-ce29-4e5a-984f-e35d377eaa44"
+}

@@ -1,0 +1,787 @@
+{
+ "base": "https://dcf-valuation-engine.scswitzer.workers.dev",
+ "revision": {
+  "asset_sha256": "a394a135f99c89447c2ebe741cdda97dbe4095fb120a1dc33fff5e4abd920114",
+  "commit": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+  "tracked_dirty": false
+ },
+ "observations": [
+  {
+   "ticker": "PEP",
+   "cond": "cold",
+   "ctx": "reused",
+   "revision": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+   "t0": 2583,
+   "marks": [
+    [
+     "workspace:load-start",
+     2595
+    ],
+    [
+     "workspace:editor-ready:dcf",
+     3020
+    ],
+    [
+     "workspace:load-response",
+     6754
+    ],
+    [
+     "workspace:company-visible",
+     6820
+    ],
+    [
+     "workspace:brief-visible",
+     6821
+    ],
+    [
+     "workspace:method-assembled",
+     6823
+    ],
+    [
+     "workspace:value-visible",
+     6823
+    ],
+    [
+     "workspace:handler-settled",
+     6834
+    ],
+    [
+     "workspace:brief-painted",
+     6835
+    ],
+    [
+     "workspace:value-painted",
+     6835
+    ],
+    [
+     "workspace:brief-visible",
+     7439
+    ],
+    [
+     "workspace:brief-painted",
+     7439
+    ]
+   ],
+   "resources": [
+    {
+     "url": "api/research",
+     "transferSize": 315,
+     "encodedBodySize": 15,
+     "decodedBodySize": 3,
+     "duration": 1207,
+     "startTime": 2510
+    },
+    {
+     "url": "load/dcf",
+     "transferSize": 7754,
+     "encodedBodySize": 7454,
+     "decodedBodySize": 67986,
+     "duration": 4150,
+     "startTime": 2600
+    },
+    {
+     "url": "references/PEP",
+     "transferSize": 756,
+     "encodedBodySize": 456,
+     "decodedBodySize": 744,
+     "duration": 939,
+     "startTime": 6823
+    }
+   ],
+   "loadBody": {
+    "hasBrief": true,
+    "briefBasis": "baseline",
+    "briefBlocked": null,
+    "hasForm": true,
+    "hasBaseDocument": false,
+    "cacheState": "MISS",
+    "stageSeconds": {
+     "brief_inline": 0,
+     "ppe_apply": 0,
+     "preview_inline": 0,
+     "sec_classification": 0,
+     "wacc_model_inputs": 0,
+     "yahoo": 1.378,
+     "zion_packet": 1.212
+    },
+    "statementSource": "Yahoo"
+   },
+   "briefSync": [],
+   "loadStatus": 200,
+   "serverTiming": "zion_packet;dur=1212.0, yahoo;dur=1378.0, ppe_apply;dur=0.0, sec_classification;dur=0.0, wacc_model_inputs;dur=0.0, brief_inline;dur=0.0, preview_inline;dur=0.0, flask;dur=2833.0, cfExtPri",
+   "cfCacheStatus": null,
+   "contentEncoding": "zstd",
+   "contentLength": null
+  },
+  {
+   "ticker": "AAPL",
+   "cond": "cold",
+   "ctx": "reused",
+   "revision": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+   "t0": 227,
+   "marks": [
+    [
+     "workspace:load-start",
+     231
+    ],
+    [
+     "workspace:editor-ready:dcf",
+     275
+    ],
+    [
+     "workspace:load-response",
+     2157
+    ],
+    [
+     "workspace:company-visible",
+     2171
+    ],
+    [
+     "workspace:brief-visible",
+     2172
+    ],
+    [
+     "workspace:method-assembled",
+     2173
+    ],
+    [
+     "workspace:value-visible",
+     2173
+    ],
+    [
+     "workspace:handler-settled",
+     2177
+    ],
+    [
+     "workspace:brief-painted",
+     2179
+    ],
+    [
+     "workspace:value-painted",
+     2179
+    ],
+    [
+     "workspace:brief-visible",
+     2804
+    ],
+    [
+     "workspace:brief-painted",
+     2804
+    ]
+   ],
+   "resources": [
+    {
+     "url": "api/research",
+     "transferSize": 312,
+     "encodedBodySize": 12,
+     "decodedBodySize": 3,
+     "duration": 311,
+     "startTime": 179
+    },
+    {
+     "url": "load/dcf",
+     "transferSize": 11330,
+     "encodedBodySize": 11030,
+     "decodedBodySize": 283456,
+     "duration": 1924,
+     "startTime": 231
+    },
+    {
+     "url": "references/AAPL",
+     "transferSize": 747,
+     "encodedBodySize": 447,
+     "decodedBodySize": 750,
+     "duration": 1319,
+     "startTime": 2173
+    }
+   ],
+   "loadBody": {
+    "hasBrief": true,
+    "briefBasis": "baseline",
+    "briefBlocked": null,
+    "hasForm": true,
+    "hasBaseDocument": false,
+    "cacheState": "MISS",
+    "stageSeconds": {
+     "brief_inline": 0,
+     "ppe_apply": 0,
+     "preview_inline": 0,
+     "sec_classification": 0,
+     "wacc_model_inputs": 0,
+     "yahoo": 0.509,
+     "zion_packet": 0.068
+    },
+    "statementSource": "Yahoo"
+   },
+   "briefSync": [],
+   "loadStatus": 200,
+   "serverTiming": "zion_packet;dur=68.0, yahoo;dur=509.0, ppe_apply;dur=0.0, sec_classification;dur=0.0, wacc_model_inputs;dur=0.0, brief_inline;dur=0.0, preview_inline;dur=0.0, flask;dur=1006.0, cfExtPri",
+   "cfCacheStatus": null,
+   "contentEncoding": "zstd",
+   "contentLength": null
+  },
+  {
+   "ticker": "MSFT",
+   "cond": "cold",
+   "ctx": "reused",
+   "revision": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+   "t0": 226,
+   "marks": [
+    [
+     "workspace:load-start",
+     227
+    ],
+    [
+     "workspace:editor-ready:dcf",
+     275
+    ],
+    [
+     "workspace:load-response",
+     1897
+    ],
+    [
+     "workspace:company-visible",
+     1911
+    ],
+    [
+     "workspace:brief-visible",
+     1912
+    ],
+    [
+     "workspace:method-assembled",
+     1913
+    ],
+    [
+     "workspace:value-visible",
+     1913
+    ],
+    [
+     "workspace:handler-settled",
+     1917
+    ],
+    [
+     "workspace:brief-painted",
+     1918
+    ],
+    [
+     "workspace:value-painted",
+     1918
+    ],
+    [
+     "workspace:brief-visible",
+     2542
+    ],
+    [
+     "workspace:brief-painted",
+     2542
+    ]
+   ],
+   "resources": [
+    {
+     "url": "api/research",
+     "transferSize": 315,
+     "encodedBodySize": 15,
+     "decodedBodySize": 3,
+     "duration": 153,
+     "startTime": 179
+    },
+    {
+     "url": "load/dcf",
+     "transferSize": 10992,
+     "encodedBodySize": 10692,
+     "decodedBodySize": 238105,
+     "duration": 1668,
+     "startTime": 228
+    },
+    {
+     "url": "references/MSFT",
+     "transferSize": 757,
+     "encodedBodySize": 457,
+     "decodedBodySize": 759,
+     "duration": 1017,
+     "startTime": 1913
+    }
+   ],
+   "loadBody": {
+    "hasBrief": true,
+    "briefBasis": "baseline",
+    "briefBlocked": null,
+    "hasForm": true,
+    "hasBaseDocument": false,
+    "cacheState": "MISS",
+    "stageSeconds": {
+     "brief_inline": 0,
+     "ppe_apply": 0,
+     "preview_inline": 0,
+     "sec_classification": 0,
+     "wacc_model_inputs": 0,
+     "yahoo": 0.517,
+     "zion_packet": 0.034
+    },
+    "statementSource": "Yahoo"
+   },
+   "briefSync": [],
+   "loadStatus": 200,
+   "serverTiming": "zion_packet;dur=34.0, yahoo;dur=517.0, ppe_apply;dur=0.0, sec_classification;dur=0.0, wacc_model_inputs;dur=0.0, brief_inline;dur=0.0, preview_inline;dur=0.0, flask;dur=835.0, cfExtPri",
+   "cfCacheStatus": null,
+   "contentEncoding": "zstd",
+   "contentLength": null
+  },
+  {
+   "ticker": "AAPL",
+   "cond": "warm",
+   "ctx": "reused",
+   "revision": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+   "t0": 251,
+   "marks": [
+    [
+     "workspace:load-start",
+     253
+    ],
+    [
+     "workspace:editor-ready:dcf",
+     301
+    ],
+    [
+     "workspace:load-response",
+     421
+    ],
+    [
+     "workspace:company-visible",
+     434
+    ],
+    [
+     "workspace:brief-visible",
+     435
+    ],
+    [
+     "workspace:method-assembled",
+     436
+    ],
+    [
+     "workspace:value-visible",
+     436
+    ],
+    [
+     "workspace:handler-settled",
+     440
+    ],
+    [
+     "workspace:brief-painted",
+     459
+    ],
+    [
+     "workspace:value-painted",
+     459
+    ],
+    [
+     "workspace:brief-visible",
+     1196
+    ],
+    [
+     "workspace:brief-painted",
+     1196
+    ]
+   ],
+   "resources": [
+    {
+     "url": "api/research",
+     "transferSize": 312,
+     "encodedBodySize": 12,
+     "decodedBodySize": 3,
+     "duration": 65,
+     "startTime": 205
+    },
+    {
+     "url": "load/dcf",
+     "transferSize": 11397,
+     "encodedBodySize": 11097,
+     "decodedBodySize": 283613,
+     "duration": 167,
+     "startTime": 253
+    },
+    {
+     "url": "references/AAPL",
+     "transferSize": 0,
+     "encodedBodySize": 447,
+     "decodedBodySize": 750,
+     "duration": 1,
+     "startTime": 436
+    }
+   ],
+   "loadBody": {
+    "hasBrief": true,
+    "briefBasis": "baseline",
+    "briefBlocked": null,
+    "hasForm": true,
+    "hasBaseDocument": false,
+    "cacheState": "HIT",
+    "stageSeconds": {
+     "brief_inline": 0,
+     "ppe_apply": 0,
+     "preview_inline": 0,
+     "sec_classification": 0,
+     "wacc_model_inputs": 0,
+     "yahoo": 0.509,
+     "zion_packet": 0.068
+    },
+    "hitBreakdown": {
+     "copy_seconds": 0,
+     "d1_seconds": 0.075,
+     "digest_seconds": 0,
+     "fetch_seconds": 0.075,
+     "parse_seconds": 0
+    },
+    "statementSource": "Yahoo"
+   },
+   "briefSync": [],
+   "loadStatus": 200,
+   "serverTiming": "d1_seconds;dur=75.0, parse_seconds;dur=0.0, fetch_seconds;dur=75.0, digest_seconds;dur=0.0, copy_seconds;dur=0.0, response_json;dur=0.0, flask;dur=75.0, cfExtPri",
+   "cfCacheStatus": null,
+   "contentEncoding": "zstd",
+   "contentLength": null
+  },
+  {
+   "ticker": "MSFT",
+   "cond": "warm",
+   "ctx": "reused",
+   "revision": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+   "t0": 154,
+   "marks": [
+    [
+     "workspace:load-start",
+     156
+    ],
+    [
+     "workspace:editor-ready:dcf",
+     440
+    ],
+    [
+     "workspace:load-response",
+     751
+    ],
+    [
+     "workspace:company-visible",
+     765
+    ],
+    [
+     "workspace:brief-visible",
+     766
+    ],
+    [
+     "workspace:method-assembled",
+     767
+    ],
+    [
+     "workspace:value-visible",
+     767
+    ],
+    [
+     "workspace:handler-settled",
+     771
+    ],
+    [
+     "workspace:brief-painted",
+     773
+    ],
+    [
+     "workspace:value-painted",
+     773
+    ],
+    [
+     "workspace:brief-visible",
+     1410
+    ],
+    [
+     "workspace:brief-painted",
+     1410
+    ]
+   ],
+   "resources": [
+    {
+     "url": "api/research",
+     "transferSize": 315,
+     "encodedBodySize": 15,
+     "decodedBodySize": 3,
+     "duration": 123,
+     "startTime": 111
+    },
+    {
+     "url": "load/dcf",
+     "transferSize": 11018,
+     "encodedBodySize": 10718,
+     "decodedBodySize": 238262,
+     "duration": 593,
+     "startTime": 156
+    },
+    {
+     "url": "references/MSFT",
+     "transferSize": 0,
+     "encodedBodySize": 457,
+     "decodedBodySize": 759,
+     "duration": 0,
+     "startTime": 767
+    }
+   ],
+   "loadBody": {
+    "hasBrief": true,
+    "briefBasis": "baseline",
+    "briefBlocked": null,
+    "hasForm": true,
+    "hasBaseDocument": false,
+    "cacheState": "HIT",
+    "stageSeconds": {
+     "brief_inline": 0,
+     "ppe_apply": 0,
+     "preview_inline": 0,
+     "sec_classification": 0,
+     "wacc_model_inputs": 0,
+     "yahoo": 0.517,
+     "zion_packet": 0.034
+    },
+    "hitBreakdown": {
+     "copy_seconds": 0,
+     "d1_seconds": 0.112,
+     "digest_seconds": 0,
+     "fetch_seconds": 0.112,
+     "parse_seconds": 0
+    },
+    "statementSource": "Yahoo"
+   },
+   "briefSync": [],
+   "loadStatus": 200,
+   "serverTiming": "d1_seconds;dur=112.0, parse_seconds;dur=0.0, fetch_seconds;dur=112.0, digest_seconds;dur=0.0, copy_seconds;dur=0.0, response_json;dur=0.0, flask;dur=112.0, cfExtPri",
+   "cfCacheStatus": null,
+   "contentEncoding": "zstd",
+   "contentLength": null
+  },
+  {
+   "ticker": "AAPL",
+   "cond": "warm",
+   "ctx": "reused",
+   "revision": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+   "t0": 190,
+   "marks": [
+    [
+     "workspace:load-start",
+     230
+    ],
+    [
+     "workspace:editor-ready:dcf",
+     233
+    ],
+    [
+     "workspace:load-response",
+     408
+    ],
+    [
+     "workspace:company-visible",
+     421
+    ],
+    [
+     "workspace:brief-visible",
+     422
+    ],
+    [
+     "workspace:method-assembled",
+     423
+    ],
+    [
+     "workspace:value-visible",
+     423
+    ],
+    [
+     "workspace:handler-settled",
+     427
+    ],
+    [
+     "workspace:brief-painted",
+     429
+    ],
+    [
+     "workspace:value-painted",
+     429
+    ],
+    [
+     "workspace:brief-visible",
+     1130
+    ],
+    [
+     "workspace:brief-painted",
+     1130
+    ]
+   ],
+   "resources": [
+    {
+     "url": "api/research",
+     "transferSize": 312,
+     "encodedBodySize": 12,
+     "decodedBodySize": 3,
+     "duration": 84,
+     "startTime": 140
+    },
+    {
+     "url": "load/dcf",
+     "transferSize": 11440,
+     "encodedBodySize": 11140,
+     "decodedBodySize": 283610,
+     "duration": 176,
+     "startTime": 230
+    },
+    {
+     "url": "references/AAPL",
+     "transferSize": 0,
+     "encodedBodySize": 447,
+     "decodedBodySize": 750,
+     "duration": 1,
+     "startTime": 423
+    }
+   ],
+   "loadBody": {
+    "hasBrief": true,
+    "briefBasis": "baseline",
+    "briefBlocked": null,
+    "hasForm": true,
+    "hasBaseDocument": false,
+    "cacheState": "HIT",
+    "stageSeconds": {
+     "brief_inline": 0,
+     "ppe_apply": 0,
+     "preview_inline": 0,
+     "sec_classification": 0,
+     "wacc_model_inputs": 0,
+     "yahoo": 0.509,
+     "zion_packet": 0.068
+    },
+    "hitBreakdown": {
+     "copy_seconds": 0,
+     "d1_seconds": 0.07,
+     "digest_seconds": 0,
+     "fetch_seconds": 0.07,
+     "parse_seconds": 0
+    },
+    "statementSource": "Yahoo"
+   },
+   "briefSync": [],
+   "loadStatus": 200,
+   "serverTiming": "d1_seconds;dur=70.0, parse_seconds;dur=0.0, fetch_seconds;dur=70.0, digest_seconds;dur=0.0, copy_seconds;dur=0.0, response_json;dur=0.0, flask;dur=70.0, cfExtPri",
+   "cfCacheStatus": null,
+   "contentEncoding": "zstd",
+   "contentLength": null
+  },
+  {
+   "ticker": "MSFT",
+   "cond": "warm",
+   "ctx": "reused",
+   "revision": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+   "t0": 130,
+   "marks": [
+    [
+     "workspace:load-start",
+     131
+    ],
+    [
+     "workspace:editor-ready:dcf",
+     221
+    ],
+    [
+     "workspace:load-response",
+     394
+    ],
+    [
+     "workspace:company-visible",
+     409
+    ],
+    [
+     "workspace:brief-visible",
+     409
+    ],
+    [
+     "workspace:method-assembled",
+     410
+    ],
+    [
+     "workspace:value-visible",
+     410
+    ],
+    [
+     "workspace:handler-settled",
+     414
+    ],
+    [
+     "workspace:brief-painted",
+     416
+    ],
+    [
+     "workspace:value-painted",
+     416
+    ],
+    [
+     "workspace:brief-visible",
+     972
+    ],
+    [
+     "workspace:brief-painted",
+     972
+    ]
+   ],
+   "resources": [
+    {
+     "url": "api/research",
+     "transferSize": 312,
+     "encodedBodySize": 12,
+     "decodedBodySize": 3,
+     "duration": 72,
+     "startTime": 84
+    },
+    {
+     "url": "load/dcf",
+     "transferSize": 11001,
+     "encodedBodySize": 10701,
+     "decodedBodySize": 238262,
+     "duration": 262,
+     "startTime": 131
+    },
+    {
+     "url": "references/MSFT",
+     "transferSize": 0,
+     "encodedBodySize": 457,
+     "decodedBodySize": 759,
+     "duration": 0,
+     "startTime": 410
+    }
+   ],
+   "loadBody": {
+    "hasBrief": true,
+    "briefBasis": "baseline",
+    "briefBlocked": null,
+    "hasForm": true,
+    "hasBaseDocument": false,
+    "cacheState": "HIT",
+    "stageSeconds": {
+     "brief_inline": 0,
+     "ppe_apply": 0,
+     "preview_inline": 0,
+     "sec_classification": 0,
+     "wacc_model_inputs": 0,
+     "yahoo": 0.517,
+     "zion_packet": 0.034
+    },
+    "hitBreakdown": {
+     "copy_seconds": 0,
+     "d1_seconds": 0.061,
+     "digest_seconds": 0,
+     "fetch_seconds": 0.061,
+     "parse_seconds": 0
+    },
+    "statementSource": "Yahoo"
+   },
+   "briefSync": [],
+   "loadStatus": 200,
+   "serverTiming": "d1_seconds;dur=61.0, parse_seconds;dur=0.0, fetch_seconds;dur=61.0, digest_seconds;dur=0.0, copy_seconds;dur=0.0, response_json;dur=0.0, flask;dur=61.0, cfExtPri",
+   "cfCacheStatus": null,
+   "contentEncoding": "zstd",
+   "contentLength": null
+  }
+ ]
+}
