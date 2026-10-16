@@ -1,14 +1,309 @@
 {
+  "schema_version": 2,
+  "recorded_at": "2026-10-15T18:45:01.460803-07:00",
+  "decision": "GO_FOR_CODE_ONLY_PRODUCTION_APPROVAL",
+  "production_approval_required": true,
+  "release_sha": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+  "release_sha_status": "Merged, CI passed, deployed and verified on staging; immutable runtime target",
   "base_sha": "655aa2f669496d47235325a1b129b0c698019bd7",
-  "base_prs_merged": [49, 50, 51, 52],
-  "release_sha": null,
-  "release_sha_status": "PENDING: fix-PR unmerged; record merge commit here post-merge without editing docs/production-release-candidate.md",
-  "fix_branch_changes": ["auto_loading.py", "tests/test_tax_integration.py", "docs/production-release-candidate.md"],
-  "tests": {"full_suite": "771 passed, 10 subtests (local, .venv Python 3.12.3)", "ruff": "clean", "worker_bundle": "2 passed", "new_regression": "test_auto_loading_tax_only_gate_uses_sec_first_with_explicit_policy PASS", "ci": "green through #52; rerun required on merge SHA"},
-  "staging": {"health_commit": "655aa2f669496d47235325a1b129b0c698019bd7", "tracked_dirty": false, "worker_version": "a5bd33fe-363c-4524-afc2-de61dc593a9f", "deployment": "5a868b60-fe6f-4bd1-a93e-277c081181a2", "cache_recheck": "AAPL MISS then HIT; explicit tax_scenario BYPASSED/normalized_scenario"},
-  "production": {"health_commit": "d1008a06b7c787b050d851335f9f4c67620ee83b", "tracked_dirty": false, "worker_version": "137718bd-49f6-4c12-ae03-9776e01e7cfc", "deployment": "483c91e5-12f3-4f26-b73a-8cf87b7dfb35", "prior_rollback_deployment": "509af4c8-6245-4ae4-b8aa-5b453358c5d5", "prior_rollback_version": "3433224f-68f1-4d97-abd2-fcf2f33d8e6f", "smoke": "scripts/smoke_public.py 7/7 PASS"},
-  "production_command": "wrangler deploy",
+  "tax_fix": {
+    "commit": "e89956eae702eea4c4449d08c6c81f852cd32017",
+    "delivery": "Already directly pushed to main before this review; no fix PR existed",
+    "ci_url": "https://github.com/Scott-Switzer/DCF-stock-valuation-Engine/actions/runs/38834962452"
+  },
+  "release_control_pr": {
+    "number": 53,
+    "url": "https://github.com/Scott-Switzer/DCF-stock-valuation-Engine/pull/53",
+    "status": "MERGED",
+    "scope": "Release instructions only; no application code changes",
+    "head_ci_url": "https://github.com/Scott-Switzer/DCF-stock-valuation-Engine/actions/runs/38836374538"
+  },
+  "ci": {
+    "commit": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+    "url": "https://github.com/Scott-Switzer/DCF-stock-valuation-Engine/actions/runs/38836488842",
+    "jobs": [
+      {
+        "name": "test (3.13)",
+        "conclusion": "success",
+        "url": "https://github.com/Scott-Switzer/DCF-stock-valuation-Engine/actions/runs/38836488842/job/116766686491"
+      },
+      {
+        "name": "test (3.12)",
+        "conclusion": "success",
+        "url": "https://github.com/Scott-Switzer/DCF-stock-valuation-Engine/actions/runs/38836488842/job/116766686694"
+      }
+    ]
+  },
+  "tests": {
+    "merged_full_suite": {
+      "passed": 771,
+      "subtests_passed": 10,
+      "warnings": 1
+    },
+    "ruff": "PASS",
+    "bundle_and_staging_dry_run": "PASS",
+    "tax_end_to_end": {
+      "commit": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+      "scope": "Local real application pipeline on merged source, synthetic packet and market fixtures; no staging packet publication",
+      "cases": [
+        {
+          "case": "valid_scenario",
+          "status": "PASS",
+          "http": 200,
+          "source": "SEC-first",
+          "cache": "BYPASSED",
+          "signed_history_preserved": true,
+          "yahoo_annual_statement_requests": 0
+        },
+        {
+          "case": "valid_override",
+          "status": "PASS",
+          "http": 200,
+          "source": "SEC-first",
+          "cache": "BYPASSED",
+          "signed_history_preserved": true,
+          "yahoo_annual_statement_requests": 0
+        },
+        {
+          "case": "missing_policy",
+          "status": "PASS",
+          "http": 503
+        },
+        {
+          "case": "invalid_length",
+          "status": "PASS",
+          "http": 400
+        },
+        {
+          "case": "missing_evidence",
+          "status": "PASS",
+          "http": 400
+        },
+        {
+          "case": "invalid_rate",
+          "status": "PASS",
+          "http": 400
+        },
+        {
+          "case": "unrelated_gate_failure",
+          "status": "PASS",
+          "http": 503
+        }
+      ],
+      "note": "Missing policy and unrelated failures cannot take SEC-first; normal supported Yahoo fallback remains permitted. Here fallback deliberately refuses to prove the SEC gate stays closed."
+    },
+    "staging_live_tax": [
+      {
+        "case": "sec_explicit_scenario",
+        "status": "PASS",
+        "http": 200,
+        "cache": "BYPASSED",
+        "source": "SEC-first",
+        "history_unchanged": true
+      },
+      {
+        "case": "yahoo_explicit_override",
+        "status": "PASS",
+        "http": 200,
+        "cache": "BYPASSED",
+        "source": "Yahoo",
+        "history_unchanged": true
+      },
+      {
+        "case": "invalid_override",
+        "status": "PASS",
+        "http": 400
+      },
+      {
+        "case": "missing_evidence",
+        "status": "PASS",
+        "http": 400
+      }
+    ],
+    "default_parity": [
+      {
+        "ticker": "CAT",
+        "status": "PASS",
+        "source": "SEC-first",
+        "intrinsic_before": 212.97376960849525,
+        "intrinsic_after": 212.97376960849525,
+        "historical_bridge_and_form_equal": true
+      },
+      {
+        "ticker": "PEP",
+        "status": "PASS",
+        "source": "SEC-first",
+        "intrinsic_before": 169.82047141406636,
+        "intrinsic_after": 169.82047141406636,
+        "historical_bridge_and_form_equal": true
+      },
+      {
+        "ticker": "T",
+        "status": "PASS",
+        "source": "SEC-first",
+        "intrinsic_before": 76.20023428463007,
+        "intrinsic_after": 76.20023428463007,
+        "historical_bridge_and_form_equal": true
+      },
+      {
+        "ticker": "PAYX",
+        "status": "PASS",
+        "source": "SEC-first",
+        "intrinsic_before": 88.05935164855686,
+        "intrinsic_after": 88.05935164855686,
+        "historical_bridge_and_form_equal": true
+      },
+      {
+        "ticker": "ORCL",
+        "status": "PASS",
+        "http": 503,
+        "error": "Nonzero preferred equity requires an explicit preferred cost assumption; Yahoo WACC cannot be completed."
+      },
+      {
+        "ticker": "AAPL",
+        "status": "PASS",
+        "source": "Yahoo",
+        "intrinsic_before": 93.56334348296443,
+        "intrinsic_after": 93.56334348296443,
+        "historical_bridge_and_form_equal": true
+      }
+    ],
+    "staging_smoke": {
+      "base": "https://dcf-valuation-engine-staging.scswitzer.workers.dev",
+      "results": [
+        {
+          "check": "health",
+          "seconds": 0.175,
+          "release": {
+            "commit": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+            "tracked_dirty": false,
+            "asset_sha256": "a394a135f99c89447c2ebe741cdda97dbe4095fb120a1dc33fff5e4abd920114"
+          },
+          "status": "PASS"
+        },
+        {
+          "check": "readiness",
+          "seconds": 1.106,
+          "status": "PASS"
+        },
+        {
+          "check": "providers",
+          "seconds": 1.491,
+          "status": "PASS"
+        },
+        {
+          "check": "ticker_search",
+          "seconds": 0.251,
+          "status": "PASS"
+        },
+        {
+          "check": "sample",
+          "seconds": 1.407,
+          "status": "PASS"
+        },
+        {
+          "check": "non_saving_preview",
+          "seconds": 0.261,
+          "status": "PASS"
+        },
+        {
+          "check": "json_export",
+          "seconds": 0.147,
+          "status": "PASS"
+        }
+      ]
+    }
+  },
+  "staging": {
+    "url": "https://dcf-valuation-engine-staging.scswitzer.workers.dev",
+    "health": {
+      "model": "cuig-dcf-v1",
+      "release": {
+        "asset_sha256": "a394a135f99c89447c2ebe741cdda97dbe4095fb120a1dc33fff5e4abd920114",
+        "commit": "bdca36455c6159cc698f664d10af8d79dbd8e394",
+        "tracked_dirty": false
+      },
+      "status": "healthy"
+    },
+    "worker_version": "c3eb4c79-ce29-4e5a-984f-e35d377eaa44",
+    "deployment": "25b91fd9-400c-499a-a481-94e4983e203d",
+    "command_executed": "uv tool run --from 'uv>=0.12.3' uv run pywrangler deploy --env staging --keep-vars"
+  },
+  "production": {
+    "health_before": {
+      "model": "cuig-dcf-v1",
+      "release": {
+        "asset_sha256": "8b2e8c692ec62b27c607d0af4c444dfbc46278748af066e104ad6e6a5f3c5b8e",
+        "commit": "d1008a06b7c787b050d851335f9f4c67620ee83b",
+        "tracked_dirty": false
+      },
+      "status": "healthy"
+    },
+    "health_after": {
+      "model": "cuig-dcf-v1",
+      "release": {
+        "asset_sha256": "8b2e8c692ec62b27c607d0af4c444dfbc46278748af066e104ad6e6a5f3c5b8e",
+        "commit": "d1008a06b7c787b050d851335f9f4c67620ee83b",
+        "tracked_dirty": false
+      },
+      "status": "healthy"
+    },
+    "worker_version": "137718bd-49f6-4c12-ae03-9776e01e7cfc",
+    "deployment": "483c91e5-12f3-4f26-b73a-8cf87b7dfb35",
+    "deployment_history_unchanged": true,
+    "worker_deployed": false,
+    "d1_writes_or_migrations_performed": false,
+    "test_accounts_created": false,
+    "packet_promotion_performed": false
+  },
+  "pointers": {
+    "production": {
+      "raw_sha256_before": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+      "raw_sha256_after": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1",
+      "byte_identical": true,
+      "company_count": 237
+    },
+    "candidate": {
+      "raw_sha256_before": "ff7b1b08e6fc459468c07336543bb3b2f4dec9ac469a60a2b8d41ed91d7ad5da",
+      "raw_sha256_after": "ff7b1b08e6fc459468c07336543bb3b2f4dec9ac469a60a2b8d41ed91d7ad5da",
+      "byte_identical": true,
+      "company_count": 5
+    }
+  },
+  "production_command": "uv tool run --from 'uv>=0.12.3' uv run pywrangler deploy --keep-vars",
   "production_command_executed": false,
-  "pointers": {"production_CURRENT_sha256": "ecf1e1c4b56936bc6af7fd93fe1bccadc41b7c6885f5e07c661dec5a93c7b5c1", "production_CURRENT_companies": 237, "candidate_staging_sha256": "ff7b1b08e6fc459468c07336543bb3b2f4dec9ac469a60a2b8d41ed91d7ad5da", "candidate_staging_companies": ["CAT", "ORCL", "PAYX", "PEP", "T"]},
-  "decision": "code-only GO subject to post-merge staging redeploy + health check (separate approval; production NOT deployed)"
+  "deployment_instructions": [
+    "Obtain explicit user production approval.",
+    "Read release_sha from this completed receipt before checking out the immutable runtime commit.",
+    "Verify production health/version, raw CURRENT.json digest and bindings still match this receipt; abort on drift.",
+    "Use a clean checkout of release_sha and verify git rev-parse HEAD matches it. Do not deploy the later receipt-only commit.",
+    "Run production_command without any --env flag only after approval. Never promote the candidate pointer or run D1 migrations.",
+    "Verify production /health exact SHA and tracked_dirty:false, and non-saving smoke with production-source securities."
+  ],
+  "rollback_instructions": {
+    "code_command": "wrangler rollback 137718bd-49f6-4c12-ae03-9776e01e7cfc --name dcf-valuation-engine",
+    "approval_required": true,
+    "data": "No data changes in this release; production CURRENT.json must remain byte-identical."
+  },
+  "limitations": [
+    "Tax-only negative-latest-ETR route is verified on exact merged code through the real Flask/cache/automatic/SEC-first pipeline with synthetic packet and market fixtures. No synthetic packet was published to staging.",
+    "Live staging verifies normal SEC-first explicit scenario and Yahoo override, unchanged history, cache bypass and invalid-input rejection. Zero Yahoo annual calls for the tax-only synthetic edge is established by the local fixture call log, not live outbound tracing.",
+    "Missing policy or unrelated eligibility failures block SEC-first; legitimate Yahoo fallback remains permitted.",
+    "No production account cycle, production deployment or candidate financial-data promotion performed.",
+    "Final receipt is a separate evidence-only commit; the release SHA remains pinned to the tested runtime."
+  ],
+  "operator_incidents": [
+    "Local disk exhaustion interrupted initial live-tax evidence write; retry completed. No user files deleted.",
+    "Initial operator harness expected 400 for deliberately blocked Yahoo fallback; application correctly returns ProviderError as 503. Corrected harness expectation without changing application code."
+  ],
+  "local_evidence_directory": "/Users/scottthomasswitzer/Documents/Codex/2026-10-06/find/outputs/release-readiness/final",
+  "evidence_sha256": {
+    "merged-tests.log": "ed7744f6fefb30beb8e21f1608d92462ef8c5defa21245de4444261d2f19e15c",
+    "merged-ci.json": "32cc16df77f876fddd6750abaa279958e0e09cf2905b4f0e2188eda6e6073a2e",
+    "tax-end-to-end.json": "078edcaf1ae107ea7b3f9ae4e6b3be7e21ad761895379cfc7b75accdfc22c0be",
+    "default-parity.json": "6689478f017bf6ac3b9494640ca103d4dfebda31e709cd7c73b395ccd7d432fc",
+    "live-tax-checks.json": "e7c70b758a1f6f454f64eeaaa3053decdbaae15afd9a09993bec641991108519",
+    "staging-smoke.json": "b6ebf0e08a591084f45fa935b19bc5d4f26ecc3dc96533f70c9a800480b58c4f",
+    "staging-deploy.log": "942a6db969bf3931956b2af43411aaee33e37fb2f33bdced9c37ee5844565452"
+  }
 }
