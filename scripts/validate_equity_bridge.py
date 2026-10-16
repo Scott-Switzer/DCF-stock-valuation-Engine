@@ -17,7 +17,7 @@ checks the things a bridge gets wrong quietly:
     python3 scripts/validate_equity_bridge.py --output artifacts/validation/equity-bridge.json
 """
 import argparse
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal, localcontext
 import json
 import os
@@ -26,7 +26,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts.public_sec_equity_bridge import MAX_AGE_DAYS, pit_instant  # noqa: E402
+from scripts.public_sec_equity_bridge import pit_instant  # noqa: E402
 
 COMPANIES = (('AAPL', '0000320193'), ('MSFT', '0000789019'), ('GOOGL', '0001652044'))
 DEFAULT_ZION_SRC = ('/Users/scottthomasswitzer/Documents/zion-valuation-service'
@@ -85,7 +85,6 @@ def main():
         claims = contract['claims']
 
         # 1. Each bridge claim, and whether the contract's number is the filing's number.
-        components = {}
         for name in DEDUCTIBLE + ADDED:
             documented = claims[name]['value_decimal']
             reported = [r for r in (row(facts, source['concept'].split(':', 1)[1])

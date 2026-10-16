@@ -14,12 +14,10 @@ Validates:
 from datetime import datetime, timezone
 from decimal import Decimal
 import json as jsonlib
-from pathlib import Path
 import pytest
 
 from bottom_up_capm import (
     apply_cash_adjustment,
-    compute_bottom_up_capm,
     relever_beta,
     resolve_capital_structure,
     resolve_erp,

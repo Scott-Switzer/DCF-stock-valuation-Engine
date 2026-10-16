@@ -20,9 +20,11 @@ passing run is evidence about the deployment, not about a local double:
 Nothing is written outside the named output file.
 """
 import argparse
+from datetime import datetime, timezone
 import http.cookiejar
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -80,6 +82,12 @@ def call(base, op, path, body=None, headers=None):
     if data is not None:
         head['Content-Type'] = 'application/json'
     head.update(headers or {})
+    if data is None:
+        # The staging environment enables the platform cache, so a plain probe can answer with
+        # the revision that was live when the entry was stored: a receipt read that way named
+        # the previous commit minutes after a successful deploy. Every read probe is therefore
+        # cache-busted, which is what makes the recorded revision the revision actually served.
+        path += ('&' if '?' in path else '?') + 'cache_bust=' + str(time.time_ns())
     request = urllib.request.Request(base + path, data=data, headers=head,
                                      method='POST' if data else 'GET')
     try:
@@ -101,16 +109,30 @@ def record(name, status, detail, ok=None):
     print('%-42s %-4s %s' % (name, status, json.dumps(detail, sort_keys=True, default=str)[:280]))
 
 
+def selection_mode(valuation_date):
+    """`current` is only meaningful for a valuation dated the runtime's current UTC day.
+
+    The engine refuses a selection that says "use the newest release" while the valuation is
+    dated in the past, and that guard compares the valuation date with the wall clock, so a
+    fixed valuation date would pass on the day it was pinned and fail on every later day. A
+    valuation dated before today is a reproduction of a past date against an explicitly pinned
+    release, which is exactly what `historical` expresses; the release pin is unchanged.
+    """
+    return ('current' if valuation_date == datetime.now(timezone.utc).date().isoformat()
+            else 'historical')
+
+
 def payload(ticker, financials, valuation_date):
     """The bridge request the engine sends: attested bundle, pinned assumptions, cutoff."""
     verification = json.loads((ARTIFACTS / f'{ticker}-enterprise-verification.json').read_bytes())
     result = verification['result']
     analyst = result['analyst_assumptions']
+    mode = selection_mode(valuation_date)
     selections = {}
     for target in (result['benchmark_assumptions'] or {}):
         release_id, measure = PUBLISHED[target]
         selections[target] = dict(release_id=release_id, subject=SUBJECT[ticker], measure=measure,
-                                  mode='current', source='zion')
+                                  mode=mode, source='zion')
     body = dict(ticker=ticker, cik=CIK[ticker], valuation_date=valuation_date,
                 source_asof=EVIDENCE_CUTOFF, financials=financials,
                 benchmark_selections=selections,
@@ -129,12 +151,25 @@ def main():
     parser.add_argument('--output', type=Path)
     parser.add_argument('--financial-asof', default=EVIDENCE_CUTOFF)
     parser.add_argument('--valuation-date', default='2026-10-15')
+    parser.add_argument('--expected-commit',
+                        help='fail unless /health reports this revision, so a receipt names '
+                             'the revision it actually exercised')
     args = parser.parse_args()
     base = args.base.rstrip('/')
     op = opener()
 
+    revision = None
     for path, name in (('/health', 'health'), ('/ready', 'ready')):
         status, body, _, raw = call(base, op, path)
+        if name == 'health' and isinstance(body, dict):
+            revision = (body.get('release') or {}).get('commit')
+        if name == 'health' and args.expected_commit:
+            served = (body or {}).get('release', {}).get('commit') if isinstance(body, dict) else None
+            record(name, status, dict((body if isinstance(body, dict) else {"raw": raw[:160]}),
+                                      expected_commit=args.expected_commit,
+                                      commit_matches=(served == args.expected_commit)),
+                   ok=(status == 200 and served == args.expected_commit))
+            continue
         record(name, status, body if isinstance(body, dict) else raw[:160])
     status, body, _, raw = call(base, op, '/api/equity-claims/status')
     record('claims_status', status, body if isinstance(body, dict) else raw[:200])
@@ -226,8 +261,11 @@ def main():
 
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(json.dumps(dict(base=base, results=RESULTS), indent=1,
-                                          sort_keys=True, default=str) + '\n')
+        args.output.write_text(json.dumps(
+            dict(base=base, revision=revision, valuation_date=args.valuation_date,
+                 selection_mode=selection_mode(args.valuation_date),
+                 evidence_cutoff=EVIDENCE_CUTOFF, results=RESULTS),
+            indent=1, sort_keys=True, default=str) + '\n')
     failures = {k: v['detail'] for k, v in RESULTS.items() if not v['ok']}
     print('\nchecks: %d  failures: %d' % (len(RESULTS), len(failures)))
     if failures:

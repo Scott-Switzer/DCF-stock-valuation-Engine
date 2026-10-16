@@ -8,7 +8,6 @@ with Decimal arithmetic, not by calling the implementation against itself.
 """
 
 from decimal import Decimal, getcontext
-import math
 import pytest
 
 from fcfe_valuation import fcfe_value

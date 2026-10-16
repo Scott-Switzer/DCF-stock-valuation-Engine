@@ -62,7 +62,6 @@ Key financial & mathematical rules enforced here:
 from __future__ import annotations
 
 from copy import deepcopy
-import math
 from dcf_code import number
 
 SCHEMA_VERSION = "dcf-bottom-up-capm-v1"
