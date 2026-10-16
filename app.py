@@ -981,7 +981,7 @@ def calculate_fcfe_api():
             projections,
             cost_of_equity=ke,
             terminal_growth=a.terminal_growth_rate,
-            shares=d.diluted_shares,
+            shares=d.shares_outstanding,
             net_borrowing=raw.get('net_borrowing'),
             market_price=d.stock_price,
         )
@@ -995,6 +995,109 @@ def calculate_fcfe_api():
             'FCFE depends on an explicit financing policy; changing net borrowing changes equity value.',
             'The terminal value applies Gordon growth to final-year FCFE and is unstable near cost of equity.',
             'Equity value from FCFE is not comparable line-for-line with enterprise values from FCFF.',
+        ]
+        return jsonify(result)
+    except (ValueError, KeyError, TypeError) as exc:
+        return jsonify(error=str(exc)), 400
+
+
+@app.post('/api/calculate/apv')
+def calculate_apv_api():
+    """Adjusted Present Value: unlevered firm value + PV(tax shields) - PV(distress costs).
+
+    All financing assumptions are explicit. The shield discount convention is
+    required because the risk of tax shields depends on the financing policy.
+    Distress costs enter only through explicit scenarios; without them the result
+    is labeled DISTRESS_EXCLUDED_BY_ASSUMPTION rather than implied complete.
+    """
+    try:
+        from apv_valuation import apv_value
+
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict):
+            raise ValueError('Send financials, assumptions and explicit APV inputs.')
+        doc, a = payload()
+        d = parse_document(doc, minority_may_be_negative=True)
+        projections = DCFModel(d, a).forecast_cash_flows()
+        costs = (doc.get('source') or {}).get('capital_costs') or {}
+        rho_u = raw.get('unlevered_cost_of_capital', costs.get('unlevered_cost_of_capital'))
+        if rho_u is None:
+            raise ValueError(
+                'An explicit unlevered_cost_of_capital is required; APV never silently '
+                'substitutes WACC for the unlevered discount rate.'
+            )
+        result = apv_value(
+            projections,
+            unlevered_cost_of_capital=rho_u,
+            terminal_growth=a.terminal_growth_rate,
+            tax_rate=(a.tax_rates or [d.effective_tax_rate[-1]])[-1],
+            debt_schedule=raw.get('debt_schedule'),
+            cost_of_debt=raw.get('cost_of_debt'),
+            shield_discount_convention=raw.get('shield_discount_convention'),
+            terminal_shield_policy=raw.get('terminal_shield_policy', 'debt_repaid'),
+            distress_scenarios=raw.get('distress_scenarios'),
+        )
+        result['assumptions'] = asdict(a)
+        result['model_limitations'] = [
+            'APV values the operating firm (enterprise basis); the equity bridge is applied separately.',
+            'Tax shields depend on the debt schedule and usable deductions; limited taxable income defers deductions.',
+            'Distress costs require explicit scenarios; without them the APV is incomplete by assumption.',
+        ]
+        return jsonify(result)
+    except (ValueError, KeyError, TypeError) as exc:
+        return jsonify(error=str(exc)), 400
+
+
+@app.post('/api/calculate/bank-excess-return')
+def calculate_bank_excess_return_api():
+    """Bank / financial-institution equity valuation via excess returns over book capital.
+
+    Dedicated lane for financial firms: no FCFF/WACC enterprise machinery, no
+    fabricated FDIC fields. Credit provisions enter only as explicit schedules;
+    regulatory capital constraints and metadata are carried, never imputed.
+    """
+    try:
+        from bank_excess_return import bank_excess_return_value
+
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict) or not isinstance(raw.get("financials"), dict):
+            raise ValueError('Send financials and explicit bank excess-return inputs.')
+        doc = deepcopy(raw["financials"])
+        # Financial firms are this lane's domain: skip the FCFF operating gate
+        # while keeping every structural, currency and provenance check.
+        parse_document(doc, minority_may_be_negative=True, allow_financial=True)
+        costs = (doc.get('source') or {}).get('capital_costs') or {}
+        ke = raw.get('cost_of_equity', costs.get('cost_of_equity'))
+        if ke is None:
+            raise ValueError(
+                'A cost of equity is required for equity excess returns; it is never '
+                'substituted from WACC.'
+            )
+        result = bank_excess_return_value(
+            raw.get('net_income'),
+            opening_book=(raw.get('opening_book')
+                          if raw.get('opening_book') is not None
+                          else doc['historical'][-1]['book_value']),
+            cost_of_equity=ke,
+            terminal_growth=raw.get('terminal_growth', 0.02),
+            shares=doc['market']['diluted_shares'],
+            payout_ratio=raw.get('payout_ratio', 0.0),
+            equity_basis=raw.get('equity_basis', 'TANGIBLE_COMMON'),
+            intangible_assets=raw.get('intangible_assets'),
+            credit_provision_drag=raw.get('credit_provision_drag'),
+            minimum_retention=raw.get('minimum_retention'),
+            regulatory_capital=raw.get('regulatory_capital'),
+            allow_unsustainable_terminal_growth=raw.get('allow_unsustainable_terminal_growth', False),
+        )
+        result['cost_of_equity_source'] = (
+            raw.get('cost_of_equity_source', 'explicit')
+            if 'cost_of_equity' in raw
+            else 'snapshot_capital_costs'
+        )
+        result['model_limitations'] = [
+            'Equity excess returns require clean surplus and a positive tangible book base.',
+            'Stock issuance, buybacks and preferred actions are outside the forecast horizon.',
+            'FDIC provision-for-credit-losses data is unavailable in the verified pilot and is never imputed.',
         ]
         return jsonify(result)
     except (ValueError, KeyError, TypeError) as exc:

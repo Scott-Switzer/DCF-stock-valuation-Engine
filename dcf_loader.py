@@ -58,10 +58,15 @@ def iso_date(value, label):
         raise ValueError(f"{label} requires a valid ISO date (YYYY-MM-DD).") from None
 
 
-def eligibility(company):
+def eligibility(company, *, allow_financial=False):
+    """FCFF operating-company gate. Equity-only consumers (bank excess returns,
+    residual income) pass ``allow_financial=True``: they value financial firms
+    by design and enforce their own applicability rules."""
     text = " ".join(
         str(company.get(k, "")) for k in ["sector", "industry", "security_type"]
     ).lower()
+    if allow_financial:
+        return
     if company.get("eligible") is not True or any(
         x in text
         for x in [
@@ -96,12 +101,15 @@ def typed_number(value, label):
     return number(value, label)
 
 
-def parse_document(doc, *, minority_may_be_negative=False):
+def parse_document(doc, *, minority_may_be_negative=False, allow_financial=False):
     """Validate a financial document.
 
     The default is strict for FCFF DCF and EV-based methods. Equity-only callers
     (P/E, P/B) pass ``minority_may_be_negative=True`` to keep a reported negative
-    noncontrolling interest unchanged.
+    noncontrolling interest unchanged. Consumers that value financial firms by
+    design (bank excess returns, residual income projections) additionally pass
+    ``allow_financial=True`` to skip the FCFF operating-company gate while keeping
+    every structural, currency, units and provenance check.
     """
     if not isinstance(doc, dict) or doc.get("schema_version") != SCHEMA:
         raise ValueError(f"Financial document must use {SCHEMA}.")
@@ -110,7 +118,7 @@ def parse_document(doc, *, minority_may_be_negative=False):
             raise ValueError(f"Missing {section} section.")
     company, market, bridge, source = (doc[k] for k in ["company", "market", "bridge", "source"])
     symbol = ticker_symbol(company.get("ticker"))
-    eligibility(company)
+    eligibility(company, allow_financial=allow_financial)
     asof = iso_date(doc.get("valuation_date"), "Valuation date")
     if asof > datetime.now(timezone.utc).date():
         raise ValueError("Valuation date cannot be in the future.")

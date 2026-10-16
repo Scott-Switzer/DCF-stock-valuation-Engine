@@ -75,7 +75,11 @@ def football_field(ticker, asof=None, dcf_assumptions=None, snapshot=None, http=
 
     symbol = ticker_symbol(ticker)
     if snapshot is not None:
-        parse_document(snapshot, minority_may_be_negative=True)
+        # The comparison page serves financial issuers too (equity multiples,
+        # residual income, bank excess returns); each lane enforces its own
+        # applicability, so intake keeps structural checks but skips the
+        # FCFF operating-company gate.
+        parse_document(snapshot, minority_may_be_negative=True, allow_financial=True)
         if snapshot["company"]["ticker"] != symbol:
             raise ValueError("Workspace snapshot ticker does not match.")
     dcf_kwargs = {"http": http}
@@ -169,7 +173,8 @@ def football_field(ticker, asof=None, dcf_assumptions=None, snapshot=None, http=
         # Earnings projections do not require an FCFF enterprise valuation.
         # In particular, financial firms can use residual income while DCF is blocked.
         projections = DCFModel(
-            parse_document(doc, minority_may_be_negative=True), deepcopy(dcf_assumptions)
+            parse_document(doc, minority_may_be_negative=True, allow_financial=True),
+            deepcopy(dcf_assumptions),
         ).forecast_cash_flows()
         cost_of_equity = costs.get("cost_of_equity")
         if not isinstance(cost_of_equity, (int, float)):
@@ -207,6 +212,65 @@ def football_field(ticker, asof=None, dcf_assumptions=None, snapshot=None, http=
                 "value": None,
                 "detail": str(exc),
                 "warnings": [],
+            }
+        )
+    # Bank / financial-institution excess-return lane: dedicated equity model,
+    # explicitly gated on issuer type. Industrial FCFF/WACC machinery is never
+    # applied to banks; non-financial issuers get the exclusion reason, not a zero.
+    try:
+        financial_reason = financial_block_reason(doc)
+        if not financial_reason:
+            raise ValueError(
+                "Excluded: the bank excess-return lane applies to financial institutions; "
+                "use DCF/FCFE for operating companies."
+            )
+        from bank_excess_return import bank_excess_return_value
+
+        bank_ke = costs.get("cost_of_equity")
+        if not isinstance(bank_ke, (int, float)):
+            raise ValueError(
+                "Cost of equity is unavailable from the loaded capital-cost inputs."
+            )
+        bank_projections = DCFModel(
+            parse_document(deepcopy(doc), minority_may_be_negative=True, allow_financial=True),
+            deepcopy(dcf_assumptions),
+        ).forecast_cash_flows()
+        dividend = (doc["source"].get("common_dividends") or {}).get("value")
+        bank_ni = doc["historical"][-1]["net_income"]
+        bank_payout = 0.0
+        if isinstance(dividend, (int, float)) and dividend > 0 and bank_ni > 0:
+            bank_payout = min(1.0, max(0.0, dividend / bank_ni))
+        bank = bank_excess_return_value(
+            [row["Net Income"] for row in bank_projections],
+            opening_book=doc["historical"][-1]["book_value"],
+            cost_of_equity=bank_ke,
+            terminal_growth=dcf_assumptions.terminal_growth_rate,
+            shares=doc["market"]["diluted_shares"],
+            payout_ratio=bank_payout,
+            equity_basis="TOTAL_BOOK",
+        )
+        lanes.append(
+            {
+                "method": "bank",
+                "label": "Bank excess return (today)",
+                "value": bank["intrinsic_value"],
+                "detail": (
+                    f"Cost of equity {bank_ke:.1%}, payout {bank_payout:.0%}, "
+                    "equity excess returns over book capital (total-book basis)"
+                ),
+                "warnings": bank["warnings"][:1],
+                "basis": "equity",
+            }
+        )
+    except (ValueError, KeyError, TypeError) as exc:
+        lanes.append(
+            {
+                "method": "bank",
+                "label": "Bank excess return",
+                "value": None,
+                "detail": str(exc),
+                "warnings": [],
+                "basis": "equity",
             }
         )
     try:
@@ -253,6 +317,74 @@ def football_field(ticker, asof=None, dcf_assumptions=None, snapshot=None, http=
                 "detail": str(exc),
                 "warnings": [],
                 "basis": "equity",
+            }
+        )
+    try:
+        from apv_valuation import apv_value
+
+        wacc_loaded = costs.get("wacc")
+        kd_loaded = costs.get("cost_of_debt")
+        total_debt = doc["bridge"]["short_term_debt"] + doc["bridge"]["long_term_debt"]
+        if not isinstance(wacc_loaded, (int, float)):
+            raise ValueError(
+                "WACC is unavailable from the loaded capital-cost inputs; APV needs a "
+                "documented unlevered cost of capital."
+            )
+        tax_rate = dcf_assumptions.tax_rates[-1] if dcf_assumptions.tax_rates else doc["historical"][-1]["tax_rate"]
+        market_equity = doc["market"]["price"] * doc["market"]["diluted_shares"]
+        # Implied unlevered cost of capital under the fixed-debt MM identity
+        # WACC = rho_u * (1 - T*D/V); inverted here with the market-value structure.
+        value_weight = market_equity + total_debt
+        shield_drag = tax_rate * total_debt / value_weight if value_weight > 0 else 0.0
+        rho_u = wacc_loaded / (1.0 - shield_drag) if shield_drag < 1 else None
+        if rho_u is None:
+            raise ValueError("The capital structure implies no positive unlevered cost of capital.")
+        apv_projections = DCFModel(
+            parse_document(deepcopy(doc), minority_may_be_negative=True),
+            deepcopy(dcf_assumptions),
+        ).forecast_cash_flows()
+        apv = apv_value(
+            apv_projections,
+            unlevered_cost_of_capital=rho_u,
+            terminal_growth=dcf_assumptions.terminal_growth_rate,
+            tax_rate=tax_rate,
+            debt_schedule=[total_debt] * 5 if total_debt > 0 else None,
+            cost_of_debt=kd_loaded if total_debt > 0 else None,
+            shield_discount_convention="fixed_debt_kd" if total_debt > 0 else "fixed_debt_kd",
+            terminal_shield_policy="debt_repaid",
+            distress_scenarios=None,
+        )
+        # APV values the operating firm; the same claims bridge as the DCF lane
+        # converts to per-share so the lanes share a comparable price basis.
+        claims = (
+            doc["bridge"]["short_term_debt"] + doc["bridge"]["long_term_debt"]
+            + doc["bridge"]["preferred_equity"] + doc["bridge"]["minority_interest"]
+            - doc["bridge"]["cash"] - doc["bridge"]["other_nonoperating_assets"]
+        )
+        apv_equity = apv["adjusted_firm_value"] - claims
+        apv_per_share = apv_equity / doc["market"]["diluted_shares"]
+        lanes.append(
+            {
+                "method": "apv",
+                "label": "APV per share (today)",
+                "value": apv_per_share,
+                "detail": (
+                    f"Unlevered rho {rho_u:.1%}, MM fixed-debt shields; "
+                    "distress excluded by assumption"
+                ),
+                "warnings": apv["warnings"][-1:],
+                "basis": "enterprise_then_same_bridge",
+            }
+        )
+    except (ValueError, KeyError, TypeError) as exc:
+        lanes.append(
+            {
+                "method": "apv",
+                "label": "APV",
+                "value": None,
+                "detail": str(exc),
+                "warnings": [],
+                "basis": "enterprise",
             }
         )
     rel_doc = None
