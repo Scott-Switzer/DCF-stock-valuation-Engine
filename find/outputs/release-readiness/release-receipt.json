@@ -227,7 +227,7 @@
     },
     "worker_version": "c3eb4c79-ce29-4e5a-984f-e35d377eaa44",
     "deployment": "25b91fd9-400c-499a-a481-94e4983e203d",
-    "command_executed": "uv tool run --from uv>=0.12.3 uv run pywrangler deploy --env staging --keep-vars"
+    "command_executed": "uv tool run --from 'uv>=0.12.3' uv run pywrangler deploy --env staging --keep-vars"
   },
   "production": {
     "health_before": {
