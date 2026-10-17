@@ -17,9 +17,12 @@ passing run is evidence about the deployment, not about a local double:
         --base https://dcf-valuation-engine-staging.scswitzer.workers.dev \\
         --output docs/receipts/staging-verification.json
 
-Nothing is written outside the named output file.
+The workflow saves three test research records to the staging D1 and writes its
+aggregate receipt to the named local output file. Source publication pointers
+are never changed.
 """
 import argparse
+from copy import deepcopy
 from datetime import datetime, timezone
 import http.cookiejar
 import json
@@ -209,7 +212,7 @@ def main():
             equity_value=body.get('equity_value'), value_per_share=body.get('value_per_share'),
             matches_local_run=equal, scenario=body.get('scenario_name'),
             engine_release_id=body.get('release_id'),
-            companion_release_id=claims_source.get('source_release_id'),
+            companion_release_id=bundle.get('source_release_id'),
             reconciliation=bundle.get('reconciliation_status'),
             snapshot_date=bundle.get('snapshot_date'),
             evidence_cutoff=claims_source.get('evidence_cutoff'),
@@ -258,6 +261,27 @@ def main():
         status, body, _, raw = call(base, op, '/api/equity-claims/bridge', pinned)
         record('wrong_engine_pin', status, body if isinstance(body, dict) else raw[:200],
                ok=status == 503)
+
+        for name, mutation in (
+            ('foreign_issuer_bundle', 'issuer'),
+            ('edited_attested_bundle', 'evidence'),
+            ('forged_attestation', 'mac'),
+        ):
+            rejected = deepcopy(pinned)
+            rejected.pop('expected_release_id', None)
+            if mutation == 'issuer':
+                rejected.update(ticker='MSFT', cik=CIK['MSFT'])
+            elif mutation == 'evidence':
+                rejected['financials']['source']['native_history'][0]['observations'][0]['value_decimal'] = '1'
+            else:
+                rejected['financials']['source']['evidence_attestation']['hmac_sha256'] = '0' * 64
+            status, body, headers, raw = call(base, op, '/api/equity-claims/bridge', rejected)
+            if status == 429:
+                # A refused rate-limited write has not created a record; wait once
+                # for the existing staging abuse-protection window, then retry.
+                time.sleep(min(60, max(1, int(headers.get('Retry-After', '60')))))
+                status, body, _, raw = call(base, op, '/api/equity-claims/bridge', rejected)
+            record(name, status, body if isinstance(body, dict) else raw[:200], ok=status == 400)
 
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

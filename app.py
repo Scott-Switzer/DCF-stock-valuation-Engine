@@ -414,9 +414,15 @@ def payload():
         if raw.get('benchmark_selections'):
             from valuation_benchmarks import apply_benchmarks
             selected = resolve_benchmark_selections(raw['benchmark_selections'], doc['valuation_date'])
+            if 'wacc_override' in selected and assumptions.get('wacc_mode') == 'recalculated':
+                raise ValueError('Choose benchmark WACC or recalculated WACC, not both.')
             assumptions = apply_benchmarks(assumptions, selected)
             doc['source']['benchmark_assumptions'] = assumptions.pop('benchmark_sources')
         if raw.get('bottom_up_beta'):
+            if (isinstance(raw['bottom_up_beta'], dict)
+                    and raw['bottom_up_beta'].get('propagate_to_wacc') is True
+                    and assumptions.get('wacc_mode') == 'recalculated'):
+                raise ValueError('Choose bottom-up CAPM WACC or recalculated WACC, not both.')
             capm_res = resolve_bottom_up_beta_payload(raw['bottom_up_beta'], doc, assumptions)
             doc['source']['bottom_up_capm'] = capm_res
         return doc, effective_dcf_assumptions(doc, assumptions)

@@ -74,3 +74,18 @@ def test_assumption_api_exposes_versioned_record(tmp_path,monkeypatch):
     response=app.test_client().get('/api/assumptions/damodaran/'+rid+'?subject=Software&measure=wacc&mode=current')
     assert response.status_code==200
     assert response.json['release_id']==rid
+
+
+def test_selected_wacc_cannot_be_overwritten_by_recalculated_mode(tmp_path,monkeypatch):
+    from datetime import datetime,timezone
+    from app import app
+    from dcf_loader import demo_document
+    rid=release(tmp_path);monkeypatch.setenv('DAMODARAN_RELEASE_ROOT',str(tmp_path))
+    doc=demo_document();doc['valuation_date']=datetime.now(timezone.utc).date().isoformat()
+    doc['source']['capital_costs']={'market_equity_value':1000,'debt':200,'cost_of_equity':.1,
+                                  'cost_of_debt':.05,'tax_rate':.21,'wacc':.09}
+    response=app.test_client().post('/api/calculate',json={'financials':doc,
+        'assumptions':{'revenue_growth_rates':[.05]*5,'terminal_growth_rate':.02,'wacc_mode':'recalculated'},
+        'benchmark_selections':{'wacc_override':{'release_id':rid,'subject':'Software','measure':'wacc','mode':'current'}}})
+    assert response.status_code==400
+    assert 'WACC' in response.json['error']

@@ -225,6 +225,12 @@ def test_end_to_end_bottom_up_beta_capm_and_wacc_through_zion(monkeypatch):
         },
     )
     assert calc_resp.status_code == 200, calc_resp.json
+    conflicting = client.post('/api/calculate',json={
+        'financials':doc,'bottom_up_beta':bottom_up_spec,
+        'assumptions':{'revenue_growth_rates':[.06]*5,'terminal_growth_rate':.025,
+                       'wacc_mode':'recalculated'}})
+    assert conflicting.status_code == 400
+    assert 'WACC' in conflicting.json['error']
     res = calc_resp.json
     assert res["wacc"] == pytest.approx(float(expected_wacc))
     assert res["bottom_up_capm"]["capm"]["cost_of_equity"] == pytest.approx(float(expected_ke))
