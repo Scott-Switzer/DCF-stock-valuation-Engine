@@ -1,0 +1,278 @@
+{
+ "result": {
+  "aggregate_claims": {
+   "add_claims_decimal": "298385000000",
+   "add_components": {
+    "cash": "55911000000",
+    "nonoperating_assets": "242474000000"
+   },
+   "basis": "Consolidated enterprise value to common equity, point in time.",
+   "deduct_claims_decimal": "127877000000",
+   "deduct_components": {
+    "debt": "100164000000",
+    "finance_leases": "2590000000",
+    "noncontrolling_interests": "7100000000",
+    "preferred_equity": "18023000000"
+   },
+   "status": "AVAILABLE",
+   "verified_absent": []
+  },
+  "cik": "0001652044",
+  "claims": {
+   "cash": {
+    "available_at": "2026-07-23",
+    "evidence_digest": "8e3dfb26f898e9abb33035cea1ac831df1bdb9b61cf8fcf29b82244c1e2974c8",
+    "evidence_state": "REPORTED",
+    "period_end": "2026-06-30",
+    "sources": 1,
+    "unit": "USD",
+    "value_decimal": "55911000000"
+   },
+   "common_shares": {
+    "available_at": "2026-07-23",
+    "evidence_digest": "11a9cac8b9a3cef3972c05e2f00eed1a00009b7f1c9fc69b8c3bff2752cd3bb6",
+    "evidence_state": "REPORTED",
+    "period_end": "2026-06-30",
+    "sources": 1,
+    "unit": "shares",
+    "value_decimal": "12230000000"
+   },
+   "debt": {
+    "available_at": "2026-07-23",
+    "evidence_digest": "abfd4ae798fb44d901e1aca1b36615f1248b9130111a6535e8c5f35b88bb02d3",
+    "evidence_state": "REPORTED",
+    "period_end": "2026-06-30",
+    "sources": 3,
+    "unit": "USD",
+    "value_decimal": "100164000000"
+   },
+   "finance_leases": {
+    "available_at": "2026-07-23",
+    "evidence_digest": "0ec99975c87d1f9ece19eb3d9abc30f31b5b0684101198af9176a14b368d5306",
+    "evidence_state": "REPORTED",
+    "period_end": "2026-06-30",
+    "sources": 1,
+    "unit": "USD",
+    "value_decimal": "2590000000"
+   },
+   "noncontrolling_interests": {
+    "available_at": "2026-07-23",
+    "evidence_digest": "5db39cc56e281141aac7b70f8c2b6deaba92897e08b1db9cadd6d6f56ba895aa",
+    "evidence_state": "REPORTED",
+    "period_end": "2026-06-30",
+    "sources": 1,
+    "unit": "USD",
+    "value_decimal": "7100000000"
+   },
+   "nonoperating_assets": {
+    "available_at": "2026-07-23",
+    "evidence_digest": "48e5723f4c4fbdf112da3694c7a63b5a8ad408a3e5c2ae0414fd7eb88b731fa7",
+    "evidence_state": "REPORTED",
+    "period_end": "2026-06-30",
+    "sources": 2,
+    "unit": "USD",
+    "value_decimal": "242474000000"
+   },
+   "operating_leases": {
+    "available_at": "2026-07-23",
+    "evidence_digest": "240206d3ebcb6c1dee5e0e654c4978cd7ae704b5df868e5f98347dbf76f426b8",
+    "evidence_state": "REPORTED",
+    "period_end": "2026-06-30",
+    "sources": 1,
+    "unit": "USD",
+    "value_decimal": "18037000000"
+   },
+   "preferred_equity": {
+    "available_at": "2026-07-23",
+    "evidence_digest": "c7ea6139520eb73ca0d43aeca7e852d129abff9342ee6c2520e3d75fdc50884d",
+    "evidence_state": "DERIVED_VERIFIED",
+    "period_end": "2026-06-30",
+    "sources": 8,
+    "unit": "USD",
+    "value_decimal": "18023000000"
+   }
+  },
+  "cutoff": {
+   "day_complete": true,
+   "policy": "DATE_ONLY_END_OF_DAY_UTC_V1",
+   "precision": "date",
+   "requested": "2026-10-14",
+   "resolved_utc": "2026-10-14T23:59:59.999999999Z",
+   "source_ceiling_utc": "2026-08-07T23:59:59.999999999Z",
+   "valuation_date": "2026-10-14"
+  },
+  "enterprise_artifact": "GOOGL-enterprise-verification.json",
+  "enterprise_value": 2179137903112.5725,
+  "entity_name": "Alphabet Inc.",
+  "noncontrolling_treatment": {
+   "classification": "VIE_DISCLOSURE_NONCONTROLLING_INTEREST",
+   "conflicts": [],
+   "deduction_permitted": true,
+   "evidence_state": "REPORTED",
+   "redeemable_subset": {
+    "available_at": null,
+    "concept": null,
+    "evidence_digest": null,
+    "evidence_state": "UNAVAILABLE",
+    "note": "A redeemable noncontrolling interest subset is not exposed by Company Facts for this filer. It is not estimated and it is not added to the total, because a redeemable subset is normally already inside the reported noncontrolling interest or the reported liability total. Deducting both would double count.",
+    "period_end": null,
+    "unit": "USD",
+    "value_decimal": null
+   },
+   "treatment": "DEDUCT_FROM_CONSOLIDATED_ENTERPRISE_VALUE",
+   "value_decimal": "7100000000"
+  },
+  "preferred_treatment": {
+   "carrying_concept": "us-gaap:ConvertiblePreferredStockNonredeemableOrRedeemableIssuerOptionValue",
+   "carrying_value_decimal": "18023000000",
+   "conflicts": [],
+   "dilution_terms_basis": "EXPLICIT_SELECTION_FROM_OFFERING_DOCUMENT;NOT_XBRL_VERIFIED",
+   "dilution_terms_state": "ASSUMED",
+   "dividend_rate_decimal": "0.0625",
+   "evidence_state": "DERIVED_VERIFIED",
+   "liquidation_preference_per_share_decimal": "1000",
+   "shares_outstanding_decimal": "19000000"
+  },
+  "source": {
+   "adapter_version": "zion-equity-claims-v1",
+   "audit": {
+    "authenticated_via": "SERVICE_CREDENTIAL",
+    "caller": "dcf-valuation-engine"
+   },
+   "bridge_valuation_date": "2026-10-14",
+   "certification": "FILING_BACKED_CLAIMS;NOT_A_MARKET_OR_ACCOUNTING_ATTESTATION",
+   "company_label": "Alphabet Inc.",
+   "cutoff_policy": "DATE_ONLY_END_OF_DAY_UTC_V1",
+   "evidence_cutoff": "2026-10-14",
+   "identity_status": "EXPLICIT_USER_CIK_NOT_TICKER_CERTIFIED",
+   "manifest_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "member_sha256": "737ec1864187346e6fb9d8378d12967348c7393af08a5a9cd2eaf049b3076687",
+   "name": "Zion filing-backed equity claims",
+   "registry_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+   "release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "requested_cutoff": "2026-10-14",
+   "served_cutoff_utc": "2026-10-14T23:59:59.999999999Z",
+   "source_bundle": {
+    "bulk_archive_declared_sha256": null,
+    "bulk_archive_etag": null,
+    "companion_member_sha256": "737ec1864187346e6fb9d8378d12967348c7393af08a5a9cd2eaf049b3076687",
+    "engine_raw_member_sha256": "737ec1864187346e6fb9d8378d12967348c7393af08a5a9cd2eaf049b3076687",
+    "evidence_ceiling_utc": "2026-08-07T23:59:59.999999999Z",
+    "member_sha256": "737ec1864187346e6fb9d8378d12967348c7393af08a5a9cd2eaf049b3076687",
+    "reconciliation_status": "MEMBER_SHA256_AGREES_WITH_ENGINE_PINNED_MEMBER",
+    "snapshot_date": "2026-08-07",
+    "source_manifest_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "source_release_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "source_schema_version": "sec-companyfacts-source-v1"
+   },
+   "ticker": "GOOGL",
+   "valuation_date": "2026-10-14",
+   "warnings": [
+    "Claim evidence states are filing-derived; a scenario is not source-certified merely because its arithmetic reconciles.",
+    "Offering terms supplied by a caller are ASSUMED, not XBRL verified."
+   ]
+  },
+  "term_consistency": "CONSISTENT",
+  "ticker": "GOOGL",
+  "unresolved": {
+   "advisory": [
+    {
+     "claim": "operating_leases",
+     "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+    }
+   ],
+   "blocking": []
+  },
+  "valuation": {
+   "bridge_inputs": {
+    "as_of": "2026-10-14",
+    "cash": 55911000000.0,
+    "long_term_debt": 100306000000.0,
+    "minority_interest": 7100000000.0,
+    "other_nonoperating_assets": 186563000000.0,
+    "preferred_equity": 18023000000.0,
+    "short_term_debt": 2448000000.0
+   },
+   "equity_value": 2311757903112.5723,
+   "primary_scenario": "AS_CONVERTED_MAX_RATE",
+   "scenarios": {
+    "AS_CONVERTED_MAX_RATE": {
+     "claim": 0.0,
+     "equity_value": 2311757903112.5723,
+     "missing": [],
+     "shares_added": 54458250.0,
+     "shares_outstanding": 12284458250.0,
+     "status": "AVAILABLE",
+     "value_per_share": 188.18558019134235
+    },
+    "AS_CONVERTED_MIN_RATE": {
+     "claim": 0.0,
+     "equity_value": 2311757903112.5723,
+     "missing": [],
+     "shares_added": 43562750.0,
+     "shares_outstanding": 12273562750.0,
+     "status": "AVAILABLE",
+     "value_per_share": 188.35263649200573
+    },
+    "LIQUIDATION_PREFERENCE": {
+     "claim": 19000000000.0,
+     "equity_value": 2292757903112.5723,
+     "missing": [],
+     "shares_added": 0.0,
+     "shares_outstanding": 12230000000.0,
+     "status": "AVAILABLE",
+     "value_per_share": 187.46998390127328
+    }
+   },
+   "shares_basis": "COMMON_SHARES_OUTSTANDING",
+   "shares_outstanding": 12230000000.0,
+   "value_per_share": 188.18558019134235
+  },
+  "valuation_date": "2026-10-14"
+ },
+ "summary": {
+  "bridge_inputs": {
+   "as_of": "2026-10-14",
+   "cash": 55911000000.0,
+   "long_term_debt": 100306000000.0,
+   "minority_interest": 7100000000.0,
+   "other_nonoperating_assets": 186563000000.0,
+   "preferred_equity": 18023000000.0,
+   "short_term_debt": 2448000000.0
+  },
+  "equity_value": 2311757903112.5723,
+  "primary_scenario": "AS_CONVERTED_MAX_RATE",
+  "scenarios": {
+   "AS_CONVERTED_MAX_RATE": {
+    "claim": 0.0,
+    "equity_value": 2311757903112.5723,
+    "missing": [],
+    "shares_added": 54458250.0,
+    "shares_outstanding": 12284458250.0,
+    "status": "AVAILABLE",
+    "value_per_share": 188.18558019134235
+   },
+   "AS_CONVERTED_MIN_RATE": {
+    "claim": 0.0,
+    "equity_value": 2311757903112.5723,
+    "missing": [],
+    "shares_added": 43562750.0,
+    "shares_outstanding": 12273562750.0,
+    "status": "AVAILABLE",
+    "value_per_share": 188.35263649200573
+   },
+   "LIQUIDATION_PREFERENCE": {
+    "claim": 19000000000.0,
+    "equity_value": 2292757903112.5723,
+    "missing": [],
+    "shares_added": 0.0,
+    "shares_outstanding": 12230000000.0,
+    "status": "AVAILABLE",
+    "value_per_share": 187.46998390127328
+   }
+  },
+  "shares_basis": "COMMON_SHARES_OUTSTANDING",
+  "shares_outstanding": 12230000000.0,
+  "value_per_share": 188.18558019134235
+ }
+}

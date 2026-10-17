@@ -21,3 +21,6 @@ embedded_assets.py
 python_modules/
 
 worker_runtime/
+
+.venv-ddfi-test/
+artifacts/zero-subscription-integration/companyfacts/

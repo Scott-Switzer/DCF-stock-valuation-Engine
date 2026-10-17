@@ -353,6 +353,10 @@ def evaluate(doc, a):
     result = model.calculate()
     result["method"] = "dcf"
     result["model_version"] = "cuig-dcf-v1"
+    if isinstance(doc.get("source"), dict) and "bottom_up_capm" in doc["source"]:
+        result["bottom_up_capm"] = deepcopy(doc["source"]["bottom_up_capm"])
+    if isinstance(doc.get("source"), dict) and "benchmark_assumptions" in doc["source"]:
+        result["benchmark_assumptions"] = deepcopy(doc["source"]["benchmark_assumptions"])
     growths, matrix = model.generate_sensitivity_table()
     result["sensitivity"] = {
         "growth_rates": growths,
@@ -402,7 +406,20 @@ def payload():
             raise ValueError("Send a JSON object.")
         if "financials" not in raw:
             raise ValueError("Provide a financials document.")
-        return raw["financials"], effective_dcf_assumptions(raw["financials"], raw.get("assumptions"))
+        doc = deepcopy(raw['financials'])
+        assumptions = raw.get('assumptions')
+        if not isinstance(assumptions, dict):
+            raise ValueError('Assumptions must be a JSON object.')
+        assumptions = deepcopy(assumptions)
+        if raw.get('benchmark_selections'):
+            from valuation_benchmarks import apply_benchmarks
+            selected = resolve_benchmark_selections(raw['benchmark_selections'], doc['valuation_date'])
+            assumptions = apply_benchmarks(assumptions, selected)
+            doc['source']['benchmark_assumptions'] = assumptions.pop('benchmark_sources')
+        if raw.get('bottom_up_beta'):
+            capm_res = resolve_bottom_up_beta_payload(raw['bottom_up_beta'], doc, assumptions)
+            doc['source']['bottom_up_capm'] = capm_res
+        return doc, effective_dcf_assumptions(doc, assumptions)
     return form_payload(request.form)
 
 
@@ -455,7 +472,7 @@ def assign_library_identity():
     ensure_identity()
 
 
-COOKIE_WRITE_PATHS = ("/api/research", "/api/templates", "/api/share", "/api/watchlist", "/api/account", "/account")
+COOKIE_WRITE_PATHS = ("/api/research", "/api/templates", "/api/share", "/api/watchlist", "/api/account", "/account", "/api/equity-claims")
 
 
 @app.before_request
@@ -563,6 +580,7 @@ def limit_expensive_work():
                 "/api/assemble/",
                 "/api/peer",
                 "/api/calculate",
+                "/api/capm/",
                 "/api/compare",
                 "/api/reverse",
                 "/mcp",
@@ -573,6 +591,7 @@ def limit_expensive_work():
                 "/api/account",
                 "/account/",
                 "/export/",
+                "/api/equity-claims",
             )
         )
     ):
@@ -893,6 +912,307 @@ def calculate_api():
         return jsonify(r)
     except ValueError as e:
         return jsonify(error=str(e)), 400
+
+
+def resolve_benchmark_selections(selections, valuation_date, *, max_selections=4):
+    """Resolve explicit benchmark selections through the canonical Zion interface
+    ('source': 'zion', preferred when configured) or the standalone release loader
+    ('source': 'release', the default — existing behavior is unchanged)."""
+    from valuation_benchmarks import load_benchmark
+    if not isinstance(selections, dict) or not 1 <= len(selections) <= max_selections:
+        raise ValueError(f'Select one to {max_selections} explicit benchmark inputs.')
+    result = {}
+    for target, selection in selections.items():
+        if (not isinstance(selection, dict)
+                or not {'release_id','subject','measure','mode'} <= set(selection)
+                or not set(selection) <= {'release_id','subject','measure','mode','source','dataset_id'}):
+            raise ValueError('Select exact release, subject, measure and current/historical mode.')
+        mode = selection['mode']
+        if mode not in {'current','historical'}:
+            raise ValueError('Unknown benchmark selection mode.')
+        if mode == 'current' and valuation_date != datetime.now(timezone.utc).date().isoformat():
+            raise ValueError('Current benchmark selection cannot be backdated.')
+        source = selection.get('source', 'release')
+        if source == 'zion':
+            from zion_benchmark_provider import fetch_benchmark_row
+            from zion_equity_claims_service import (BENCHMARK_BINDING_NAME, BINDING_ORIGIN,
+                                                    ServiceBindingHTTP, service_binding)
+            base = provider_value('ZION_BENCHMARK_BASE_URL') or provider_value('ZION_HISTORY_BASE_URL')
+            token = provider_value('ZION_BENCHMARK_TOKEN') or provider_value('ZION_HISTORY_TOKEN')
+            binding = service_binding(BENCHMARK_BINDING_NAME)
+            if binding is not None:
+                # The benchmark Worker is a sibling in this account, and a Worker's subrequest
+                # to another Worker's public hostname on the same zone is refused by the edge
+                # with a plain-text `error code: 1042`. The binding is therefore the only
+                # transport that reaches it; the bearer credential below is still the one the
+                # private route verifies, and the host is ignored by the binding.
+                http = ServiceBindingHTTP(binding)
+                base = base or BINDING_ORIGIN
+            else:
+                import requests
+
+                http = requests
+            if not base or not token:
+                raise ValueError('Zion benchmark provider is not configured in this runtime.')
+            result[target] = fetch_benchmark_row(
+                base=base, token=token, subject=selection['subject'],
+                measure=selection['measure'], release_id=selection['release_id'],
+                mode=mode, valuation_date=valuation_date, http=http,
+                dataset_id=selection.get('dataset_id'))
+        elif source == 'release':
+            root = provider_value('DAMODARAN_RELEASE_ROOT')
+            if not root:
+                raise ValueError('Damodaran releases are not configured in this runtime.')
+            try:
+                result[target] = load_benchmark(root, selection['release_id'], selection['subject'], selection['measure'],
+                                                as_of=valuation_date if mode == 'historical' else None)
+            except (OSError, KeyError) as exc:
+                raise ValueError('Selected benchmark release is unavailable.') from exc
+        else:
+            raise ValueError('Unknown benchmark source.')
+    return result
+
+
+def resolve_bottom_up_beta_payload(spec, doc, assumptions=None):
+    """Resolve benchmark selections inside a bottom_up_beta specification, compute
+    relevered beta, CAPM cost of equity, and optionally propagate WACC into assumptions."""
+    from bottom_up_capm import compute_bottom_up_capm
+
+    if not isinstance(spec, dict):
+        raise ValueError("bottom_up_beta must be a JSON object.")
+    val_date = doc.get("valuation_date") or datetime.now(timezone.utc).date().isoformat()
+    selections_to_resolve = {}
+    for key in (
+        "beta_benchmark",
+        "erp_benchmark",
+        "crp_benchmark",
+        "cash_benchmark",
+        "cost_of_debt_benchmark",
+        "tax_benchmark",
+    ):
+        val = spec.get(key)
+        if isinstance(val, dict) and "value_decimal" not in val:
+            selections_to_resolve[key] = val
+    resolved = (
+        resolve_benchmark_selections(selections_to_resolve, val_date, max_selections=6)
+        if selections_to_resolve
+        else {}
+    )
+    merged_spec = deepcopy(spec)
+    if "tax_benchmark" in resolved:
+        merged_spec["tax_benchmark"] = resolved["tax_benchmark"]
+    capm_result = compute_bottom_up_capm(
+        doc,
+        merged_spec,
+        beta_benchmark=resolved.get("beta_benchmark") or spec.get("beta_benchmark"),
+        erp_benchmark=resolved.get("erp_benchmark") or spec.get("erp_benchmark"),
+        crp_benchmark=resolved.get("crp_benchmark") or spec.get("crp_benchmark"),
+        cash_benchmark=resolved.get("cash_benchmark") or spec.get("cash_benchmark"),
+        cost_of_debt_benchmark=resolved.get("cost_of_debt_benchmark") or spec.get("cost_of_debt_benchmark"),
+    )
+    if spec.get("propagate_to_wacc") is True and isinstance(assumptions, dict):
+        if assumptions.get("wacc_override") is not None:
+            raise ValueError(
+                "Conflicting explicit assumption: wacc_override is already set; "
+                "cannot propagate bottom-up CAPM WACC simultaneously."
+            )
+        wacc_build = capm_result.get("wacc_build") or {}
+        if wacc_build.get("wacc") is None:
+            raise ValueError("Bottom-up WACC could not be computed for propagation.")
+        assumptions["wacc_override"] = wacc_build["wacc"]
+    return capm_result
+
+
+@app.post("/api/capm/preview")
+def capm_preview_api():
+    """Preview bottom-up beta, CAPM cost of equity, and optional WACC build with lineage."""
+    try:
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict) or not isinstance(raw.get("financials"), dict):
+            raise ValueError("Send financials and bottom_up_beta specification.")
+        doc = deepcopy(raw["financials"])
+        parse_document(doc)
+        res = resolve_bottom_up_beta_payload(raw.get("bottom_up_beta"), doc)
+        return jsonify(res)
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+
+
+@app.get('/api/assumptions/damodaran/<release>')
+def damodaran_assumption_api(release):
+    try:
+        selected = resolve_benchmark_selections({'selected':{
+            'release_id':release,'subject':request.args.get('subject'),'measure':request.args.get('measure'),
+            'mode':request.args.get('mode','historical')}},
+            request.args.get('as_of',datetime.now(timezone.utc).date().isoformat()))
+        response = jsonify(selected['selected'])
+        response.headers['Cache-Control'] = 'no-store'
+        return response
+    except (ValueError, TypeError) as exc:
+        return jsonify(error=str(exc)), 400
+
+
+@app.post('/api/calculate/fcfe')
+def calculate_fcfe_api():
+    """Selectable FCFE equity valuation: equity cash flow discounted at the cost of equity.
+
+    Shares the exact DCF forecast drivers with the FCFF lane; the value basis is
+    equity, so no net-debt bridge is applied. Financing policy (net borrowing) is
+    explicit and never inferred from history.
+    """
+    try:
+        from fcfe_valuation import fcfe_value
+
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict):
+            raise ValueError('Send financials, assumptions and explicit FCFE inputs.')
+        doc, a = payload()
+        d = parse_document(doc, minority_may_be_negative=True)
+        projections = DCFModel(d, a).forecast_cash_flows()
+        costs = (doc.get('source') or {}).get('capital_costs') or {}
+        ke = raw.get('cost_of_equity', costs.get('cost_of_equity'))
+        result = fcfe_value(
+            projections,
+            cost_of_equity=ke,
+            terminal_growth=a.terminal_growth_rate,
+            shares=d.shares_outstanding,
+            net_borrowing=raw.get('net_borrowing'),
+            market_price=d.stock_price,
+        )
+        result['assumptions'] = asdict(a)
+        result['cost_of_equity_source'] = (
+            raw.get('cost_of_equity_source', 'explicit')
+            if 'cost_of_equity' in raw
+            else 'snapshot_capital_costs'
+        )
+        result['model_limitations'] = [
+            'FCFE depends on an explicit financing policy; changing net borrowing changes equity value.',
+            'The terminal value applies Gordon growth to final-year FCFE and is unstable near cost of equity.',
+            'Equity value from FCFE is not comparable line-for-line with enterprise values from FCFF.',
+        ]
+        return jsonify(result)
+    except (ValueError, KeyError, TypeError) as exc:
+        return jsonify(error=str(exc)), 400
+
+
+@app.post('/api/calculate/apv')
+def calculate_apv_api():
+    """Adjusted Present Value: unlevered firm value + PV(tax shields) - PV(distress costs).
+
+    All financing assumptions are explicit. The shield discount convention is
+    required because the risk of tax shields depends on the financing policy.
+    Distress costs enter only through explicit scenarios; without them the result
+    is labeled DISTRESS_EXCLUDED_BY_ASSUMPTION rather than implied complete.
+    """
+    try:
+        from apv_valuation import apv_value
+
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict):
+            raise ValueError('Send financials, assumptions and explicit APV inputs.')
+        doc, a = payload()
+        d = parse_document(doc, minority_may_be_negative=True)
+        projections = DCFModel(d, a).forecast_cash_flows()
+        costs = (doc.get('source') or {}).get('capital_costs') or {}
+        rho_u = raw.get('unlevered_cost_of_capital', costs.get('unlevered_cost_of_capital'))
+        if rho_u is None:
+            raise ValueError(
+                'An explicit unlevered_cost_of_capital is required; APV never silently '
+                'substitutes WACC for the unlevered discount rate.'
+            )
+        result = apv_value(
+            projections,
+            unlevered_cost_of_capital=rho_u,
+            terminal_growth=a.terminal_growth_rate,
+            tax_rate=(a.tax_rates or [d.effective_tax_rate[-1]])[-1],
+            debt_schedule=raw.get('debt_schedule'),
+            cost_of_debt=raw.get('cost_of_debt'),
+            shield_discount_convention=raw.get('shield_discount_convention'),
+            terminal_shield_policy=raw.get('terminal_shield_policy', 'debt_repaid'),
+            distress_scenarios=raw.get('distress_scenarios'),
+        )
+        result['assumptions'] = asdict(a)
+        result['model_limitations'] = [
+            'APV values the operating firm (enterprise basis); the equity bridge is applied separately.',
+            'Tax shields depend on the debt schedule and usable deductions; limited taxable income defers deductions.',
+            'Distress costs require explicit scenarios; without them the APV is incomplete by assumption.',
+        ]
+        return jsonify(result)
+    except (ValueError, KeyError, TypeError) as exc:
+        return jsonify(error=str(exc)), 400
+
+
+@app.post('/api/calculate/bank-excess-return')
+def calculate_bank_excess_return_api():
+    """Bank / financial-institution equity valuation via excess returns over book capital.
+
+    Dedicated lane for financial firms: no FCFF/WACC enterprise machinery, no
+    fabricated FDIC fields. Credit provisions enter only as explicit schedules;
+    regulatory capital constraints and metadata are carried, never imputed.
+    """
+    try:
+        from bank_excess_return import bank_excess_return_value
+
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict) or not isinstance(raw.get("financials"), dict):
+            raise ValueError('Send financials and explicit bank excess-return inputs.')
+        doc = deepcopy(raw["financials"])
+        # Financial firms are this lane's domain: skip the FCFF operating gate
+        # while keeping every structural, currency and provenance check.
+        parse_document(doc, minority_may_be_negative=True, allow_financial=True)
+        costs = (doc.get('source') or {}).get('capital_costs') or {}
+        ke = raw.get('cost_of_equity', costs.get('cost_of_equity'))
+        if ke is None:
+            raise ValueError(
+                'A cost of equity is required for equity excess returns; it is never '
+                'substituted from WACC.'
+            )
+        result = bank_excess_return_value(
+            raw.get('net_income'),
+            opening_book=(raw.get('opening_book')
+                          if raw.get('opening_book') is not None
+                          else doc['historical'][-1]['book_value']),
+            cost_of_equity=ke,
+            terminal_growth=raw.get('terminal_growth', 0.02),
+            shares=doc['market']['diluted_shares'],
+            payout_ratio=raw.get('payout_ratio', 0.0),
+            equity_basis=raw.get('equity_basis', 'TANGIBLE_COMMON'),
+            intangible_assets=raw.get('intangible_assets'),
+            credit_provision_drag=raw.get('credit_provision_drag'),
+            minimum_retention=raw.get('minimum_retention'),
+            regulatory_capital=raw.get('regulatory_capital'),
+            allow_unsustainable_terminal_growth=raw.get('allow_unsustainable_terminal_growth', False),
+        )
+        result['cost_of_equity_source'] = (
+            raw.get('cost_of_equity_source', 'explicit')
+            if 'cost_of_equity' in raw
+            else 'snapshot_capital_costs'
+        )
+        result['model_limitations'] = [
+            'Equity excess returns require clean surplus and a positive tangible book base.',
+            'Stock issuance, buybacks and preferred actions are outside the forecast horizon.',
+            'FDIC provision-for-credit-losses data is unavailable in the verified pilot and is never imputed.',
+        ]
+        return jsonify(result)
+    except (ValueError, KeyError, TypeError) as exc:
+        return jsonify(error=str(exc)), 400
+
+
+@app.post('/api/calculate/enterprise')
+def calculate_enterprise_api():
+    from enterprise_valuation import value_enterprise
+    try:
+        raw = request.get_json(silent=True)
+        if not isinstance(raw, dict):
+            raise ValueError('Send financials, valuation_date and explicit assumptions.')
+        selected = resolve_benchmark_selections(raw.get('benchmark_selections'), raw.get('valuation_date'))
+        result = value_enterprise(raw['financials'], selected, raw['revenue_growth_rates'],
+                                 raw['terminal_growth'], raw['terminal_roic'],
+                                 valuation_date=raw['valuation_date'], suitable=raw.get('suitable'),
+                                 evidence_secret=provider_value('ZION_HISTORY_TOKEN'))
+        return jsonify(result)
+    except (ValueError, KeyError, TypeError, ProviderError) as exc:
+        return jsonify(error=str(exc)), 400
 
 
 @app.get("/api/company/<ticker>")
@@ -1248,7 +1568,11 @@ def financials_api():
             from auto_loading import load_method
 
             return jsonify(load_method("dcf", raw.get("ticker"), asof))
-        doc = load_document(raw.get("provider"), raw.get("ticker"), asof)
+        if raw.get("provider") == "zion_history":
+            doc = load_document('zion_history', raw.get('ticker'), asof,
+                                cik=raw.get('cik'), expected_release_id=raw.get('expected_release_id'))
+        else:
+            doc = load_document(raw.get("provider"), raw.get("ticker"), asof)
         return jsonify(financials=doc, form=default_form(doc))
     except ValueError as e:
         return jsonify(error=str(e)), 400
@@ -1615,6 +1939,21 @@ def providers():
     api_base = provider_value("DCF_API_BASE_URL").rstrip("/")
     return jsonify(
         providers={
+            "zion_history": {
+                "configured": bool(provider_value('ZION_HISTORY_BASE_URL') and provider_value('ZION_HISTORY_TOKEN')),
+                "label": "Zion native SEC financial history",
+                "kind": "private_financial_history",
+                "note": "Explicit CIK and historical cutoff required; missing DCF fields remain incomplete.",
+            },
+            "zion_benchmarks": {
+                "configured": bool(
+                    (provider_value('ZION_BENCHMARK_BASE_URL') or provider_value('ZION_HISTORY_BASE_URL'))
+                    and (provider_value('ZION_BENCHMARK_TOKEN') or provider_value('ZION_HISTORY_TOKEN'))
+                ),
+                "label": "Zion DDFI benchmark context",
+                "kind": "private_benchmark_reference",
+                "note": "Immutable industry/country benchmark reference estimates; explicit release pinning required; never substitutes for issuer facts.",
+            },
             "auto": {"configured": True, "label": "Automatic company data"},
             "zion_valuation": {
                 "configured": bool(getattr(request.environ.get("workers.env"), "ZION_VALUATIONS", None)),
@@ -1883,6 +2222,10 @@ register_suite(app)
 from research import register_research
 
 register_research(app)
+
+from zion_equity_claims_service import register_equity_claims
+
+register_equity_claims(app)
 
 
 if __name__ == "__main__":

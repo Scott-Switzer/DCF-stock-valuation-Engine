@@ -1,0 +1,67 @@
+{
+  // Local multi-Worker development harness for the DCF application.
+  //
+  // It mirrors the `staging` environment in `wrangler.jsonc` -- same Worker name, same
+  // D1 database, the same scoped `ZION_FINANCIAL_QUERY` service binding -- but flattens it
+  // so it can run beside the Zion thin Worker in one `wrangler dev` process:
+  //
+  //   wrangler dev -c {zion}/deploy/cloudflare-query/thin/wrangler.dev.jsonc -c wrangler.dev.jsonc
+  //
+  // `wrangler.jsonc` remains the only deployment configuration. This file exists so the
+  // integration can be exercised against a real Workerd runtime locally.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dcf-valuation-engine-staging",
+  "main": "worker_runtime/worker.py",
+  "account_id": "51b88c6a6ef833b3c2ff46e98d5d9356",
+  "compatibility_date": "2026-10-06",
+  "compatibility_flags": [
+    "python_workers"
+  ],
+  "workers_dev": true,
+  "build": {
+    "command": "python3 scripts/embed_assets.py"
+  },
+  "ratelimits": [
+    {"name": "PREVIEW_LIMIT", "namespace_id": "1946200601", "simple": {"limit": 120, "period": 60}},
+    {"name": "REFERENCE_LIMIT", "namespace_id": "1946200602", "simple": {"limit": 20, "period": 60}},
+    {"name": "WRITE_LIMIT", "namespace_id": "1946200603", "simple": {"limit": 10, "period": 60}},
+    {"name": "MCP_LIMIT", "namespace_id": "1946200604", "simple": {"limit": 60, "period": 60}}
+  ],
+  "services": [
+    {"binding": "ZION_FINANCIAL_QUERY", "service": "zion-financial-serving-v2-thin-staging"}
+  ],
+  "r2_buckets": [
+    {"binding": "PPE_DATA", "bucket_name": "financial-system-datasets"}
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dcf-valuations-staging",
+      "database_id": "cb4e6d0f-a800-4cdd-a4c4-7849c9617e07",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "DEPLOY_ENVIRONMENT": "staging",
+    "ZION_EQUITY_CLAIMS_CALLER": "dcf-valuation-engine",
+    // Benchmark assumptions are a separate Zion dependency: the route resolves them through
+    // Zion's private query API rather than this binding, because a Worker has no release
+    // directory to read. They are served by the isolated DDFI benchmark Worker, which is a
+    // different Worker from the SEC claims one, so this points at that third local worker:
+    //
+    //   wrangler dev -c {zion-ddfi-benchmark}/deploy/cloudflare-query/thin-benchmark/wrangler.dev.jsonc --port 8792
+    "ZION_BENCHMARK_BASE_URL": "http://127.0.0.1:8792",
+    // The attested native history leg reads the same thin SEC Worker's private API, so the
+    // valuation inputs and the claims come from one source plane.
+    // Served over HTTPS because the app requires an HTTPS base URL for this leg:
+    //
+    //   wrangler dev -c thin/wrangler.dev.jsonc --port 8793 --local-protocol https \
+    //     --https-cert-path /tmp/thin-tls/cert.pem --https-key-path /tmp/thin-tls/key.pem
+    "ZION_HISTORY_BASE_URL": "https://127.0.0.1:8793"
+  },
+  "preview_urls": false
+}

@@ -30,6 +30,10 @@ module_names = [
     "app.py",
     "dcf_code.py",
     "dcf_loader.py",
+    "zion_history_provider.py",
+    "zion_benchmark_provider.py",
+    "valuation_benchmarks.py",
+    "enterprise_valuation.py",
     "storage.py",
     "provider_cache.py",
     "ppe_packets.py",
@@ -57,13 +61,26 @@ module_names = [
     "mcp.py",
     "suite_models.py",
     "comps_analysis.py",
+    "bottom_up_capm.py",
+    "fcfe_valuation.py",
+    "apv_valuation.py",
+    "bank_excess_return.py",
     "research.py",
     "suite_views.py",
     "embedded_assets.py",
+    "equity_claims_provider.py",
+    "zion_equity_claims_service.py",
+]
+# Modules the repository keeps under scripts/ but a flat Workers bundle must import by
+# bare name; `equity_claims_provider` reaches the public-SEC bridge helper this way.
+script_module_names = [
+    "public_sec_equity_bridge.py",
 ]
 # This directory contains generated modules only. Remove stale branch artifacts.
+sources = {name: root / name for name in module_names}
+sources.update({name: root / "scripts" / name for name in script_module_names})
 for stale in bundle.glob("*.py"):
-    if stale.name not in module_names:
+    if stale.name not in sources:
         stale.unlink()
-for name in module_names:
-    shutil.copyfile(root / name, bundle / name)
+for name, source in sources.items():
+    shutil.copyfile(source, bundle / name)

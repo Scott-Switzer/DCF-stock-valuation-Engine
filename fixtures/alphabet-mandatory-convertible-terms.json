@@ -1,0 +1,21 @@
+{
+  "_note": "Alphabet mandatory convertible preferred offering terms, as supplied by the consumer. These are NOT XBRL-verified values: the claims contract labels them ASSUMED and cross-checks them against the reported share count and per-share liquidation preference, which ARE filing facts. Depositary shares are per series; twenty depositary shares represent one preferred share.",
+  "series": [
+    {
+      "name": "A",
+      "depositary_shares": 192500000,
+      "depositary_per_preferred": 20,
+      "liquidation_preference_per_share": 1000,
+      "min_rate_per_preferred": 2.252,
+      "max_rate_per_preferred": 2.816
+    },
+    {
+      "name": "B",
+      "depositary_shares": 192500000,
+      "depositary_per_preferred": 20,
+      "liquidation_preference_per_share": 1000,
+      "min_rate_per_preferred": 2.274,
+      "max_rate_per_preferred": 2.842
+    }
+  ]
+}
