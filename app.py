@@ -1946,7 +1946,9 @@ def providers():
     return jsonify(
         providers={
             "zion_history": {
-                "configured": bool(provider_value('ZION_HISTORY_BASE_URL') and provider_value('ZION_HISTORY_TOKEN')),
+                "configured": bool(provider_value('ZION_HISTORY_TOKEN') and (
+                    provider_value('ZION_HISTORY_BASE_URL')
+                    or getattr(request.environ.get('workers.env'), 'ZION_FINANCIAL_QUERY', None))),
                 "label": "Zion native SEC financial history",
                 "kind": "private_financial_history",
                 "note": "Explicit CIK and historical cutoff required; missing DCF fields remain incomplete.",

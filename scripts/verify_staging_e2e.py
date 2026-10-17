@@ -179,7 +179,9 @@ def main():
     status, body, _, raw = call(base, op, '/api/providers')
     providers = (body or {}).get('providers', {}) if isinstance(body, dict) else {}
     record('providers', status, {k: v.get('configured') for k, v in sorted(providers.items())}
-           if providers else raw[:200])
+           if providers else raw[:200], ok=(status == 200
+               and providers.get('zion_history', {}).get('configured') is True
+               and providers.get('zion_benchmarks', {}).get('configured') is True))
 
     bridges = {}
     for ticker in ('AAPL', 'MSFT', 'GOOGL'):

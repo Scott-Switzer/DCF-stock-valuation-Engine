@@ -29,3 +29,13 @@ def test_zion_compact_service_status_is_separate_from_http_adapter():
     providers = response.get_json()['providers']
     assert providers['zion_valuation']['configured'] is True
     assert providers['zion_valuation']['kind'] == 'private_service_binding'
+
+
+def test_native_history_advertises_configured_binding_without_public_origin(monkeypatch):
+    from types import SimpleNamespace
+    monkeypatch.delenv('ZION_HISTORY_BASE_URL',raising=False)
+    monkeypatch.setenv('ZION_HISTORY_TOKEN','test-credential')
+    response=app.test_client().get('/api/providers',environ_overrides={
+        'workers.env':SimpleNamespace(ZION_FINANCIAL_QUERY=object())})
+    assert response.json['providers']['zion_history']['configured'] is True
+    assert 'test-credential' not in response.get_data(as_text=True)
