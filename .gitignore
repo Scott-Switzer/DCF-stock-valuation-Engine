@@ -24,3 +24,7 @@ worker_runtime/
 
 .venv-ddfi-test/
 artifacts/zero-subscription-integration/companyfacts/
+# Shared runtime/source directories can also be local symlinks.
+/.venv
+/python_modules
+/artifacts/zero-subscription-integration/companyfacts
