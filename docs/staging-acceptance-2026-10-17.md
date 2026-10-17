@@ -18,6 +18,10 @@ The workflow uses existing internal Cloudflare bindings, D1 and immutable source
   with zero failures at the September 24 evidence cutoff.
 - Zion cache-scope and equity-claims route regressions: **36 passed**. Credential
   rotation was simulated in tests; no deployed credentials were rotated.
+- Portfolio Engine prescribed offline suite in its repaired isolated environment:
+  **4,530 passed, 37 skipped, 5 deselected**. The seven previously failing/uncollectable
+  modules separately pass 54 tests. Existing deprecation warnings remain; historical
+  strategy performance is still not certified.
 
 The aggregate [live receipt](receipts/staging-acceptance-2026-10-17.json) names the served
 revision, both financial source releases, availability cutoff and every gate. Passing
