@@ -386,6 +386,10 @@ def register_equity_claims(app):
                 raw.get('terminal_growth'), raw.get('terminal_roic'),
                 valuation_date=valuation_date, suitable=raw.get('suitable'),
                 evidence_secret=provider_value('ZION_HISTORY_TOKEN'))
+            financial_source = enterprise.get('source') or {}
+            if (financial_source.get('cik') != cik
+                    or raw.get('financials', {}).get('company', {}).get('ticker') != symbol):
+                raise ValueError('Financial history and equity claims must name the same issuer.')
             source_asof = raw.get('source_asof')
             if source_asof is not None:
                 iso_date(source_asof, 'Evidence cutoff')
@@ -396,12 +400,14 @@ def register_equity_claims(app):
             record = bridge_scenario(
                 symbol, valuation_date, cik=cik,
                 enterprise_value=enterprise['enterprise_value'],
-                expected_release_id=raw.get('expected_release_id'),
+                expected_release_id=raw.get('expected_release_id') or financial_source.get('release_id'),
                 preferred_terms=raw.get('preferred_terms'),
                 scenario=raw.get('scenario', 'AS_CONVERTED_MAX_RATE'),
                 noncontrolling_policy=raw.get('noncontrolling_policy', 'DEDUCT_REPORTED'),
                 source_asof=source_asof,
                 expected_source_release_id=expected_source_release_id)
+            if record.get('source', {}).get('release_id') != financial_source.get('release_id'):
+                fail('equity claims and financial history engine releases differ')
             record['enterprise_scenario'] = {
                 'schema_version': enterprise.get('schema_version'),
                 'model_version': enterprise.get('model_version'),

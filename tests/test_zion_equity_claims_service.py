@@ -245,6 +245,21 @@ def test_cross_site_writes_to_the_bridge_route_are_refused():
     assert response.status_code == 403
 
 
+@pytest.mark.parametrize('ticker,cik', [('MSFT','0000789019'),('AAPL','0000789019')])
+def test_bridge_refuses_foreign_issuer_history_before_claims_fetch(monkeypatch,ticker,cik):
+    from test_enterprise_valuation import document, benchmarks, SECRET
+    import app as application
+
+    monkeypatch.setenv('ZION_HISTORY_TOKEN',SECRET)
+    monkeypatch.setattr(application,'resolve_benchmark_selections',lambda *args,**kwargs:benchmarks())
+    response=app.test_client().post('/api/equity-claims/bridge',json={
+        'ticker':ticker,'cik':cik,'valuation_date':'2026-09-24','financials':document(),
+        'benchmark_selections':{},'revenue_growth_rates':[0]*5,'terminal_growth':0,
+        'terminal_roic':.15,'suitable':True})
+    assert response.status_code==400
+    assert 'issuer' in response.json['error'].lower()
+
+
 def test_saved_bridge_round_trips_through_the_api_and_exports():
     client = app.test_client()
     client.get("/api/equity-claims/bridges")  # mints this browser's library identity
