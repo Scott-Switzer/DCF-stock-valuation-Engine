@@ -34,7 +34,7 @@
           byId('screen-ticker').value = '';
           byId('valuation-request').value = '';
           byId('screen-evidence').textContent = `Issuer ${row.label} · CIK ${row.cik}\nSector: ${row.sector || 'Unavailable'}\nShare basis: ${row.share_basis || row.share_absence || 'Unavailable'}\nEligible methods: ${row.methods.join(', ')}\nMissing company inputs: ${row.missing.join(', ') || 'None reported by the screen'}`;
-          byId('valuation-result').textContent = '';
+          byId('valuation-result').textContent = ''; byId('valuation-response').value = '';
         });
         const line = document.createElement('p'); line.append(button);
         byId('screen-results').append(line);
@@ -82,7 +82,9 @@
       byId('valuation-request').value = JSON.stringify(body, null, 2);
       if (body.cik !== selected.cik) throw new Error('Selected issuer and valuation request differ');
       const result = await api('/api/calculate/enterprise', body);
-      byId('valuation-result').textContent = JSON.stringify(result, null, 2);
+      const money = value => new Intl.NumberFormat('en-US', {style:'currency',currency:'USD',maximumFractionDigits:0}).format(value);
+      byId('valuation-result').textContent = `Enterprise scenario: ${money(result.enterprise_value)}\nValuation date: ${result.valuation_date}\nFinancial cutoff: ${result.financial_cutoff}\nWACC benchmark: ${(result.wacc * 100).toFixed(2)}%\nEquity value: unavailable\nPer-share value: unavailable\nAssumption-driven scenario; inspect the reproducible request for source versions.`;
+      byId('valuation-response').value = JSON.stringify(result, null, 2);
       status('Enterprise scenario calculated. Equity and per-share values remain unavailable.');
     } catch (error) { status(error.message); }
   });
