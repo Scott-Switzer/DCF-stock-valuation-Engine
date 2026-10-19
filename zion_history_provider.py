@@ -204,8 +204,18 @@ def history_document(pages, ticker, asof, cik):
                 fail('conflicting period facts')
             record[field] = (value, deepcopy(row))
     ends = sorted(k for k, rows in groups.items() if 'revenue' in rows)[-3:]
-    if len(ends) != 3 or any(not 300 <= (date.fromisoformat(b) - date.fromisoformat(a)).days <= 430 for a, b in zip(ends, ends[1:])):
-        fail('three consecutive annual revenue periods are required')
+    if not ends:
+        fail('no verified annual revenue periods are available')
+    consecutive = (len(ends) == 3 and all(
+        300 <= (date.fromisoformat(b) - date.fromisoformat(a)).days <= 430
+        for a, b in zip(ends, ends[1:])))
+    # The enterprise scenario uses the latest annual revenue/EBIT, not a fabricated
+    # three-year growth series. The conventional DCF parser retains its strict gate.
+    doc['source']['history_coverage'] = dict(
+        status='THREE_CONSECUTIVE_ANNUAL_PERIODS' if consecutive else 'SPARSE_ANNUAL_OBSERVATIONS',
+        observed_periods=len(ends), periods=ends,
+        conventional_three_period_dcf_eligible=consecutive,
+        missing_periods_imputed=False)
     for end in ends:
         rows = groups[end]
         history = dict(period_end=end, **dict.fromkeys(HISTORY_FIELDS))

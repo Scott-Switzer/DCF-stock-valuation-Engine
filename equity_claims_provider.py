@@ -327,6 +327,7 @@ def load_equity_claims(ticker, asof, http, *, cik, base, token=None, service_tok
     params = dict(cik=cik, as_of=cutoff, recipient='human_research')
     if expected_release_id:
         params['expected_release_id'] = expected_release_id
+        params['release_id'] = expected_release_id
     if expected_source_release_id:
         params['expected_source_release_id'] = expected_source_release_id
     page = http.get(base.rstrip('/') + CLAIMS_PATH, headers=headers, params=dict(params))

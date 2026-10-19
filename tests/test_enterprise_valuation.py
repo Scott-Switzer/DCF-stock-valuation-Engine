@@ -218,3 +218,18 @@ def test_calculate_enterprise_api_enforces_server_evidence_attestation(tmp_path,
     assert ok_resp.status_code == 200, ok_resp.json
     assert ok_resp.json['enterprise_value'] == pytest.approx(181.5)
 
+
+
+def test_enterprise_uses_verified_latest_year_even_when_other_years_are_missing():
+    full = document()
+    pages = deepcopy(full['source']['native_history'])
+    latest = max(row['period_end'] for row in pages[0]['observations'])
+    pages[0]['observations'] = [row for row in pages[0]['observations'] if row['period_end'] == latest]
+    sparse = history_document(pages, 'AAPL', '2026-09-24', pages[0]['cik'])
+    sparse['source']['evidence_attestation'] = sign_evidence(pages, 'AAPL', '2026-09-24', pages[0]['cik'], SECRET)
+    result = value_enterprise(sparse, benchmarks(), [0]*5, 0, .15,
+                              valuation_date='2026-09-24', suitable=True, evidence_secret=SECRET)
+    assert result['enterprise_value'] == pytest.approx(181.5)
+    assert result['source']['history_coverage']['observed_periods'] == 1
+    assert result['source']['history_coverage']['missing_periods_imputed'] is False
+    assert result['intrinsic_value'] is None

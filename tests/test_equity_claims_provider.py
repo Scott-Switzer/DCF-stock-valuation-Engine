@@ -616,6 +616,7 @@ def test_load_equity_claims_uses_the_scoped_transport_and_pins_the_served_identi
     assert service.calls[0]['headers']['x-zion-service-token'] == 'internal-token'
     assert service.calls[0]['headers']['x-zion-service-caller'] == SERVICE_CALLER
     assert service.calls[0]['params']['expected_release_id'] == RELEASE
+    assert service.calls[0]['params']['release_id'] == RELEASE
 
     assert claims_headers(token='t')['Authorization'] == 'Bearer t'
     assert claims_headers(service_token='s', caller=SERVICE_CALLER)['x-zion-service-caller'] == SERVICE_CALLER

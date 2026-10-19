@@ -87,6 +87,36 @@ def load_screen(query, *, http=None, token=None, base=None):
     return page
 
 
+def issuer_identity(symbol, cik, asof, *, http=None):
+    """Verify an issuer alias without promoting current metadata into historical security data."""
+    from issuer_classification import REVIEWED, reviewed_identity
+    reviewed = reviewed_identity(symbol, cik, asof)
+    if reviewed:
+        return dict(status='DATED_REVIEWED_ISSUER_ALIAS', cik=cik, ticker=symbol,
+                    name=reviewed[0], historical_security_eligible=False,
+                    qualification='ISSUER_IDENTITY_ONLY;NO_DATED_PRICE_OR_SHARE_CLASS_JOIN')
+    if symbol in REVIEWED and REVIEWED[symbol]['cik'] != cik:
+        return None
+    from dcf_loader import JsonHTTP
+    import hashlib
+    import json
+    from datetime import datetime, timezone
+    transport = http or JsonHTTP()
+    url = f'https://data.sec.gov/submissions/CIK{cik}.json'
+    doc = transport.get(url, headers={'User-Agent': provider_setting('EDGAR_IDENTITY') or
+                         'Zion Financial Research scswitzer@chapman.edu'},
+                         ttl=3600, cache_key='screen-issuer-' + cik)
+    if (not isinstance(doc, dict) or str(doc.get('cik')).zfill(10) != cik
+            or symbol not in [str(value).replace('.', '-') for value in doc.get('tickers', [])]):
+        return None
+    return dict(status='CURRENT_SEC_ALIAS_ONLY', cik=cik, ticker=symbol, name=doc.get('name'),
+                historical_security_eligible=False, source_url=url,
+                checked_at_utc=datetime.now(timezone.utc).isoformat(),
+                canonical_json_sha256=hashlib.sha256(json.dumps(doc, sort_keys=True,
+                                    separators=(',', ':')).encode()).hexdigest(),
+                qualification='CURRENT_METADATA_NOT_HISTORICAL;ISSUER_FACTS_ONLY;NO_SECURITY_PRICE_JOIN')
+
+
 def authorized():
     from accounts import current_user
     return current_user() is not None
@@ -125,9 +155,9 @@ def register_screen(app):
             if len(page['matches']) != 1 or page['matches'][0]['cik'] != raw.get('cik'):
                 return jsonify(error='Screen issuer mismatch'), 409
             row = page['matches'][0]
-            from issuer_classification import reviewed_identity
-            if reviewed_identity(symbol, row['cik'], page['archive_cutoff']) is None:
-                return jsonify(error='DATED_TICKER_IDENTITY_NOT_VERIFIED',
+            identity = issuer_identity(symbol, row['cik'], page['archive_cutoff'])
+            if identity is None:
+                return jsonify(error='SEC_ISSUER_ALIAS_MISMATCH',
                                cik=row['cik'], ticker=symbol), 409
             if 'operating_dcf' not in row.get('methods', []):
                 return jsonify(error='OPERATING_DCF_INPUTS_UNAVAILABLE',
@@ -142,7 +172,7 @@ def register_screen(app):
             if latest.get('ebit') is None:
                 blockers.append('MISSING_LATEST_OPERATING_INCOME')
             blockers.append('DATED_ASSUMPTIONS_REQUIRED')
-            return jsonify(financials=doc, screening=deepcopy(page),
+            return jsonify(financials=doc, screening=deepcopy(page), issuer_identity=identity,
                            valuation_blockers=blockers,
                            source_missing_fields=(doc.get('source') or {}).get('missing_fields', {}),
                            calculate_endpoint='/api/calculate/enterprise',

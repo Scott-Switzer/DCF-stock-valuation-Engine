@@ -161,3 +161,31 @@ def test_explicit_pin_selects_the_approved_release_on_every_page():
             return page()
     load_history('AAPL', '2026-09-24', HTTP(), cik='0000320193', base='https://example.test',
                  token='local', expected_release_id='r1')
+
+
+def test_sparse_annual_history_is_preserved_for_enterprise_models_without_filling():
+    p = page()
+    p['observations'] = [p['observations'][0], p['observations'][2]]
+    doc = history_document([p], 'AAPL', '2026-09-24', '0000320193')
+    assert [r['period_end'] for r in doc['historical']] == ['2022-12-31', '2024-12-31']
+    assert doc['source']['history_coverage']['status'] == 'SPARSE_ANNUAL_OBSERVATIONS'
+    assert doc['source']['history_coverage']['observed_periods'] == 2
+    assert doc['historical'][-1]['ebit'] is None
+    from dcf_loader import demo_document
+    conventional = demo_document()
+    conventional['historical'] = doc['historical']
+    with pytest.raises(ValueError, match='three|Three|Exactly'):
+        parse_document(conventional)
+
+
+def test_single_annual_observation_remains_explicitly_partial():
+    p = page(); p['observations'] = p['observations'][-1:]
+    doc = history_document([p], 'AAPL', '2026-09-24', '0000320193')
+    assert doc['source']['history_coverage']['status'] == 'SPARSE_ANNUAL_OBSERVATIONS'
+    assert len(doc['historical']) == 1
+
+
+def test_no_annual_revenue_observation_still_fails():
+    p = page(); p['observations'] = []
+    with pytest.raises(ProviderError, match='annual revenue'):
+        history_document([p], 'AAPL', '2026-09-24', '0000320193')

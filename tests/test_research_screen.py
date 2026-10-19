@@ -105,3 +105,26 @@ def test_unused_accounting_fields_are_not_enterprise_blockers(monkeypatch):
         'ticker':'AAPL','cik':'0000320193','expected_index_id':'b'*64})
     assert result.json['valuation_blockers'] == ['DATED_ASSUMPTIONS_REQUIRED']
     assert 'market.price' in result.json['source_missing_fields']
+
+
+def test_current_sec_alias_can_prepare_issuer_research_without_certifying_history(monkeypatch):
+    monkeypatch.setattr(screen, 'load_screen', lambda query: deepcopy(PAGE))
+    monkeypatch.setattr(screen, 'issuer_identity', lambda *a: {
+        'status':'CURRENT_SEC_ALIAS_ONLY', 'historical_security_eligible':False,
+        'cik':'0000320193','ticker':'AAPL'})
+    monkeypatch.setattr(screen, 'load_document', lambda *a, **kw: {
+        'historical':[{'revenue':100,'ebit':20}], 'source':{'missing_fields':{}}})
+    response = app.test_client().post('/api/research-screen/prepare',json={
+        'ticker':'AAPL','cik':'0000320193','expected_index_id':'b'*64})
+    assert response.status_code == 200
+    assert response.json['issuer_identity']['historical_security_eligible'] is False
+
+
+def test_sec_submissions_alias_is_checked_against_requested_issuer():
+    class HTTP:
+        def get(self,*a,**kw):
+            return {'cik':320193,'name':'Apple Inc.','tickers':['AAPL']}
+    result=screen.issuer_identity('AAPL','0000320193','2020-01-01',http=HTTP())
+    assert result['historical_security_eligible'] is False
+    assert result['status']=='CURRENT_SEC_ALIAS_ONLY'
+    assert screen.issuer_identity('MSFT','0000320193','2020-01-01',http=HTTP()) is None
