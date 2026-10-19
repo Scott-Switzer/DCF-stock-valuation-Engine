@@ -225,3 +225,46 @@ def test_cli_alias_is_read_only_even_with_an_owner_bearer(method):
                              {'Authorization': 'Bearer owner'}, method=method)
     assert response.status == 405
     assert not source.requests
+
+
+@pytest.mark.parametrize('prefix', ['/api/data', '/private/v1'])
+@pytest.mark.parametrize('length', [5000, 16384])
+def test_native_row_cursor_uses_source_budget_without_truncation(prefix, length):
+    # Parser boundaries only: Cloudflare's public URL limit remains16KB.
+    cursor = 'x' * length
+    query = '?path=data.parquet&cursor=' + cursor + '&columns=amount&limit=5'
+    response, source = fetch(prefix + '/datasets/research/rows' + query,
+                             {'Authorization': 'Bearer owner'})
+    assert response.status == 206
+    assert source.requests[0].url.endswith(query)
+
+
+def test_native_row_wide_projection_survives_continuation_query():
+    columns = ','.join('native_field_' + str(i).zfill(4) for i in range(256))
+    assert len(columns) > 4096
+    query = '?path=data.parquet&cursor=' + 'x' * 5000 + '&columns=' + columns
+    response, source = fetch('/api/data/datasets/research/rows' + query,
+                             {'Authorization': 'Bearer owner'})
+    assert response.status == 206
+    assert source.requests[0].url.endswith(query)
+
+
+def test_object_listing_cursor_uses_existing_8192_source_budget():
+    query = '?prefix=raw/wrds/&cursor=' + 'x' * 8192
+    response, source = fetch('/api/data/datasets/research/objects' + query,
+                             {'Authorization': 'Bearer owner'})
+    assert response.status == 206
+    assert source.requests[0].url.endswith(query)
+
+
+@pytest.mark.parametrize('route,query', [
+    ('datasets/research/rows', '?cursor=' + 'x' * 16385),
+    ('datasets/research/rows', '?cursor=' + 'x' * 16384 + '&columns=' + 'x' * 16384),
+    ('datasets/research/objects', '?cursor=' + 'x' * 8193),
+    ('research-prices', '?cursor=' + 'x' * 4097),
+    ('historical-series', '?search=' + 'x' * 4097),
+])
+def test_route_specific_cursor_and_query_budgets_still_fail_closed(route, query):
+    response, source = fetch('/api/data/' + route + query, {'Authorization': 'Bearer owner'})
+    assert response.status == 400
+    assert not source.requests

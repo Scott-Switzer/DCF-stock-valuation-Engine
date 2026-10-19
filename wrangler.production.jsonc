@@ -95,6 +95,7 @@
   "secrets": {
     "required": [
       "RECORD_SALT",
+      "ZION_OWNER_DATA_TOKEN",
       "ZION_SERVICE_TOKEN",
       "ZION_HISTORY_TOKEN",
       "ZION_BENCHMARK_TOKEN"

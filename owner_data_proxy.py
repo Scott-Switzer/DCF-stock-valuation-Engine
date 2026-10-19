@@ -22,6 +22,8 @@ _READ_ROUTES = frozenset({
 _DATASET_PATH = re.compile(
     r'datasets/(?:catalog/[a-f0-9]{32}|[a-z]+/(?:objects|object|schema|rows))\Z'
 )
+_NATIVE_ROWS = re.compile(r'datasets/(?:financial|research|filings|lakehouse)/rows\Z')
+_OBJECT_LIST = re.compile(r'datasets/(?:financial|research|filings|lakehouse)/objects\Z')
 _RESPONSE_HEADERS = (
     'content-type', 'content-length', 'content-range', 'etag', 'accept-ranges',
     'x-data-quality', 'x-request-id',
@@ -57,7 +59,10 @@ def request_plan(request):
         route = 'datasets/catalog'
     if route not in _READ_ROUTES and not _DATASET_PATH.fullmatch(route):
         raise Rejected('NOT_FOUND', 404)
-    if len(url.query) > 8192 or re.search(r'%(?![a-fA-F0-9]{2})', url.query):
+    native_rows = bool(_NATIVE_ROWS.fullmatch(route))
+    object_list = bool(_OBJECT_LIST.fullmatch(route))
+    query_budget = 32768 if native_rows else 16384 if object_list else 8192
+    if len(url.query) > query_budget or re.search(r'%(?![a-fA-F0-9]{2})', url.query):
         raise Rejected('INVALID_PARAMETER', 400)
     try:
         pairs = parse_qsl(url.query, keep_blank_values=True, strict_parsing=True,
@@ -66,10 +71,15 @@ def request_plan(request):
         raise Rejected('INVALID_PARAMETER', 400) from None
     seen = set()
     for key, value in pairs:
+        value_budget = 4096
+        if native_rows and key in {'cursor', 'columns'}:
+            value_budget = 16384
+        elif object_list and key == 'cursor':
+            value_budget = 8192
         if (key in seen or not re.fullmatch(r'[a-z][a-z0-9_]{0,63}', key)
                 or key in {'url', 'origin', 'host', 'headers', 'authorization', 'token',
                            'bearer', 'principal', 'service_token', 'api_key'}
-                or len(value) > 4096 or re.search(r'[\x00-\x1f\x7f]', value)):
+                or len(value) > value_budget or re.search(r'[\x00-\x1f\x7f]', value)):
             raise Rejected('INVALID_PARAMETER', 400)
         seen.add(key)
     # Preserve the exact validated query and bearer; only the binding chooses the host.
