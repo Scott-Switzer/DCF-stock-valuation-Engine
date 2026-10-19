@@ -330,6 +330,7 @@ def load_equity_claims(ticker, asof, http, *, cik, base, token=None, service_tok
         params['release_id'] = expected_release_id
     if expected_source_release_id:
         params['expected_source_release_id'] = expected_source_release_id
+        params['source_release_id'] = expected_source_release_id
     page = http.get(base.rstrip('/') + CLAIMS_PATH, headers=headers, params=dict(params))
     claims = verify_claims(page)
     # The source's own report of the cutoff it resolved is verified before anything in the

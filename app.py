@@ -164,7 +164,7 @@ def default_form(doc):
             form[f"h_{k}_{i}"] = (
                 None if row.get(k) is None else row[k] * (100 if k == "tax_rate" else 1)
             )
-    valid = all(r.get("revenue") not in {None, 0} for r in d["historical"])
+    valid = bool(d["historical"]) and all(r.get("revenue") not in {None, 0} for r in d["historical"])
     for key in DRIVERS:
         value = None
         if key == "growth":
@@ -181,7 +181,7 @@ def default_form(doc):
                 "book_value_margin": "book_value",
             }[key]
             if all(r.get(history) is not None for r in d["historical"]):
-                value = sum(r[history] / r["revenue"] for r in d["historical"]) / 3
+                value = sum(r[history] / r["revenue"] for r in d["historical"]) / len(d["historical"])
         for i in range(5):
             form[f"{key}_{i}"] = (
                 value if key == "growth" or value is None else value * 100

@@ -680,3 +680,13 @@ def test_load_equity_claims_verifies_the_cutoff_the_source_resolved():
             requested=ASOF, policy='DATE_ONLY_END_OF_DAY_UTC_V1', day_complete=True,
             resolved_utc='2026-10-15T23:59:59.999999999Z', valuation_date=ASOF))),
             cik=CIK, base='https://zion.example', token='t')
+
+
+def test_load_claims_selects_the_expected_approved_companion():
+    page = payload()
+    source_release = page['source_release_id']
+    http = FakeHttp(page)
+    load_equity_claims('GOOGL', ASOF, http, cik=CIK, base='https://zion.example',
+                       token='owner', expected_source_release_id=source_release)
+    assert http.calls[0]['params']['source_release_id'] == source_release
+    assert http.calls[0]['params']['expected_source_release_id'] == source_release
