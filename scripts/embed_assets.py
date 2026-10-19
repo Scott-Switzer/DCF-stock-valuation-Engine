@@ -54,6 +54,7 @@ module_names = [
     "xlsx_export.py",
     "compare.py",
     "readiness.py",
+    "research_screen.py",
     "residual_income.py",
     "library.py",
     "accounts.py",
