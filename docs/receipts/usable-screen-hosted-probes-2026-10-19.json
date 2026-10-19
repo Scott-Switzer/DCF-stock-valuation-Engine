@@ -1,0 +1,25 @@
+{
+  "/health": {
+    "http_status": 200,
+    "cache_control": null,
+    "release": {
+      "asset_sha256": "ed3ffeaa96bbf87b98ee4bc6da96c15a8dd2cab26947993d6f006af90653c094",
+      "commit": "41b110bd49a22fb1ea5002621a5bd9577d19afca",
+      "tracked_dirty": false
+    }
+  },
+  "/screen": {
+    "http_status": 200,
+    "cache_control": null
+  },
+  "/static/js/screen.js": {
+    "http_status": 200,
+    "cache_control": "no-cache"
+  },
+  "/api/research-screen": {
+    "http_status": 401,
+    "cache_control": "no-store"
+  },
+  "worker_version": "67ad5a79-4bd2-49a0-8f16-07e0e9abdc05",
+  "browser_verification_scope": "LOCAL_AUTHENTICATED_BROWSER_WITH_LIVE_ZION_SOURCES"
+}

@@ -56,3 +56,16 @@ The output path must not exist. The scripts make no remote writes. The cohort ru
 The broader screen's engine and the current claims-serving engine must align before per-share results can be published for that cohort. No fallback engine is silently substituted. Raw class evidence still needs reconciliation against corporate actions and class-specific claim semantics. Dated identity review, incomplete annual histories and issuer-specific assumptions remain explicit expansion work.
 
 Production and source CURRENT pointers, private licensed datasets and provider subscriptions are unchanged. Only the pre-existing dedicated DCF staging deployment is used for hosted verification. No new cloud resources or purchases were created.
+
+## Delivery verification
+
+- Full local suite: **984 passed, 10 subtests passed**, one pre-existing pytest warning.
+- Ruff, JavaScript syntax, diff checks and Worker deployment dry run passed.
+- Fresh whole-branch review completed; startup-order and pagination findings were fixed.
+- Dedicated staging Worker serves code `41b110bd49a22fb1ea5002621a5bd9577d19afca`, version `67ad5a79-4bd2-49a0-8f16-07e0e9abdc05`. Hosted health, screen HTML and JavaScript return 200; anonymous private screen returns 401.
+- Existing deployed end-to-end regression: **21 checks, 0 failures**, including three full bridge scenarios and issuer/attestation/origin/ownership refusals. Receipt: `docs/receipts/staging-e2e-usable-2026-10-19.json`. This bridge check uses its separately pinned, previously verified three-company engine; it does not certify the broader screen engine's equity bridge.
+- Local authenticated browser with live Zion sources completed screening, exact-release preparation, explicit assumptions and an AAPL enterprise calculation. Authenticated hosted screen/browser acceptance is not claimed.
+
+Code commits: `a83f63c` share recovery; `efdc8d5` approved historical release selection; `e31cfcd` screening integration; `87aa990` cohort runner/form; `57df5db` precise blockers and receipts; `41b110b` readable result and preserved complete evidence. Commits are local; no public Git publication was performed.
+
+Browser screenshot: `docs/receipts/usable-screen-browser-2026-10-19.png`. The illustrative browser run is dated October 19 (5% annual growth, 2% terminal growth, 15% terminal ROIC, Computers/Peripherals references), retaining September 24 financial availability. It returned enterprise value $1,678,931,860,843.83, with equity and per-share values unavailable.
