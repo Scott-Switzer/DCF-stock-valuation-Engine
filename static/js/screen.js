@@ -33,7 +33,7 @@
           byId('selected-company').textContent = `${row.label} · CIK ${row.cik}`;
           byId('screen-ticker').value = '';
           byId('valuation-request').value = '';
-          byId('screen-evidence').textContent = JSON.stringify(row, null, 2);
+          byId('screen-evidence').textContent = `Issuer ${row.label} · CIK ${row.cik}\nSector: ${row.sector || 'Unavailable'}\nShare basis: ${row.share_basis || row.share_absence || 'Unavailable'}\nEligible methods: ${row.methods.join(', ')}\nMissing company inputs: ${row.missing.join(', ') || 'None reported by the screen'}`;
           byId('valuation-result').textContent = '';
         });
         const line = document.createElement('p'); line.append(button);
@@ -61,7 +61,7 @@
       });
       prepared = result;
       byId('valuation-date').value = new Date().toISOString().slice(0, 10);
-      byId('screen-evidence').textContent = JSON.stringify({blockers:result.valuation_blockers, benchmarkReferences:result.benchmark_references, source: {name:result.financials.source.name, release:result.financials.source.release_id, cutoff:result.financials.source.historical_cutoff}}, null, 2);
+      byId('screen-evidence').textContent = `Source: ${result.financials.source.name}\nFinancial cutoff: ${result.financials.source.historical_cutoff}\nEngine release: ${result.financials.source.release_id}\nTo calculate: ${result.valuation_blockers.join(', ')}\nOther source gaps: ${Object.keys(result.source_missing_fields).length} (retained in the reproducible request).\nEquity and per-share values require a separately verified claims bridge.`;
       byId('valuation-request').value = JSON.stringify(result.request_template, null, 2);
       status('Financial history loaded. Fill the explicit assumptions before calculating.');
     } catch (error) { status(error.message); }

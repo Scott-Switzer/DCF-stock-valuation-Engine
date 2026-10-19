@@ -97,7 +97,7 @@ def register_screen(app):
 
     @app.get('/screen')
     def company_screen():
-        return render_template('screen.html')
+        return render_template('screen.html', signed_in=authorized())
 
     @app.get('/api/research-screen')
     def screen_api():
@@ -135,10 +135,16 @@ def register_screen(app):
             doc = load_document('zion_history', symbol, page['archive_cutoff'], cik=row['cik'],
                                 expected_release_id=page['engine_release_id'])
             blockers = list(row.get('missing') or [])
-            blockers += list((doc.get('source') or {}).get('missing_fields') or [])
+            history = doc.get('historical') or []
+            latest = history[-1] if history else {}
+            if latest.get('revenue') is None:
+                blockers.append('MISSING_LATEST_REVENUE')
+            if latest.get('ebit') is None:
+                blockers.append('MISSING_LATEST_OPERATING_INCOME')
             blockers.append('DATED_ASSUMPTIONS_REQUIRED')
             return jsonify(financials=doc, screening=deepcopy(page),
                            valuation_blockers=blockers,
+                           source_missing_fields=(doc.get('source') or {}).get('missing_fields', {}),
                            calculate_endpoint='/api/calculate/enterprise',
                            benchmark_references=deepcopy(BENCHMARK_REFERENCES),
                            equity_bridge_endpoint='/api/equity-claims/bridge',

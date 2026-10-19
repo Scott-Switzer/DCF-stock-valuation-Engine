@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Company screening</h1>
-<p>Screen the pinned SEC release, inspect missing inputs, then use the existing valuation engine. Eligibility covers company inputs; assumptions require your selection. <a href="/account">Sign in</a> to access private screening. Enterprise scenarios keep equity and per-share values unavailable until a matching claims bridge is verified.</p>
+<p>Screen the pinned SEC release, inspect missing inputs, then use the existing valuation engine. Eligibility covers company inputs; assumptions require your selection. {% if not signed_in %}<a href="/account">Sign in</a> to access private screening.{% endif %} Enterprise scenarios keep equity and per-share values unavailable until a matching claims bridge is verified.</p>
 <form id="screen-form"><label>Method <select name="method"><option value="operating_dcf">Operating DCF</option></select></label>
 <label>Sector <input name="sector" placeholder="manufacturing"></label><label>SEC CIK (optional) <input name="cik" pattern="[0-9]{10}" placeholder="0000320193"></label><button>Screen companies</button></form>
 <p id="screen-status" role="status"></p><div id="screen-results"></div><button id="next-page" hidden>Next page</button>

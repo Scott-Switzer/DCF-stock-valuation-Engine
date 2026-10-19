@@ -1,0 +1,2469 @@
+{
+  "selected": 50,
+  "accounted": 50,
+  "results": [
+    {
+      "cik": "0000001800",
+      "label": "ABBOTT LABORATORIES",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "ABT",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000002098",
+      "label": "ACME UNITED CORP",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "ACU",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000002186",
+      "label": "BK Technologies Corp",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "BKTI",
+      "history_periods": [
+        "2021-12-31",
+        "2022-12-31",
+        "2023-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2021-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2021-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2021-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2021-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2022-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2022-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2022-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2022-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000002488",
+      "label": "ADVANCED MICRO DEVICES INC",
+      "status": "BLOCKED",
+      "screening_missing": [
+        "MISSING_DIVIDEND_EVIDENCE"
+      ],
+      "blockers": [
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "AMD",
+      "history_periods": [
+        "2023-12-30",
+        "2024-12-28",
+        "2025-12-27"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-28.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-28.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-28.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-28.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-27.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-27.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-27.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-27.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "DATED_REVIEWED"
+    },
+    {
+      "cik": "0000002969",
+      "label": "AIR PRODUCTS AND CHEMICALS, INC.",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "APD",
+      "history_periods": [
+        "2023-09-30",
+        "2024-09-30",
+        "2025-09-30"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000003197",
+      "label": "CECO ENVIRONMENTAL CORP.",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "CECO",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000003545",
+      "label": "ALICO, INC.",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "ALCO",
+      "history_periods": [
+        "2023-09-30",
+        "2024-09-30",
+        "2025-09-30"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000003570",
+      "status": "BLOCKED",
+      "blockers": [
+        "NATIVE_HISTORY_ADAPTER_REFUSED_INPUTS",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "label": "Cheniere Energy, Inc.",
+      "adapter_refusal": "Native Zion history: three consecutive annual revenue periods are required",
+      "source_probe": {
+        "http_status": 200,
+        "error_code": null,
+        "observations": 30,
+        "coverage_gaps": 39
+      }
+    },
+    {
+      "cik": "0000004127",
+      "label": "SKYWORKS SOLUTIONS, INC.",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "SWKS",
+      "history_periods": [
+        "2023-09-29",
+        "2024-09-27",
+        "2025-10-03"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-09-29.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-29.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-29.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-29.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-27.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-27.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-27.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-27.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-10-03.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-10-03.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-10-03.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-10-03.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000004281",
+      "label": "HOWMET AEROSPACE INC.",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "HWM",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000004904",
+      "status": "BLOCKED",
+      "blockers": [
+        "NATIVE_HISTORY_ADAPTER_REFUSED_INPUTS",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "label": "American Electric Power Company, Inc.",
+      "adapter_refusal": "Native Zion history: three consecutive annual revenue periods are required",
+      "source_probe": {
+        "http_status": 200,
+        "error_code": null,
+        "observations": 21,
+        "coverage_gaps": 31
+      }
+    },
+    {
+      "cik": "0000006176",
+      "status": "BLOCKED",
+      "blockers": [
+        "NATIVE_HISTORY_ADAPTER_REFUSED_INPUTS",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "label": "AMPCO-PITTSBURGH CORP",
+      "adapter_refusal": "Native Zion history: three consecutive annual revenue periods are required",
+      "source_probe": {
+        "http_status": 200,
+        "error_code": null,
+        "observations": 31,
+        "coverage_gaps": 32
+      }
+    },
+    {
+      "cik": "0000006207",
+      "label": "AMREP CORP.",
+      "status": "BLOCKED",
+      "screening_missing": [
+        "MISSING_DIVIDEND_EVIDENCE"
+      ],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "AXR",
+      "history_periods": [
+        "2024-04-30",
+        "2025-04-30",
+        "2026-04-30"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2024-04-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-04-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-04-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-04-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-04-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-04-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-04-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-04-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-04-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-04-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-04-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-04-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000006281",
+      "label": "ANALOG DEVICES INC",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "ADI",
+      "history_periods": [
+        "2023-10-28",
+        "2024-11-02",
+        "2025-11-01"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-10-28.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-10-28.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-10-28.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-10-28.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-02.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-02.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-02.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-02.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-11-01.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-11-01.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-11-01.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-11-01.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000006845",
+      "label": "Apogee Enterprises, Inc.",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "APOG",
+      "history_periods": [
+        "2024-03-02",
+        "2025-03-01",
+        "2026-02-28"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2024-03-02.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-03-02.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-03-02.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-03-02.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-03-01.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-03-01.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-03-01.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-03-01.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-02-28.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-02-28.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-02-28.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-02-28.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000006951",
+      "label": "APPLIED MATERIALS INC /DE",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "AMAT",
+      "history_periods": [
+        "2023-10-29",
+        "2024-10-27",
+        "2025-10-26"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-10-29.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-10-29.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-10-29.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-10-29.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-10-27.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-10-27.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-10-27.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-10-27.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-10-26.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-10-26.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-10-26.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-10-26.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000007536",
+      "label": "ARROW ELECTRONICS,\u00a0INC.",
+      "status": "BLOCKED",
+      "screening_missing": [
+        "MISSING_DIVIDEND_EVIDENCE"
+      ],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "ARW",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000007623",
+      "label": "ARTS WAY MANUFACTURING CO INC",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "ARTW",
+      "history_periods": [
+        "2023-11-30",
+        "2024-11-30",
+        "2025-11-30"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-11-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-11-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-11-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-11-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-11-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-11-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-11-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-11-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000008146",
+      "label": "AstroNova, Inc.",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "MISSING_CURRENT_TICKER_ALIAS",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": null
+    },
+    {
+      "cik": "0000008504",
+      "label": "AgEagle Aerial Systems Inc.",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "UAVS",
+      "history_periods": [
+        "2022-12-31",
+        "2023-12-31",
+        "2024-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2022-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2022-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2022-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2022-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000008858",
+      "label": "AVNET INC",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "AVT",
+      "history_periods": [
+        "2024-06-29",
+        "2025-06-28",
+        "2026-06-27"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2024-06-29.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-06-29.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-06-29.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-06-29.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-06-28.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-06-28.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-06-28.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-06-28.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-06-27.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-06-27.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-06-27.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-06-27.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000008947",
+      "label": "AZZ Inc.",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "AZZ",
+      "history_periods": [
+        "2024-02-29",
+        "2025-02-28",
+        "2026-02-28"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2024-02-29.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-02-29.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-02-29.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-02-29.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-02-28.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-02-28.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-02-28.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-02-28.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-02-28.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-02-28.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-02-28.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-02-28.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000009092",
+      "label": "BADGER METER, INC.",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "BMI",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.cash": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000009326",
+      "label": "Balchem Corporation",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "BCPC",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.capex": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.capex": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.capex": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000009389",
+      "status": "BLOCKED",
+      "blockers": [
+        "NATIVE_HISTORY_ADAPTER_REFUSED_INPUTS",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "label": "BALL CORPORATION",
+      "adapter_refusal": "Native Zion history: three consecutive annual revenue periods are required",
+      "source_probe": {
+        "http_status": 200,
+        "error_code": null,
+        "observations": 22,
+        "coverage_gaps": 17
+      }
+    },
+    {
+      "cik": "0000010048",
+      "label": "BARNWELL INDUSTRIES,\u00a0INC.",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "BRN",
+      "history_periods": [
+        "2023-09-30",
+        "2024-09-30",
+        "2025-09-30"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-09-30.capex": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.capex": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.capex": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000010329",
+      "label": "BASSETT FURNITURE INDUSTRIES, INCORPORATED",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "BSET",
+      "history_periods": [
+        "2023-11-25",
+        "2024-11-30",
+        "2025-11-29"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-11-25.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-11-25.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-11-25.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-11-25.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-11-29.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-11-29.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-11-29.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-11-29.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.diluted_shares": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000010795",
+      "label": "BECTON, DICKINSON AND COMPANY",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "BDX",
+      "history_periods": [
+        "2023-09-30",
+        "2024-09-30",
+        "2025-09-30"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000012040",
+      "label": "FLANIGAN\u2019S ENTERPRISES, INC.",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "BDL",
+      "history_periods": [
+        "2023-09-30",
+        "2024-09-28",
+        "2025-09-27"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-09-30.net_income": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-28.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-28.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-28.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-28.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-27.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-27.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-27.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-27.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.cash": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000012927",
+      "label": "THE BOEING COMPANY",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "BA",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000013156",
+      "label": "Galaxy Gaming, Inc.",
+      "status": "BLOCKED",
+      "screening_missing": [
+        "MISSING_DIVIDEND_EVIDENCE"
+      ],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "GLXZ",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000014177",
+      "label": "BRIDGFORD FOODS CORPORATION",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "BRID",
+      "history_periods": [
+        "2023-11-03",
+        "2024-11-01",
+        "2025-10-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-11-03.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-11-03.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-11-03.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-11-03.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-01.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-01.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-01.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-11-01.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-10-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-10-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-10-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-10-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.diluted_shares": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000014707",
+      "status": "BLOCKED",
+      "blockers": [
+        "NATIVE_HISTORY_ADAPTER_REFUSED_INPUTS",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "label": "CALERES,\u00a0INC",
+      "adapter_refusal": "Native Zion history: three consecutive annual revenue periods are required",
+      "source_probe": {
+        "http_status": 200,
+        "error_code": null,
+        "observations": 35,
+        "coverage_gaps": 13
+      }
+    },
+    {
+      "cik": "0000014930",
+      "label": "Brunswick Corporation",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "BC",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000015357",
+      "label": "CHASE GENERAL CORP",
+      "status": "BLOCKED",
+      "screening_missing": [
+        "MISSING_DIVIDEND_EVIDENCE"
+      ],
+      "blockers": [
+        "MISSING_CURRENT_TICKER_ALIAS",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": null
+    },
+    {
+      "cik": "0000015847",
+      "status": "BLOCKED",
+      "blockers": [
+        "NATIVE_HISTORY_ADAPTER_REFUSED_INPUTS",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "label": "BUTLER NATIONAL CORP",
+      "adapter_refusal": "Native Zion history: three consecutive annual revenue periods are required",
+      "source_probe": {
+        "http_status": 200,
+        "error_code": null,
+        "observations": 30,
+        "coverage_gaps": 16
+      }
+    },
+    {
+      "cik": "0000016040",
+      "label": "CABOT CORP",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "CBT",
+      "history_periods": [
+        "2023-09-30",
+        "2024-09-30",
+        "2025-09-30"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000016732",
+      "label": "CAMPBELL'S Co",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "CPB",
+      "history_periods": [
+        "2023-07-30",
+        "2024-07-28",
+        "2025-08-03"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-07-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-07-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-07-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-07-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-07-28.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-07-28.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-07-28.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-07-28.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-08-03.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-08-03.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-08-03.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-08-03.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000018230",
+      "label": "CATERPILLAR INC",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "CAT",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.net_income": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.net_income": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.net_income": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000018498",
+      "label": "GENESCO INC",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "GCO",
+      "history_periods": [
+        "2024-02-03",
+        "2025-02-01",
+        "2026-01-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2024-02-03.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-02-03.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-02-03.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-02-03.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-02-01.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-02-01.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-02-01.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-02-01.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-01-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-01-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-01-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-01-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000018926",
+      "status": "BLOCKED",
+      "blockers": [
+        "NATIVE_HISTORY_ADAPTER_REFUSED_INPUTS",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "label": "LUMEN TECHNOLOGIES,\u00a0INC.",
+      "adapter_refusal": "Native Zion history: three consecutive annual revenue periods are required",
+      "source_probe": {
+        "http_status": 200,
+        "error_code": null,
+        "observations": 24,
+        "coverage_gaps": 42
+      }
+    },
+    {
+      "cik": "0000019584",
+      "status": "BLOCKED",
+      "blockers": [
+        "NATIVE_HISTORY_ADAPTER_REFUSED_INPUTS",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "label": "CHEMED CORPORATION",
+      "adapter_refusal": "Native Zion history: three consecutive annual revenue periods are required",
+      "source_probe": {
+        "http_status": 200,
+        "error_code": null,
+        "observations": 31,
+        "coverage_gaps": 26
+      }
+    },
+    {
+      "cik": "0000019745",
+      "label": "CHESAPEAKE UTILITIES CORP",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "CPK",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000019871",
+      "label": "Chicago Rivet & Machine Co.",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "CVR",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.capex": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000020212",
+      "label": "Churchill Downs Inc",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_TICKER_IDENTITY_NOT_VERIFIED",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "CHDN",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.capex": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.capex": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.capex": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "CURRENT_ALIAS_ONLY_NOT_HISTORICAL"
+    },
+    {
+      "cik": "0000021344",
+      "label": "COCA COLA CO",
+      "status": "BLOCKED",
+      "screening_missing": [],
+      "blockers": [
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "ticker": "KO",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "DATED_REVIEWED"
+    },
+    {
+      "cik": "0000021535",
+      "status": "BLOCKED",
+      "blockers": [
+        "NATIVE_HISTORY_ADAPTER_REFUSED_INPUTS",
+        "DATED_ASSUMPTIONS_REQUIRED"
+      ],
+      "label": "COHU, INC.",
+      "adapter_refusal": "Native Zion history: three consecutive annual revenue periods are required",
+      "source_probe": {
+        "http_status": 200,
+        "error_code": null,
+        "observations": 30,
+        "coverage_gaps": 7
+      }
+    },
+    {
+      "cik": "0000320193",
+      "label": "Apple Inc.",
+      "status": "ENTERPRISE_SCENARIO_VERIFIED",
+      "screening_missing": [],
+      "blockers": [],
+      "ticker": "AAPL",
+      "history_periods": [
+        "2023-09-30",
+        "2024-09-28",
+        "2025-09-27"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-09-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-09-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-28.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-28.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-28.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-09-28.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-27.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-27.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-27.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-09-27.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "DATED_REVIEWED",
+      "enterprise_value": 1678931860843.8276,
+      "equity_value": null,
+      "value_per_share": null,
+      "equity_blockers": [
+        "MATCHING_CLAIMS_ENGINE_RELEASE_REQUIRED"
+      ],
+      "independent_absolute_error_decimal": "0.000624631363923028650621318",
+      "valuation_date": "2026-10-15",
+      "assumption_source": "EXPLICIT_PREVIOUSLY_REVIEWED_SCENARIO",
+      "analyst_assumptions": {
+        "company_suitability_confirmed": true,
+        "operating_margin_policy": "HOLD_LATEST_REPORTED_MARGIN",
+        "reinvestment_policy": "DELTA_REVENUE_OVER_INDUSTRY_SALES_CAPITAL",
+        "revenue_growth_rates": [
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.05
+        ],
+        "terminal_growth": 0.02,
+        "terminal_roic": 0.15
+      },
+      "benchmark_assumptions": {
+        "sales_capital": {
+          "benchmark_evidence": {
+            "coverage": {
+              "as_of": "2026-10-15",
+              "evidence_path": "evidence/capex_us_january_2026__97216e369c8c6bd6__capex.xls",
+              "external_redistribution": "PROHIBITED_PENDING_REVIEW",
+              "historical_policy": "POINT_IN_TIME_PUBLISHED; historical cutoffs never fall back to the newest benchmark; unavailable coverage fails closed",
+              "independent_validation": "SOURCE_CELL_PRESERVED; CONSUMER_NUMERICS_TESTED",
+              "live_provider_calls": 0,
+              "rights_status": "private_review_pending",
+              "source_bytes_served": false,
+              "source_sha256": "97216e369c8c6bd69987ed2ace0933381cc278b7d423a0c7b4944effded4c58e",
+              "status": "AVAILABLE"
+            },
+            "release": {
+              "dataset_id": "capex_reinvestment",
+              "ddfi_release_id": "bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+              "index_sha256": "4817c621389ee06b65254d716573a43633b9a58a9572e57b11f7b2e4ac558ce2",
+              "ingested_bundle": "DAMODARAN_2026_01_09",
+              "normalized_sha256": "08f37fe9fb5b579bcd4375842f69f977cf21b4fca70394cee5098d880d0a420a",
+              "provider": "NYU Stern / Aswath Damodaran",
+              "published_at": "2026-01-08",
+              "region": "US",
+              "retrieved_at": "2026-10-14",
+              "rights": {
+                "commercial_use_policy": "REQUIRES_REVIEW",
+                "entitlement": "owner_private_reference",
+                "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+                "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+                "rights_status": "private_review_pending"
+              },
+              "selection_mode": "EXACT_PINNED_HISTORICAL",
+              "serving_release_id": "ddfi-benchmarks:bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+              "source_sha256": "97216e369c8c6bd69987ed2ace0933381cc278b7d423a0c7b4944effded4c58e",
+              "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/capex.xls",
+              "stated_publication_date": null,
+              "subject_type": "industry"
+            },
+            "request": {
+              "as_of": "2026-10-15",
+              "measures": [
+                "sales_to_invested_capital"
+              ],
+              "operation": "benchmark_context",
+              "release_id": "bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+              "subject": "Computers/Peripherals"
+            },
+            "via": "zion_private_benchmark_context"
+          },
+          "classification": "BENCHMARK_ASSUMPTION_NOT_COMPANY_FACT",
+          "dataset_id": "capex_reinvestment",
+          "ingested_bundle": "DAMODARAN_2026_01_09",
+          "measure": "sales_to_invested_capital",
+          "normalized_sha256": "08f37fe9fb5b579bcd4375842f69f977cf21b4fca70394cee5098d880d0a420a",
+          "provider": "NYU Stern / Aswath Damodaran",
+          "published_at": "2026-01-08",
+          "region": "US",
+          "release_id": "bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+          "retrieved_at": "2026-10-14",
+          "rights": {
+            "commercial_use_policy": "REQUIRES_REVIEW",
+            "entitlement": "owner_private_reference",
+            "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+            "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+            "rights_status": "private_review_pending"
+          },
+          "selection_mode": "HISTORICAL_PUBLISHED",
+          "serving_release_id": "ddfi-benchmarks:bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+          "source_column_index": 9,
+          "source_sha256": "97216e369c8c6bd69987ed2ace0933381cc278b7d423a0c7b4944effded4c58e",
+          "source_sheet": "Industry Averages",
+          "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/capex.xls",
+          "stated_publication_date": null,
+          "subject": "Computers/Peripherals",
+          "subject_type": "industry",
+          "unit": "ratio",
+          "value_decimal": "3.6197887497686683"
+        },
+        "tax_rate": {
+          "benchmark_evidence": {
+            "coverage": {
+              "as_of": "2026-10-15",
+              "evidence_path": "evidence/cost_of_capital_us_january_2026__d38b149c731bba68__wacc.xls",
+              "external_redistribution": "PROHIBITED_PENDING_REVIEW",
+              "historical_policy": "POINT_IN_TIME_PUBLISHED; historical cutoffs never fall back to the newest benchmark; unavailable coverage fails closed",
+              "independent_validation": "SOURCE_CELL_PRESERVED; CONSUMER_NUMERICS_TESTED",
+              "live_provider_calls": 0,
+              "rights_status": "private_review_pending",
+              "source_bytes_served": false,
+              "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+              "status": "AVAILABLE"
+            },
+            "release": {
+              "dataset_id": "cost_of_capital",
+              "ddfi_release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "index_sha256": "4817c621389ee06b65254d716573a43633b9a58a9572e57b11f7b2e4ac558ce2",
+              "ingested_bundle": "DAMODARAN_2026_01_09",
+              "normalized_sha256": "354456d268eddcbd78d020f7752d75ca982af0c60a16703508b55828867d2f6c",
+              "provider": "NYU Stern / Aswath Damodaran",
+              "published_at": "2026-01-12",
+              "region": "US",
+              "retrieved_at": "2026-10-14",
+              "rights": {
+                "commercial_use_policy": "REQUIRES_REVIEW",
+                "entitlement": "owner_private_reference",
+                "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+                "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+                "rights_status": "private_review_pending"
+              },
+              "selection_mode": "EXACT_PINNED_HISTORICAL",
+              "serving_release_id": "ddfi-benchmarks:11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+              "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+              "stated_publication_date": null,
+              "subject_type": "industry"
+            },
+            "request": {
+              "as_of": "2026-10-15",
+              "measures": [
+                "tax_rate"
+              ],
+              "operation": "benchmark_context",
+              "release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "subject": "Computers/Peripherals"
+            },
+            "via": "zion_private_benchmark_context"
+          },
+          "classification": "BENCHMARK_ASSUMPTION_NOT_COMPANY_FACT",
+          "dataset_id": "cost_of_capital",
+          "ingested_bundle": "DAMODARAN_2026_01_09",
+          "measure": "tax_rate",
+          "normalized_sha256": "354456d268eddcbd78d020f7752d75ca982af0c60a16703508b55828867d2f6c",
+          "provider": "NYU Stern / Aswath Damodaran",
+          "published_at": "2026-01-12",
+          "region": "US",
+          "release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+          "retrieved_at": "2026-10-14",
+          "rights": {
+            "commercial_use_policy": "REQUIRES_REVIEW",
+            "entitlement": "owner_private_reference",
+            "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+            "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+            "rights_status": "private_review_pending"
+          },
+          "selection_mode": "HISTORICAL_PUBLISHED",
+          "serving_release_id": "ddfi-benchmarks:11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+          "source_column_index": 7,
+          "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+          "source_sheet": "Industry Averages",
+          "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+          "stated_publication_date": null,
+          "subject": "Computers/Peripherals",
+          "subject_type": "industry",
+          "unit": "fraction",
+          "value_decimal": "0.05911353077642165"
+        },
+        "wacc": {
+          "benchmark_evidence": {
+            "coverage": {
+              "as_of": "2026-10-15",
+              "evidence_path": "evidence/cost_of_capital_us_january_2026__d38b149c731bba68__wacc.xls",
+              "external_redistribution": "PROHIBITED_PENDING_REVIEW",
+              "historical_policy": "POINT_IN_TIME_PUBLISHED; historical cutoffs never fall back to the newest benchmark; unavailable coverage fails closed",
+              "independent_validation": "SOURCE_CELL_PRESERVED; CONSUMER_NUMERICS_TESTED",
+              "live_provider_calls": 0,
+              "rights_status": "private_review_pending",
+              "source_bytes_served": false,
+              "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+              "status": "AVAILABLE"
+            },
+            "release": {
+              "dataset_id": "cost_of_capital",
+              "ddfi_release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "index_sha256": "4817c621389ee06b65254d716573a43633b9a58a9572e57b11f7b2e4ac558ce2",
+              "ingested_bundle": "DAMODARAN_2026_01_09",
+              "normalized_sha256": "354456d268eddcbd78d020f7752d75ca982af0c60a16703508b55828867d2f6c",
+              "provider": "NYU Stern / Aswath Damodaran",
+              "published_at": "2026-01-12",
+              "region": "US",
+              "retrieved_at": "2026-10-14",
+              "rights": {
+                "commercial_use_policy": "REQUIRES_REVIEW",
+                "entitlement": "owner_private_reference",
+                "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+                "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+                "rights_status": "private_review_pending"
+              },
+              "selection_mode": "EXACT_PINNED_HISTORICAL",
+              "serving_release_id": "ddfi-benchmarks:11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+              "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+              "stated_publication_date": null,
+              "subject_type": "industry"
+            },
+            "request": {
+              "as_of": "2026-10-15",
+              "measures": [
+                "wacc"
+              ],
+              "operation": "benchmark_context",
+              "release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "subject": "Computers/Peripherals"
+            },
+            "via": "zion_private_benchmark_context"
+          },
+          "classification": "BENCHMARK_ASSUMPTION_NOT_COMPANY_FACT",
+          "dataset_id": "cost_of_capital",
+          "ingested_bundle": "DAMODARAN_2026_01_09",
+          "measure": "wacc",
+          "normalized_sha256": "354456d268eddcbd78d020f7752d75ca982af0c60a16703508b55828867d2f6c",
+          "provider": "NYU Stern / Aswath Damodaran",
+          "published_at": "2026-01-12",
+          "region": "US",
+          "release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+          "retrieved_at": "2026-10-14",
+          "rights": {
+            "commercial_use_policy": "REQUIRES_REVIEW",
+            "entitlement": "owner_private_reference",
+            "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+            "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+            "rights_status": "private_review_pending"
+          },
+          "selection_mode": "HISTORICAL_PUBLISHED",
+          "serving_release_id": "ddfi-benchmarks:11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+          "source_column_index": 10,
+          "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+          "source_sheet": "Industry Averages",
+          "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+          "stated_publication_date": null,
+          "subject": "Computers/Peripherals",
+          "subject_type": "industry",
+          "unit": "fraction",
+          "value_decimal": "0.09707073132665844"
+        }
+      }
+    },
+    {
+      "cik": "0000789019",
+      "label": "MICROSOFT CORPORATION",
+      "status": "ENTERPRISE_SCENARIO_VERIFIED",
+      "screening_missing": [],
+      "blockers": [],
+      "ticker": "MSFT",
+      "history_periods": [
+        "2024-06-30",
+        "2025-06-30",
+        "2026-06-30"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2024-06-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-06-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-06-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-06-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-06-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-06-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-06-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-06-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-06-30.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-06-30.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-06-30.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2026-06-30.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "DATED_REVIEWED",
+      "enterprise_value": 2046624766262.0305,
+      "equity_value": null,
+      "value_per_share": null,
+      "equity_blockers": [
+        "MATCHING_CLAIMS_ENGINE_RELEASE_REQUIRED"
+      ],
+      "independent_absolute_error_decimal": "0.000761976809429094396134489",
+      "valuation_date": "2026-10-15",
+      "assumption_source": "EXPLICIT_PREVIOUSLY_REVIEWED_SCENARIO",
+      "analyst_assumptions": {
+        "company_suitability_confirmed": true,
+        "operating_margin_policy": "HOLD_LATEST_REPORTED_MARGIN",
+        "reinvestment_policy": "DELTA_REVENUE_OVER_INDUSTRY_SALES_CAPITAL",
+        "revenue_growth_rates": [
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.05
+        ],
+        "terminal_growth": 0.02,
+        "terminal_roic": 0.15
+      },
+      "benchmark_assumptions": {
+        "sales_capital": {
+          "benchmark_evidence": {
+            "coverage": {
+              "as_of": "2026-10-15",
+              "evidence_path": "evidence/capex_us_january_2026__97216e369c8c6bd6__capex.xls",
+              "external_redistribution": "PROHIBITED_PENDING_REVIEW",
+              "historical_policy": "POINT_IN_TIME_PUBLISHED; historical cutoffs never fall back to the newest benchmark; unavailable coverage fails closed",
+              "independent_validation": "SOURCE_CELL_PRESERVED; CONSUMER_NUMERICS_TESTED",
+              "live_provider_calls": 0,
+              "rights_status": "private_review_pending",
+              "source_bytes_served": false,
+              "source_sha256": "97216e369c8c6bd69987ed2ace0933381cc278b7d423a0c7b4944effded4c58e",
+              "status": "AVAILABLE"
+            },
+            "release": {
+              "dataset_id": "capex_reinvestment",
+              "ddfi_release_id": "bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+              "index_sha256": "4817c621389ee06b65254d716573a43633b9a58a9572e57b11f7b2e4ac558ce2",
+              "ingested_bundle": "DAMODARAN_2026_01_09",
+              "normalized_sha256": "08f37fe9fb5b579bcd4375842f69f977cf21b4fca70394cee5098d880d0a420a",
+              "provider": "NYU Stern / Aswath Damodaran",
+              "published_at": "2026-01-08",
+              "region": "US",
+              "retrieved_at": "2026-10-14",
+              "rights": {
+                "commercial_use_policy": "REQUIRES_REVIEW",
+                "entitlement": "owner_private_reference",
+                "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+                "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+                "rights_status": "private_review_pending"
+              },
+              "selection_mode": "EXACT_PINNED_HISTORICAL",
+              "serving_release_id": "ddfi-benchmarks:bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+              "source_sha256": "97216e369c8c6bd69987ed2ace0933381cc278b7d423a0c7b4944effded4c58e",
+              "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/capex.xls",
+              "stated_publication_date": null,
+              "subject_type": "industry"
+            },
+            "request": {
+              "as_of": "2026-10-15",
+              "measures": [
+                "sales_to_invested_capital"
+              ],
+              "operation": "benchmark_context",
+              "release_id": "bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+              "subject": "Software (System & Application)"
+            },
+            "via": "zion_private_benchmark_context"
+          },
+          "classification": "BENCHMARK_ASSUMPTION_NOT_COMPANY_FACT",
+          "dataset_id": "capex_reinvestment",
+          "ingested_bundle": "DAMODARAN_2026_01_09",
+          "measure": "sales_to_invested_capital",
+          "normalized_sha256": "08f37fe9fb5b579bcd4375842f69f977cf21b4fca70394cee5098d880d0a420a",
+          "provider": "NYU Stern / Aswath Damodaran",
+          "published_at": "2026-01-08",
+          "region": "US",
+          "release_id": "bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+          "retrieved_at": "2026-10-14",
+          "rights": {
+            "commercial_use_policy": "REQUIRES_REVIEW",
+            "entitlement": "owner_private_reference",
+            "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+            "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+            "rights_status": "private_review_pending"
+          },
+          "selection_mode": "HISTORICAL_PUBLISHED",
+          "serving_release_id": "ddfi-benchmarks:bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+          "source_column_index": 9,
+          "source_sha256": "97216e369c8c6bd69987ed2ace0933381cc278b7d423a0c7b4944effded4c58e",
+          "source_sheet": "Industry Averages",
+          "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/capex.xls",
+          "stated_publication_date": null,
+          "subject": "Software (System & Application)",
+          "subject_type": "industry",
+          "unit": "ratio",
+          "value_decimal": "1.5381715801685372"
+        },
+        "tax_rate": {
+          "benchmark_evidence": {
+            "coverage": {
+              "as_of": "2026-10-15",
+              "evidence_path": "evidence/cost_of_capital_us_january_2026__d38b149c731bba68__wacc.xls",
+              "external_redistribution": "PROHIBITED_PENDING_REVIEW",
+              "historical_policy": "POINT_IN_TIME_PUBLISHED; historical cutoffs never fall back to the newest benchmark; unavailable coverage fails closed",
+              "independent_validation": "SOURCE_CELL_PRESERVED; CONSUMER_NUMERICS_TESTED",
+              "live_provider_calls": 0,
+              "rights_status": "private_review_pending",
+              "source_bytes_served": false,
+              "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+              "status": "AVAILABLE"
+            },
+            "release": {
+              "dataset_id": "cost_of_capital",
+              "ddfi_release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "index_sha256": "4817c621389ee06b65254d716573a43633b9a58a9572e57b11f7b2e4ac558ce2",
+              "ingested_bundle": "DAMODARAN_2026_01_09",
+              "normalized_sha256": "354456d268eddcbd78d020f7752d75ca982af0c60a16703508b55828867d2f6c",
+              "provider": "NYU Stern / Aswath Damodaran",
+              "published_at": "2026-01-12",
+              "region": "US",
+              "retrieved_at": "2026-10-14",
+              "rights": {
+                "commercial_use_policy": "REQUIRES_REVIEW",
+                "entitlement": "owner_private_reference",
+                "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+                "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+                "rights_status": "private_review_pending"
+              },
+              "selection_mode": "EXACT_PINNED_HISTORICAL",
+              "serving_release_id": "ddfi-benchmarks:11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+              "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+              "stated_publication_date": null,
+              "subject_type": "industry"
+            },
+            "request": {
+              "as_of": "2026-10-15",
+              "measures": [
+                "tax_rate"
+              ],
+              "operation": "benchmark_context",
+              "release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "subject": "Software (System & Application)"
+            },
+            "via": "zion_private_benchmark_context"
+          },
+          "classification": "BENCHMARK_ASSUMPTION_NOT_COMPANY_FACT",
+          "dataset_id": "cost_of_capital",
+          "ingested_bundle": "DAMODARAN_2026_01_09",
+          "measure": "tax_rate",
+          "normalized_sha256": "354456d268eddcbd78d020f7752d75ca982af0c60a16703508b55828867d2f6c",
+          "provider": "NYU Stern / Aswath Damodaran",
+          "published_at": "2026-01-12",
+          "region": "US",
+          "release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+          "retrieved_at": "2026-10-14",
+          "rights": {
+            "commercial_use_policy": "REQUIRES_REVIEW",
+            "entitlement": "owner_private_reference",
+            "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+            "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+            "rights_status": "private_review_pending"
+          },
+          "selection_mode": "HISTORICAL_PUBLISHED",
+          "serving_release_id": "ddfi-benchmarks:11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+          "source_column_index": 7,
+          "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+          "source_sheet": "Industry Averages",
+          "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+          "stated_publication_date": null,
+          "subject": "Software (System & Application)",
+          "subject_type": "industry",
+          "unit": "fraction",
+          "value_decimal": "0.05509792802786181"
+        },
+        "wacc": {
+          "benchmark_evidence": {
+            "coverage": {
+              "as_of": "2026-10-15",
+              "evidence_path": "evidence/cost_of_capital_us_january_2026__d38b149c731bba68__wacc.xls",
+              "external_redistribution": "PROHIBITED_PENDING_REVIEW",
+              "historical_policy": "POINT_IN_TIME_PUBLISHED; historical cutoffs never fall back to the newest benchmark; unavailable coverage fails closed",
+              "independent_validation": "SOURCE_CELL_PRESERVED; CONSUMER_NUMERICS_TESTED",
+              "live_provider_calls": 0,
+              "rights_status": "private_review_pending",
+              "source_bytes_served": false,
+              "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+              "status": "AVAILABLE"
+            },
+            "release": {
+              "dataset_id": "cost_of_capital",
+              "ddfi_release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "index_sha256": "4817c621389ee06b65254d716573a43633b9a58a9572e57b11f7b2e4ac558ce2",
+              "ingested_bundle": "DAMODARAN_2026_01_09",
+              "normalized_sha256": "354456d268eddcbd78d020f7752d75ca982af0c60a16703508b55828867d2f6c",
+              "provider": "NYU Stern / Aswath Damodaran",
+              "published_at": "2026-01-12",
+              "region": "US",
+              "retrieved_at": "2026-10-14",
+              "rights": {
+                "commercial_use_policy": "REQUIRES_REVIEW",
+                "entitlement": "owner_private_reference",
+                "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+                "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+                "rights_status": "private_review_pending"
+              },
+              "selection_mode": "EXACT_PINNED_HISTORICAL",
+              "serving_release_id": "ddfi-benchmarks:11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+              "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+              "stated_publication_date": null,
+              "subject_type": "industry"
+            },
+            "request": {
+              "as_of": "2026-10-15",
+              "measures": [
+                "wacc"
+              ],
+              "operation": "benchmark_context",
+              "release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "subject": "Software (System & Application)"
+            },
+            "via": "zion_private_benchmark_context"
+          },
+          "classification": "BENCHMARK_ASSUMPTION_NOT_COMPANY_FACT",
+          "dataset_id": "cost_of_capital",
+          "ingested_bundle": "DAMODARAN_2026_01_09",
+          "measure": "wacc",
+          "normalized_sha256": "354456d268eddcbd78d020f7752d75ca982af0c60a16703508b55828867d2f6c",
+          "provider": "NYU Stern / Aswath Damodaran",
+          "published_at": "2026-01-12",
+          "region": "US",
+          "release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+          "retrieved_at": "2026-10-14",
+          "rights": {
+            "commercial_use_policy": "REQUIRES_REVIEW",
+            "entitlement": "owner_private_reference",
+            "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+            "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+            "rights_status": "private_review_pending"
+          },
+          "selection_mode": "HISTORICAL_PUBLISHED",
+          "serving_release_id": "ddfi-benchmarks:11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+          "source_column_index": 10,
+          "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+          "source_sheet": "Industry Averages",
+          "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+          "stated_publication_date": null,
+          "subject": "Software (System & Application)",
+          "subject_type": "industry",
+          "unit": "fraction",
+          "value_decimal": "0.09344048072400105"
+        }
+      }
+    },
+    {
+      "cik": "0001652044",
+      "label": "Alphabet Inc.",
+      "status": "ENTERPRISE_SCENARIO_VERIFIED",
+      "screening_missing": [],
+      "blockers": [],
+      "ticker": "GOOGL",
+      "history_periods": [
+        "2023-12-31",
+        "2024-12-31",
+        "2025-12-31"
+      ],
+      "financial_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+      "source_missing": {
+        "historical.2023-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2023-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2024-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.d_and_a": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.nwc": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.book_value": "NO_VERIFIED_NATIVE_MAPPING",
+        "historical.2025-12-31.tax_rate": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.short_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.long_term_debt": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.preferred_equity": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.minority_interest": "NO_VERIFIED_NATIVE_MAPPING",
+        "bridge.other_nonoperating_assets": "NO_VERIFIED_NATIVE_MAPPING",
+        "market.price": "NO_VERIFIED_NATIVE_MAPPING"
+      },
+      "ticker_identity": "DATED_REVIEWED",
+      "enterprise_value": 2179137903112.5725,
+      "equity_value": null,
+      "value_per_share": null,
+      "equity_blockers": [
+        "MATCHING_CLAIMS_ENGINE_RELEASE_REQUIRED"
+      ],
+      "independent_absolute_error_decimal": "0.000833019914095404036067944",
+      "valuation_date": "2026-10-15",
+      "assumption_source": "EXPLICIT_PREVIOUSLY_REVIEWED_SCENARIO",
+      "analyst_assumptions": {
+        "company_suitability_confirmed": true,
+        "operating_margin_policy": "HOLD_LATEST_REPORTED_MARGIN",
+        "reinvestment_policy": "DELTA_REVENUE_OVER_INDUSTRY_SALES_CAPITAL",
+        "revenue_growth_rates": [
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.05
+        ],
+        "terminal_growth": 0.02,
+        "terminal_roic": 0.15
+      },
+      "benchmark_assumptions": {
+        "sales_capital": {
+          "benchmark_evidence": {
+            "coverage": {
+              "as_of": "2026-10-15",
+              "evidence_path": "evidence/capex_us_january_2026__97216e369c8c6bd6__capex.xls",
+              "external_redistribution": "PROHIBITED_PENDING_REVIEW",
+              "historical_policy": "POINT_IN_TIME_PUBLISHED; historical cutoffs never fall back to the newest benchmark; unavailable coverage fails closed",
+              "independent_validation": "SOURCE_CELL_PRESERVED; CONSUMER_NUMERICS_TESTED",
+              "live_provider_calls": 0,
+              "rights_status": "private_review_pending",
+              "source_bytes_served": false,
+              "source_sha256": "97216e369c8c6bd69987ed2ace0933381cc278b7d423a0c7b4944effded4c58e",
+              "status": "AVAILABLE"
+            },
+            "release": {
+              "dataset_id": "capex_reinvestment",
+              "ddfi_release_id": "bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+              "index_sha256": "4817c621389ee06b65254d716573a43633b9a58a9572e57b11f7b2e4ac558ce2",
+              "ingested_bundle": "DAMODARAN_2026_01_09",
+              "normalized_sha256": "08f37fe9fb5b579bcd4375842f69f977cf21b4fca70394cee5098d880d0a420a",
+              "provider": "NYU Stern / Aswath Damodaran",
+              "published_at": "2026-01-08",
+              "region": "US",
+              "retrieved_at": "2026-10-14",
+              "rights": {
+                "commercial_use_policy": "REQUIRES_REVIEW",
+                "entitlement": "owner_private_reference",
+                "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+                "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+                "rights_status": "private_review_pending"
+              },
+              "selection_mode": "EXACT_PINNED_HISTORICAL",
+              "serving_release_id": "ddfi-benchmarks:bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+              "source_sha256": "97216e369c8c6bd69987ed2ace0933381cc278b7d423a0c7b4944effded4c58e",
+              "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/capex.xls",
+              "stated_publication_date": null,
+              "subject_type": "industry"
+            },
+            "request": {
+              "as_of": "2026-10-15",
+              "measures": [
+                "sales_to_invested_capital"
+              ],
+              "operation": "benchmark_context",
+              "release_id": "bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+              "subject": "Advertising"
+            },
+            "via": "zion_private_benchmark_context"
+          },
+          "classification": "BENCHMARK_ASSUMPTION_NOT_COMPANY_FACT",
+          "dataset_id": "capex_reinvestment",
+          "ingested_bundle": "DAMODARAN_2026_01_09",
+          "measure": "sales_to_invested_capital",
+          "normalized_sha256": "08f37fe9fb5b579bcd4375842f69f977cf21b4fca70394cee5098d880d0a420a",
+          "provider": "NYU Stern / Aswath Damodaran",
+          "published_at": "2026-01-08",
+          "region": "US",
+          "release_id": "bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+          "retrieved_at": "2026-10-14",
+          "rights": {
+            "commercial_use_policy": "REQUIRES_REVIEW",
+            "entitlement": "owner_private_reference",
+            "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+            "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+            "rights_status": "private_review_pending"
+          },
+          "selection_mode": "HISTORICAL_PUBLISHED",
+          "serving_release_id": "ddfi-benchmarks:bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c",
+          "source_column_index": 9,
+          "source_sha256": "97216e369c8c6bd69987ed2ace0933381cc278b7d423a0c7b4944effded4c58e",
+          "source_sheet": "Industry Averages",
+          "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/capex.xls",
+          "stated_publication_date": null,
+          "subject": "Advertising",
+          "subject_type": "industry",
+          "unit": "ratio",
+          "value_decimal": "3.8532841090748775"
+        },
+        "tax_rate": {
+          "benchmark_evidence": {
+            "coverage": {
+              "as_of": "2026-10-15",
+              "evidence_path": "evidence/cost_of_capital_us_january_2026__d38b149c731bba68__wacc.xls",
+              "external_redistribution": "PROHIBITED_PENDING_REVIEW",
+              "historical_policy": "POINT_IN_TIME_PUBLISHED; historical cutoffs never fall back to the newest benchmark; unavailable coverage fails closed",
+              "independent_validation": "SOURCE_CELL_PRESERVED; CONSUMER_NUMERICS_TESTED",
+              "live_provider_calls": 0,
+              "rights_status": "private_review_pending",
+              "source_bytes_served": false,
+              "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+              "status": "AVAILABLE"
+            },
+            "release": {
+              "dataset_id": "cost_of_capital",
+              "ddfi_release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "index_sha256": "4817c621389ee06b65254d716573a43633b9a58a9572e57b11f7b2e4ac558ce2",
+              "ingested_bundle": "DAMODARAN_2026_01_09",
+              "normalized_sha256": "354456d268eddcbd78d020f7752d75ca982af0c60a16703508b55828867d2f6c",
+              "provider": "NYU Stern / Aswath Damodaran",
+              "published_at": "2026-01-12",
+              "region": "US",
+              "retrieved_at": "2026-10-14",
+              "rights": {
+                "commercial_use_policy": "REQUIRES_REVIEW",
+                "entitlement": "owner_private_reference",
+                "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+                "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+                "rights_status": "private_review_pending"
+              },
+              "selection_mode": "EXACT_PINNED_HISTORICAL",
+              "serving_release_id": "ddfi-benchmarks:11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+              "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+              "stated_publication_date": null,
+              "subject_type": "industry"
+            },
+            "request": {
+              "as_of": "2026-10-15",
+              "measures": [
+                "tax_rate"
+              ],
+              "operation": "benchmark_context",
+              "release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "subject": "Advertising"
+            },
+            "via": "zion_private_benchmark_context"
+          },
+          "classification": "BENCHMARK_ASSUMPTION_NOT_COMPANY_FACT",
+          "dataset_id": "cost_of_capital",
+          "ingested_bundle": "DAMODARAN_2026_01_09",
+          "measure": "tax_rate",
+          "normalized_sha256": "354456d268eddcbd78d020f7752d75ca982af0c60a16703508b55828867d2f6c",
+          "provider": "NYU Stern / Aswath Damodaran",
+          "published_at": "2026-01-12",
+          "region": "US",
+          "release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+          "retrieved_at": "2026-10-14",
+          "rights": {
+            "commercial_use_policy": "REQUIRES_REVIEW",
+            "entitlement": "owner_private_reference",
+            "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+            "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+            "rights_status": "private_review_pending"
+          },
+          "selection_mode": "HISTORICAL_PUBLISHED",
+          "serving_release_id": "ddfi-benchmarks:11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+          "source_column_index": 7,
+          "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+          "source_sheet": "Industry Averages",
+          "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+          "stated_publication_date": null,
+          "subject": "Advertising",
+          "subject_type": "industry",
+          "unit": "fraction",
+          "value_decimal": "0.050166601892135954"
+        },
+        "wacc": {
+          "benchmark_evidence": {
+            "coverage": {
+              "as_of": "2026-10-15",
+              "evidence_path": "evidence/cost_of_capital_us_january_2026__d38b149c731bba68__wacc.xls",
+              "external_redistribution": "PROHIBITED_PENDING_REVIEW",
+              "historical_policy": "POINT_IN_TIME_PUBLISHED; historical cutoffs never fall back to the newest benchmark; unavailable coverage fails closed",
+              "independent_validation": "SOURCE_CELL_PRESERVED; CONSUMER_NUMERICS_TESTED",
+              "live_provider_calls": 0,
+              "rights_status": "private_review_pending",
+              "source_bytes_served": false,
+              "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+              "status": "AVAILABLE"
+            },
+            "release": {
+              "dataset_id": "cost_of_capital",
+              "ddfi_release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "index_sha256": "4817c621389ee06b65254d716573a43633b9a58a9572e57b11f7b2e4ac558ce2",
+              "ingested_bundle": "DAMODARAN_2026_01_09",
+              "normalized_sha256": "354456d268eddcbd78d020f7752d75ca982af0c60a16703508b55828867d2f6c",
+              "provider": "NYU Stern / Aswath Damodaran",
+              "published_at": "2026-01-12",
+              "region": "US",
+              "retrieved_at": "2026-10-14",
+              "rights": {
+                "commercial_use_policy": "REQUIRES_REVIEW",
+                "entitlement": "owner_private_reference",
+                "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+                "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+                "rights_status": "private_review_pending"
+              },
+              "selection_mode": "EXACT_PINNED_HISTORICAL",
+              "serving_release_id": "ddfi-benchmarks:11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+              "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+              "stated_publication_date": null,
+              "subject_type": "industry"
+            },
+            "request": {
+              "as_of": "2026-10-15",
+              "measures": [
+                "wacc"
+              ],
+              "operation": "benchmark_context",
+              "release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+              "subject": "Advertising"
+            },
+            "via": "zion_private_benchmark_context"
+          },
+          "classification": "BENCHMARK_ASSUMPTION_NOT_COMPANY_FACT",
+          "dataset_id": "cost_of_capital",
+          "ingested_bundle": "DAMODARAN_2026_01_09",
+          "measure": "wacc",
+          "normalized_sha256": "354456d268eddcbd78d020f7752d75ca982af0c60a16703508b55828867d2f6c",
+          "provider": "NYU Stern / Aswath Damodaran",
+          "published_at": "2026-01-12",
+          "region": "US",
+          "release_id": "11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+          "retrieved_at": "2026-10-14",
+          "rights": {
+            "commercial_use_policy": "REQUIRES_REVIEW",
+            "entitlement": "owner_private_reference",
+            "note": "Third-party-derived reference estimates; external redistribution is blocked until rights review completes.",
+            "redistribution_policy": "PROHIBITED_PENDING_REVIEW",
+            "rights_status": "private_review_pending"
+          },
+          "selection_mode": "HISTORICAL_PUBLISHED",
+          "serving_release_id": "ddfi-benchmarks:11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9",
+          "source_column_index": 10,
+          "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+          "source_sheet": "Industry Averages",
+          "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+          "stated_publication_date": null,
+          "subject": "Advertising",
+          "subject_type": "industry",
+          "unit": "fraction",
+          "value_decimal": "0.07806123736168302"
+        }
+      }
+    }
+  ],
+  "counts": {
+    "BLOCKED": 47,
+    "ENTERPRISE_SCENARIO_VERIFIED": 3
+  },
+  "schema_version": "usable-sec-cohort-v1",
+  "generated_utc": "2026-10-19T15:49:54.286531+00:00",
+  "execution": "LOCAL_DCF_ROUTES_WITH_LIVE_ZION_SOURCES",
+  "screen": {
+    "index_id": "d17b23f1f788b32242f3bde5048dec4afedf050a7fdee071c1c4501f6592e970",
+    "release_id": "94635c4377880ea5654583d90828fbcd77c50a4fd66cd828db0d077acf72ce24",
+    "engine_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+    "archive_cutoff": "2026-09-24",
+    "availability_cutoff": "2026-09-24T00:00:00Z"
+  },
+  "ticker_directory": {
+    "url": "https://www.sec.gov/files/company_tickers.json",
+    "sha256": "bbffa40adbea620bba590da9a193ea14b21bfc04992f102549a2688d4e7d32df",
+    "historical_eligible": false
+  },
+  "remote_writes": 0,
+  "publication_pointer_writes": 0
+}

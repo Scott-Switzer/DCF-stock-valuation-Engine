@@ -58,7 +58,7 @@ def main():
                       ZION_BENCHMARK_TOKEN=token,
                       ZION_BENCHMARK_BASE_URL='https://zion-ddfi-benchmark-staging.scswitzer.workers.dev')
     from app import app
-    from dcf_loader import load_document
+    from dcf_loader import ProviderError, load_document
     from issuer_classification import reviewed_identity
     from research_screen import load_screen
     from recover_sec_shares import get
@@ -96,8 +96,13 @@ def main():
             if not symbol:
                 result['blockers'] = ['MISSING_CURRENT_TICKER_ALIAS', 'DATED_ASSUMPTIONS_REQUIRED']
                 return result
-            doc = load_document('zion_history', symbol, screen['archive_cutoff'], cik=cik,
-                                expected_release_id=screen['engine_release_id'])
+            try:
+                doc = load_document('zion_history', symbol, screen['archive_cutoff'], cik=cik,
+                                    expected_release_id=screen['engine_release_id'])
+            except ProviderError as error:
+                result['blockers'] = ['NATIVE_HISTORY_ADAPTER_REFUSED_INPUTS', 'DATED_ASSUMPTIONS_REQUIRED']
+                result['adapter_refusal'] = str(error).replace(token, '[redacted]')[:256]
+                return result
             result.update(history_periods=[r['period_end'] for r in doc['historical']],
                           financial_release_id=doc['source']['release_id'],
                           source_missing=doc['source']['missing_fields'],
@@ -112,7 +117,11 @@ def main():
             if prepared.status_code != 200:
                 result['blockers'].append('PREPARE_HTTP_' + str(prepared.status_code))
                 return result
-            from verify_staging_e2e import payload
+            try:
+                from verify_staging_e2e import payload
+            except SystemExit:
+                result['blockers'].append('REVIEWED_SCENARIO_ARTIFACTS_MISSING')
+                return result
             body = payload(symbol, prepared.json['financials'], '2026-10-15')
             response = client.post(prepared.json['calculate_endpoint'], json=body)
             if response.status_code != 200:

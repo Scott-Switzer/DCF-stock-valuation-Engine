@@ -55,7 +55,7 @@ def test_prepare_loads_exact_screen_issuer_and_cutoff(monkeypatch):
     seen = {}
     def load(provider, ticker, asof, **kw):
         seen.update(provider=provider, ticker=ticker, asof=asof, **kw)
-        return {'source': {'missing_fields': []}, 'company': {'ticker':ticker}}
+        return {'source': {'missing_fields': []}, 'company': {'ticker':ticker}, 'historical':[{'revenue':100,'ebit':20}]}
     monkeypatch.setattr(screen, 'load_document', load)
     response = app.test_client().post('/api/research-screen/prepare', json={
         'ticker':'AAPL', 'cik':'0000320193', 'expected_index_id':'b'*64})
@@ -94,3 +94,14 @@ def test_prepare_rejects_unverified_ticker_identity(monkeypatch):
     response = app.test_client().post('/api/research-screen/prepare', json={
         'ticker':'MSFT', 'cik':'0000320193', 'expected_index_id':'b'*64})
     assert response.status_code == 409
+
+
+def test_unused_accounting_fields_are_not_enterprise_blockers(monkeypatch):
+    monkeypatch.setattr(screen, 'load_screen', lambda query: deepcopy(PAGE))
+    monkeypatch.setattr(screen, 'load_document', lambda *a, **kw: {
+        'historical':[{'revenue':100,'ebit':20}],
+        'source':{'missing_fields':{'historical.2025-09-27.d_and_a':'NO_MAPPING','market.price':'NO_MAPPING'}}})
+    result = app.test_client().post('/api/research-screen/prepare', json={
+        'ticker':'AAPL','cik':'0000320193','expected_index_id':'b'*64})
+    assert result.json['valuation_blockers'] == ['DATED_ASSUMPTIONS_REQUIRED']
+    assert 'market.price' in result.json['source_missing_fields']
