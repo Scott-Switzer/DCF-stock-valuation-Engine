@@ -2243,5 +2243,9 @@ from research_screen import register_screen
 
 register_screen(app)
 
+from data_workspace import register_data_workspace
+
+register_data_workspace(app)
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=int(os.getenv("PORT", "5000")), debug=False)

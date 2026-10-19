@@ -28,6 +28,8 @@ bundle.mkdir(exist_ok=True)
 module_names = [
     "worker.py",
     "app.py",
+    "owner_benchmark_access.py",
+    "data_workspace.py",
     "dcf_code.py",
     "dcf_loader.py",
     "zion_history_provider.py",
