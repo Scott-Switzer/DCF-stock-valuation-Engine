@@ -46,7 +46,7 @@
     stocks = {}; prices = {}; collections = {}; files = {};
     el("data-owner-key").value = ""; el("data-controls").disabled = true;
     privateRegions.forEach((id) => el(id).replaceChildren());
-    ["data-stock-search", "data-symbol", "data-date-from", "data-date-to", "data-collection-search", "data-family", "data-prefix"].forEach((id) => { el(id).value = ""; });
+    ["data-stock-search", "data-symbol", "data-permno", "data-date-from", "data-date-to", "data-collection-search", "data-family", "data-prefix"].forEach((id) => { el(id).value = ""; });
     paging.forEach((id) => { el(id).disabled = true; });
     el("data-status").textContent = "Disconnected. Private key and loaded data cleared.";
     el("data-benchmark-grant").disabled = true;
@@ -109,21 +109,29 @@
     } finally { pending.delete(controller); }
   }
   function stockCatalog(next = false) {
-    if (!next) stocks = {query: {search: el("data-stock-search").value.trim(), limit: 100}};
+    if (!next) stocks = {query: {source: el("data-stock-source").value || "crsp", search: el("data-stock-search").value.trim(), limit: 100}};
     const q = {...stocks.query};
     if (next && stocks.cursor) { q.cursor = stocks.cursor; q.expected_release_id = stocks.release; }
     el("data-stock-next").disabled = true; el("data-stock-catalog").replaceChildren();
     return read("stocks", "stock-history", q, (data) => {
       stocks.cursor = data.next_cursor; stocks.release = data.release_id;
-      el("data-stock-summary").textContent = text(data.symbol_count) + " indexed symbols · " + text(data.total_matches) + " match · source coverage shown per symbol.";
-      table("data-stock-catalog", ["Symbol", "First stored session", "Last stored session", "Stored rows", "Open"], (data.symbols || []).map((s) => [s.symbol, s.date_min, s.date_max, s.normalized_rows, action("Read " + s.symbol, () => { el("data-symbol").value = s.symbol; el("data-date-from").value = s.date_min || ""; el("data-date-to").value = s.date_max || ""; return stockPrices(); })]));
+      el("data-stock-summary").textContent = text(data.security_count ?? data.symbol_count) + " indexed securities · " + text(data.total_matches) + " match · source coverage shown per symbol.";
+      table("data-stock-catalog", ["Security ID", "Latest ticker", "Company", "First stored session", "Last stored session", "Stored rows", "Open"], (data.symbols || []).map((s) => [s.permno ? "PERMNO " + s.permno : s.symbol, s.symbol, s.name, s.date_min, s.date_max, s.normalized_rows, action("Read history", () => { el("data-symbol").value = s.permno ? "" : s.symbol; el("data-permno").value = s.permno ? String(s.permno) : ""; el("data-date-from").value = s.date_min || ""; el("data-date-to").value = s.date_max || ""; return stockPrices(); })]));
       el("data-stock-next").disabled = !stocks.cursor;
     });
   }
   function stockPrices(next = false) {
     if (!next) {
-      const q = {symbol: el("data-symbol").value.trim().toUpperCase(), limit: 500};
-      if (!/^[A-Z0-9][A-Z0-9.\-]{0,24}$/.test(q.symbol)) { el("data-status").textContent = "Enter a stored symbol."; return; }
+      const source = el("data-stock-source").value || "crsp";
+      const q = {source: source, limit: 500};
+      const permno = el("data-permno").value.trim(), symbol = el("data-symbol").value.trim().toUpperCase();
+      if (source === "crsp" && permno) {
+        if (!/^[1-9][0-9]{0,9}$/.test(permno)) { el("data-status").textContent = "Enter a valid PERMNO."; return; }
+        q.permno = permno;
+      } else {
+        if (!/^[A-Z0-9][A-Z0-9.\-]{0,24}$/.test(symbol)) { el("data-status").textContent = "Select a security or enter a ticker."; return; }
+        q.symbol = symbol;
+      }
       if (el("data-date-from").value) q.date_from = el("data-date-from").value;
       if (el("data-date-to").value) q.date_to = el("data-date-to").value;
       prices = {query:q};
@@ -134,9 +142,9 @@
     return read("prices", "stock-history", q, (data) => {
       prices.cursor = data.next_cursor; prices.release = data.release_id;
       const rows = data.prices || [];
-      el("data-prices-summary").textContent = text(data.symbol) + " · " + rows.length + " of " + text(data.total_matches) + " matching bars on this page · raw / unadjusted · source gaps: " + (data.gaps || []).length + ". Calendar continuity is not established.";
-      table("data-prices", ["Session", "Currency", "Open", "High", "Low", "Close", "Volume"], rows.map((r) => [r.session_date, r.currency, r.open, r.high, r.low, r.close, r.volume]));
-      el("data-price-evidence").textContent = JSON.stringify({coverage:data.coverage, gaps:data.gaps || [], source_pages:data.source_pages, source_lineage:data.source_lineage}, null, 2);
+      el("data-prices-summary").textContent = text(data.security_id || data.symbol) + " · " + rows.length + " rows on this page · " + text(data.source) + " · " + text(data.coverage?.price_basis) + ". Missing source fields remain blank.";
+      table("data-prices", ["Session", "Dated ticker", "Currency", "Native price / close", "Price magnitude", "Total return", "Price return", "Volume", "Native flags"], rows.map((r) => [r.session_date, r.symbol, r.currency, r.close, r.price_magnitude, r.total_return, r.price_return, r.volume, r.native_flags]));
+      el("data-price-evidence").textContent = JSON.stringify({coverage:data.coverage, identity_intervals:data.identity_intervals, gaps:data.gaps || [], source_pages:data.source_pages, source_lineage:data.source_lineage}, null, 2);
       el("data-prices-next").disabled = !prices.cursor;
     });
   }
@@ -206,6 +214,11 @@
   onSubmit("data-collections-form", () => collectionCatalog()); onSubmit("data-files-form", () => fileCatalog());
   el("data-disconnect").addEventListener("click", () => clear());
   el("data-benchmark-grant").addEventListener("click", grantBenchmarks);
+  el("data-stock-source").addEventListener("change", () => {
+    invalidate("prices"); prices = {}; el("data-permno").value = ""; el("data-symbol").value = "";
+    el("data-prices").replaceChildren(); el("data-price-evidence").replaceChildren(); el("data-prices-next").disabled = true;
+    return stockCatalog();
+  });
   el("data-stock-next").addEventListener("click", () => stockCatalog(true));
   el("data-prices-next").addEventListener("click", () => stockPrices(true));
   el("data-collections-next").addEventListener("click", () => collectionCatalog(true));
