@@ -253,6 +253,7 @@ def load_history(ticker, asof, http, *, cik, base, token, expected_release_id=No
                   date_to=asof, as_of=asof+'T00:00:00Z', limit=1000)
     if expected_release_id:
         params['expected_release_id'] = expected_release_id
+        params['release_id'] = expected_release_id
     pages, seen, size, offset, total = [], set(), 0, 0, None
     for _ in range(20):
         page = http.get(base.rstrip('/')+'/private/v1/financial-history',
@@ -261,6 +262,7 @@ def load_history(ticker, asof, http, *, cik, base, token, expected_release_id=No
         if params.get('expected_release_id') and pin[0] != params['expected_release_id']:
             fail('release mismatch')
         params['expected_release_id'] = pin[0]
+        params['release_id'] = pin[0]
         size += len(json.dumps(page).encode())
         if size > 8 * 1048576:
             fail('response budget exceeded')

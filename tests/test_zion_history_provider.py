@@ -152,3 +152,12 @@ def test_verify_evidence_rejects_unsigned_or_forged_bundles():
     with pytest.raises(ProviderError, match='attestation mismatch'):
         verify_evidence(tampered, 'server-secret')
 
+
+
+def test_explicit_pin_selects_the_approved_release_on_every_page():
+    class HTTP:
+        def get(self, url, *, headers, params):
+            assert params['release_id'] == params['expected_release_id'] == 'r1'
+            return page()
+    load_history('AAPL', '2026-09-24', HTTP(), cik='0000320193', base='https://example.test',
+                 token='local', expected_release_id='r1')
