@@ -157,3 +157,32 @@ def test_missing_owner_secret_never_falls_back_to_upstream_secrets(client, monke
         }):
             with pytest.raises(OwnerBenchmarkAuthRequired):
                 views.resolve_benchmark_selections(selection(), "2026-10-19")
+
+
+def test_revoke_needs_same_origin_but_no_login_or_owner_bearer(client, monkeypatch):
+    from owner_benchmark_access import GRANT_COOKIE
+
+    monkeypatch.setattr('accounts.current_user', lambda: {'id': 'account-1'})
+    assert client.post('/api/account/data-access', headers={
+        'Authorization': 'Bearer owner-test-secret', 'Origin': 'http://localhost'
+    }).status_code == 200
+    assert client.get_cookie(GRANT_COOKIE) is not None
+    rejected = client.delete('/api/account/data-access', headers={'Origin': 'https://other.test'})
+    assert rejected.status_code == 403
+    assert 'Set-Cookie' not in rejected.headers
+    monkeypatch.setattr('accounts.current_user', lambda: None)
+    response = client.delete('/api/account/data-access', headers={'Origin': 'http://localhost'})
+    assert response.status_code == 200
+    assert response.json['owner_benchmark_access'] is False
+    cookie = response.headers['Set-Cookie']
+    assert 'Max-Age=0' in cookie and 'Path=/' in cookie
+    assert 'Secure' in cookie and 'HttpOnly' in cookie and 'SameSite=Strict' in cookie
+    assert client.get_cookie(GRANT_COOKIE) is None
+    assert 'no-store' in response.headers['Cache-Control']
+
+
+@pytest.mark.parametrize('site', ['cross-site', 'same-site'])
+def test_revoke_refuses_cross_site_fetch_metadata(client, site):
+    assert client.delete('/api/account/data-access', headers={
+        'Origin': 'http://localhost', 'Sec-Fetch-Site': site
+    }).status_code == 403

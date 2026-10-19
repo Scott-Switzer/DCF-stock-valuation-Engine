@@ -11,6 +11,12 @@
       <div class="field"><label for="data-owner-key">Owner data key</label><input id="data-owner-key" type="password" autocomplete="off" spellcheck="false" autocapitalize="none" data-lpignore="true" maxlength="4096" required></div>
       <button type="submit">Connect</button> <button type="button" class="secondary" id="data-disconnect">Disconnect &amp; clear</button>
     </form>
+    <h3>Use private benchmarks in valuation screens</h3>
+    <p>After connecting, log in to your app account and explicitly allow private benchmarks for 15 minutes. This creates a short-lived, account-bound browser grant; your raw owner key is not stored in it.</p>
+    <p><a href="/account" target="_blank" rel="noopener noreferrer">Open account in another tab</a></p>
+    <button type="button" class="secondary" id="data-benchmark-grant" disabled>Allow private benchmarks for 15 minutes</button>
+    <p><a href="/" target="_blank" rel="noopener noreferrer">Open valuation workspace in another tab</a> · Keep this data tab open while using its grant.</p>
+    <p id="data-grant-status" role="status" aria-live="polite">Private benchmark access has not been granted by this tab.</p>
     <p id="data-status" role="status" aria-live="polite">Disconnected. No private data loaded.</p>
   </section>
   <fieldset id="data-controls" disabled><legend>Owner data explorer</legend>
@@ -38,6 +44,7 @@
     <section class="panel" id="data-files" aria-labelledby="data-files-heading">
       <h2 id="data-files-heading">All files</h2><p>Browse the four connected stores. Select a folder to open it. Parquet files offer a native schema and a bounded ten-row preview; other files show metadata only. Stored timestamps are not observation or publication dates.</p>
       <form id="data-files-form"><div class="field-grid"><div class="field"><label for="data-store">Store</label><select id="data-store"><option value="financial">Financial</option><option value="research">Research</option><option value="filings">Filings</option><option value="lakehouse">Lakehouse</option></select></div><div class="field"><label for="data-prefix">Folder prefix</label><input id="data-prefix" maxlength="1024" placeholder="Leave blank for the store root"></div></div><button type="submit">Browse folder</button> <button type="button" class="secondary" id="data-files-up">Parent folder</button></form>
+      <p><button type="button" class="secondary" id="data-browse-wrds">Browse all WRDS collections</button> · Opens the raw research folders, including collections outside the release catalog.</p>
       <p id="data-files-summary" role="status"></p><div id="data-file-list" class="table-wrap"></div><button type="button" class="secondary" id="data-files-next" disabled>Next files</button>
       <h3>Native source fields</h3><p id="data-native-summary" role="status"></p><div id="data-native-schema" class="table-wrap"></div><div id="data-native-rows" class="table-wrap"></div><details><summary>Selected file metadata</summary><pre id="data-file-detail"></pre></details>
     </section>

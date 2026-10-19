@@ -135,3 +135,20 @@ def install_owner_benchmark_access(app, provider):
         )
         g.owner_benchmark_private_response = True
         return response
+
+
+    @app.delete("/api/account/data-access")
+    def revoke():
+        # Revocation is available even after logout or loss/rotation of the owner key.
+        # Preserve the same origin boundary used to mint the grant.
+        if not _same_origin():
+            response = jsonify(error="Cross-site writes are not allowed.")
+            response.status_code = 403
+            response.headers["Cache-Control"] = "private, no-store"
+            return response
+        response = jsonify(owner_benchmark_access=False)
+        response.delete_cookie(
+            GRANT_COOKIE, secure=True, httponly=True, samesite="Strict", path="/",
+        )
+        g.owner_benchmark_private_response = True
+        return response

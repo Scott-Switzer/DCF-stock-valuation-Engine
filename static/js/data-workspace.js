@@ -4,6 +4,7 @@
   const el = (id) => document.getElementById(id);
   const pending = new Set(), channels = new Map();
   let ownerKey = "", generation = 0;
+  let grantPending = null, revocation = Promise.resolve();
   let stocks = {}, prices = {}, collections = {}, files = {};
   const privateRegions = ["data-stock-summary", "data-stock-catalog", "data-prices-summary", "data-prices", "data-price-evidence", "data-collections-summary", "data-collection-list", "data-collection-detail", "data-families", "data-files-summary", "data-file-list", "data-native-summary", "data-native-schema", "data-native-rows", "data-file-detail"];
   const paging = ["data-stock-next", "data-prices-next", "data-collections-next", "data-files-next"];
@@ -19,7 +20,27 @@
     t.append(body); el(target).replaceChildren(t);
     if (!rows.length) el(target).append(node("p", "No stored results for this query."));
   }
-  function clear() {
+  async function deleteGrant() {
+    try {
+      const response = await window.fetch("/api/account/data-access", {
+        method: "DELETE", credentials: "same-origin", cache: "no-store", redirect: "error",
+        referrerPolicy: "no-referrer", keepalive: true,
+      });
+      return response.ok;
+    } catch (_) { return false; }
+  }
+  function revokeGrant(unloading) {
+    // On unload send immediately; after an in-flight mint settles send again so
+    // a late POST response cannot silently restore the cookie during disconnect.
+    if (unloading) void deleteGrant();
+    const activeGrant = grantPending;
+    revocation = revocation.catch(() => false).then(async () => {
+      if (activeGrant) await activeGrant.catch(() => {});
+      return deleteGrant();
+    });
+    return revocation;
+  }
+  function clear(unloading = false) {
     ownerKey = ""; generation += 1;
     for (const controller of pending) controller.abort(); pending.clear(); channels.clear();
     stocks = {}; prices = {}; collections = {}; files = {};
@@ -28,6 +49,42 @@
     ["data-stock-search", "data-symbol", "data-date-from", "data-date-to", "data-collection-search", "data-family", "data-prefix"].forEach((id) => { el(id).value = ""; });
     paging.forEach((id) => { el(id).disabled = true; });
     el("data-status").textContent = "Disconnected. Private key and loaded data cleared.";
+    el("data-benchmark-grant").disabled = true;
+    el("data-grant-status").textContent = "Clearing this browser's private benchmark grant…";
+    const epoch = generation;
+    return revokeGrant(unloading).then((confirmed) => {
+      if (generation === epoch) el("data-grant-status").textContent = confirmed
+        ? "Private benchmark grant cleared."
+        : "Could not confirm grant removal. An existing grant expires within 15 minutes; reconnect and disconnect to retry.";
+    });
+  }
+  function grantBenchmarks() {
+    if (!ownerKey || grantPending) return;
+    const epoch = generation;
+    el("data-benchmark-grant").disabled = true;
+    el("data-grant-status").textContent = "Requesting private benchmark access…";
+    grantPending = (async () => {
+      try {
+        const response = await window.fetch("/api/account/data-access", {
+          method: "POST", headers: {Authorization: "Bearer " + ownerKey},
+          credentials: "same-origin", cache: "no-store", redirect: "error",
+          referrerPolicy: "no-referrer", keepalive: true,
+        });
+        if (epoch !== generation || !ownerKey) return;
+        if (response.status === 401) {
+          el("data-grant-status").textContent = "Log in to your app account in another tab, then retry with an authorized owner key.";
+        } else if (response.ok) {
+          el("data-grant-status").textContent = "Private benchmarks enabled for this account for 15 minutes. Keep this tab open; disconnecting or leaving clears the browser grant.";
+        } else {
+          el("data-grant-status").textContent = "Private benchmark grant unavailable (HTTP " + response.status + "). No grant was confirmed.";
+        }
+      } catch (_) {
+        if (epoch === generation) el("data-grant-status").textContent = "Private benchmark grant unavailable. Retry when connected.";
+      } finally {
+        if (epoch === generation && ownerKey) el("data-benchmark-grant").disabled = false;
+      }
+    })().finally(() => { grantPending = null; });
+    return grantPending;
   }
   function invalidate(...names) { names.forEach((name) => channels.set(name, (channels.get(name) || 0) + 1)); }
   async function read(channel, route, params, render, headers = {}) {
@@ -136,20 +193,25 @@
     }, headers);
   }
   const onSubmit = (id, callback) => el(id).addEventListener("submit", (event) => { event.preventDefault(); return callback(); });
-  onSubmit("data-connect-form", () => {
-    const supplied = el("data-owner-key").value.trim(); clear();
+  onSubmit("data-connect-form", async () => {
+    const supplied = el("data-owner-key").value.trim();
+    const clearing = clear(), epoch = generation;
+    await clearing;
+    if (generation !== epoch) return;
     if (!/^[A-Za-z0-9._~+/-]+=*$/.test(supplied) || supplied.length > 4096) { el("data-status").textContent = "Enter an owner data key without spaces."; return; }
-    ownerKey = supplied; el("data-controls").disabled = false; el("data-status").textContent = "Connecting this tab…";
+    ownerKey = supplied; el("data-benchmark-grant").disabled = false; el("data-controls").disabled = false; el("data-status").textContent = "Connecting this tab…";
     return stockCatalog();
   });
   onSubmit("data-stocks-form", () => stockCatalog()); onSubmit("data-prices-form", () => stockPrices());
   onSubmit("data-collections-form", () => collectionCatalog()); onSubmit("data-files-form", () => fileCatalog());
-  el("data-disconnect").addEventListener("click", clear);
+  el("data-disconnect").addEventListener("click", () => clear());
+  el("data-benchmark-grant").addEventListener("click", grantBenchmarks);
   el("data-stock-next").addEventListener("click", () => stockCatalog(true));
   el("data-prices-next").addEventListener("click", () => stockPrices(true));
   el("data-collections-next").addEventListener("click", () => collectionCatalog(true));
+  el("data-browse-wrds").addEventListener("click", () => { el("data-store").value = "research"; el("data-prefix").value = "raw/wrds/"; return fileCatalog(); });
   el("data-files-next").addEventListener("click", () => fileCatalog(true));
   el("data-files-up").addEventListener("click", () => { const parts = el("data-prefix").value.replace(/\/$/, "").split("/"); parts.pop(); el("data-prefix").value = parts.length ? parts.join("/") + "/" : ""; return fileCatalog(); });
-  window.addEventListener("pagehide", clear);
+  window.addEventListener("pagehide", () => clear(true));
   window.addEventListener("pageshow", (event) => { if (event.persisted) clear(); });
 })(window, document);
