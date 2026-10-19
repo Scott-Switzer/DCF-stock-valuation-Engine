@@ -108,6 +108,7 @@
       if (current()) el("data-status").textContent = "Request unavailable. No data was inferred; retry the source query.";
     } finally { pending.delete(controller); }
   }
+  const archiveSources = new Set(["yfinance", "simfin", "tiingo", "eodhd", "marketstack", "polygon", "twelve_data", "estate_alpaca"]);
   function stockCatalog(next = false) {
     if (!next) stocks = {query: {source: el("data-stock-source").value || "crsp", search: el("data-stock-search").value.trim(), limit: 100}};
     const q = {...stocks.query};
@@ -116,7 +117,7 @@
     return read("stocks", "stock-history", q, (data) => {
       stocks.cursor = data.next_cursor; stocks.release = data.release_id;
       el("data-stock-summary").textContent = text(data.security_count ?? data.symbol_count) + " indexed securities · " + text(data.total_matches) + " match · source coverage shown per symbol.";
-      table("data-stock-catalog", ["Security ID", "Latest ticker", "Company", "First stored session", "Last stored session", "Stored rows", "Open"], (data.symbols || []).map((s) => [s.permno ? "PERMNO " + s.permno : s.symbol, s.symbol, s.name, s.date_min, s.date_max, s.normalized_rows, action("Read history", () => { el("data-symbol").value = s.permno ? "" : s.symbol; el("data-permno").value = s.permno ? String(s.permno) : ""; el("data-date-from").value = s.date_min || ""; el("data-date-to").value = s.date_max || ""; return stockPrices(); })]));
+      table("data-stock-catalog", ["Security ID", "Latest ticker", "Company", "First stored session", "Last stored session", "Stored rows", "Open"], (data.symbols || []).map((s) => [s.permno ? "PERMNO " + s.permno : archiveSources.has(stocks.query.source) ? s.security_id : s.symbol, s.symbol, s.name, s.date_min, s.date_max, s.normalized_rows, action("Read history", () => { const nativeId = s.permno || (archiveSources.has(stocks.query.source) ? s.security_id : ""); el("data-symbol").value = nativeId ? "" : s.symbol; el("data-permno").value = nativeId ? String(nativeId) : ""; el("data-date-from").value = s.date_min || ""; el("data-date-to").value = s.date_max || ""; return stockPrices(); })]));
       el("data-stock-next").disabled = !stocks.cursor;
     });
   }
@@ -125,9 +126,9 @@
       const source = el("data-stock-source").value || "crsp";
       const q = {source: source, limit: 500};
       const permno = el("data-permno").value.trim(), symbol = el("data-symbol").value.trim().toUpperCase();
-      if (source === "crsp" && permno) {
-        if (!/^[1-9][0-9]{0,9}$/.test(permno)) { el("data-status").textContent = "Enter a valid PERMNO."; return; }
-        q.permno = permno;
+      if ((source === "crsp" || archiveSources.has(source)) && permno) {
+        if (!(source === "crsp" ? /^[1-9][0-9]{0,9}$/ : /^[0-9]{1,20}$/).test(permno)) { el("data-status").textContent = "Enter a valid source security ID."; return; }
+        if (source === "crsp") q.permno = permno; else q.security_id = permno;
       } else {
         if (!/^[A-Z0-9][A-Z0-9.\-]{0,24}$/.test(symbol)) { el("data-status").textContent = "Select a security or enter a ticker."; return; }
         q.symbol = symbol;
@@ -143,7 +144,7 @@
       prices.cursor = data.next_cursor; prices.release = data.release_id;
       const rows = data.prices || [];
       el("data-prices-summary").textContent = text(data.security_id || data.symbol) + " · " + rows.length + " rows on this page · " + text(data.source) + " · " + text(data.coverage?.price_basis) + ". Missing source fields remain blank.";
-      table("data-prices", ["Session", "Dated ticker", "Currency", "Native price / close", "Price magnitude", "Total return", "Price return", "Volume", "Native flags"], rows.map((r) => [r.session_date, r.symbol, r.currency, r.close, r.price_magnitude, r.total_return, r.price_return, r.volume, r.native_flags]));
+      table("data-prices", ["Session", "Source ticker", "Currency", "Open", "High", "Low", "Native close", "Adjusted close (stored)", "Price magnitude", "Total return", "Volume", "Native flags"], rows.map((r) => [r.session_date, r.symbol, r.currency, r.open, r.high, r.low, r.close, r.adjusted_close, r.price_magnitude, r.total_return, r.volume, r.native_flags]));
       el("data-price-evidence").textContent = JSON.stringify({coverage:data.coverage, identity_intervals:data.identity_intervals, gaps:data.gaps || [], source_pages:data.source_pages, source_lineage:data.source_lineage}, null, 2);
       el("data-prices-next").disabled = !prices.cursor;
     });
