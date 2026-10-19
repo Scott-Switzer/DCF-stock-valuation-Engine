@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "checks": [
+    "source_authenticated",
+    "owner_slack_worker_mcp_source_chain",
+    "owner_auth_fail_closed",
+    "strict_command_fail_closed"
+  ],
+  "index_id": "d17b23f1f788b32242f3bde5048dec4afedf050a7fdee071c1c4501f6592e970",
+  "release_id": "94635c4377880ea5654583d90828fbcd77c50a4fd66cd828db0d077acf72ce24",
+  "engine_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+  "rows_verified": 5,
+  "slack_messages_sent": 0,
+  "slack_delivery_tested": false
+}

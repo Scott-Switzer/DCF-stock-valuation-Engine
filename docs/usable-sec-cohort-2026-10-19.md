@@ -1,5 +1,7 @@
 # Usable SEC research milestone — October 19, 2026
 
+This records the earlier milestone. Current expansion and interface verification: [Unified expansion](unified-expansion-2026-10-19.md).
+
 The existing DCF application now consumes Zion's private readiness index at `/screen`, selects a pinned issuer, loads that exact approved financial-history release, and runs the existing enterprise valuation engine with explicit industry benchmarks and analyst forecasts. This is an integrated application change, not a separate research application.
 
 ## Implemented

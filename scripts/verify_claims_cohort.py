@@ -46,7 +46,8 @@ def main():
     args = parser.parse_args()
     if args.output.exists():
         parser.error('Output must be new')
-    enterprise = json.loads(args.enterprise_receipt.read_bytes())
+    enterprise_raw = args.enterprise_receipt.read_bytes()
+    enterprise = json.loads(enterprise_raw)
     raw = args.source_manifest.read_bytes()
     manifest = json.loads(raw)
     members = manifest['members']
@@ -98,6 +99,7 @@ def main():
         claims_verified=sum(r.get('claims_verified',False) for r in results),
         source_release_id=manifest['release_id'],source_manifest_sha256=hashlib.sha256(raw).hexdigest(),
         engine_release_id=enterprise['screen']['engine_release_id'],results=results,
+        enterprise_receipt_sha256=hashlib.sha256(enterprise_raw).hexdigest(),
         execution='LIVE_AUTHENTICATED_CLAIMS_API_WITH_EXISTING_LOCAL_BRIDGE',
         qualifications=['STANDARDIZED_RESEARCH_SCENARIOS_NOT_COMPANY_FORECASTS',
                         'ISSUER_COMMON_SHARE_COUNTS_NOT_CERTIFIED_SECURITY_PRICES',

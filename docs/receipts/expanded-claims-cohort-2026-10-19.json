@@ -1,0 +1,2990 @@
+{
+  "schema_version": "claims-cohort-acceptance-v1",
+  "generated_utc": "2026-10-19T16:41:29.716856+00:00",
+  "selected": 50,
+  "accounted": 50,
+  "counts": {
+    "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED": 35,
+    "BLOCKED": 15
+  },
+  "claims_verified": 50,
+  "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+  "source_manifest_sha256": "757a4fd7ac516a07ecabade672d9355526779a78ed49764367de2b66dea4f8b7",
+  "engine_release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+  "results": [
+    {
+      "cik": "0000001800",
+      "ticker": "ABT",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 102136150191.19327,
+        "value_per_share": 58.637858181911774,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "102136150191.19327",
+        "value_per_share_decimal": "58.63785818191177346341004895883654301332",
+        "absolute_error_decimal": "5.3658995104116345698668E-16"
+      }
+    },
+    {
+      "cik": "0000002098",
+      "ticker": "ACU",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 201467235.14306563,
+        "value_per_share": 52.54995735146501,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "201467235.14306563",
+        "value_per_share_decimal": "52.54995735146500764380619553902201536169",
+        "absolute_error_decimal": "2.35619380446097798463831E-15"
+      }
+    },
+    {
+      "cik": "0000002186",
+      "ticker": "BKTI",
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000002488",
+      "ticker": "AMD",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 66225579267.55847,
+        "value_per_share": 40.56759066063472,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "66225579267.55847",
+        "value_per_share_decimal": "40.56759066063471860416963115813442249245",
+        "absolute_error_decimal": "1.39583036884186557750755E-15"
+      }
+    },
+    {
+      "cik": "0000002969",
+      "ticker": "APD",
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000003197",
+      "ticker": "CECO",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 1001267949.3655443,
+        "value_per_share": 17.095285223903574,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "1001267949.3655443",
+        "value_per_share_decimal": "17.09528522390357458780399396754267512813",
+        "absolute_error_decimal": "5.8780399396754267512813E-16"
+      }
+    },
+    {
+      "cik": "0000003545",
+      "ticker": "ALCO",
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000003570",
+      "ticker": "LNG",
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000004127",
+      "ticker": "SWKS",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 8153744959.845806,
+        "value_per_share": 54.18750721207378,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "8153744959.845805",
+        "value_per_share_decimal": "54.18750721207377557490762681585829921055",
+        "absolute_error_decimal": "4.42509237318414170078945E-15"
+      }
+    },
+    {
+      "cik": "0000004281",
+      "ticker": "HWM",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 29434049753.796097,
+        "value_per_share": 73.80628510231504,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "29434049753.796097",
+        "value_per_share_decimal": "73.80628510231504227997956446486788778793",
+        "absolute_error_decimal": "2.27997956446486788778793E-15"
+      }
+    },
+    {
+      "cik": "0000004904",
+      "ticker": "AEP",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 2605478374.151085,
+        "value_per_share": 4.78855843933839,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "2605478374.151085",
+        "value_per_share_decimal": "4.788558439338390145702679733912733803352",
+        "absolute_error_decimal": "1.45702679733912733803352E-16"
+      }
+    },
+    {
+      "cik": "0000006176",
+      "ticker": "AP",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 47380614.90662662,
+        "value_per_share": 2.293503274329231,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "47380614.90662662",
+        "value_per_share_decimal": "2.293503274329231365443027392777088073788",
+        "absolute_error_decimal": "3.65443027392777088073788E-16"
+      }
+    },
+    {
+      "cik": "0000006207",
+      "ticker": "AXR",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 250350139.68541172,
+        "value_per_share": 47.01544394693854,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "250350139.68541172",
+        "value_per_share_decimal": "47.01544394693853666085179129023189202173",
+        "absolute_error_decimal": "3.33914820870976810797827E-15"
+      }
+    },
+    {
+      "cik": "0000006281",
+      "ticker": "ADI",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 41706439832.20508,
+        "value_per_share": 86.06977352834065,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "41706439832.20508",
+        "value_per_share_decimal": "86.06977352834065465230791880721421201571",
+        "absolute_error_decimal": "4.65230791880721421201571E-15"
+      }
+    },
+    {
+      "cik": "0000006845",
+      "ticker": "APOG",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 1009265042.3827057,
+        "value_per_share": 48.36356255967573,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "1009265042.3827057",
+        "value_per_share_decimal": "48.36356255967573103963361834944437719729",
+        "absolute_error_decimal": "1.03963361834944437719729E-15"
+      }
+    },
+    {
+      "cik": "0000006951",
+      "ticker": "AMAT",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 137470053203.93127,
+        "value_per_share": 173.2239114635495,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "137470053203.93126",
+        "value_per_share_decimal": "173.2239114635494862601264706947902804672",
+        "absolute_error_decimal": "1.37398735293052097195328E-14"
+      }
+    },
+    {
+      "cik": "0000007536",
+      "ticker": "ARW",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 7173946189.511877,
+        "value_per_share": 140.92695368648398,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "7173946189.511877",
+        "value_per_share_decimal": "140.9269536864839920886228565471305483504",
+        "absolute_error_decimal": "1.20886228565471305483504E-14"
+      }
+    },
+    {
+      "cik": "0000007623",
+      "ticker": "ARTW",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": -1572851.0411326168,
+        "value_per_share": -0.3023907552972644,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "-1572851.0411326168",
+        "value_per_share_decimal": "-0.3023907552972643829933021698447298470062",
+        "absolute_error_decimal": "1.70066978301552701529938E-17"
+      }
+    },
+    {
+      "cik": "0000008146",
+      "ticker": null,
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000008504",
+      "ticker": "UAVS",
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "nonoperating_assets": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000008858",
+      "ticker": "AVT",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 4961908145.911601,
+        "value_per_share": 60.457268718265986,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "4961908145.911601",
+        "value_per_share_decimal": "60.45726871826598374112873373342522390956",
+        "absolute_error_decimal": "2.25887126626657477609044E-15"
+      }
+    },
+    {
+      "cik": "0000008947",
+      "ticker": "AZZ",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 3731643923.2833114,
+        "value_per_share": 124.1749596229257,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "3731643923.2833114",
+        "value_per_share_decimal": "124.1749596229257034448961467848145089325",
+        "absolute_error_decimal": "3.4448961467848145089325E-15"
+      }
+    },
+    {
+      "cik": "0000009092",
+      "ticker": "BMI",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "nonoperating_assets": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 2964536732.7936974,
+        "value_per_share": 102.27179012583525,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "2964536732.7936974",
+        "value_per_share_decimal": "102.2717901258352590055758737747503203781",
+        "absolute_error_decimal": "9.0055758737747503203781E-15"
+      }
+    },
+    {
+      "cik": "0000009326",
+      "ticker": "BCPC",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 3446131107.9023724,
+        "value_per_share": 108.10367142622725,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "3446131107.9023724",
+        "value_per_share_decimal": "108.1036714262272554497658433690096383336",
+        "absolute_error_decimal": "5.4497658433690096383336E-15"
+      }
+    },
+    {
+      "cik": "0000009389",
+      "ticker": "BALL",
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000010048",
+      "ticker": "BRN",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 2803136.8587973667,
+        "value_per_share": 0.19419957440275057,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "2803136.858797367",
+        "value_per_share_decimal": "0.1941995744027505990934100764082245704852",
+        "absolute_error_decimal": "2.90934100764082245704852E-17"
+      }
+    },
+    {
+      "cik": "0000010329",
+      "ticker": "BSET",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 134077483.42650932,
+        "value_per_share": 15.48548369500986,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "134077483.42650934",
+        "value_per_share_decimal": "15.48548369500986167096448493342029451845",
+        "absolute_error_decimal": "1.67096448493342029451845E-15"
+      }
+    },
+    {
+      "cik": "0000010795",
+      "ticker": "BDX",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 24205526543.197327,
+        "value_per_share": 88.86453581156402,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "24205526543.19733",
+        "value_per_share_decimal": "88.86453581156403320572068837403280922570",
+        "absolute_error_decimal": "1.320572068837403280922570E-14"
+      }
+    },
+    {
+      "cik": "0000012040",
+      "ticker": "BDL",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "nonoperating_assets": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": -5606280943.5965395,
+        "value_per_share": -3016.3236717873483,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "-5606280943.59653981",
+        "value_per_share_decimal": "-3016.323671787348436793000499825948660504",
+        "absolute_error_decimal": "1.36793000499825948660504E-13"
+      }
+    },
+    {
+      "cik": "0000012927",
+      "ticker": "BA",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 28312617269.641037,
+        "value_per_share": 35.82197774865124,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "28312617269.64104",
+        "value_per_share_decimal": "35.82197774865124565327009746650056387513",
+        "absolute_error_decimal": "5.65327009746650056387513E-15"
+      }
+    },
+    {
+      "cik": "0000013156",
+      "ticker": "GLXZ",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 100606388.33155435,
+        "value_per_share": 4.020417642580567,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "100606388.33155437",
+        "value_per_share_decimal": "4.020417642580567390369153605967743192349",
+        "absolute_error_decimal": "3.90369153605967743192349E-16"
+      }
+    },
+    {
+      "cik": "0000014177",
+      "ticker": "BRID",
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000014707",
+      "ticker": "CAL",
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000014930",
+      "ticker": "BC",
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000015357",
+      "ticker": null,
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000015847",
+      "ticker": "BUKS",
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": []
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000016040",
+      "ticker": "CBT",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 8761100527.792526,
+        "value_per_share": 169.68680327680858,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "8761100527.792526",
+        "value_per_share_decimal": "169.6868032768085658294443104702567586954",
+        "absolute_error_decimal": "1.41705556895297432413046E-14"
+      }
+    },
+    {
+      "cik": "0000016732",
+      "ticker": "CPB",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 16912236479.821583,
+        "value_per_share": 56.71322072161173,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "16912236479.821583",
+        "value_per_share_decimal": "56.71322072161173030840940509753177769655",
+        "absolute_error_decimal": "3.0840940509753177769655E-16"
+      }
+    },
+    {
+      "cik": "0000018230",
+      "ticker": "CAT",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 148906472098.3045,
+        "value_per_share": 323.93866983302735,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "148906472098.3045",
+        "value_per_share_decimal": "323.9386698330273594736213663391997903979",
+        "absolute_error_decimal": "9.4736213663391997903979E-15"
+      }
+    },
+    {
+      "cik": "0000018498",
+      "ticker": "GCO",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": -41234183.914007455,
+        "value_per_share": -3.8108691924112947,
+        "missing": []
+      },
+      "scenario": "LIQUIDATION_PREFERENCE",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "-41234183.91400746",
+        "value_per_share_decimal": "-3.810869192411295146315874305647462253765",
+        "absolute_error_decimal": "4.46315874305647462253765E-16"
+      }
+    },
+    {
+      "cik": "0000018926",
+      "ticker": "LUMN",
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000019584",
+      "ticker": "CHE",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 5237914401.531014,
+        "value_per_share": 400.7597575487038,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "5237914401.531014",
+        "value_per_share_decimal": "400.7597575487037796057692903597799564972",
+        "absolute_error_decimal": "2.03942307096402200435028E-14"
+      }
+    },
+    {
+      "cik": "0000019745",
+      "ticker": "CPK",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 2502365623.3708134,
+        "value_per_share": 103.80479516257424,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "2502365623.3708134",
+        "value_per_share_decimal": "103.8047951625742316736326432069750612440",
+        "absolute_error_decimal": "8.3263673567930249387560E-15"
+      }
+    },
+    {
+      "cik": "0000019871",
+      "ticker": "CVR",
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000020212",
+      "ticker": "CHDN",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 6522726984.399477,
+        "value_per_share": 93.58255730040248,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "6522726984.399477",
+        "value_per_share_decimal": "93.58255730040248209751578627925300059571",
+        "absolute_error_decimal": "2.09751578627925300059571E-15"
+      }
+    },
+    {
+      "cik": "0000021344",
+      "ticker": "KO",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 233801329998.05286,
+        "value_per_share": 54.34103089414481,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "233801329998.05286",
+        "value_per_share_decimal": "54.34103089414480903057115061056828239664",
+        "absolute_error_decimal": "9.6942884938943171760336E-16"
+      }
+    },
+    {
+      "cik": "0000021535",
+      "ticker": "COHU",
+      "status": "BLOCKED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "blocker": "NO_INDEPENDENTLY_VERIFIED_ENTERPRISE_SCENARIO"
+    },
+    {
+      "cik": "0000320193",
+      "ticker": "AAPL",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 2249642436258.3877,
+        "value_per_share": 154.14654583254335,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "2249642436258.3875",
+        "value_per_share_decimal": "154.1465458325433494721868580488934630106",
+        "absolute_error_decimal": "5.278131419511065369894E-16"
+      }
+    },
+    {
+      "cik": "0000789019",
+      "ticker": "MSFT",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REVIEWED_ABSENT",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 2547290757048.0513,
+        "value_per_share": 343.0442598642012,
+        "missing": []
+      },
+      "scenario": "NO_PREFERRED_OUTSTANDING",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "2547290757048.0513",
+        "value_per_share_decimal": "343.0442598642011740117693125853075458588",
+        "absolute_error_decimal": "2.59882306874146924541412E-14"
+      }
+    },
+    {
+      "cik": "0001652044",
+      "ticker": "GOOGL",
+      "status": "ISSUER_COMMON_SHARE_SCENARIO_VERIFIED",
+      "claims_verified": true,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+      "claim_states": {
+        "debt": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "finance_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "operating_leases": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "cash": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "nonoperating_assets": {
+          "state": "REPORTED",
+          "permitted": null
+        },
+        "preferred_equity": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "noncontrolling_interests": {
+          "state": "REPORTED",
+          "permitted": true
+        },
+        "common_shares": {
+          "state": "REPORTED",
+          "permitted": null
+        }
+      },
+      "unresolved": {
+        "blocking": [],
+        "advisory": [
+          {
+            "claim": "operating_leases",
+            "reason": "CLASSIFIED_SEPARATELY_FROM_THE_BRIDGE"
+          }
+        ]
+      },
+      "primary": {
+        "status": "AVAILABLE",
+        "equity_value": 2236457580501.367,
+        "value_per_share": 182.86652334434729,
+        "missing": []
+      },
+      "scenario": "LIQUIDATION_PREFERENCE",
+      "shares_basis": "COMMON_SHARES_OUTSTANDING",
+      "independent": {
+        "equity_value_decimal": "2236457580501.3672",
+        "value_per_share_decimal": "182.8665233443472771872444807849550286182",
+        "absolute_error_decimal": "1.28127555192150449713818E-14"
+      }
+    }
+  ],
+  "execution": "LIVE_AUTHENTICATED_CLAIMS_API_WITH_EXISTING_LOCAL_BRIDGE",
+  "qualifications": [
+    "STANDARDIZED_RESEARCH_SCENARIOS_NOT_COMPANY_FORECASTS",
+    "ISSUER_COMMON_SHARE_COUNTS_NOT_CERTIFIED_SECURITY_PRICES",
+    "NO_CALLER_PREFERRED_CONVERSION_ASSUMPTIONS_ADDED"
+  ],
+  "remote_writes": 0,
+  "publication_pointer_writes": 0,
+  "enterprise_receipt_sha256": "35af28d8da79f5b2cd108fa736dec6bab356e29076cc7a36fad2e59c97ae6669"
+}
