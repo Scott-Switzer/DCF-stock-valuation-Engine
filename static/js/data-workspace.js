@@ -216,7 +216,7 @@
   el("data-disconnect").addEventListener("click", () => clear());
   el("data-benchmark-grant").addEventListener("click", grantBenchmarks);
   el("data-stock-source").addEventListener("change", () => {
-    invalidate("prices"); prices = {}; el("data-permno").value = ""; el("data-symbol").value = "";
+    invalidate("prices"); prices = {}; el("data-permno").value = ""; el("data-symbol").value = ""; el("data-date-from").value = ""; el("data-date-to").value = "";
     el("data-prices").replaceChildren(); el("data-price-evidence").replaceChildren(); el("data-prices-next").disabled = true;
     return stockCatalog();
   });
