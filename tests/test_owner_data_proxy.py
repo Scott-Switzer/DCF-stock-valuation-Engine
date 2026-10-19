@@ -61,8 +61,9 @@ def fetch(path='/api/data/historical-series', headers=None, method='GET', source
 @pytest.mark.parametrize('headers', [None, {'Cookie': 'session=owner'}, {'Authorization': 'Basic abc'},
     {'Authorization': 'Bearer '}, {'Authorization': 'Bearer abc def'},
     {'Authorization': 'Bearer abc\r\nX-Owner: yes'}, {'X-Zion-Principal': 'private-owner'}])
-def test_no_bearer_rejected_without_using_any_server_credential(headers):
-    response, source = fetch(headers=headers)
+@pytest.mark.parametrize('prefix', ['/api/data', '/private/v1'])
+def test_no_bearer_rejected_without_using_any_server_credential(headers, prefix):
+    response, source = fetch(prefix + '/historical-series', headers=headers)
     assert response.status == 401
     assert source.requests == []
     assert response.headers['cache-control'] == 'private, no-store'
@@ -80,7 +81,7 @@ def test_non_read_methods_never_reach_source(method):
     '/api/data/%2e%2e/research-prices', '/api/data/%252e%252e/research-prices',
     '/api/data/research-prices%2fextra', '/api/data/https://evil.invalid',
     '/api/data/datasets\\financial\\object', '/api/data/financial-jobs', '/api/data/query',
-    '/api/data/equity-claims', '/api/data/datasets/unknown/action'])
+    '/api/data/datasets/unknown/action'])
 def test_route_escapes_and_non_allowlisted_paths_never_reach_source(path):
     response, source = fetch(path, {'Authorization': 'Bearer incoming-owner'})
     assert response.status in (400, 404)
@@ -130,8 +131,10 @@ def test_allowed_routes_preserve_source_identity(route, target):
     assert response.status == 206
 
 
-def test_source_authentication_failure_is_preserved_and_head_has_no_body():
-    response, source = fetch(headers={'Authorization': 'Bearer wrong-owner'}, source=Source(401))
+@pytest.mark.parametrize('prefix', ['/api/data', '/private/v1'])
+def test_source_authentication_failure_is_preserved_and_head_has_no_body(prefix):
+    response, source = fetch(prefix + '/historical-series',
+                             headers={'Authorization': 'Bearer wrong-owner'}, source=Source(401))
     assert response.status == 401
     assert source.requests[0].headers['authorization'] == 'Bearer wrong-owner'
     response, source = fetch(headers={'Authorization': 'Bearer owner'}, method='HEAD')
@@ -184,9 +187,41 @@ def test_production_entrypoint_keeps_normal_wsgi_routes(monkeypatch):
     assert asyncio.run(worker.fetch(normal)) == 'normal-wsgi'
     assert calls == [(app, normal, worker.env)]
     assert asyncio.run(worker.fetch(Request('https://dcf.invalid/api/data/catalog'))) == 'owner-proxy'
+    assert asyncio.run(worker.fetch(Request('https://dcf.invalid/private/v1/stock-history'))) == 'owner-proxy'
 
 
 def test_raw_control_characters_cannot_be_normalized_into_an_allowed_route():
     response, source = fetch('/api/data/ca\ntalog', {'Authorization': 'Bearer owner'})
     assert response.status == 400
+    assert not source.requests
+
+
+@pytest.mark.parametrize('prefix', ['/api/data', '/private/v1'])
+@pytest.mark.parametrize('route', ['equity-claims', 'capabilities', 'financial-history/batch',
+                                    'stock-history', 'historical-series'])
+def test_cli_alias_preserves_the_exact_owner_authenticated_source_request(prefix, route):
+    response, source = fetch(prefix + '/' + route + '?limit=1',
+                             {'Authorization': 'Bearer owner', 'Cookie': 'session=admin',
+                              'X-Zion-Service-Token': 'not-owner'})
+    assert response.status == 206
+    assert source.requests[0].url == 'https://zion.internal/private/v1/' + route + '?limit=1'
+    assert source.requests[0].headers == {'authorization': 'Bearer owner'}
+    assert response.headers['cache-control'] == 'private, no-store'
+    assert response.headers['vary'] == 'Authorization'
+
+
+@pytest.mark.parametrize('path', ['/private/v1/query', '/private/v1/financial-jobs',
+    '/private/v1/%2e%2e/query', '/private/v1/datasets//research/object',
+    '/private/v1/equity-claims/extra', '/private/v10/capabilities'])
+def test_private_alias_still_refuses_non_allowlisted_or_escaped_routes(path):
+    response, source = fetch(path, {'Authorization': 'Bearer owner'})
+    assert response.status == 404
+    assert not source.requests
+
+
+@pytest.mark.parametrize('method', ['POST', 'DELETE', 'PUT', 'PATCH', 'OPTIONS'])
+def test_cli_alias_is_read_only_even_with_an_owner_bearer(method):
+    response, source = fetch('/private/v1/financial-history/batch',
+                             {'Authorization': 'Bearer owner'}, method=method)
+    assert response.status == 405
     assert not source.requests

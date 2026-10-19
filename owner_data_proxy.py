@@ -10,10 +10,11 @@ import re
 from urllib.parse import parse_qsl, urlsplit
 
 PREFIX = '/api/data/'
+PRIVATE_PREFIX = '/private/v1/'
 _READ_ROUTES = frozenset({
-    'datasets', 'datasets/catalog', 'datasets/financial-query',
+    'datasets', 'datasets/catalog', 'datasets/financial-query', 'capabilities', 'equity-claims',
     'readiness', 'readiness/screen', 'historical-series', 'stock-history',
-    'financial-history', 'financial-companies', 'financial-metrics',
+    'financial-history', 'financial-history/batch', 'financial-companies', 'financial-metrics',
     'financial-coverage', 'financial-screen',
     'research-overview', 'research-identity', 'research-prices', 'research-valuation',
     'research-peers', 'research-certification', 'research-screen',
@@ -48,9 +49,10 @@ def request_plan(request):
     if re.search(r'[\x00-\x20\x7f]', request.url):
         raise Rejected('INVALID_URL', 400)
     url = urlsplit(request.url)
-    if not url.path.startswith(PREFIX):
+    prefix = next((p for p in (PREFIX, PRIVATE_PREFIX) if url.path.startswith(p)), None)
+    if prefix is None:
         raise Rejected('NOT_FOUND', 404)
-    route = url.path.removeprefix(PREFIX)
+    route = url.path.removeprefix(prefix)
     if route == 'catalog':
         route = 'datasets/catalog'
     if route not in _READ_ROUTES and not _DATASET_PATH.fullmatch(route):

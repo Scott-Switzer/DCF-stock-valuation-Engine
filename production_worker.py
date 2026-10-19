@@ -17,6 +17,7 @@ app.jinja_loader = DictLoader(
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
         path = urlsplit(request.url).path
-        if path == '/api/data' or path.startswith('/api/data/'):
+        if (path in ('/api/data', '/private/v1')
+                or path.startswith(('/api/data/', '/private/v1/'))):
             return await handle(request, self.env)
         return await wsgi.fetch(app, request, self.env)
