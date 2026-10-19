@@ -31,10 +31,12 @@ from valuation_records import save_valuation
 from xlsx_export import dcf_workbook
 from compare import football_field
 import library
+from owner_benchmark_access import install_owner_benchmark_access, require_owner_benchmark_access
 
 logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 1_000_000
+install_owner_benchmark_access(app, lambda name: provider_value(name))
 # Explicitly opt in only when the host controls the complete proxy chain.
 proxy_hops = int(os.getenv("TRUSTED_PROXY_HOPS", "0"))
 if proxy_hops:
@@ -924,6 +926,7 @@ def resolve_benchmark_selections(selections, valuation_date, *, max_selections=4
     """Resolve explicit benchmark selections through the canonical Zion interface
     ('source': 'zion', preferred when configured) or the standalone release loader
     ('source': 'release', the default — existing behavior is unchanged)."""
+    require_owner_benchmark_access(provider_value)
     from valuation_benchmarks import load_benchmark
     if not isinstance(selections, dict) or not 1 <= len(selections) <= max_selections:
         raise ValueError(f'Select one to {max_selections} explicit benchmark inputs.')
