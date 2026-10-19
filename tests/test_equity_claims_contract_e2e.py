@@ -379,7 +379,7 @@ def test_service_credential_transport_replaces_the_production_bearer():
     # DATE_ONLY_END_OF_DAY_UTC_V1 policy), which is the resolution this consumer requires; an
     # explicit instant inside the day would be honoured and would drop the day's filings.
     assert call['params'] == dict(cik=GOOGL, as_of=ASOF_TEXT,
-                                  recipient='human_research', expected_release_id=RELEASE)
+                                  recipient='human_research', expected_release_id=RELEASE, release_id=RELEASE)
     # What the source resolved is read back, not assumed from what was asked for.
     assert loaded['source']['cutoff_policy'] == 'DATE_ONLY_END_OF_DAY_UTC_V1'
     assert loaded['source']['served_cutoff_utc'] == ASOF_TEXT + 'T23:59:59.999999999Z'
@@ -477,7 +477,7 @@ def test_service_binding_carries_the_verified_contract_to_a_per_share_scenario()
     assert len(binding.requests) == 1
     assert binding.requests[0] == 'https://zion.internal/private/v1/equity-claims?' + urlencode(
         dict(cik=GOOGL, as_of=ASOF_TEXT, recipient='human_research',
-             expected_release_id=RELEASE))
+             expected_release_id=RELEASE, release_id=RELEASE))
     assert transport.headers['x-zion-service-token'] == 'scoped-service-token'
     assert transport.headers['x-zion-service-caller'] == SERVICE_CALLER
     assert 'Authorization' not in transport.headers

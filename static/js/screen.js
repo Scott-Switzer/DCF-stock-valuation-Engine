@@ -61,7 +61,7 @@
       });
       prepared = result;
       byId('valuation-date').value = new Date().toISOString().slice(0, 10);
-      byId('screen-evidence').textContent = `Source: ${result.financials.source.name}\nFinancial cutoff: ${result.financials.source.historical_cutoff}\nEngine release: ${result.financials.source.release_id}\nTo calculate: ${result.valuation_blockers.join(', ')}\nOther source gaps: ${Object.keys(result.source_missing_fields).length} (retained in the reproducible request).\nEquity and per-share values require a separately verified claims bridge.`;
+      byId('screen-evidence').textContent = `Source: ${result.financials.source.name}\nFinancial cutoff: ${result.financials.source.historical_cutoff}\nEngine release: ${result.financials.source.release_id}\nIssuer identity: ${result.issuer_identity.status}\nAnnual periods observed: ${result.financials.source.history_coverage.observed_periods}; missing years are never filled\nTo calculate: ${result.valuation_blockers.join(', ')}\nOther source gaps: ${Object.keys(result.source_missing_fields).length} (retained in the reproducible request).\nEquity and per-share values require a separately verified claims bridge.`;
       byId('valuation-request').value = JSON.stringify(result.request_template, null, 2);
       status('Financial history loaded. Fill the explicit assumptions before calculating.');
     } catch (error) { status(error.message); }

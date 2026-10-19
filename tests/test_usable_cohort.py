@@ -22,3 +22,17 @@ def test_duplicate_issuers_fail_before_evaluation():
 def test_wrong_result_identity_is_a_blocker():
     report = account_cohort([{'cik':'0000000001'}], lambda row: {'cik':'0000000002'})
     assert report['results'][0]['status'] == 'BLOCKED'
+
+
+def test_standard_scenario_requires_explicit_forecasts_and_retains_benchmark_pins():
+    from scripts.verify_usable_cohort import standard_scenario
+    prepared={'request_template':{'cik':'0000320193','financials':{'source':{'release_id':'a'*64}}},
+              'benchmark_references':{'wacc':{'release_id':'b'*64,'measure':'wacc'}}}
+    with pytest.raises(ValueError,match='explicit'):
+        standard_scenario(prepared,industry='Total Market',valuation_date='2026-10-15',
+                          growth=None,terminal_growth=.02,terminal_roic=.15)
+    body=standard_scenario(prepared,industry='Total Market',valuation_date='2026-10-15',
+                           growth=.05,terminal_growth=.02,terminal_roic=.15)
+    assert body['revenue_growth_rates']==[.05]*5
+    assert body['benchmark_selections']['wacc']['release_id']=='b'*64
+    assert body['financials']==prepared['request_template']['financials']
