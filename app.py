@@ -2236,9 +2236,9 @@ from zion_equity_claims_service import register_equity_claims
 register_equity_claims(app)
 
 
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=int(os.getenv("PORT", "5000")), debug=False)
-
 from research_screen import register_screen
 
 register_screen(app)
+
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=int(os.getenv("PORT", "5000")), debug=False)

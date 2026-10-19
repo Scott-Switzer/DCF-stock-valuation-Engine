@@ -96,8 +96,10 @@ def extract_shares(raw, *, cik, accession, source_url, filed, as_of, max_age_day
             continue
         unit = units.get(element.get('unitRef'))
         measures = [] if unit is None else [e.text for e in unit.iter(f'{{{XBRLI}}}measure')]
+        measure = (measures[0] or '').strip() if len(measures) == 1 else ''
+        unit_prefix = measure.split(':', 1)[0] if ':' in measure else ''
         if (unit is None or unit.find(f'{{{XBRLI}}}divide') is not None or len(measures) != 1
-                or local(measures[0] or '') != 'shares'):
+                or local(measure) != 'shares' or namespaces.get(unit_prefix) != XBRLI):
             reasons.add('UNSUPPORTED_UNIT')
             continue
         try:

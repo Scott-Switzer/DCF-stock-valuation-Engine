@@ -3,12 +3,23 @@
 <h1>Company screening</h1>
 <p>Screen the pinned SEC release, inspect missing inputs, then use the existing valuation engine. Eligibility covers company inputs; assumptions require your selection. <a href="/account">Sign in</a> to access private screening. Enterprise scenarios keep equity and per-share values unavailable until a matching claims bridge is verified.</p>
 <form id="screen-form"><label>Method <select name="method"><option value="operating_dcf">Operating DCF</option></select></label>
-<label>Sector <input name="sector" placeholder="manufacturing"></label><button>Screen companies</button></form>
-<p id="screen-status" role="status"></p><div id="screen-results"></div>
+<label>Sector <input name="sector" placeholder="manufacturing"></label><label>SEC CIK (optional) <input name="cik" pattern="[0-9]{10}" placeholder="0000320193"></label><button>Screen companies</button></form>
+<p id="screen-status" role="status"></p><div id="screen-results"></div><button id="next-page" hidden>Next page</button>
 <section id="prepare-section" hidden><h2>Inspect valuation inputs</h2>
 <p id="selected-company"></p><label>Verified ticker <input id="screen-ticker" placeholder="AAPL"></label><button id="prepare-button">Load pinned financial history</button>
 <p>The screen identifies issuers by CIK. A dated reviewed ticker identity is required; class-specific share evidence must be reviewed.</p>
-<pre id="screen-evidence"></pre><label>Valuation request with explicit dated assumptions<textarea id="valuation-request" rows="18" style="width:100%"></textarea></label>
-<button id="value-button">Run enterprise scenario</button><pre id="valuation-result"></pre></section>
+<pre id="screen-evidence"></pre>
+<form id="scenario-form">
+<label>Valuation date <input id="valuation-date" type="date" required></label>
+<label>Damodaran industry <input id="benchmark-industry" required placeholder="Computers/Peripherals"></label>
+<p>Industry benchmarks supply WACC, tax rate and sales-to-capital. The selected published versions are shown in the evidence below. Forecasts hold the latest reported operating margin constant.</p>
+<label>Five annual revenue growth rates (%) <input id="growth-rates" required placeholder="Enter five comma-separated percentages"></label>
+<label>Terminal growth (%) <input id="terminal-growth" type="number" step="any" required></label>
+<label>Terminal return on invested capital (%) <input id="terminal-roic" type="number" step="any" required></label>
+<label><input id="suitable" type="checkbox" required> I confirm operating-company suitability and these explicit benchmark and forecast assumptions.</label>
+<button id="value-button">Run enterprise scenario</button>
+</form>
+<details><summary>Source evidence and reproducible request</summary><textarea id="valuation-request" rows="18" style="width:100%" readonly></textarea></details>
+<pre id="valuation-result"></pre></section>
 <script src="/static/js/screen.js" defer></script>
 {% endblock %}

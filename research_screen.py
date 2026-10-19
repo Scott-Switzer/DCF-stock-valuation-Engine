@@ -5,6 +5,14 @@ import re
 
 from dcf_loader import ProviderError, load_document, provider_setting, ticker_symbol
 
+# Existing published benchmark references used by the verified integration scenarios.
+# These are explicit selectable references, never company observations or forecast defaults.
+BENCHMARK_REFERENCES = {
+    'wacc': {'release_id': '11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9', 'measure': 'wacc'},
+    'tax_rate': {'release_id': '11c1e6bb76d9db12feeec3e3949a9ffe370d0ace87f3047aaac66f431270ccc9', 'measure': 'tax_rate'},
+    'sales_capital': {'release_id': 'bcd291a646f52393ae5e6b539cfd3936e08aba566f7e34fc39448d81ca7f816c', 'measure': 'sales_to_invested_capital'},
+}
+
 ALLOWED = {'method', 'sector', 'missing', 'share_absence', 'cik', 'limit', 'cursor',
            'expected_index_id', 'flag', 'status'}
 
@@ -132,6 +140,7 @@ def register_screen(app):
             return jsonify(financials=doc, screening=deepcopy(page),
                            valuation_blockers=blockers,
                            calculate_endpoint='/api/calculate/enterprise',
+                           benchmark_references=deepcopy(BENCHMARK_REFERENCES),
                            equity_bridge_endpoint='/api/equity-claims/bridge',
                            equity_bridge_status='REQUIRES_MATCHING_CLAIMS_ENGINE_RELEASE',
                            request_template=dict(ticker=symbol, cik=row['cik'],

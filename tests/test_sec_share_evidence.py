@@ -77,3 +77,8 @@ def test_inline_unsupported_numeric_transform_is_not_guessed():
     raw = raw.replace(b'<dei:EntityCommonStockSharesOutstanding contextRef="c" unitRef="u">1234</dei:EntityCommonStockSharesOutstanding>',
                       b'<ix:nonFraction name="dei:EntityCommonStockSharesOutstanding" contextRef="c" unitRef="u" format="ixt:num-comma-decimal">1.234,0</ix:nonFraction>')
     assert extract(raw)['status'] == 'UNAVAILABLE'
+
+
+def test_custom_measure_named_shares_is_not_a_share_unit():
+    raw = filing(unit='custom:shares').replace(b'xmlns:dei=', b'xmlns:custom="https://example.com/unit" xmlns:dei=')
+    assert extract(raw)['status'] == 'UNAVAILABLE'
