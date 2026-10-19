@@ -12,7 +12,8 @@ def client(monkeypatch, tmp_path):
     monkeypatch.setitem(views.app.config, "STATE_PATH", str(tmp_path / "state.sqlite"))
     monkeypatch.setenv("DCF_STATE_PATH", str(tmp_path / "library.sqlite"))
     monkeypatch.setenv("DEPLOY_ENVIRONMENT", "production")
-    monkeypatch.setenv("ZION_HISTORY_TOKEN", "owner-test-secret")
+    monkeypatch.setenv("ZION_HISTORY_TOKEN", "upstream-history-secret")
+    monkeypatch.setenv("ZION_OWNER_DATA_TOKEN", "owner-test-secret")
     monkeypatch.setenv("ZION_BENCHMARK_TOKEN", "upstream-only-secret")
     monkeypatch.setenv("RECORD_SALT", "test-signing-salt")
     return views.app.test_client()
@@ -24,7 +25,9 @@ def selection(source="release"):
 
 
 @pytest.mark.parametrize("source", ["zion", "release"])
-@pytest.mark.parametrize("authorization", [None, "Bearer wrong", "Bearer upstream-only-secret"])
+@pytest.mark.parametrize("authorization", [
+    None, "Bearer wrong", "Bearer upstream-only-secret", "Bearer upstream-history-secret"
+])
 def test_no_private_source_or_cache_lookup_without_incoming_owner(
     client, monkeypatch, source, authorization
 ):
@@ -122,7 +125,7 @@ def test_browser_grant_expires_and_owner_token_rotation_revokes(client, monkeypa
     monkeypatch.setattr(access.time, "time", lambda: 1000000 + access.GRANT_SECONDS + 1)
     assert client.get(path).status_code == 401
     monkeypatch.setattr(access.time, "time", lambda: 1000000)
-    monkeypatch.setenv("ZION_HISTORY_TOKEN", "rotated-owner-secret")
+    monkeypatch.setenv("ZION_OWNER_DATA_TOKEN", "rotated-owner-secret")
     assert client.get(path).status_code == 401
 
 
@@ -142,3 +145,15 @@ def test_cloudflare_hosting_requires_owner_even_without_production_environment(c
     with views.app.test_request_context("/api/calculate"):
         with pytest.raises(OwnerBenchmarkAuthRequired):
             require_owner_benchmark_access(lambda name: "")
+
+
+def test_missing_owner_secret_never_falls_back_to_upstream_secrets(client, monkeypatch):
+    from owner_benchmark_access import OwnerBenchmarkAuthRequired
+
+    monkeypatch.delenv("ZION_OWNER_DATA_TOKEN", raising=False)
+    for token in ("owner-test-secret", "upstream-history-secret", "upstream-only-secret"):
+        with views.app.test_request_context("/api/calculate", headers={
+            "Authorization": "Bearer " + token
+        }):
+            with pytest.raises(OwnerBenchmarkAuthRequired):
+                views.resolve_benchmark_selections(selection(), "2026-10-19")

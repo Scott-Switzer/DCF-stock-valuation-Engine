@@ -22,7 +22,7 @@ class OwnerBenchmarkAuthRequired(Exception):
 
 
 def _bearer_valid(provider):
-    expected = provider("ZION_HISTORY_TOKEN") or ""
+    expected = provider("ZION_OWNER_DATA_TOKEN") or ""
     incoming = request.headers.get("Authorization", "")
     if (not expected or not incoming.startswith("Bearer ") or len(incoming) > 4096
             or any(ord(c) < 33 or ord(c) == 127 for c in incoming[7:])):
@@ -40,7 +40,7 @@ def _same_origin():
 
 def _grant_key(provider):
     salt = provider("RECORD_SALT") or ""
-    owner = provider("ZION_HISTORY_TOKEN") or ""
+    owner = provider("ZION_OWNER_DATA_TOKEN") or ""
     if not salt or not owner:
         return None
     # Domain separation and owner credential rotation both invalidate old grants.
