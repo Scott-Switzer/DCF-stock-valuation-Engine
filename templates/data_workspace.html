@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Data explorer · Valuation Engine{% endblock %}
+{% block content %}
+<script src="{{ url_for('static', filename='js/data-workspace.js') }}" defer></script>
+<article id="data-workspace">
+  <section class="intro"><p class="eyebrow">Private owner workspace</p><h1>Explore your stored data</h1><p class="lead">Browse stock history, dataset releases, and the files behind them. Values retain their source fields, units, and gaps.</p></section>
+  <section class="panel" aria-labelledby="data-connect-heading">
+    <h2 id="data-connect-heading">Connect this tab</h2>
+    <p>Enter your owner data key. The key and loaded records stay in this tab's memory. Disconnect or leave this page to clear them. Your app account does not supply a data key.</p>
+    <form id="data-connect-form" autocomplete="off">
+      <div class="field"><label for="data-owner-key">Owner data key</label><input id="data-owner-key" type="password" autocomplete="off" spellcheck="false" autocapitalize="none" data-lpignore="true" maxlength="4096" required></div>
+      <button type="submit">Connect</button> <button type="button" class="secondary" id="data-disconnect">Disconnect &amp; clear</button>
+    </form>
+    <p id="data-status" role="status" aria-live="polite">Disconnected. No private data loaded.</p>
+  </section>
+  <fieldset id="data-controls" disabled><legend>Owner data explorer</legend>
+    <nav aria-label="Data sections"><a href="#data-stocks">Stock history</a> · <a href="#data-collections">Dataset releases</a> · <a href="#data-files">All files</a></nav>
+    <section class="panel" id="data-stocks" aria-labelledby="data-stocks-heading">
+      <h2 id="data-stocks-heading">Stock history</h2>
+      <p>Stored source symbols, not the whole market. Prices are raw and unadjusted, with source currency shown. Historical identity and publication-time availability are not established. Dates without stored bars are not filled.</p>
+      <form id="data-stocks-form"><div class="field"><label for="data-stock-search">Find a stored symbol</label><input id="data-stock-search" maxlength="64" placeholder="Symbol, e.g. AAPL"></div><button type="submit">Search symbols</button></form>
+      <p id="data-stock-summary" role="status"></p><div id="data-stock-catalog" class="table-wrap"></div><button type="button" class="secondary" id="data-stock-next" disabled>Next symbols</button>
+      <h3>Read stored OHLCV</h3>
+      <form id="data-prices-form"><div class="field-grid">
+        <div class="field"><label for="data-symbol">Symbol</label><input id="data-symbol" maxlength="25" required></div>
+        <div class="field"><label for="data-date-from">From session date</label><input id="data-date-from" type="date"></div>
+        <div class="field"><label for="data-date-to">Through session date</label><input id="data-date-to" type="date"></div>
+      </div><button type="submit">Read up to 500 bars</button></form>
+      <p id="data-prices-summary" role="status"></p><div id="data-prices" class="table-wrap"></div><button type="button" class="secondary" id="data-prices-next" disabled>Next 500 bars</button>
+      <details><summary>Source gaps and lineage</summary><pre id="data-price-evidence"></pre></details>
+    </section>
+    <section class="panel" id="data-collections" aria-labelledby="data-collections-heading">
+      <h2 id="data-collections-heading">Dataset releases</h2><p>Search the source-backed release catalog. Release metadata describes stored collections; it does not establish financial correctness or permission to redistribute.</p>
+      <form id="data-collections-form"><div class="field-grid"><div class="field"><label for="data-collection-search">Dataset name</label><input id="data-collection-search" maxlength="128"></div><div class="field"><label for="data-family">Family (optional exact match)</label><input id="data-family" maxlength="128" list="data-families"><datalist id="data-families"></datalist></div></div><button type="submit">Search releases</button></form>
+      <p id="data-collections-summary" role="status"></p><div id="data-collection-list" class="table-wrap"></div><button type="button" class="secondary" id="data-collections-next" disabled>Next releases</button>
+      <details><summary>Selected release metadata</summary><pre id="data-collection-detail"></pre></details>
+    </section>
+    <section class="panel" id="data-files" aria-labelledby="data-files-heading">
+      <h2 id="data-files-heading">All files</h2><p>Browse the four connected stores. Select a folder to open it. Parquet files offer a native schema and a bounded ten-row preview; other files show metadata only. Stored timestamps are not observation or publication dates.</p>
+      <form id="data-files-form"><div class="field-grid"><div class="field"><label for="data-store">Store</label><select id="data-store"><option value="financial">Financial</option><option value="research">Research</option><option value="filings">Filings</option><option value="lakehouse">Lakehouse</option></select></div><div class="field"><label for="data-prefix">Folder prefix</label><input id="data-prefix" maxlength="1024" placeholder="Leave blank for the store root"></div></div><button type="submit">Browse folder</button> <button type="button" class="secondary" id="data-files-up">Parent folder</button></form>
+      <p id="data-files-summary" role="status"></p><div id="data-file-list" class="table-wrap"></div><button type="button" class="secondary" id="data-files-next" disabled>Next files</button>
+      <h3>Native source fields</h3><p id="data-native-summary" role="status"></p><div id="data-native-schema" class="table-wrap"></div><div id="data-native-rows" class="table-wrap"></div><details><summary>Selected file metadata</summary><pre id="data-file-detail"></pre></details>
+    </section>
+  </fieldset>
+  <noscript><p>JavaScript is required for this tab-only private connection. No key is sent by this page without it.</p></noscript>
+</article>
+{% endblock %}
