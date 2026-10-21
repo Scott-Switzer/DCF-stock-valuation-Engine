@@ -26,6 +26,7 @@ assert.equal(status.pending,1);assert.equal(status.completed,0);assert.equal(sta
 console.log('A prior run cannot satisfy current readiness.');
 const ledgerEnv={DATA:{get:async key=>{
  let value;
+ if(key.endsWith('asset-reference-summary.json'))return null;
  if(key.endsWith('packet-job.json'))value={run_id};
  else {const n=Number(key.match(/\/(\d+)\.json$/)[1]);value={run_id,key:'immutable-'+n,sha256:'c'.repeat(64),symbols:Array.from({length:n===131?9:20},(_,i)=>'S'+(n*20+i)),states:{ACCOUNTING_GAPS:n===131?9:20}};}
  const raw=JSON.stringify(value);return {size:raw.length,text:async()=>raw};
@@ -35,3 +36,7 @@ assert.equal(ledger.accounted,2629);assert.equal(ledger.complete_valuations,0);a
 console.log('Partitioned ledger accounts for the full frozen universe without certifying valuations.');
 await assert.rejects(valuationRoute({},new URL('https://x/valuation-ledger?part=0')),/REQUIRES_MANIFEST_PIN/);
 console.log('Cross-page ledger reads require an immutable manifest pin.');
+const {assetProjection}=await import('../valuation.mjs');
+const refs=assetProjection([{symbol:'TEST',id:'a'.repeat(8)+'-aaaa-aaaa-aaaa-'+ 'a'.repeat(12)},{symbol:'BAD',id:'ticker-derived-id'},{symbol:'OUTSIDE',id:'b'.repeat(36)}],{TEST:0,BAD:0});
+assert.ok(refs.TEST[0].provider_asset_id);assert.equal(refs.BAD[0].provider_asset_id,null);assert.equal(refs.OUTSIDE,undefined);
+console.log('Only actual provider UUIDs from the frozen cohort are projected.');

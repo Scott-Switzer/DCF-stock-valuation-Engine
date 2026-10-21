@@ -10,7 +10,12 @@ const fail=code=>{throw Error(code)};
 const JOB='accounting-rebuild-v1';
 async function read(env,key,digest=null,max=16*1048576){const obj=await env.DATA.get(key);if(!obj||obj.size>max)fail('VALUATION_SOURCE_UNAVAILABLE');const raw=await obj.text();if(digest&&await sha(raw)!==digest)fail('VALUATION_SOURCE_HASH');return JSON.parse(raw);}
 async function put(env,key,value){await env.DATA.put(key,JSON.stringify(value),{httpMetadata:{contentType:'application/json'}});}
-export async function valuationOverlay(env,row,pinnedJob=null){
+export function assetProjection(assets,cohort){
+ const index=Object.create(null);
+ for(const asset of assets)if(Object.hasOwn(cohort,asset.symbol)){const id=asset.id||asset.asset_id; (index[asset.symbol]??=[]).push({provider_asset_id:/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(id||'')?id:null,symbol:asset.symbol,exchange:asset.exchange||null,asset_class:asset.class||asset.asset_class||null,status:asset.status||null,name:asset.name||null});}
+ return index;
+}
+export async function valuationOverlay(env,row,pinnedJob=null,pinnedAssets=null){
  const pointer=pinnedJob?null:await env.DATA.get(VAL+'packet-job.json');if(!pinnedJob&&!pointer)return row;
  const job=pinnedJob||await pointer.json(),obj=await env.DATA.get(VAL+'runs/'+job.run_id+'/tasks/'+row.symbol+'.json');
  const task=obj?await obj.json():null;
@@ -18,6 +23,8 @@ export async function valuationOverlay(env,row,pinnedJob=null){
  const current=task&&task.run_id===job.run_id&&(task.http_status!==200||(task.runtime_version===job.runtime_version&&task.assessed_at===job.assessed_at));
  const state=!job.symbols.includes(row.symbol)?'NO_PREVIOUSLY_COMPLETED_SEC_QUERY':!fresh?'ACCOUNTING_ASSESSMENT_STALE':!current?'CLOUD_REBUILD_PENDING':task.http_status!==200?'CLOUD_REBUILD_BLOCKED':task.input_gate.eligible?'ACCOUNTING_GATE_PASSED':'ACCOUNTING_GAPS';
  const candidateResearch=researchReviews[row.symbol],research=candidateResearch?.cik===(row.identity?.cik||row.cik)?candidateResearch:null;
+ const assetObject=pinnedAssets?null:await env.DATA.get(VAL+'asset-references.json'),assets=pinnedAssets||(assetObject?await assetObject.json():null),matches=assets?.index[row.symbol]||[];
+ row.current_provider_asset_reference={status:matches.length===1&&matches[0].provider_asset_id?'PROVIDER_ASSET_UUID_CONNECTED_ISSUER_CLASS_LINK_UNVERIFIED':matches.length>1?'AMBIGUOUS_PROVIDER_ASSET':'NO_MATCHED_PROVIDER_ASSET',source:assets?.source||null,candidates:matches,issuer_class_bridge:'NOT_CERTIFIED',historical_identity:'UNCHANGED'};
  row.valuation={...row.valuation,accounting_rebuild:{run_id:job.run_id,assessed_at:job.assessed_at,status:state,...(current?{packet:task.packet,input_gate:task.input_gate,readiness:task.readiness,error:task.error}:{})},model_ready:false,complete_valuation:false,assumptions:{status:'COMPANY_SPECIFIC_RESEARCH_REQUIRED',research},remaining_model_gates:['CURRENT_SECURITY_PRICE_BRIDGE','CURRENT_CAPITAL_CLAIMS','COMPANY_SPECIFIC_CITED_FORECAST','DATED_COMPANY_DISCOUNT_RATE','EXECUTED_DCF']};
  return row;
 }
@@ -27,11 +34,24 @@ export async function valuationSummary(env){
  return summary.run_id===job.run_id?summary:null;
 }
 export async function valuationRoute(env,u){
+ if(u.pathname==='/connect/valuation-assets'){
+  const key='raw/alpaca/assets/continuous-v1/2026-10-20.json',obj=await env.DATA.get(key);
+  if(!obj||obj.size!==6491941||obj.etag!=='5a68deb1b22fbce4edbca309ee08ba84')fail('ASSET_REFERENCE_CHANGED');
+  const raw=await obj.text(),digest=await sha(raw),data=JSON.parse(raw),assets=Array.isArray(data)?data:data.assets||data.data||[];
+  if(!Array.isArray(assets)||!assets.length)return {status:'ASSET_SHAPE_REQUIRES_ADAPTER',fields:Object.keys(data)};
+  const cohort=await read(env,FULL+'symbol-batches.json'),index={};
+  Object.assign(index,assetProjection(assets,cohort));
+  const source={key,sha256:digest,bytes:obj.size,etag:obj.etag,collection_date_from_key:'2026-10-20',stored_at:'2026-10-20T21:11:02Z',provider_observation_timestamp:'NOT_IN_SOURCE_PAYLOAD',scope:'CURRENT_PROVIDER_ASSET_REFERENCE_ONLY;NOT_A_CIK_OR_HISTORICAL_SHARE_CLASS_BRIDGE'};
+  await put(env,VAL+'asset-references.json',{source,index});
+  const result={source,source_assets:assets.length,cohort_matches:Object.keys(index).length,symbols_with_single_uuid:Object.values(index).filter(a=>a.length===1&&a[0].provider_asset_id).length,distinct_provider_uuids:new Set(Object.values(index).flat().map(a=>a.provider_asset_id).filter(Boolean)).size,ambiguous_symbols:Object.values(index).filter(a=>a.length>1).length,fields:Object.keys(assets[0]),upstream_requests:0};
+  await put(env,VAL+'asset-reference-summary.json',result);return result;
+ }
  if(u.pathname==='/connect/valuation-ledger-batch'){
   const n=Number(u.searchParams.get('n'));if(!Number.isInteger(n)||n<0||n>=132)fail('INVALID_VALUATION_BATCH');
   const job=await read(env,VAL+'packet-job.json'),part=await read(env,FULL+`batches/${n}.json`);
   if(part.input_sha256!==FULL_PIN)fail('PACKET_INPUT_RELEASE_CHANGED');
-  const rows=await Promise.all(part.rows.map(row=>valuationOverlay(env,row,job)));
+  const assetObject=await env.DATA.get(VAL+'asset-references.json'),assets=assetObject?await assetObject.json():null;
+  const rows=await Promise.all(part.rows.map(row=>valuationOverlay(env,row,job,assets)));
   const value={run_id:job.run_id,input_sha256:FULL_PIN,assessed_at:new Date().toISOString(),rows},raw=JSON.stringify(value),digest=await sha(raw),key=VAL+`runs/${job.run_id}/ledger-parts/by-sha256/${digest}.json`;
   await env.DATA.put(key,raw);const states={};for(const row of rows){const k=row.valuation.accounting_rebuild.status;states[k]=(states[k]||0)+1;}
   const marker={run_id:job.run_id,key,sha256:digest,symbols:rows.map(r=>r.symbol),states};await put(env,VAL+`runs/${job.run_id}/ledger-parts/${n}.json`,marker);
@@ -45,7 +65,8 @@ export async function valuationRoute(env,u){
    for(const [k,v]of Object.entries(part.states))states[k]=(states[k]||0)+v;parts.push({batch:n,key:part.key,sha256:part.sha256,rows:part.symbols.length});
   }
   if(symbols.size!==2629)fail('VALUATION_LEDGER_UNIVERSE');
-  const result={run_id:job.run_id,input_sha256:FULL_PIN,accounted:symbols.size,complete_valuations:0,states,parts,reconciled_at:new Date().toISOString(),qualification:'ACCOUNTING_AND_RESEARCH_READINESS_ONLY;IDENTITY_FORECAST_CAPITAL_COST_AND_MODEL_RUN_GATES_REMAIN'};
+  const assetObject=await env.DATA.get(VAL+'asset-reference-summary.json');
+  const result={run_id:job.run_id,input_sha256:FULL_PIN,accounted:symbols.size,complete_valuations:0,states,parts,provider_asset_references:assetObject?await assetObject.json():null,reconciled_at:new Date().toISOString(),qualification:'ACCOUNTING_AND_RESEARCH_READINESS_ONLY;IDENTITY_FORECAST_CAPITAL_COST_AND_MODEL_RUN_GATES_REMAIN'};
   const digest=await sha(JSON.stringify(result));await put(env,VAL+'ledger-manifests/by-sha256/'+digest+'.json',result);
   await put(env,VAL+'ledger-manifest.json',result);return {...result,manifest_sha256:digest,parts:parts.length};
  }

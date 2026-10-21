@@ -37,3 +37,10 @@ of all 2,629 symbols, including pending and blocked rows. Read `/valuation-ledge
 to obtain its `manifest_sha256`, then supply it as `expected_manifest_sha256` on
 all `?part=n` requests. Parts and manifests are immutable by content hash, so a
 later reconciliation cannot mix a client's pages across snapshots.
+
+Current provider references reuse the October 20 `continuous-v1` Alpaca asset
+snapshot already in R2. Projection checks its fixed size/ETag, records SHA-256,
+validates actual UUID syntax, and filters the frozen cohort. Those UUIDs are
+provider references; they do not certify the CIK/share-class join or extend CRSP
+identity intervals. The dated object key and storage timestamp are recorded;
+a provider observation timestamp is not present in the payload.
