@@ -21,7 +21,7 @@ export async function valuationOverlay(env,row,pinnedJob=null,pinnedAssets=null)
  const task=obj?await obj.json():null;
  const fresh=job.assessed_at===new Date().toISOString().slice(0,10);
  const current=task&&task.run_id===job.run_id&&(task.http_status!==200||(task.runtime_version===job.runtime_version&&task.assessed_at===job.assessed_at));
- const state=!job.symbols.includes(row.symbol)?'NO_PREVIOUSLY_COMPLETED_SEC_QUERY':!fresh?'ACCOUNTING_ASSESSMENT_STALE':!current?'CLOUD_REBUILD_PENDING':task.http_status!==200?'CLOUD_REBUILD_BLOCKED':task.input_gate.eligible?'ACCOUNTING_GATE_PASSED':'ACCOUNTING_GAPS';
+ const state=!job.symbols.includes(row.symbol)?'NO_PREVIOUSLY_COMPLETED_SEC_QUERY':!fresh?'ACCOUNTING_ASSESSMENT_STALE':!current?'CLOUD_REBUILD_PENDING':task.terminal===false?'CLOUD_REBUILD_RETRYING':task.http_status!==200?'CLOUD_REBUILD_BLOCKED':task.input_gate.eligible?'ACCOUNTING_GATE_PASSED':'ACCOUNTING_GAPS';
  const candidateResearch=researchReviews[row.symbol],research=candidateResearch?.cik===(row.identity?.cik||row.cik)?candidateResearch:null;
  const assetObject=pinnedAssets?null:await env.DATA.get(VAL+'asset-references.json'),assets=pinnedAssets||(assetObject?await assetObject.json():null),matches=assets?.index[row.symbol]||[];
  row.current_provider_asset_reference={status:matches.length===1&&matches[0].provider_asset_id?'PROVIDER_ASSET_UUID_CONNECTED_ISSUER_CLASS_LINK_UNVERIFIED':matches.length>1?'AMBIGUOUS_PROVIDER_ASSET':'NO_MATCHED_PROVIDER_ASSET',source:assets?.source||null,candidates:matches,issuer_class_bridge:'NOT_CERTIFIED',historical_identity:'UNCHANGED'};
@@ -98,7 +98,7 @@ export async function valuationRoute(env,u){
   counts.expected=job.symbols.slice(n*100,n*100+100).length;
   await Promise.all(job.symbols.slice(n*100,n*100+100).map(async symbol=>{
    const obj=await env.DATA.get(VAL+'runs/'+job.run_id+'/tasks/'+symbol+'.json');if(!obj){counts.pending++;return;}
-   const r=await obj.json();if(r.run_id!==job.run_id||(r.http_status===200&&(r.runtime_version!==job.runtime_version||r.assessed_at!==job.assessed_at))){counts.pending++;return;}if(r.http_status!==200){counts.failed++;const code=r.error||'PACKET_FAILED';counts.gaps[code]=(counts.gaps[code]||0)+1;return;}
+   const r=await obj.json();if(r.terminal===false||r.run_id!==job.run_id||(r.http_status===200&&(r.runtime_version!==job.runtime_version||r.assessed_at!==job.assessed_at))){counts.pending++;return;}if(r.http_status!==200){counts.failed++;const code=r.error||'PACKET_FAILED';counts.gaps[code]=(counts.gaps[code]||0)+1;return;}
    counts.completed++;if(r.input_gate.eligible)counts.input_complete++;if(r.readiness.states.POLICY_VALID)counts.policy_valid++;if(r.readiness.valuation_ready){counts.data_evaluable++;eligible.push(symbol);}
    for(const code of r.input_gate.reason_codes)counts.gaps[code]=(counts.gaps[code]||0)+1;
   }));
@@ -181,10 +181,11 @@ export async function valuationQueue(batch,env){
    const r=await valuationRoute(env,new URL('https://internal/connect/valuation-packet?symbol='+encodeURIComponent(body.symbol)));
    if(r.http_status===200&&(r.runtime_version!==job.runtime_version||r.assessed_at!==job.assessed_at))fail('PACKET_RUNTIME_CHANGED');
    r.run_id=body.run_id;
+   r.terminal=r.http_status<500||message.attempts>=3;
    await put(env,VAL+'runs/'+body.run_id+'/tasks/'+body.symbol+'.json',r);
    if(r.http_status>=500&&message.attempts<3)message.retry({delaySeconds:60});else message.ack();
   }catch{
-   await put(env,VAL+'runs/'+body.run_id+'/tasks/'+body.symbol+'.json',{run_id:body.run_id,symbol:body.symbol,http_status:503,error:'PACKET_TRANSPORT_FAILED'});
+   await put(env,VAL+'runs/'+body.run_id+'/tasks/'+body.symbol+'.json',{run_id:body.run_id,symbol:body.symbol,http_status:503,terminal:message.attempts>=3,error:'PACKET_TRANSPORT_FAILED'});
    if(message.attempts<3)message.retry({delaySeconds:60});else message.ack();
   }
  }

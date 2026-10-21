@@ -49,3 +49,12 @@ const {assetProjection}=await import('../valuation.mjs');
 const refs=assetProjection([{symbol:'TEST',id:'a'.repeat(8)+'-aaaa-aaaa-aaaa-'+ 'a'.repeat(12)},{symbol:'BAD',id:'ticker-derived-id'},{symbol:'OUTSIDE',id:'b'.repeat(36)}],{TEST:0,BAD:0});
 assert.ok(refs.TEST[0].provider_asset_id);assert.equal(refs.BAD[0].provider_asset_id,null);assert.equal(refs.OUTSIDE,undefined);
 console.log('Only actual provider UUIDs from the frozen cohort are projected.');
+// Retrying failures remain pending until success or retry exhaustion.
+assert.equal(record.v.terminal,false);
+const retryTask={run_id,http_status:503,terminal:false,error:'TEMPORARY'};
+const retryEnv={DATA:{get:async key=>{const value=key.endsWith('packet-job.json')?{run_id,expected:1,symbols:['TEST']}:retryTask;const raw=JSON.stringify(value);return {size:raw.length,text:async()=>raw,json:async()=>value}},put:async()=>{}}};
+const retryStatus=await valuationRoute(retryEnv,new URL('https://x/connect/valuation-packet-status-batch?n=0'));
+assert.equal(retryStatus.pending,1);assert.equal(retryStatus.failed,0);
+await valuationQueue({queue:'dcf-valuation-packets-staging',messages:[{body:{job:'accounting-rebuild-v1',run_id,symbol:'TEST'},attempts:3,ack:()=>ack++,retry:()=>retry++}]},queued);
+assert.equal(record.v.terminal,true);
+console.log('Transient retries remain pending until the final attempt.');
