@@ -293,13 +293,14 @@ export default {
         const index=await read(env,OUT+'symbol-batches.json');
         const found={};
         for (const bar of daily.bars||[]) {
-          const symbol=bar.provider_symbol;
+          const symbol=bar.provider_symbol||bar.symbol;
           if (symbol && symbol in index) found[symbol]={symbol,session:pointer.session,
             source_security_id:bar.security_id,status:'RECENT_SOURCE_PRICE_AVAILABLE',
             freshness:freshness(pointer.session,7),qualification:'SOURCE_NATIVE_AVAILABILITY;DATED_ISSUER_JOIN_AND_ADJUSTMENTS_STILL_REQUIRED'};
         }
         result={source_discovery:sources,source_price_freshness:freshness(pointer.session,7),
           recent_source_symbols:Object.keys(found).length,universe_symbols:2629,securities:Object.values(found),
+          stored_payload_fields:Object.keys(daily),stored_bar_fields:Object.keys((daily.bars||[])[0]||{}),
           correction:'The frozen archive price age is not the age of all stored prices. Existing CRSP adjustments and dated identity assets must be integrated, not rebuilt.',
           adjusted_price_certifications_added:0,production_writes:0};
         await put(env,OUT+'reuse-opportunities.json',result);
