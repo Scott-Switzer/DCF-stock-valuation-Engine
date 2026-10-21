@@ -34,6 +34,7 @@ jobs:
           node deploy/security-funnel/test/reader.test.mjs
           node deploy/security-funnel/test/history.test.mjs
           node deploy/security-funnel/test/valuation.test.mjs
+          node deploy/security-funnel/test/enrichment.test.mjs
       - name: Syntax-check every shipped script
         run: |
           for f in static/js/*.js; do
