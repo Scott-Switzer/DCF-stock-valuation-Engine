@@ -1,6 +1,7 @@
 // Private staging reconciliation. No upstream acquisition or bulk archive replay.
 import {connectionRoute,publishedConnection} from './connections.mjs';
 import {historyRoute} from './history.mjs';
+import {enrichmentRoute,enrichmentQueue} from './enrichment.mjs';
 import {valuationRoute,valuationQueue,valuationOverlay,valuationSummary} from './valuation.mjs';
 const BASE = 'staging/security-funnel/2026-10-20/9beaa712e71650a2/';
 const OUT = BASE + 'reconciled-2026-10-21-v1/';
@@ -279,7 +280,7 @@ async function finalize(env) {
   return summary;
 }
 export default {
-  async queue(batch,env){await valuationQueue(batch,env);},
+  async queue(batch,env){for(const message of batch.messages){const handler=message.body?.job==='source-enrichment-v1'?enrichmentQueue:valuationQueue;await handler({...batch,messages:[message]},env);}},
   async fetch(request,env) {
     if (!env.TOKEN || request.headers.get('Authorization')!=='Bearer '+env.TOKEN) return new Response('Unauthorized',{status:401});
     const u=new URL(request.url);
@@ -298,7 +299,8 @@ export default {
         if(financialWindow&&response.status===200){const value=await response.json();value.full_history_window=financialWindow;value.full_history_window.note='Follow native pagination inside each window, then the next window; no default 2015 truncation.';return Response.json(value,{headers:{'Cache-Control':'private, no-store'}});}
         return new Response(response.body,{status:response.status,headers:{'Content-Type':'application/json','Cache-Control':'private, no-store'}});
       }
-      if((request.method==='POST'&&u.pathname.startsWith('/connect/valuation-'))||(request.method==='GET'&&u.pathname==='/valuation-ledger')) result=await valuationRoute(env,u);
+      if((request.method==='POST'&&u.pathname.startsWith('/connect/enrichment-'))||(request.method==='GET'&&u.pathname==='/enrichment-ledger')) result=await enrichmentRoute(env,u);
+      else if((request.method==='POST'&&u.pathname.startsWith('/connect/valuation-'))||(request.method==='GET'&&u.pathname==='/valuation-ledger')) result=await valuationRoute(env,u);
       else if((request.method==='POST'&&u.pathname.startsWith('/connect/history-'))||(request.method==='GET'&&['/history','/valuation-inputs'].includes(u.pathname))) result=await historyRoute(env,u,signedRead,checkPacket);
       else if(request.method==='POST'&&u.pathname.startsWith('/connect/')) result=await connectionRoute(env,u.pathname,Number(u.searchParams.get('n')));
       else if (request.method==='POST'&&u.pathname==='/initialize') result=await initialize(env);

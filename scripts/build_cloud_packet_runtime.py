@@ -4,7 +4,7 @@ import shutil
 import hashlib
 root=Path(__file__).resolve().parents[1]
 out=root/'cloud_packet_runtime';out.mkdir(exist_ok=True)
-for name in ['dcf_code.py','dcf_loader.py','storage.py','ppe_packets.py','sec_first.py','tax_policy.py','accounting_policy.py']:
+for name in ['dcf_code.py','dcf_loader.py','storage.py','ppe_packets.py','sec_first.py','tax_policy.py','accounting_policy.py','sec_enrichment.py']:
  shutil.copyfile(root/name,out/name)
 shutil.copyfile(root/'deploy/valuation-completion/packet_worker.py',out/'worker.py')
 digest=hashlib.sha256()
