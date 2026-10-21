@@ -326,6 +326,7 @@ export default {
         const part=await read(env,(connected?CONNECTED:OUT)+(brief?'briefs/':'batches/')+index[symbol]+'.json');
         result=(brief?part.briefs:part.rows).find(r=>r.symbol===symbol);
         if (!result) fail('SYMBOL_RECONCILIATION_FAILED');
+        if(connected)result.data_rights='PRIVATE_OWNER_WRDS_CRSP_RESEARCH_ONLY;OWNER_ONLY_ALPACA_MARKET_DATA';
       }
       else if (request.method==='GET'&&u.pathname==='/report') {
         const connected=await env.DATA.head(CONNECTED+'summary.json');

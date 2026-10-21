@@ -241,6 +241,7 @@ async function finish(env){
  if(count!==2629)fail('CONNECTION_UNIVERSE_CHANGED');
  const queue=Object.entries(repairs).map(([blocker,symbols])=>({blocker,affected_securities:symbols.length,symbols})).sort((a,b)=>b.affected_securities-a.affected_securities);
  const summary={status:'CONNECTED',asof:ASOF,accounted:2629,stages,source_pins:p.pins,input_sha256:p.input_sha256,
+  data_rights:'PRIVATE_OWNER_WRDS_CRSP_RESEARCH_ONLY;OWNER_ONLY_ALPACA_MARKET_DATA',
   top_repairs:queue.slice(0,12).map(({symbols,...r})=>r),
   full_workflow_verified:0,production_writes:0,upstream_downloads:0,laptop_normalizations:0,output_prefix:CONNECTED};
  const header=JSON.stringify({summary,repair_queue:queue}).slice(0,-1)+',"securities":[',tail=']}';
