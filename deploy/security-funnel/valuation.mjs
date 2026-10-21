@@ -58,9 +58,11 @@ export async function valuationRoute(env,u){
   return {batch:n,accounted:rows.length,states};
  }
  if(u.pathname==='/connect/valuation-ledger-finish'){
-  const job=await read(env,VAL+'packet-job.json'),symbols=new Set(),parts=[],states={};
+  const job=await read(env,VAL+'packet-job.json'),cohort=await read(env,FULL+'symbol-batches.json'),symbols=new Set(),parts=[],states={};
   for(let n=0;n<132;n++){
    const part=await read(env,VAL+`runs/${job.run_id}/ledger-parts/${n}.json`);if(part.run_id!==job.run_id)fail('LEDGER_RUN_CHANGED');
+   const data=await read(env,part.key,part.sha256);
+   if(data.run_id!==job.run_id||data.input_sha256!==FULL_PIN||data.rows.length!==part.symbols.length||data.rows.some((r,i)=>r.symbol!==part.symbols[i]||!Object.hasOwn(cohort,r.symbol)||r.valuation.complete_valuation!==false))fail('LEDGER_PART_CONTEXT');
    for(const s of part.symbols){if(symbols.has(s))fail('DUPLICATE_LEDGER_SYMBOL');symbols.add(s);}
    for(const [k,v]of Object.entries(part.states))states[k]=(states[k]||0)+v;parts.push({batch:n,key:part.key,sha256:part.sha256,rows:part.symbols.length});
   }

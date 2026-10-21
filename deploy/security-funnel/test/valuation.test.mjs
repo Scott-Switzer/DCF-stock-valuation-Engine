@@ -24,16 +24,25 @@ const paged={DATA:{get:async key=>{const value=key.endsWith('packet-job.json')?{
 const status=await valuationRoute(paged,new URL('https://x/connect/valuation-packet-status-batch?n=0'));
 assert.equal(status.pending,1);assert.equal(status.completed,0);assert.equal(status.input_complete,0);
 console.log('A prior run cannot satisfy current readiness.');
+const {createHash}=await import('node:crypto');
+const fullPin='68db69ad8e4693616d5735b836764e7cd034c45bf9e7a79e483a99bd3163507a';
+const cohort=Object.fromEntries(Array.from({length:2629},(_,i)=>['S'+i,0]));
 const ledgerEnv={DATA:{get:async key=>{
  let value;
  if(key.endsWith('asset-reference-summary.json'))return null;
  if(key.endsWith('packet-job.json'))value={run_id};
- else {const n=Number(key.match(/\/(\d+)\.json$/)[1]);value={run_id,key:'immutable-'+n,sha256:'c'.repeat(64),symbols:Array.from({length:n===131?9:20},(_,i)=>'S'+(n*20+i)),states:{ACCOUNTING_GAPS:n===131?9:20}};}
+ else if(key.endsWith('symbol-batches.json'))value=cohort;
+ else {
+  const n=Number(key.startsWith('immutable-')?key.slice(10):key.match(/\/(\d+)\.json$/)[1]);
+  const symbols=Array.from({length:n===131?9:20},(_,i)=>'S'+(n*20+i));
+  const data={run_id,input_sha256:fullPin,rows:symbols.map(symbol=>({symbol,valuation:{complete_valuation:false}}))};
+  value=key.startsWith('immutable-')?data:{run_id,key:'immutable-'+n,sha256:createHash('sha256').update(JSON.stringify(data)).digest('hex'),symbols,states:{ACCOUNTING_GAPS:symbols.length}};
+ }
  const raw=JSON.stringify(value);return {size:raw.length,text:async()=>raw};
 },put:async()=>{}}};
 const ledger=await valuationRoute(ledgerEnv,new URL('https://x/connect/valuation-ledger-finish'));
 assert.equal(ledger.accounted,2629);assert.equal(ledger.complete_valuations,0);assert.equal(ledger.parts,132);
-console.log('Partitioned ledger accounts for the full frozen universe without certifying valuations.');
+console.log('Partitioned ledger verifies every part and accounts for the frozen universe.');
 await assert.rejects(valuationRoute({},new URL('https://x/valuation-ledger?part=0')),/REQUIRES_MANIFEST_PIN/);
 console.log('Cross-page ledger reads require an immutable manifest pin.');
 const {assetProjection}=await import('../valuation.mjs');
