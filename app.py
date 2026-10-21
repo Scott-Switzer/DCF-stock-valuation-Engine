@@ -477,7 +477,7 @@ def limit_expensive_work():
     mcp_request = request.method == "POST" and request.path == "/mcp"
     mutation = request.method in {"POST", "PUT", "PATCH", "DELETE"}
     reference_request = request.method == "GET" and (
-        request.path.startswith(("/api/references/", "/api/guidance/", "/api/company/", "/api/providers", "/api/diag/", "/coverage/"))
+        request.path.startswith(("/api/references/", "/api/guidance/", "/api/company/", "/api/data/", "/api/providers", "/api/diag/", "/coverage/"))
         or (request.path.startswith("/research/") and request.path.endswith("/export/xlsx"))
     )
     if app.config.get("CLOUDFLARE"):
@@ -910,8 +910,11 @@ def shared_financial_query():
     owner = getattr(env, "FINANCIAL_OWNER_USER_ID", "") if env else ""
     user = accounts.current_user() if owner else None
     bearer = request.headers.get("Authorization", "")
-    if not ((token and hmac.compare_digest(bearer, "Bearer " + token)) or
-            (owner and user and user["id"] == owner)):
+    question = request.args.get("query", "")
+    public_financials = bool(re.search(r"\b(revenue|sales|margin|financials)\b", question, re.I))
+    private_access = bool((token and hmac.compare_digest(bearer, "Bearer " + token)) or
+                          (owner and user and user["id"] == owner))
+    if not private_access and not public_financials:
         return jsonify(error="Enter your private financial-system access key to use price data."), 403
     question = request.args.get("query", "")
     if not question or len(question) > 2000:
@@ -928,6 +931,10 @@ def shared_financial_query():
         to_js({"headers": {"Authorization": "Bearer " + token}}, dict_converter=Object.fromEntries),
     )), time.monotonic() + 45)
     raw = str(_wait(response.text(), time.monotonic() + 10))
+    if not private_access and response.status == 200:
+        value = json.loads(raw)
+        if value.get("action") != "financials" or value.get("source", {}).get("provider") != "SEC":
+            return jsonify(error="Private price data requires an access key."), 403
     if len(raw.encode()) > 2 * 1048576:
         return jsonify(error="Response exceeds the display limit; narrow the date range."), 422
     return app.response_class(raw, status=response.status, mimetype="application/json",
