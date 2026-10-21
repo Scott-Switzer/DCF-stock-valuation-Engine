@@ -25,7 +25,9 @@
   "limits": {
     "cpu_ms": 30000
   },
+  "queues":{"producers":[{"binding":"VALUATION_QUEUE","queue":"dcf-valuation-packets-staging"}],"consumers":[{"queue":"dcf-valuation-packets-staging","max_batch_size":1,"max_batch_timeout":1,"max_concurrency":24,"max_retries":3}]},
   "services": [
+    {"binding":"PACKET_BUILDER","service":"dcf-valuation-packets-staging"},
     {
       "binding": "FINANCIAL_API",
       "service": "zion-financial-serving-v2-thin-staging"

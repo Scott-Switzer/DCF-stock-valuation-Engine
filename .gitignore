@@ -21,3 +21,5 @@ embedded_assets.py
 python_modules/
 
 worker_runtime/
+cloud_packet_runtime/
+/deploy/valuation-completion/python_modules

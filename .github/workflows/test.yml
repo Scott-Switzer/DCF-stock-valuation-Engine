@@ -23,6 +23,17 @@ jobs:
       - name: Build the shipped Worker bundle before testing
         run: python scripts/embed_assets.py
       - run: pytest -q
+      - uses: actions/setup-node@v4
+        if: matrix.python == '3.12'
+        with:
+          node-version: '22'
+      - name: Check private cloud data adapters and queue gates
+        if: matrix.python == '3.12'
+        run: |
+          npm ci --prefix deploy/security-funnel
+          node deploy/security-funnel/test/reader.test.mjs
+          node deploy/security-funnel/test/history.test.mjs
+          node deploy/security-funnel/test/valuation.test.mjs
       - name: Syntax-check every shipped script
         run: |
           for f in static/js/*.js; do
