@@ -1504,3 +1504,14 @@ def test_real_jpm_common_income_flows_to_model_and_supplement():
     result = supplement_statement_facts({}, ["2025-12-31"], p, "JPM", "2026-10-10")
     assert result["2025-12-31", "NetIncomeCommonStockholders"][0] == 55681000000
     assert result["2025-12-31", "NetIncomeCommonStockholders"][1]["period_end"] == "2025-12-31"
+
+
+def test_companyfacts_only_packet_preserves_source_and_missing_fields():
+    facts = _tag_facts('2025-12-31', '2025-01-01', '2026-02-01', 'filing-one', [('Revenues', 123)])
+    p = build_packet('AAPL', '0000320193', [], facts, '2026-09-24', {'sec_source': {'member_sha256': 'a' * 64}})
+    assert len(p['historical']) == 1
+    revenue = p['historical'][0]['fields']['revenue']
+    assert revenue['value'] == 123
+    assert revenue['provenance']['accession'] == 'filing-one'
+    assert p['historical'][0]['fields']['capex'] is None
+    assert not p['common_income']

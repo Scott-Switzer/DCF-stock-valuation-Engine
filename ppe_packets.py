@@ -1054,7 +1054,7 @@ def build_packet(ticker, cik, rows, facts, cutoff, source):
     selected = {}
     for end in ends:
         selected[end] = {}
-        for metric, candidates in groups[end].items():
+        for metric, candidates in groups.get(end, {}).items():
             latest = max(r["available_at"] for r in candidates)
             top = [r for r in candidates if r["available_at"] == latest]
             if any(r.get("unit") != "USD" for r in top):
