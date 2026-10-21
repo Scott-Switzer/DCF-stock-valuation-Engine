@@ -24,5 +24,11 @@
   },
   "limits": {
     "cpu_ms": 30000
-  }
+  },
+  "services": [
+    {
+      "binding": "FINANCIAL_API",
+      "service": "zion-financial-serving-v2-thin-staging"
+    }
+  ]
 }

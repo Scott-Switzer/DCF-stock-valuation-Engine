@@ -14,6 +14,7 @@ assert.deepEqual(await p.column('split_adjusted_price'),[10,11,null,20]);
 assert.deepEqual(await p.column('missing_adjustment_factors'),[false,false,true,false]);
 await assert.rejects(openMaterialized(env,{...ref,sha256:'0'.repeat(64)}),/MATERIALIZED_OBJECT_HASH/);
 await assert.rejects(openMaterialized(env,{...ref,rows:5}),/MATERIALIZED_ROW_COUNT/);
+await assert.rejects(openMaterialized(env,{...ref,key:'raw/wrds/unapproved/data.parquet'},'pinned-crsp-sample-factors'),/UNAPPROVED/);
 assert.equal(sourceFreshness('2026-10-20').status,'WITHIN_POLICY');
 assert.equal(sourceFreshness('2025-12-31').status,'STALE');
 assert.equal(sourceFreshness('2026-10-22').status,'FUTURE');

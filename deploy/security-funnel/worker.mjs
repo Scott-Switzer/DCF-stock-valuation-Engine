@@ -1,5 +1,6 @@
 // Private staging reconciliation. No upstream providers or raw archive reads.
 import {connectionRoute,publishedConnection} from './connections.mjs';
+import {historyRoute} from './history.mjs';
 const BASE = 'staging/security-funnel/2026-10-20/9beaa712e71650a2/';
 const OUT = BASE + 'reconciled-2026-10-21-v1/';
 const RELEASE = 'b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb';
@@ -282,7 +283,21 @@ export default {
     const u=new URL(request.url);
     try {
       let result;
-      if(request.method==='POST'&&u.pathname.startsWith('/connect/')) result=await connectionRoute(env,u.pathname,Number(u.searchParams.get('n')));
+      if(request.method==='GET'&&['/stored-history','/financial-history'].includes(u.pathname)){
+        const target=new URL('https://zion.internal/private/v1/'+(u.pathname==='/stored-history'?'stock-history':'financial-history'));target.search=u.search;
+        let financialWindow=null;
+        if(u.pathname==='/financial-history'){
+          const from=target.searchParams.get('date_from')||'1900-01-01',to=target.searchParams.get('date_to')||'2026-09-24';
+          target.searchParams.set('date_from',from);
+          if(/^\d{4}-\d{2}-\d{2}$/.test(from)&&Number(to.slice(0,4))-Number(from.slice(0,4))>=100){const end=String(Number(from.slice(0,4))+99)+'-12-31';target.searchParams.set('date_to',end);financialWindow={date_from:from,date_to:end,next:{date_from:String(Number(from.slice(0,4))+100)+'-01-01',date_to:to}};}
+          if(!target.searchParams.has('release_id'))target.searchParams.set('release_id',RELEASE);
+        }
+        const response=await env.FINANCIAL_API.fetch(new Request(target,{headers:{Authorization:'Bearer '+env.TOKEN},redirect:'manual'}));
+        if(financialWindow&&response.status===200){const value=await response.json();value.full_history_window=financialWindow;value.full_history_window.note='Follow native pagination inside each window, then the next window; no default 2015 truncation.';return Response.json(value,{headers:{'Cache-Control':'private, no-store'}});}
+        return new Response(response.body,{status:response.status,headers:{'Content-Type':'application/json','Cache-Control':'private, no-store'}});
+      }
+      if((request.method==='POST'&&u.pathname.startsWith('/connect/history-'))||(request.method==='GET'&&['/history','/valuation-inputs'].includes(u.pathname))) result=await historyRoute(env,u,signedRead,checkPacket);
+      else if(request.method==='POST'&&u.pathname.startsWith('/connect/')) result=await connectionRoute(env,u.pathname,Number(u.searchParams.get('n')));
       else if (request.method==='POST'&&u.pathname==='/initialize') result=await initialize(env);
       else if (request.method==='POST'&&u.pathname==='/batch'&&/^\d+$/.test(u.searchParams.get('n')||'')) result=await batch(env,Number(u.searchParams.get('n')));
       else if (request.method==='POST'&&u.pathname==='/finalize') result=await finalize(env);
@@ -295,6 +310,7 @@ export default {
           result.stages.native_identity=result.connections.stages.identity;
           result.stages.native_adjusted_history=result.connections.stages.adjusted_history;
           result.stages.recent_prices=result.connections.stages.recent_prices;
+          for(const name of ['full_history','factor_audit','valuation_inputs','recent_price_bridge'])if(result.connections.stages[name])result.stages[name]=result.connections.stages[name];
         }
       }
       else if (request.method==='POST'&&u.pathname==='/reuse') {

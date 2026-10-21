@@ -8,12 +8,12 @@ from run_cloud_reconciliation import OUT, request
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('action', choices=['init', 'identity', 'prices', 'price-index', 'batch', 'finish',
-                                         'select-init', 'select-batch', 'select-finish'])
+                                         'select-init', 'select-batch', 'select-finish', 'history-init', 'history-batch', 'history-finish', 'history-expand-batch'])
     parser.add_argument('--part', type=int)
     args = parser.parse_args()
-    if args.action in ['identity', 'prices', 'batch', 'select-batch']:
+    if args.action in ['identity', 'prices', 'batch', 'select-batch', 'history-batch', 'history-expand-batch']:
         plan = json.loads((OUT / 'connection-plan.json').read_text())
-        count = plan[{'identity': 'identity_parts', 'prices': 'price_parts', 'batch': 'ledger_batches', 'select-batch': 'ledger_batches'}[args.action]]
+        count = plan[{'identity': 'identity_parts', 'prices': 'price_parts', 'batch': 'ledger_batches', 'select-batch': 'ledger_batches', 'history-batch':'ledger_batches','history-expand-batch':'ledger_batches'}[args.action]]
         parts = [args.part] if args.part is not None else range(count)
         receipts, failures = [], []
         with ThreadPoolExecutor(max_workers=3) as pool:
