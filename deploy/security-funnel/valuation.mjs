@@ -17,7 +17,8 @@ export async function valuationOverlay(env,row,pinnedJob=null){
  const fresh=job.assessed_at===new Date().toISOString().slice(0,10);
  const current=task&&task.run_id===job.run_id&&(task.http_status!==200||(task.runtime_version===job.runtime_version&&task.assessed_at===job.assessed_at));
  const state=!job.symbols.includes(row.symbol)?'NO_PREVIOUSLY_COMPLETED_SEC_QUERY':!fresh?'ACCOUNTING_ASSESSMENT_STALE':!current?'CLOUD_REBUILD_PENDING':task.http_status!==200?'CLOUD_REBUILD_BLOCKED':task.input_gate.eligible?'ACCOUNTING_GATE_PASSED':'ACCOUNTING_GAPS';
- row.valuation={...row.valuation,accounting_rebuild:{run_id:job.run_id,assessed_at:job.assessed_at,status:state,...(current?{packet:task.packet,input_gate:task.input_gate,readiness:task.readiness,error:task.error}:{})},model_ready:false,complete_valuation:false,assumptions:{status:'COMPANY_SPECIFIC_RESEARCH_REQUIRED',research:researchReviews[row.symbol]||null},remaining_model_gates:['CURRENT_SECURITY_PRICE_BRIDGE','CURRENT_CAPITAL_CLAIMS','COMPANY_SPECIFIC_CITED_FORECAST','DATED_COMPANY_DISCOUNT_RATE','EXECUTED_DCF']};
+ const candidateResearch=researchReviews[row.symbol],research=candidateResearch?.cik===(row.identity?.cik||row.cik)?candidateResearch:null;
+ row.valuation={...row.valuation,accounting_rebuild:{run_id:job.run_id,assessed_at:job.assessed_at,status:state,...(current?{packet:task.packet,input_gate:task.input_gate,readiness:task.readiness,error:task.error}:{})},model_ready:false,complete_valuation:false,assumptions:{status:'COMPANY_SPECIFIC_RESEARCH_REQUIRED',research},remaining_model_gates:['CURRENT_SECURITY_PRICE_BRIDGE','CURRENT_CAPITAL_CLAIMS','COMPANY_SPECIFIC_CITED_FORECAST','DATED_COMPANY_DISCOUNT_RATE','EXECUTED_DCF']};
  return row;
 }
 export async function valuationSummary(env){

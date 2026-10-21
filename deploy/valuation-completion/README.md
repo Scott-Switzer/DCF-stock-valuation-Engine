@@ -14,7 +14,7 @@ build creates only a symlink from this config directory. No new environment is
 needed. Provision secret `TOKEN` through stdin from the existing private profile.
 There is no workers.dev route; the private funnel uses a service binding.
 
-The funnel's queue runs with eight consumers, one symbol per message and bounded
+The funnel's queue runs with 24 consumers, one symbol per message and bounded
 retries. Submission pins a run generation, runtime digest and UTC gate date.
 Tasks and status pages are isolated by generation; cached packets are verified
 against runtime, assessment date and packet hash. Detailed accounting diagnostics
