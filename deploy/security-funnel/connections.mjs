@@ -236,7 +236,7 @@ async function connectBatch(env,n){
  await put(env,key,{input_sha256:p.input_sha256,connection_version:'native-connected-v2',rows:batch.rows});return {batch:n,securities:batch.rows.length};
 }
 export async function finish(env,prefix=CONNECTED,version='native-connected-v2',selection=null){
- const p=await plan(env),stages={},repairs={},index={},hashes=[],histories={};let count=0,rowBytes=0;
+ const p=await plan(env),stages={},repairs={},index={},hashes=[],histories={},financialHistories={};let count=0,rowBytes=0;
  const inputPin=selection?.input_sha256||p.input_sha256;
  for(let n=0;n<132;n++){
   const obj=await env.DATA.get(prefix+`batches/${n}.json`);if(!obj||obj.size>16*1048576)fail('CONNECTED_BATCH_UNAVAILABLE');
@@ -246,7 +246,8 @@ export async function finish(env,prefix=CONNECTED,version='native-connected-v2',
   for(const r of b.rows){
    if(r.symbol in index)fail('CONNECTION_DUPLICATE_SYMBOL');index[r.symbol]=n;count++;
    if(r.full_history?.permno)histories[r.full_history.permno]=r.full_history;
-   for(const [name,status]of Object.entries({identity:r.identity.connections.status,adjusted_history:r.adjusted_prices.connections.status,recent_prices:r.recent_prices.status,...(r.full_history?{full_history:r.full_history.status,factor_audit:r.full_history.factor_audit.status,valuation_inputs:r.valuation.inputs.status,recent_price_bridge:r.recent_prices.bridge.status}:{})})){
+   if(r.valuation.inputs?.status==='FULL_RANGE_SOURCE_INPUTS_CONNECTED')financialHistories[r.identity.cik]=r.valuation.inputs;
+   for(const [name,status]of Object.entries({identity:r.identity.connections.status,adjusted_history:r.adjusted_prices.connections.status,recent_prices:r.recent_prices.status,...(r.full_history?{full_history:r.full_history.status,factor_audit:r.full_history.factor_audit.status,valuation_inputs:r.valuation.inputs.status,valuation_packets:r.valuation.packet.status,recent_price_bridge:r.recent_prices.bridge.status}:{})})){
     stages[name]??={};stages[name][status]=(stages[name][status]||0)+1;}
    for(const reason of uniq(['identity','adjusted_prices','financials','valuation'].flatMap(k=>r[k].blockers||[])))(repairs[reason]??=[]).push(r.symbol);
   }
@@ -255,7 +256,8 @@ export async function finish(env,prefix=CONNECTED,version='native-connected-v2',
  const queue=Object.entries(repairs).map(([blocker,symbols])=>({blocker,affected_securities:symbols.length,symbols})).sort((a,b)=>b.affected_securities-a.affected_securities);
  const hs=Object.values(histories);
  const historicalCoverage=hs.length?{native_securities:hs.length,date_min:hs.map(h=>h.date_min).sort()[0],date_max:hs.map(h=>h.date_max).sort().at(-1),rows:hs.reduce((n,h)=>n+h.rows,0),missing_source_factor_rows:hs.reduce((n,h)=>n+h.factor_audit.missing_source_factor_rows,0),selection_date_is_history_start:false}:null;
- const summary={historical_coverage:historicalCoverage,status:'CONNECTED',asof:ASOF,accounted:2629,stages,source_pins:p.pins,input_sha256:inputPin,
+ const fs=Object.values(financialHistories),financialCoverage=fs.length?{unique_issuers:fs.length,observations:fs.reduce((n,f)=>n+f.observations,0),period_min:fs.map(f=>f.date_min).sort()[0],period_max:fs.map(f=>f.date_max).sort().at(-1),frequency:'annual',requested_date_from:'1900-01-01',requested_metrics:9,policy:'DISJOINT_1900_1999_AND_2000_2026_WINDOWS;EXISTING_SEC_ENGINE_DEFINITIONS'}:null;
+ const summary={financial_history_coverage:financialCoverage,historical_coverage:historicalCoverage,status:'CONNECTED',asof:ASOF,accounted:2629,stages,source_pins:p.pins,input_sha256:inputPin,
   projection_input_sha256:p.input_sha256,source_reference_date:selection?.source_date||null,selection_policy:selection?.policy||'ALL_HISTORICAL_NATIVE_MATCHES',
   data_rights:'PRIVATE_OWNER_WRDS_CRSP_RESEARCH_ONLY;OWNER_ONLY_ALPACA_MARKET_DATA',
   top_repairs:queue.slice(0,12).map(({symbols,...r})=>r),
@@ -276,7 +278,7 @@ export async function finish(env,prefix=CONNECTED,version='native-connected-v2',
  })().catch(async e=>{await writer.abort(e).catch(()=>{});throw e;});
  await Promise.all([storing,writing]);
  await put(env,prefix+'symbol-batches.json',index);
- const report=`# Connected security datasets — ${ASOF}\n\nAll 2,629 frozen symbols accounted for.\n\n${Object.entries(stages).map(([stage,counts])=>`## ${stage}\n\n${Object.entries(counts).map(([status,count])=>`- ${status}: ${count}`).join('\n')}`).join('\n\n')}\n\nExisting CRSP identity assertions, issuer-link materialization, adjusted-price outputs and recent Alpaca bars are connected. Native source history is not a cross-provider or point-in-time certification. CIK header dates are unknown; dated CIQ link boundaries retain their existing provisional policy. Split/distribution adjustments remain retrospective and separate from raw bars. No missing economic assumptions were filled. No full valuation workflow is certified.\n\n## Remaining repair cohorts\n\n${queue.map(r=>`- ${r.blocker}: ${r.affected_securities}`).join('\n')}\n\nAll financial payload processing ran in Cloudflare; no upstream acquisitions, laptop normalization, or production pointer changes.\n`;
+ const report=`# Connected security datasets — ${ASOF}\n\nAll 2,629 frozen symbols accounted for.\n\n${Object.entries(stages).map(([stage,counts])=>`## ${stage}\n\n${Object.entries(counts).map(([status,count])=>`- ${status}: ${count}`).join('\n')}`).join('\n\n')}\n\nExisting CRSP identity assertions, issuer-link materialization, adjusted-price outputs and recent Alpaca bars are connected. Native source history is not a cross-provider or point-in-time certification. CIK header dates are unknown; dated CIQ link boundaries retain their existing provisional policy. Split/distribution adjustments remain retrospective and separate from raw bars. No missing economic assumptions were filled. No full valuation workflow is certified.\n\n${financialCoverage?`Full-range annual financial inputs: ${financialCoverage.observations} observations across ${financialCoverage.unique_issuers} unique issuers; actual periods ${financialCoverage.period_min} through ${financialCoverage.period_max}. Nine metrics requested, with metric-specific gaps retained.\n\n`:''}## Remaining repair cohorts\n\n${queue.map(r=>`- ${r.blocker}: ${r.affected_securities}`).join('\n')}\n\nAll financial payload processing ran in Cloudflare; no upstream acquisitions, laptop normalization, or production pointer changes.\n`;
  await env.DATA.put(prefix+'REPORT.md',report+(historicalCoverage?`\nFull selected native histories span ${historicalCoverage.date_min} through ${historicalCoverage.date_max}: ${historicalCoverage.rows} rows across ${historicalCoverage.native_securities} unique PERMNOs, including former ticker periods. Selection date is not the history start. ${historicalCoverage.missing_source_factor_rows} rows lack joined source factors; other unusable adjusted values are classified separately. Source-history valuation packets preserve every available annual observation and decimal value; model eligibility remains false. /history exposes all adjusted-history partitions; /stored-history reuses existing multi-provider history serving.\n`:'')+(selection?`\nNative security selection uses the actual source reference session ${selection.source_date}; it does not extend identity validity to ${ASOF}. All historical alternatives remain in each security record.\n`:''),{httpMetadata:{contentType:'text/markdown'}});
  // Completion marker last: readers never switch to a partially connected release.
  await put(env,prefix+'summary.json',summary);

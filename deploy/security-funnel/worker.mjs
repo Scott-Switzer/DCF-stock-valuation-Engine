@@ -1,4 +1,4 @@
-// Private staging reconciliation. No upstream providers or raw archive reads.
+// Private staging reconciliation. No upstream acquisition or bulk archive replay.
 import {connectionRoute,publishedConnection} from './connections.mjs';
 import {historyRoute} from './history.mjs';
 const BASE = 'staging/security-funnel/2026-10-20/9beaa712e71650a2/';
@@ -310,7 +310,7 @@ export default {
           result.stages.native_identity=result.connections.stages.identity;
           result.stages.native_adjusted_history=result.connections.stages.adjusted_history;
           result.stages.recent_prices=result.connections.stages.recent_prices;
-          for(const name of ['full_history','factor_audit','valuation_inputs','recent_price_bridge'])if(result.connections.stages[name])result.stages[name]=result.connections.stages[name];
+          for(const name of ['full_history','factor_audit','valuation_inputs','valuation_packets','recent_price_bridge'])if(result.connections.stages[name])result.stages[name]=result.connections.stages[name];
         }
       }
       else if (request.method==='POST'&&u.pathname==='/reuse') {

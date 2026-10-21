@@ -3,7 +3,8 @@
 Staging-only Cloudflare Worker. Reads existing signed SEC queries and stored input
 packets from private R2, checks all 2,629 frozen symbols, and persists readiness,
 freshness, explicit gaps, cited briefs, and repair cohorts. The private research
-binding reads only pinned existing materializations. No raw provider archives,
+binding reads pinned existing materializations and one pinned native factor
+partition for a bounded repair audit. No bulk archive replay,
 upstream provider requests, invented model assumptions, or production pointer writes.
 
 `TOKEN` is a Worker secret. All routes require bearer authentication. POST routes:

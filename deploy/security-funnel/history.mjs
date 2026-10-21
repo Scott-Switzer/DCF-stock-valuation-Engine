@@ -170,7 +170,7 @@ export async function historyRoute(env,u,signedRead,checkPacket){
   const results=[];
   for(const symbol of ['AAPL','MSFT','ABG']){
    const row=await security(env,symbol),page=await history(env,new URL('https://internal/history?symbol='+symbol+'&limit=10'));
-   if(!page.rows.length||!page.coverage.date_min||page.coverage.date_min>='2015-01-01'||page.rows.some(r=>r.date<page.coverage.date_min||r.date>page.coverage.date_max))fail('EARLY_HISTORY_ACCEPTANCE_FAILED');
+   if(!page.rows.length||!page.coverage.date_min||page.coverage.date_min>='2015-01-01'||page.rows.every(r=>r.date>='2015-01-01')||page.rows.some(r=>r.date<page.coverage.date_min||r.date>page.coverage.date_max))fail('EARLY_HISTORY_ACCEPTANCE_FAILED');
    const ref=row.valuation.inputs;if(ref.status!=='FULL_RANGE_SOURCE_INPUTS_CONNECTED')fail('FULL_FINANCIAL_INPUTS_NOT_READY');
    const inputs=await read(env.DATA,ref.key,ref.sha256);
    if(inputs.requested_date_from!=='1900-01-01'||inputs.requested_metrics.length!==9||inputs.source_queries.length!==2||inputs.observations.length!==ref.observations)fail('FULL_INPUT_ACCEPTANCE_FAILED');
