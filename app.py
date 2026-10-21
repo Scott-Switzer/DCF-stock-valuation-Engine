@@ -895,6 +895,45 @@ def calculate_api():
         return jsonify(error=str(e)), 400
 
 
+@app.get("/data")
+def financial_data_page():
+    return render_template("financial_data.html")
+
+
+@app.get("/api/data/query")
+def shared_financial_query():
+    """Owner-only historical data through the same backend as Slack and CLI."""
+    import hmac
+    import accounts
+    env = request.environ.get("workers.env")
+    token = getattr(env, "FINANCIAL_DATA_TOKEN", "") if env else ""
+    owner = getattr(env, "FINANCIAL_OWNER_USER_ID", "") if env else ""
+    user = accounts.current_user() if owner else None
+    bearer = request.headers.get("Authorization", "")
+    if not ((token and hmac.compare_digest(bearer, "Bearer " + token)) or
+            (owner and user and user["id"] == owner)):
+        return jsonify(error="Enter your private financial-system access key to use price data."), 403
+    question = request.args.get("query", "")
+    if not question or len(question) > 2000:
+        return jsonify(error="Enter a financial question of at most 2,000 characters."), 400
+    service = getattr(env, "FINANCIAL_DATA", None)
+    if not service or not token:
+        return jsonify(error="Shared financial data is not configured."), 503
+    from urllib.parse import urlencode
+    from ppe_provider import _wait
+    from js import Request, Object
+    from pyodide.ffi import to_js
+    response = _wait(service.fetch(Request.new(
+        "https://financial.internal/query?" + urlencode({"query": question}),
+        to_js({"headers": {"Authorization": "Bearer " + token}}, dict_converter=Object.fromEntries),
+    )), time.monotonic() + 45)
+    raw = str(_wait(response.text(), time.monotonic() + 10))
+    if len(raw.encode()) > 2 * 1048576:
+        return jsonify(error="Response exceeds the display limit; narrow the date range."), 422
+    return app.response_class(raw, status=response.status, mimetype="application/json",
+                              headers={"Cache-Control": "private, no-store"})
+
+
 @app.get("/api/company/<ticker>")
 def company_packet(ticker):
     """Public SEC-derived financial packet; no warehouse prices or raw objects."""

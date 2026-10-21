@@ -1,3 +1,4 @@
+import {queryRoute,companyPacket} from './queries.mjs';
 // Private staging reconciliation. No upstream acquisition or bulk archive replay.
 import {connectionRoute,publishedConnection} from './connections.mjs';
 import {historyRoute} from './history.mjs';
@@ -286,6 +287,8 @@ export default {
     const u=new URL(request.url);
     try {
       let result;
+      if(request.method==='GET'&&u.pathname==='/query')return Response.json(await queryRoute(env,u),{headers:{'Cache-Control':'private, no-store'}});
+      if(request.method==='GET'&&u.pathname==='/company-packet')return Response.json(await companyPacket(env,u.searchParams.get('symbol')),{headers:{'Cache-Control':'private, no-store'}});
       if(request.method==='GET'&&['/stored-history','/financial-history'].includes(u.pathname)){
         const target=new URL('https://zion.internal/private/v1/'+(u.pathname==='/stored-history'?'stock-history':'financial-history'));target.search=u.search;
         let financialWindow=null;

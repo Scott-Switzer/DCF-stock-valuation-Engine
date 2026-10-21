@@ -178,6 +178,24 @@ def load_packet(ticker, asof=None, *, deadline=None):
     if not has_request_context() or not current_app.config.get("CLOUDFLARE"):
         return None
     env = request.environ["workers.env"]
+    # Shared cloud packets contain SEC statements only; no licensed market data.
+    shared = getattr(env, "FINANCIAL_DATA", None)
+    token = getattr(env, "FINANCIAL_DATA_TOKEN", "")
+    if shared and token:
+        from js import Request, Object
+        from pyodide.ffi import to_js
+        response = _wait(shared.fetch(Request.new(
+            "https://financial.internal/company-packet?symbol=" + ticker,
+            to_js({"headers": {"Authorization": "Bearer " + token}},
+                  dict_converter=Object.fromEntries),
+        )), deadline)
+        if response.status == 200:
+            raw = str(_wait(response.text(), deadline))
+            if len(raw.encode()) > 131072:
+                raise ProviderError("Shared company packet exceeds its serving budget.")
+            packet = validate_packet(json.loads(raw), ticker, asof)
+            packet["source"]["transport"] = "Shared financial backend"
+            return _transport_receipt(packet, "SHARED_FINANCIAL_BACKEND", "CONNECTED", started)
     bucket = getattr(env, "PPE_DATA", None)
     if bucket is None:
         return None
