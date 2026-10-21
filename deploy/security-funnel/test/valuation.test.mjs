@@ -24,3 +24,14 @@ const paged={DATA:{get:async key=>{const value=key.endsWith('packet-job.json')?{
 const status=await valuationRoute(paged,new URL('https://x/connect/valuation-packet-status-batch?n=0'));
 assert.equal(status.pending,1);assert.equal(status.completed,0);assert.equal(status.input_complete,0);
 console.log('A prior run cannot satisfy current readiness.');
+const ledgerEnv={DATA:{get:async key=>{
+ let value;
+ if(key.endsWith('packet-job.json'))value={run_id};
+ else {const n=Number(key.match(/\/(\d+)\.json$/)[1]);value={run_id,key:'immutable-'+n,sha256:'c'.repeat(64),symbols:Array.from({length:n===131?9:20},(_,i)=>'S'+(n*20+i)),states:{ACCOUNTING_GAPS:n===131?9:20}};}
+ const raw=JSON.stringify(value);return {size:raw.length,text:async()=>raw};
+},put:async()=>{}}};
+const ledger=await valuationRoute(ledgerEnv,new URL('https://x/connect/valuation-ledger-finish'));
+assert.equal(ledger.accounted,2629);assert.equal(ledger.complete_valuations,0);assert.equal(ledger.parts,132);
+console.log('Partitioned ledger accounts for the full frozen universe without certifying valuations.');
+await assert.rejects(valuationRoute({},new URL('https://x/valuation-ledger?part=0')),/REQUIRES_MANIFEST_PIN/);
+console.log('Cross-page ledger reads require an immutable manifest pin.');

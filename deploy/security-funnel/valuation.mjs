@@ -45,12 +45,17 @@ export async function valuationRoute(env,u){
   }
   if(symbols.size!==2629)fail('VALUATION_LEDGER_UNIVERSE');
   const result={run_id:job.run_id,input_sha256:FULL_PIN,accounted:symbols.size,complete_valuations:0,states,parts,reconciled_at:new Date().toISOString(),qualification:'ACCOUNTING_AND_RESEARCH_READINESS_ONLY;IDENTITY_FORECAST_CAPITAL_COST_AND_MODEL_RUN_GATES_REMAIN'};
-  await put(env,VAL+'ledger-manifest.json',result);return {...result,parts:parts.length};
+  const digest=await sha(JSON.stringify(result));await put(env,VAL+'ledger-manifests/by-sha256/'+digest+'.json',result);
+  await put(env,VAL+'ledger-manifest.json',result);return {...result,manifest_sha256:digest,parts:parts.length};
  }
  if(u.pathname==='/valuation-ledger'){
-  const manifest=await read(env,VAL+'ledger-manifest.json');if(!u.searchParams.has('part'))return manifest;
+  const pin=u.searchParams.get('expected_manifest_sha256');
+  if(u.searchParams.has('part')&&!/^[a-f0-9]{64}$/.test(pin||''))fail('LEDGER_PAGINATION_REQUIRES_MANIFEST_PIN');
+  if(pin&&!/^[a-f0-9]{64}$/.test(pin))fail('INVALID_LEDGER_MANIFEST_PIN');
+  const manifest=await read(env,pin?VAL+'ledger-manifests/by-sha256/'+pin+'.json':VAL+'ledger-manifest.json',pin);
+  const digest=pin||await sha(JSON.stringify(manifest));if(!u.searchParams.has('part'))return {...manifest,manifest_sha256:digest};
   const n=Number(u.searchParams.get('part')),ref=manifest.parts.find(r=>r.batch===n);if(!ref)fail('INVALID_LEDGER_PART');
-  return read(env,ref.key,ref.sha256);
+  const part=await read(env,ref.key,ref.sha256);return {...part,ledger_manifest_sha256:digest,pagination:{next:n<131?{part:n+1,expected_manifest_sha256:digest}:null}};
  }
  if(u.pathname==='/connect/valuation-packet-submit'){
   const plan=await valuationRoute(env,new URL('https://internal/connect/valuation-packet-plan'));

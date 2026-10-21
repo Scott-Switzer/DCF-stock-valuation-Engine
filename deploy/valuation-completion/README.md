@@ -31,3 +31,9 @@ canonical reference has provisional ticker keys; the legacy OpenFIGI adapter is
 present in Financial System but its configured local mapping file is absent.
 It also aliases FIGI to composite FIGI, so that field cannot establish a distinct
 share-class identity without authoritative mapping evidence.
+
+`python3 scripts/run_cloud_valuation.py reconcile` publishes a partitioned snapshot
+of all 2,629 symbols, including pending and blocked rows. Read `/valuation-ledger`
+to obtain its `manifest_sha256`, then supply it as `expected_manifest_sha256` on
+all `?part=n` requests. Parts and manifests are immutable by content hash, so a
+later reconciliation cannot mix a client's pages across snapshots.
