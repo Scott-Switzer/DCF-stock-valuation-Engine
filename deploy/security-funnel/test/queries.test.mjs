@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import {requestQuery,priceGrowth} from '../queries.mjs';
+const symbols={AAPL:0,MSFT:0,ON:1,A:1};
+assert.equal(requestQuery("What was AAPL's price on 2020-01-02?",symbols).symbol,'AAPL');
+assert.equal(requestQuery('AAPL growth from 2010-01-04 to 2020-01-02',symbols).action,'growth');
+assert.throws(()=>requestQuery('AAPL price on 2020-02-30',symbols),/INVALID_DATE/);
+assert.throws(()=>requestQuery('AAPL MSFT price on 2020-01-02',symbols),/ONE_TICKER/);
+const result=priceGrowth({date:'2020-01-01',split_adjusted_price:50},{date:'2021-01-01',split_adjusted_price:100},'split_adjusted_price');
+assert.equal(result.change,1);assert.equal(result.includes_dividends,false);
+assert.throws(()=>priceGrowth({date:'2020-01-01',split_adjusted_price:null},{date:'2021-01-01',split_adjusted_price:100},'split_adjusted_price'),/MISSING/);
+assert.throws(()=>priceGrowth({date:'2021-01-01',split_adjusted_price:50},{date:'2020-01-01',split_adjusted_price:100},'split_adjusted_price'),/PRECEDE/);
+
+const {queryRoute}=await import('../queries.mjs');
+const {FULL}=await import('../history.mjs');
+const {createHash}=await import('node:crypto');
+const packet={observations:[{metric:'revenue',period_end:'2025-12-31',period_start:'2025-01-01',value_decimal:'100',unit:'USD',available_at:'2026-02-01',source_observation_ids:['rev']},{metric:'operating_income',period_end:'2025-12-31',period_start:'2025-01-01',value_decimal:'20',unit:'USD',available_at:'2026-02-01',source_observation_ids:['income']}],source_records:{rev:{},income:{}}};
+const raw=JSON.stringify(packet),sha=createHash('sha256').update(raw).digest('hex');
+const db=new Map([[FULL+'symbol-batches.json',JSON.stringify({PEP:0})],[FULL+'batches/0.json',JSON.stringify({rows:[{symbol:'PEP',identity:{cik:'0000000001'},valuation:{inputs:{key:'stored',sha256:sha}}}]})],['stored',raw]]);
+const env={DATA:{get:async key=>{const value=db.get(key);return value?{size:value.length,text:async()=>value}:null;}}};
+const margin=await queryRoute(env,new URL('https://internal/query?query=PEP+operating+margin'));
+assert.equal(margin.result.observations[0].value_decimal,'0.2');
+assert.deepEqual(margin.result.observations[0].source_observation_ids,['income','rev']);
+assert.equal(margin.result.observations[0].derivation.components.length,2);
+const source=JSON.parse(db.get(FULL+'batches/0.json'));source.rows[0].valuation.inputs={};db.set(FULL+'batches/0.json',JSON.stringify(source));
+const calls=[];env.FINANCIAL_API={fetch:async request=>{const url=new URL(request.url);calls.push(url);return Response.json({observations:[],source_records:{},pagination:{next_cursor:url.searchParams.get('date_from')==='1900-01-01'&&!url.searchParams.has('cursor')?'next':null}});}};
+await queryRoute(env,new URL('https://internal/query?query=PEP+revenue'));
+assert.equal(calls.length,3);assert.equal(calls.at(-1).searchParams.get('date_to'),'2026-09-24');
+assert.ok(calls.every(url=>url.searchParams.has('release_id')));

@@ -53,6 +53,7 @@
         {"name": "MCP_LIMIT", "namespace_id": "1946200604", "simple": {"limit": 60, "period": 60}}
       ],
       "services": [
+        {"binding": "FINANCIAL_DATA", "service": "zion-security-funnel-staging"},
         {"binding": "ZION_VALUATIONS", "service": "zion-valuation"},
         {"binding": "ZION_DATASET_CATALOG", "service": "zion-datasets", "entrypoint": "Catalog"}
       ],
