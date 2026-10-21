@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-import {openMaterialized,sourceFreshness} from '../connections.mjs';
+import {openMaterialized,sourceFreshness,chooseSourceDate} from '../connections.mjs';
 const raw=await readFile(new URL('./synthetic.parquet',import.meta.url));
 const file=raw.buffer.slice(raw.byteOffset,raw.byteOffset+raw.byteLength);
 const ref={key:'research/financial-research-canonical-v1/test/synthetic.parquet',bytes:raw.length,rows:4,
@@ -18,4 +18,12 @@ assert.equal(sourceFreshness('2026-10-20').status,'WITHIN_POLICY');
 assert.equal(sourceFreshness('2025-12-31').status,'STALE');
 assert.equal(sourceFreshness('2026-10-22').status,'FUTURE');
 assert.equal(sourceFreshness('2026-02-30').status,'UNKNOWN_OR_INVALID');
+const old={security_id:'old',adjusted_history:{date_min:'1990-01-01',date_max:'1999-12-31'},
+ ticker_intervals:[{effective_from:'1990-01-01',effective_to:'1999-12-31'}]};
+const current={security_id:'current',adjusted_history:{date_min:'2000-01-01',date_max:'2025-12-31'},
+ ticker_intervals:[{effective_from:'2000-01-01',effective_to:'2025-12-31'}]};
+assert.equal(chooseSourceDate([old,current],'2025-12-31').candidates[0].security_id,'current');
+assert.equal(chooseSourceDate([old,current],'2025-12-31').status,'SOURCE_DATE_SECURITY_RESOLVED');
+assert.equal(chooseSourceDate([current,{...current,security_id:'another'}],'2025-12-31').status,'SOURCE_DATE_SECURITY_AMBIGUOUS');
+assert.equal(chooseSourceDate([old],'2025-12-31').basis,'HISTORICAL_INTERVAL_OVERLAP');
 console.log('Parquet projection, ZSTD, dates, nulls and integrity checks passed.');

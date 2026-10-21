@@ -46,6 +46,14 @@ publication streams batches and checks their hashes again; the completion marker
 written last. Private `/security`, `/brief`, `/status`, and `/report` then serve the
 connected data. Prior reconciliation output remains preserved.
 
+Then run `select-init`, `select-batch`, `select-finish` to resolve reused tickers
+at the actual latest native source date using those saved projections. Selection
+requires both a native observation on that date and an active ticker interval.
+Historical alternatives remain attached; unresolved ties stay explicit. The new
+release becomes readable only after its completion summary exists. This does not
+extend historical identities to the recent Alpaca session or establish a provider
+bridge, public availability, or point-in-time eligibility.
+
 Source ownership stays with Project-Portfolio-Engine; private financial serving
 stays with zion-terminal; this directory is the DCF integration layer. No additional
 repository copies or data backfills are needed.

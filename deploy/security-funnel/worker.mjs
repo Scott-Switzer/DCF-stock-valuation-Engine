@@ -1,5 +1,5 @@
 // Private staging reconciliation. No upstream providers or raw archive reads.
-import {connectionRoute,CONNECTED} from './connections.mjs';
+import {connectionRoute,publishedConnection} from './connections.mjs';
 const BASE = 'staging/security-funnel/2026-10-20/9beaa712e71650a2/';
 const OUT = BASE + 'reconciled-2026-10-21-v1/';
 const RELEASE = 'b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb';
@@ -288,7 +288,8 @@ export default {
       else if (request.method==='POST'&&u.pathname==='/finalize') result=await finalize(env);
       else if (request.method==='GET'&&u.pathname==='/status') {
         result=await read(env,OUT+'summary.json');
-        const connected=await env.DATA.get(CONNECTED+'summary.json');
+        const prefix=await publishedConnection(env);
+        const connected=prefix?await env.DATA.get(prefix+'summary.json'):null;
         if(connected){
           result.connections=await connected.json();result.status='CONNECTED';
           result.stages.native_identity=result.connections.stages.identity;
@@ -322,15 +323,15 @@ export default {
         const index=await read(env,OUT+'symbol-batches.json');
         if (!(symbol in index)) return Response.json({error:'SYMBOL_NOT_IN_FROZEN_UNIVERSE'},{status:404});
         const brief=u.pathname==='/brief';
-        const connected=await env.DATA.head(CONNECTED+'summary.json');
-        const part=await read(env,(connected?CONNECTED:OUT)+(brief?'briefs/':'batches/')+index[symbol]+'.json');
+        const connected=await publishedConnection(env);
+        const part=await read(env,(connected||OUT)+(brief?'briefs/':'batches/')+index[symbol]+'.json');
         result=(brief?part.briefs:part.rows).find(r=>r.symbol===symbol);
         if (!result) fail('SYMBOL_RECONCILIATION_FAILED');
         if(connected)result.data_rights='PRIVATE_OWNER_WRDS_CRSP_RESEARCH_ONLY;OWNER_ONLY_ALPACA_MARKET_DATA';
       }
       else if (request.method==='GET'&&u.pathname==='/report') {
-        const connected=await env.DATA.head(CONNECTED+'summary.json');
-        const obj=await env.DATA.get((connected?CONNECTED:OUT)+'REPORT.md');
+        const connected=await publishedConnection(env);
+        const obj=await env.DATA.get((connected||OUT)+'REPORT.md');
         if (!obj) fail('REPORT_NOT_READY');
         return new Response(obj.body,{headers:{'Content-Type':'text/markdown','Cache-Control':'private, no-store'}});
       }

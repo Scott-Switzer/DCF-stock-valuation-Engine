@@ -4,6 +4,7 @@ import {decompress} from 'fzstd';
 const BASE='staging/security-funnel/2026-10-20/9beaa712e71650a2/';
 const OLD=BASE+'reconciled-2026-10-21-v1/';
 export const CONNECTED=BASE+'connected-2026-10-21-v1/';
+const DATED=BASE+'source-dated-2026-10-21-v1/';
 const ASOF='2026-10-21';
 const enc=new TextEncoder();
 const fail=s=>{throw new Error(s);};
@@ -38,6 +39,15 @@ async function selectedRows(env,ref,key,targets,columns){
 }
 function active(a,date){return a.effective_from&&a.effective_to&&a.effective_from<=date&&date<=a.effective_to;}
 function uniq(xs){return [...new Set(xs)];}
+export function chooseSourceDate(candidates,date){
+ const historical=candidates.filter(c=>c.adjusted_history&&c.ticker_intervals.some(a=>
+  a.effective_from<=c.adjusted_history.date_max&&a.effective_to>=c.adjusted_history.date_min));
+ const dated=historical.filter(c=>c.adjusted_history.date_max===date&&c.ticker_intervals.some(a=>active(a,date)));
+ return {candidates:dated.length?dated:historical,
+  basis:dated.length?'EXACT_SOURCE_DATE_AND_NATIVE_TICKER_INTERVAL':'HISTORICAL_INTERVAL_OVERLAP',
+  status:dated.length===1?'SOURCE_DATE_SECURITY_RESOLVED':dated.length>1?'SOURCE_DATE_SECURITY_AMBIGUOUS':
+   historical.length===1?'HISTORICAL_NATIVE_SECURITY_CONNECTED':historical.length?'AMBIGUOUS_HISTORICAL_SECURITIES':'NO_MATCHED_NATIVE_SECURITY'};
+}
 export function sourceFreshness(date){
  const t=typeof date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(date)?Date.parse(date+'T00:00:00Z'):NaN;
  if(!Number.isFinite(t)||new Date(t).toISOString().slice(0,10)!==date)return {status:'UNKNOWN_OR_INVALID',observed_through:date||null,policy_max_age_days:7};
@@ -224,12 +234,13 @@ async function connectBatch(env,n){
  await put(env,CONNECTED+`briefs/${n}.json`,briefs);
  await put(env,key,{input_sha256:p.input_sha256,connection_version:'native-connected-v2',rows:batch.rows});return {batch:n,securities:batch.rows.length};
 }
-async function finish(env){
+async function finish(env,prefix=CONNECTED,version='native-connected-v2',selection=null){
  const p=await plan(env),stages={},repairs={},index={},hashes=[];let count=0,rowBytes=0;
+ const inputPin=selection?.input_sha256||p.input_sha256;
  for(let n=0;n<132;n++){
-  const obj=await env.DATA.get(CONNECTED+`batches/${n}.json`);if(!obj||obj.size>16*1048576)fail('CONNECTED_BATCH_UNAVAILABLE');
+  const obj=await env.DATA.get(prefix+`batches/${n}.json`);if(!obj||obj.size>16*1048576)fail('CONNECTED_BATCH_UNAVAILABLE');
   const raw=await obj.text(),b=JSON.parse(raw);hashes.push(await sha(raw));
-  if(b.input_sha256!==p.input_sha256||b.connection_version!=='native-connected-v2'||!b.rows.length)fail('FINAL_CONNECTION_PIN_CHANGED');
+  if(b.input_sha256!==inputPin||b.connection_version!==version||!b.rows.length)fail('FINAL_CONNECTION_PIN_CHANGED');
   rowBytes+=enc.encode(JSON.stringify(b.rows).slice(1,-1)).byteLength;
   for(const r of b.rows){
    if(r.symbol in index)fail('CONNECTION_DUPLICATE_SYMBOL');index[r.symbol]=n;count++;
@@ -240,33 +251,85 @@ async function finish(env){
  }
  if(count!==2629)fail('CONNECTION_UNIVERSE_CHANGED');
  const queue=Object.entries(repairs).map(([blocker,symbols])=>({blocker,affected_securities:symbols.length,symbols})).sort((a,b)=>b.affected_securities-a.affected_securities);
- const summary={status:'CONNECTED',asof:ASOF,accounted:2629,stages,source_pins:p.pins,input_sha256:p.input_sha256,
+ const summary={status:'CONNECTED',asof:ASOF,accounted:2629,stages,source_pins:p.pins,input_sha256:inputPin,
+  projection_input_sha256:p.input_sha256,source_reference_date:selection?.source_date||null,selection_policy:selection?.policy||'ALL_HISTORICAL_NATIVE_MATCHES',
   data_rights:'PRIVATE_OWNER_WRDS_CRSP_RESEARCH_ONLY;OWNER_ONLY_ALPACA_MARKET_DATA',
   top_repairs:queue.slice(0,12).map(({symbols,...r})=>r),
-  full_workflow_verified:0,production_writes:0,upstream_downloads:0,laptop_normalizations:0,output_prefix:CONNECTED};
+  full_workflow_verified:0,production_writes:0,upstream_downloads:0,laptop_normalizations:0,output_prefix:prefix};
  const header=JSON.stringify({summary,repair_queue:queue}).slice(0,-1)+',"securities":[',tail=']}';
  const stream=new FixedLengthStream(enc.encode(header).byteLength+rowBytes+131+enc.encode(tail).byteLength);
  const writer=stream.writable.getWriter();
- const storing=env.DATA.put(CONNECTED+'ledger.json',stream.readable,{httpMetadata:{contentType:'application/json'}})
+ const storing=env.DATA.put(prefix+'ledger.json',stream.readable,{httpMetadata:{contentType:'application/json'}})
   .catch(async e=>{await writer.abort(e).catch(()=>{});throw e;});
  const writing=(async()=>{
   await writer.write(enc.encode(header));
   for(let n=0;n<132;n++){
-   const obj=await env.DATA.get(CONNECTED+`batches/${n}.json`);if(!obj)fail('CONNECTED_BATCH_DISAPPEARED');
+   const obj=await env.DATA.get(prefix+`batches/${n}.json`);if(!obj)fail('CONNECTED_BATCH_DISAPPEARED');
    const raw=await obj.text();if(await sha(raw)!==hashes[n])fail('CONNECTED_BATCH_CHANGED_DURING_PUBLICATION');
    const b=JSON.parse(raw);await writer.write(enc.encode((n?',':'')+JSON.stringify(b.rows).slice(1,-1)));
   }
   await writer.write(enc.encode(tail));await writer.close();
  })().catch(async e=>{await writer.abort(e).catch(()=>{});throw e;});
  await Promise.all([storing,writing]);
- await put(env,CONNECTED+'symbol-batches.json',index);
+ await put(env,prefix+'symbol-batches.json',index);
  const report=`# Connected security datasets — ${ASOF}\n\nAll 2,629 frozen symbols accounted for.\n\n${Object.entries(stages).map(([stage,counts])=>`## ${stage}\n\n${Object.entries(counts).map(([status,count])=>`- ${status}: ${count}`).join('\n')}`).join('\n\n')}\n\nExisting CRSP identity assertions, issuer-link materialization, adjusted-price outputs and recent Alpaca bars are connected. Native source history is not a cross-provider or point-in-time certification. CIK header dates are unknown; dated CIQ link boundaries retain their existing provisional policy. Split/distribution adjustments remain retrospective and separate from raw bars. No missing economic assumptions were filled. No full valuation workflow is certified.\n\n## Remaining repair cohorts\n\n${queue.map(r=>`- ${r.blocker}: ${r.affected_securities}`).join('\n')}\n\nAll financial payload processing ran in Cloudflare; no upstream acquisitions, laptop normalization, or production pointer changes.\n`;
- await env.DATA.put(CONNECTED+'REPORT.md',report,{httpMetadata:{contentType:'text/markdown'}});
+ await env.DATA.put(prefix+'REPORT.md',report+(selection?`\nNative security selection uses the actual source reference session ${selection.source_date}; it does not extend identity validity to ${ASOF}. All historical alternatives remain in each security record.\n`:''),{httpMetadata:{contentType:'text/markdown'}});
  // Completion marker last: readers never switch to a partially connected release.
- await put(env,CONNECTED+'summary.json',summary);
+ await put(env,prefix+'summary.json',summary);
  return summary;
 }
+async function selectInit(env){
+ const p=await plan(env),prices=await json(env.DATA,CONNECTED+'price-index.json');
+ if(prices.input_sha256!==p.input_sha256)fail('SOURCE_SELECTION_PIN_CHANGED');
+ const date=Object.values(prices.securities).map(r=>r.date_max).sort().at(-1);
+ if(['FUTURE','UNKNOWN_OR_INVALID'].includes(sourceFreshness(date).status))fail('INVALID_SOURCE_REFERENCE_DATE');
+ const result={source_date:date,policy:'UNIQUE_NATIVE_TICKER_AND_OBSERVED_SOURCE_DATE_V1',
+  parent_input_sha256:p.input_sha256,ledger_batches:132};
+ result.input_sha256=await sha(JSON.stringify(result));
+ const old=await env.DATA.get(DATED+'plan.json');if(old&&(await old.json()).input_sha256!==result.input_sha256)fail('SOURCE_DATE_PLAN_CHANGED');
+ await put(env,DATED+'plan.json',result);return result;
+}
+async function selectBatch(env,n){
+ const p=await json(env.DATA,DATED+'plan.json');if(!Number.isInteger(n)||n<0||n>=132)fail('INVALID_SELECTION_BATCH');
+ const key=DATED+`batches/${n}.json`,done=await env.DATA.get(key);
+ if(done){if((await done.json()).input_sha256!==p.input_sha256)fail('SELECTION_CHECKPOINT_CHANGED');return {batch:n,reused:true};}
+ const b=await json(env.DATA,CONNECTED+`batches/${n}.json`),briefs=await json(env.DATA,CONNECTED+`briefs/${n}.json`);
+ if(b.input_sha256!==p.parent_input_sha256||b.connection_version!=='native-connected-v2')fail('SELECTION_PARENT_CHANGED');
+ for(const row of b.rows){
+  const c=row.identity.connections,choice=chooseSourceDate(c.candidates,p.source_date);
+  c.prior_resolution_status=c.status;c.status=choice.status;c.reference_date=p.source_date;c.selection_basis=choice.basis;
+  c.selected_security_id=choice.candidates.length===1?choice.candidates[0].security_id:null;
+  if(choice.candidates.some(r=>r.native_identity_conflicts_at_latest.length))c.status='CONFLICTING_NATIVE_IDENTITY_EVIDENCE';
+  const usable=choice.candidates.filter(r=>r.adjusted_history.split_adjusted_rows>0&&r.adjusted_history.distribution_adjusted_rows>0&&!r.adjusted_history.latest_adjusted_price_conflict);
+  row.adjusted_prices.connections.selection_basis=choice.basis;row.adjusted_prices.connections.reference_date=p.source_date;
+  row.adjusted_prices.connections.securities=choice.candidates.map(r=>({permno:r.permno,...r.adjusted_history}));
+  const single=choice.candidates.length===1&&usable.length===1;
+  row.adjusted_prices.connections.status=single?(choice.basis==='EXACT_SOURCE_DATE_AND_NATIVE_TICKER_INTERVAL'?'SOURCE_DATE_ADJUSTED_HISTORY_CONNECTED':'HISTORICAL_ADJUSTED_HISTORY_CONNECTED'):
+   choice.candidates.length?'MULTIPLE_OR_INCOMPLETE_NATIVE_ADJUSTED_HISTORIES':'NO_NATIVE_ADJUSTED_HISTORY';
+  for(const stage of ['adjusted_prices','valuation']){
+   row[stage].blockers=row[stage].blockers.filter(x=>!['ADJUSTMENT_EVIDENCE_MISSING','ADJUSTMENT_ROWS_MISSING_OR_INVALID'].includes(x));
+   if(!single)row[stage].blockers.push('ADJUSTMENT_EVIDENCE_MISSING');
+   else{const h=usable[0].adjusted_history;if(h.rows!==h.split_adjusted_rows||h.rows!==h.distribution_adjusted_rows)row[stage].blockers.push('ADJUSTMENT_ROWS_MISSING_OR_INVALID');}
+  }
+  if(single)row.adjusted_prices.freshness=sourceFreshness(usable[0].adjusted_history.date_max);
+  const brief=briefs.briefs.find(r=>r.symbol===row.symbol);
+  if(brief){brief.native_identity=c;brief.adjusted_history=row.adjusted_prices.connections;brief.valuation=row.valuation;
+   brief.price_freshness=row.adjusted_prices.freshness;brief.price_check.native_status=row.adjusted_prices.connections.status;
+   brief.gaps=uniq(['identity','adjusted_prices','financials','valuation'].flatMap(k=>row[k].blockers||[]));
+   brief.citations.push({kind:'native_source_date_resolution',date:p.source_date,policy:p.policy,input_sha256:p.input_sha256});}
+ }
+ await put(env,DATED+`briefs/${n}.json`,briefs);await put(env,key,{input_sha256:p.input_sha256,connection_version:'source-dated-v1',rows:b.rows});
+ return {batch:n,securities:b.rows.length};
+}
+export async function publishedConnection(env){
+ if(await env.DATA.head(DATED+'summary.json'))return DATED;
+ if(await env.DATA.head(CONNECTED+'summary.json'))return CONNECTED;
+ return null;
+}
 export async function connectionRoute(env,path,n){
+ if(path==='/connect/select-init')return selectInit(env);
+ if(path==='/connect/select-batch')return selectBatch(env,n);
+ if(path==='/connect/select-finish')return finish(env,DATED,'source-dated-v1',await json(env.DATA,DATED+'plan.json'));
  if(path==='/connect/init')return init(env);
  if(path==='/connect/identity')return identityPart(env,n);
  if(path==='/connect/prices')return pricePart(env,n);
