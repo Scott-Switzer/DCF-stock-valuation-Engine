@@ -138,7 +138,7 @@ Artifacts (generated, reproducible):
 
 - `docs/universe-expansion-2026-10-22.csv` — 4,078 in-scope candidates, 11 columns.
 - `docs/universe-expansion-2026-10-22.json` — counts, exclusions, identity limits.
-- `scripts/propose_universe_expansion.py` + `tests/test_universe_expansion.py` (8 tests).
+- `scripts/propose_universe_expansion.py` + `tests/test_universe_expansion.py` (9 tests).
 
 Inputs: the stored Alpaca stock-history catalog (2,629 symbols, release `12bf4774…`) and
 SEC's `company_tickers_exchange.json` (10,428 listed tickers; 5,975 issuers have at least
@@ -147,15 +147,16 @@ one ticker absent from the cohort).
 | Segment | Count |
 | --- | --- |
 | Named high-impact omissions (XOM, GOOGL, GOOG, AMZN, TSLA, META, ORCL, COST, IBM, ADBE, MO, BRK-A, BRK-B, V) | 14 |
-| New exchange-listed common equity, issuer not represented at all | 3,830 listings / 3,665 issuers |
-| Additional listing of an already-covered issuer (share class, second listing) | 234 |
+| New exchange-listed common equity, issuer not represented anywhere in the proposal | 3,828 listings / 3,665 issuers |
+| Additional listing of a represented issuer (234 of covered issuers, 2 more Alphabet listings) | 236 |
 | Excluded: OTC (outside Alpaca coverage) | 2,575 |
 | Excluded: exchange not verified | 166 |
 | Excluded: preferred / derivative / suspect 5-letter instruments | 1,224 |
 
 Identity rules enforced by the generator and the tests: `cik` is zero-padded to ten digits;
 `data_key`-style ticker syntax is the only classification signal; a candidate whose CIK is
-already represented is never labelled a new issuer; duplicate ticker rows with conflicting CIKs are rejected;
+already represented is never labelled a new issuer, and neither is an extra listing of an issuer
+that a named omission already introduces; duplicate ticker rows with conflicting CIKs are rejected;
 tiers sort deterministically. Of the 2,629 stored symbols, 2,364 resolve to a CIK in SEC's
 current file; the other 265 (delisted, renamed, or notation differences) are not asserted
 either way.
@@ -312,7 +313,7 @@ is authorized by this report.
   R3 solves it without touching data).
 - Lowering the ambiguity rule to "pick the larger value" (would silently redefine revenue
   for every retailer).
-- Adding the 3,830 wave-2 symbols as a single cohort without identity ranking.
+- Adding the 3,828 wave-2 symbols as a single cohort without identity ranking.
 
 ## 6. What remains open
 
@@ -339,5 +340,7 @@ source data remains unchanged; the earlier phrase "No dataset change" means no r
 mutation, not an exemption from release validation.
 
 Latest regenerated proposal excludes 166 rows lacking exchange evidence. Authoritative
-counts are in the accompanying JSON: 4078 candidates; {'TIER_1_NAMED': 14, 'TIER_2_WAVE': 3830, 'TIER_3_REVIEW': 234}.
+counts are in the accompanying JSON: 4078 candidates; {'TIER_1_NAMED': 14, 'TIER_2_WAVE': 3828,
+'TIER_3_REVIEW': 236}; 3,677 distinct new issuers. The two extra Alphabet listings (GOOGM, GOOGN)
+are review rows of an issuer the named set already introduces, not wave-2 issuers.
 The earlier 4,244 headline included those unverified listings and is superseded.
