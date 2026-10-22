@@ -28,6 +28,7 @@ bundle.mkdir(exist_ok=True)
 module_names = [
     "worker.py",
     "app.py",
+    "model_bundle.py",
     "edge_limits.py",
     "owner_benchmark_access.py",
     "owner_data_proxy.py",

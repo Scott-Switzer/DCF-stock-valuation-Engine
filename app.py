@@ -1567,7 +1567,14 @@ def _validated_tax_scenario(value):
 @app.post("/api/load/<method>")
 def load_company_api(method):
     started = time.monotonic()
+    snapshot = None
+    expected_bundle = request.headers.get('x-zion-bundle-id')
     try:
+        if expected_bundle:
+            from model_bundle import read_snapshot
+            snapshot = read_snapshot(request.environ.get('workers.env'))
+            if snapshot['bundle_id'] != expected_bundle:
+                raise ValueError('RELEASE_MISMATCH')
         from company_packets import load_cached_method as load_method
 
         raw = request.get_json(silent=True)
@@ -1589,6 +1596,11 @@ def load_company_api(method):
         # Server caches, saved submissions and manual flows keep the field.
         if isinstance(result.get("form"), dict):
             result["form"].pop("base_document", None)
+        if snapshot:
+            from model_bundle import read_snapshot, stamp_model_result
+            if read_snapshot(request.environ.get('workers.env'))['bundle_id'] != snapshot['bundle_id']:
+                raise ValueError('RELEASE_MISMATCH')
+            result = stamp_model_result(result, snapshot)
         # Stage durations describe a fresh build only; a HIT must not replay the original build's timings.
         built_now = summary.get("assembly_cache", {}).get("state") == "MISS"
         serializing = time.monotonic()
@@ -1599,7 +1611,11 @@ def load_company_api(method):
         response.headers["Server-Timing"] = server_timing(started, stages)
         return response
     except ValueError as e:
-        return jsonify(error=str(e)), 400
+        code = str(e)
+        if expected_bundle:
+            return jsonify(error=code, bundle_id=snapshot['bundle_id'] if snapshot else None,
+                           data_as_of=None, source_releases=snapshot['source_releases'] if snapshot else {}), 409 if code == 'RELEASE_MISMATCH' else 422
+        return jsonify(error=code), 400
     except ProviderError as e:
         return jsonify(error=str(e)), 503
 
