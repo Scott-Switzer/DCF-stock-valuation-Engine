@@ -1,0 +1,17 @@
+{
+  "extractor": "cover-v5",
+  "receipt": {
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026003952/tsla-20251231.htm",
+    "sha256": "264b238f6e8a0c1a94d5e66b25ceb79d75d2262fb1883afe55c9236fc72baf41",
+    "bytes": 2391644,
+    "fetched_at": "2026-10-22T22:26:03+00:00"
+  },
+  "mappings": {
+    "TSLA": {
+      "class_title": "Common stock",
+      "letter": "NONE",
+      "excerpt": "Common stock | TSLA | The Nasdaq Global Select Market",
+      "method": "cover_table_columns"
+    }
+  }
+}

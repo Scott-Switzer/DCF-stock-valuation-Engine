@@ -1,0 +1,17 @@
+{
+  "extractor": "cover-v5",
+  "receipt": {
+    "url": "https://www.sec.gov/Archives/edgar/data/1403161/000140316125000089/v-20250930.htm",
+    "sha256": "059fbd4f8e2ae7648b053c0e092e10d04e744f50e6d46403402de26977fba70d",
+    "bytes": 2909576,
+    "fetched_at": "2026-10-22T22:26:04+00:00"
+  },
+  "mappings": {
+    "V": {
+      "class_title": "Class A Common Stock, par value $0.0001 per share",
+      "letter": "A",
+      "excerpt": "Class A Common Stock, par value $0.0001 per share | V | New York Stock Exchange",
+      "method": "cover_table_columns"
+    }
+  }
+}
