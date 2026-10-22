@@ -26,3 +26,22 @@ const calls=[];env.FINANCIAL_API={fetch:async request=>{const url=new URL(reques
 await queryRoute(env,new URL('https://internal/query?query=PEP+revenue'));
 assert.equal(calls.length,3);assert.equal(calls.at(-1).searchParams.get('date_to'),'2026-09-24');
 assert.ok(calls.every(url=>url.searchParams.has('release_id')));
+
+const {companyAliases,revenueGrowth}=await import('../queries.mjs');
+const aliases=companyAliases({AAPL:[{name:'Apple Inc.'}],MSFT:[{name:'Microsoft Corporation'}]});
+assert.equal(requestQuery('Apple revenue growth',symbols,aliases).metric,'revenue_growth');
+assert.equal(requestQuery("What was Microsoft's revenue growth?",symbols,aliases).symbol,'MSFT');
+assert.equal(requestQuery('AAPL revenue growth',symbols).metric,'revenue_growth');
+const annual=[{metric:'revenue',period_start:'2024-01-01',period_end:'2024-12-31',value_decimal:'100',unit:'USD',source_observation_ids:['prior']},{metric:'revenue',period_start:'2025-01-01',period_end:'2025-12-31',value_decimal:'110',unit:'USD',source_observation_ids:['current']}];
+const computed=revenueGrowth(annual);assert.ok(Math.abs(Number(computed.observations[0].value_decimal)-0.1)<1e-12);assert.deepEqual(computed.observations[0].source_observation_ids,['prior','current']);
+assert.equal(revenueGrowth([annual[0],{...annual[1],period_start:'2026-01-01',period_end:'2026-12-31'}]).gaps.length,1);
+assert.equal(revenueGrowth([annual[0],{...annual[1],value_decimal:null}]).observations.length,0);
+assert.throws(()=>revenueGrowth([annual[0],annual[0]]),/AMBIGUOUS/);
+assert.equal(requestQuery('How has Apple revenue growth changed?',{...symbols,HAS:0},aliases).symbol,'AAPL');
+assert.equal(requestQuery('$HAS revenue growth',{...symbols,HAS:0},aliases).symbol,'HAS');
+assert.throws(()=>requestQuery('AAPL Microsoft revenue growth',symbols,aliases),/ONE_TICKER/);
+assert.deepEqual(requestQuery('Apple revenue growth in 2025',symbols,aliases).dates,['2025-01-01','2025-12-31']);
+const growthPacket={observations:annual,source_records:{prior:{},current:{}}},growthRaw=JSON.stringify(growthPacket),growthSha=createHash('sha256').update(growthRaw).digest('hex');
+source.rows[0].valuation.inputs={key:'growth',sha256:growthSha};db.set(FULL+'batches/0.json',JSON.stringify(source));db.set('growth',growthRaw);
+const requestedYear=await queryRoute(env,new URL('https://internal/query?query=PEP+revenue+growth+in+2025'));
+assert.equal(requestedYear.result.observations.length,1);assert.equal(requestedYear.result.observations[0].prior_period_end,'2024-12-31');

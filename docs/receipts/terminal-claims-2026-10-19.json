@@ -1,0 +1,16 @@
+{
+  "schema_version": "zion-equity-claims-v1",
+  "company": "Apple Inc.",
+  "cik": "0000320193",
+  "release_id": "ac8f14de487eee6b78fd6c108e8611af8f326d864a162b00d5308f6c90abfd18",
+  "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+  "as_of": "2026-09-24",
+  "source_storage": "PINNED_SEC_ARCHIVE_MEMBER",
+  "member_sha256": "73a86c6aedc31f77cac2ea4df5f80f0b3bd7e6eb58bb4e01444fbedf3afb9c43",
+  "reconciliation": "MEMBER_SHA256_AGREES_WITH_ENGINE_PINNED_MEMBER",
+  "interactive_archive_bytes": 272023,
+  "receipt_bytes": 23137,
+  "receipt_sha256": "5b11b3eec0a87ca293301b8bfca2a2841852355dada8a9a9304467a4df44c5c2",
+  "receipt": "/tmp/zion-claims-aapl-2026-10-19.json",
+  "aggregate_claims_status": "AVAILABLE"
+}

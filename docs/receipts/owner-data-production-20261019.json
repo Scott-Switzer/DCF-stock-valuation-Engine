@@ -1,0 +1,319 @@
+{
+  "status": "PASS",
+  "production_origin": "https://dcf-valuation-engine.scswitzer.workers.dev",
+  "production_ui": "https://dcf-valuation-engine.scswitzer.workers.dev/data",
+  "deployed_commit": "a6759ac6f939af5ea1f506b80766fdfb42c10d00",
+  "production_version": "e74fd028-6976-4dbd-b1ed-e8d9da46ac53",
+  "previous_pre_code_rollout_version": "ffeaccfb-22af-4168-9a1d-6c102c22b3f6",
+  "source_worker_version": "669d2c81-9bff-41cf-82c4-141eb2207605",
+  "source_worker_name": "zion-financial-serving-v2-thin-staging",
+  "source_role": "Existing shared source behind actual production app; no separate source estate created",
+  "pinned_releases": {
+    "stock": "12bf477467e295cdad65a3a50fea80b93c084334d4f49e241eb6d340aaff76ec",
+    "historical_series": "024d7a0ec03fad494eaf5698599b9c8185068bc6dd3bf3b78a3a4bd7d727d62c",
+    "coverage": "a573c7ea3b4951c108e2675541a818be3e72a4e5655cfe81947950155989c369"
+  },
+  "data": {
+    "indexed_stock_symbols": 2629,
+    "stored_alpaca_normalized_rows": 856633,
+    "unique_original_stock_source_pages": 93,
+    "source_rows_independently_reconciled": 856633,
+    "registered_dataset_releases": 805,
+    "private_stores": 4,
+    "wrds_census_prefixes": 1733,
+    "production_schema_verified_namespaces": 1681,
+    "prefixes_without_stored_parquet": 52,
+    "unregistered_wrds_prefixes": 930,
+    "macro_series": 147,
+    "macro_nonnull_cells": 412116,
+    "macro_null_cells": 77969,
+    "macro_nulls_before_first_nonnull": 31934,
+    "macro_nulls_after_last_nonnull": 43164,
+    "macro_nulls_inside_observed_windows": 2871
+  },
+  "tests": {
+    "python_passed": 1103,
+    "python_subtests_passed": 10,
+    "preexisting_pytest_warning_count": 1,
+    "javascript_behavior_suites_passed": 2,
+    "ruff": "PASS",
+    "wrangler_dryrun": "PASS"
+  },
+  "live_checks": {
+    "production-live-final.json": {
+      "status": "PASS",
+      "origin": "https://dcf-valuation-engine.scswitzer.workers.dev",
+      "role": "PRODUCTION_DCF",
+      "checks": {
+        "owner_required": true,
+        "stock_catalog": true,
+        "stock_catalog_page_500": true,
+        "stock_catalog_page_1000": true,
+        "stock_catalog_page_1500": true,
+        "stock_catalog_page_2000": true,
+        "stock_catalog_page_2500": true,
+        "all_stored_symbols": true,
+        "all_stored_row_declarations": true,
+        "stock_AAPL": true,
+        "stock_AAPL_source_qualification": true,
+        "stock_AAPL_lineage": true,
+        "stock_MSFT": true,
+        "stock_MSFT_source_qualification": true,
+        "stock_MSFT_lineage": true,
+        "stock_ZUMZ": true,
+        "stock_ZUMZ_source_qualification": true,
+        "stock_ZUMZ_lineage": true,
+        "no_false_price_pit": true,
+        "wrong_stock_release_refused": true,
+        "historical_catalog": true,
+        "missingness_windows_exposed": true,
+        "existing_dataset_catalog": true,
+        "all_four_private_stores": true,
+        "private_store_financial": true,
+        "private_store_research": true,
+        "private_store_filings": true,
+        "private_store_lakehouse": true
+      },
+      "stock_release_id": "12bf477467e295cdad65a3a50fea80b93c084334d4f49e241eb6d340aaff76ec",
+      "stored_symbols": 2629,
+      "stored_normalized_rows": 856633,
+      "stock_cases": [
+        {
+          "symbol": "AAPL",
+          "returned_rows": 2,
+          "source_pages": 1,
+          "source_read_bytes": 488,
+          "value_payload_sha256": "5a85f08ea860247ff12c0327744d0267a5fc9de8b6b209811f59f3670fbba535"
+        },
+        {
+          "symbol": "MSFT",
+          "returned_rows": 2,
+          "source_pages": 1,
+          "source_read_bytes": 488,
+          "value_payload_sha256": "a5cc0b53ead8834e8e8fa148783c15e0fba3f2890f082caacec9dd97d9ba46bd"
+        },
+        {
+          "symbol": "ZUMZ",
+          "returned_rows": 3,
+          "source_pages": 2,
+          "source_read_bytes": 1085418,
+          "value_payload_sha256": "62ea2cd2f2d9354c2df63264ff310d56a1e078f810335ffea15b99cf3cfcbf1c"
+        }
+      ],
+      "registered_dataset_releases": 805,
+      "private_stores": 4,
+      "historical_series": 147,
+      "metadata": {
+        "historical_coverage_summary": {
+          "after_last_value": 43164,
+          "all_missing_cells": 0,
+          "before_first_value": 31934,
+          "interior_missing": 2871,
+          "missing_cells": 77969,
+          "populated_cells": 412116,
+          "source_error_cells": 4,
+          "total_cells": 490085
+        }
+      },
+      "private_values_printed": 0,
+      "provider_requests": 0,
+      "production_pointer_mutations": 0
+    },
+    "production-browser-grant-final.json": {
+      "status": "PASS",
+      "origin": "https://dcf-valuation-engine.scswitzer.workers.dev",
+      "checks": {
+        "page": true,
+        "starts_disconnected": true,
+        "symbol_catalog_rows": 100,
+        "password_cleared": true,
+        "anonymous_benchmark_grant_refused": true,
+        "stock_ohlcv_rows": 2,
+        "catalog_rows": 50,
+        "all_wrds_shortcut": true,
+        "native_schema_fields": 18,
+        "native_preview_rows": 10,
+        "no_storage": true,
+        "disconnected": true,
+        "records_cleared": true,
+        "browser_grant_revoked": true,
+        "javascript_errors": 0
+      },
+      "private_values_printed": 0,
+      "screenshots_created": 0,
+      "provider_requests": 0
+    },
+    "production-valuation-final.json": {
+      "status": "PASS",
+      "origin": "https://dcf-valuation-engine.scswitzer.workers.dev",
+      "deployed_commit": "a6759ac6f939af5ea1f506b80766fdfb42c10d00",
+      "checks": {
+        "/health": true,
+        "/ready": true,
+        "/api/providers": true,
+        "/api/equity-claims/status": true,
+        "public_manual_calculation": true,
+        "anonymous_private_benchmark_refused": true,
+        "production_native_financials": true,
+        "production_owner_native_enterprise": true,
+        "independent_decimal_reconciliation_under_one_cent": true,
+        "missing_equity_bridge_not_zero_filled": true
+      },
+      "financial_history_rows": 3,
+      "scenario": "Explicit 3 percent growth, 2 percent terminal growth, 15 percent terminal ROIC; source-backed industry benchmarks",
+      "source_financial_release": "b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb",
+      "independent_absolute_error_decimal": "0.001116342811231455327835264",
+      "private_source_values_printed": 0,
+      "production_research_records_written": 0,
+      "valuation_result_sha256": "f34ce0f53b74c0abbd8327409e1f9360214bcbc0f4106c050a1037afe8eee2c4"
+    },
+    "production-native-stock-rows.json": {
+      "status": "PASS",
+      "origin": "https://dcf-valuation-engine.scswitzer.workers.dev",
+      "cases": [
+        {
+          "dataset": "crsp__dsf",
+          "schema_http": 200,
+          "rows_http": 200,
+          "projected_fields": 4,
+          "returned_rows": 10,
+          "source_etag_matches": true,
+          "source_quality": "SOURCE_UNVALIDATED",
+          "value_payload_sha256": "bdede084806b1edb28c73cd3a1950a351b1af0645ffa398f905f896095f4bdc0",
+          "error_code": null
+        },
+        {
+          "dataset": "crsp__stkdlysecurityprimarydata",
+          "schema_http": 200,
+          "rows_http": 200,
+          "projected_fields": 5,
+          "returned_rows": 10,
+          "source_etag_matches": true,
+          "source_quality": "SOURCE_UNVALIDATED",
+          "value_payload_sha256": "c2f6512098d09bd10a2af59628d7a666bb2a2b175d49911f8aadfbbf1b94ab6f",
+          "error_code": null
+        },
+        {
+          "dataset": "crsp__stkdlycumulativeadjfactor",
+          "schema_http": 200,
+          "rows_http": 200,
+          "projected_fields": 2,
+          "returned_rows": 10,
+          "source_etag_matches": true,
+          "source_quality": "SOURCE_UNVALIDATED",
+          "value_payload_sha256": "431ad3d21d4fd7c30e1fbf629d2b4c38e60037673967fb5e5dd36ec19365822b",
+          "error_code": null
+        },
+        {
+          "dataset": "crsp__dseall",
+          "schema_http": 200,
+          "rows_http": 200,
+          "projected_fields": 4,
+          "returned_rows": 10,
+          "source_etag_matches": true,
+          "source_quality": "SOURCE_UNVALIDATED",
+          "value_payload_sha256": "8d959110b6b8fb7f2b2820607bbbe66fbb1053535929c98e2be57681940e4791",
+          "error_code": null
+        }
+      ],
+      "private_values_printed": 0,
+      "provider_requests": 0,
+      "all_partitions_verified": false
+    },
+    "terminal-production.json": {
+      "status": "PASS",
+      "origin": "https://dcf-valuation-engine.scswitzer.workers.dev",
+      "checks": {
+        "terminal-stock-private.json": {
+          "valid_json": true,
+          "bytes": 3795,
+          "sha256": "b1abe323cfcb7363dc4b9f90bb82964aca1aa1bb8de6843b0654aa78c3b24547",
+          "top_level_keys": [
+            "schema_version",
+            "release_id",
+            "rights",
+            "symbol_count",
+            "coverage",
+            "symbol",
+            "prices",
+            "gaps",
+            "source_read_bytes",
+            "source_lineage",
+            "source_pages",
+            "total_matches",
+            "next_cursor"
+          ],
+          "private_values_printed": 0
+        },
+        "terminal-catalog-private.json": {
+          "valid_json": true,
+          "bytes": 2714,
+          "sha256": "c191a1ec5833b21076504cddf81ea0c993e3d265a58c1d5fd540add79dc76e5b",
+          "top_level_keys": [
+            "acquisition_enabled",
+            "cross_domain_coverage",
+            "inventory",
+            "object_references",
+            "quality",
+            "registered_releases",
+            "release_id",
+            "schema_validation",
+            "schema_version",
+            "scope",
+            "status",
+            "unique_datasets",
+            "matching_releases",
+            "offset",
+            "entries",
+            "next_offset"
+          ],
+          "private_values_printed": 0
+        }
+      }
+    }
+  },
+  "all_namespace_audit": {
+    "all_current_source_etags_and_sizes_match_census": true,
+    "audit_results_sha256": "779f4d68f09ce492abf64f82d472368f0122c8d53c469cb380c874bbdeea2e15",
+    "completed_prefixes": 1733,
+    "ending_production_version": "098a5d0f-7ce8-4bea-be77-927ee679679a",
+    "exact_same_source_object_plan": true,
+    "initial_production_version": "f6b8d060-2b79-4354-81be-b41817431e97",
+    "initial_transport_error_counts": {
+      "RemoteDisconnected": 3
+    },
+    "metadata_matches_shared_source_audit": true,
+    "native_schema_verified_prefixes": 1681,
+    "no_private_rows_saved": true,
+    "no_stored_parquet_prefixes": 52,
+    "origin": "https://dcf-valuation-engine.scswitzer.workers.dev",
+    "origin_role": "production-dcf-origin-owner-proxy",
+    "production_code_commit": "cd571e927140c84d798560426a67d9bbff8d65f9",
+    "production_commit_pin_verified_before_and_after": true,
+    "provider_requests": 0,
+    "recovered_transport_failures": 3,
+    "remaining_prefixes": 0,
+    "row_queries": 0,
+    "status": "PASS"
+  },
+  "audit_to_final_proxy_sha256": "48e0373ff30c5a5fd4e9f2279e545ae51d9671f7078ce55d69bf215432bfdea5",
+  "proxy_unchanged_since_full_namespace_audit": true,
+  "boundaries": {
+    "production_CURRENT_mutations": 0,
+    "production_research_records_written": 0,
+    "new_cloud_resources": 0,
+    "new_subscriptions": 0,
+    "provider_requests": 0,
+    "private_values_printed": 0,
+    "all_partitions_or_rows_certified": false,
+    "all_native_data_normalized_for_models": false,
+    "slack_stock_delivery_changed": false
+  },
+  "remaining": [
+    "Historical stock security identity and corporate-action normalization",
+    "Derivatives contract normalization and semantic adapters for source-native collections",
+    "Vintage/availability evidence for unsupported historical as-of claims",
+    "Missing source manifests/metadata and 52 non-Parquet prefixes remain explicit; no invented records",
+    "Maximum public URL size still limits very wide cursor/projection requests; route-specific parser now matches native source budgets"
+  ]
+}

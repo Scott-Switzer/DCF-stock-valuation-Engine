@@ -27,6 +27,42 @@ def number(value, label, minimum=None, maximum=None):
     return result
 
 
+def discount_fcff(rows, wacc, g, *, terminal_mode='template', terminal_roic=None):
+    """Shared five-period operating valuation; equity claims are a separate step."""
+    wacc = number(wacc, 'WACC', .001, .5)
+    g = number(g, 'Terminal growth', -.1, .15)
+    if wacc <= g:
+        raise ValueError('Terminal growth must be lower than WACC.')
+    if len(rows) != 5 or [r.get('Year') for r in rows] != [1, 2, 3, 4, 5]:
+        raise ValueError('Exactly five ordered projection periods are required.')
+    for row in rows:
+        number(row.get('UFCF'), 'UFCF')
+    if terminal_mode == 'normalized':
+        roic = number(terminal_roic, 'Terminal ROIC', .001, 1)
+        if not 0 <= g <= roic:
+            raise ValueError('Terminal growth must not exceed terminal ROIC.')
+        terminal_flow = number(rows[-1].get('NOPAT'), 'Terminal NOPAT') * (1 + g) * (1 - g / roic)
+    elif terminal_mode == 'template':
+        terminal_flow = rows[-1]['UFCF'] * (1 + g)
+    else:
+        raise ValueError('Unknown terminal mode.')
+    if terminal_flow <= 0:
+        raise ValueError('Terminal free cash flow must be positive. Revise normalized operations or use a different valuation model.')
+    terminal_value = terminal_flow / (wacc - g)
+    stage1 = sum(r['UFCF'] / (1 + wacc) ** r['Year'] for r in rows)
+    terminal_pv = terminal_value / (1 + wacc) ** 5
+    ev = stage1 + terminal_pv
+    ev12 = sum(r['UFCF'] / (1 + wacc) ** (r['Year'] - 1) for r in rows[1:]) + terminal_value / (1 + wacc) ** 4
+    result = dict(wacc=wacc, terminal_growth=g, terminal_fcff=terminal_flow,
+                  terminal_value=terminal_value, stage1_pv=stage1, terminal_pv=terminal_pv,
+                  enterprise_value=ev, enterprise_value_12m=ev12,
+                  terminal_value_share=terminal_pv / ev if ev > 0 else None)
+    for key, value in result.items():
+        if value is not None:
+            number(value, key)
+    return result
+
+
 @dataclass
 class DCFAssumptions:
     revenue_growth_rates: List[float]
@@ -364,24 +400,9 @@ class DCFModel:
             self.forecast_cash_flows()
         a, d = self.assumptions, self.data
         rows = self.projections
-        if a.terminal_mode == "normalized":
-            if g < 0 or g > a.terminal_roic:
-                raise ValueError("Terminal growth must not exceed terminal ROIC.")
-            terminal_nopat = rows[-1]["NOPAT"] * (1 + g)
-            terminal_flow = terminal_nopat * (1 - g / a.terminal_roic)
-        else:
-            terminal_flow = rows[-1]["UFCF"] * (1 + g)
-        if terminal_flow <= 0:
-            raise ValueError(
-                "Terminal free cash flow must be positive. Revise normalized operations or use a different valuation model."
-            )
-        terminal_value = terminal_flow / (wacc - g)
-        stage1 = sum(r["UFCF"] / (1 + wacc) ** r["Year"] for r in rows)
-        terminal_pv = terminal_value / (1 + wacc) ** 5
-        ev = stage1 + terminal_pv
-        ev12 = (
-            sum(r["UFCF"] / (1 + wacc) ** (r["Year"] - 1) for r in rows[1:])
-            + terminal_value / (1 + wacc) ** 4
+        operating = discount_fcff(rows, wacc, g, terminal_mode=a.terminal_mode, terminal_roic=a.terminal_roic)
+        terminal_flow, terminal_value, stage1, terminal_pv, ev, ev12 = (
+            operating[k] for k in ('terminal_fcff','terminal_value','stage1_pv','terminal_pv','enterprise_value','enterprise_value_12m')
         )
         debt = d.total_debt[-1]
         cash = d.cash_and_equivalents[-1]

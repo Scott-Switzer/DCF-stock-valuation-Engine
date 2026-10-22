@@ -1,0 +1,67 @@
+{
+  "schema_version": "sec-share-recovery-summary-v1",
+  "as_of": "2026-09-24",
+  "extraction_version": "sec-filing-share-candidates-v1",
+  "source_file_sha256": "a7382294438340ca99622631de9489b89fa4ac4a7dc771937c22ec52f9c8e975",
+  "issuers": [
+    {
+      "cik": "0000320193",
+      "status": "CANDIDATE_REQUIRES_REVIEW",
+      "source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000020/aapl-20260627_htm.xml",
+        "accession": "0000320193-26-000020",
+        "filed": "2026-07-31",
+        "sha256": "28f986bb243c8fdd445560d381df4b57912ca290b03b8451ecd518e63cdb5d2b",
+        "availability_policy": "DATE_ONLY_END_OF_DAY_UTC",
+        "as_of": "2026-09-24",
+        "submissions_url": "https://data.sec.gov/submissions/CIK0000320193.json",
+        "submissions_sha256": "aad00f6aa75ba1405e0a34c788bdba9042281b2724fe1db3ff26f434b9a92e44",
+        "filing_index_sha256": "3e5dde4c0403da2358df715608c679d66223c8d716a75fe1136d9257ba812fdc",
+        "retrieved_utc": "2026-10-19T15:44:22.510775+00:00"
+      },
+      "candidates": 3,
+      "class_scoped_candidates": 0,
+      "permitted_for_valuation": false
+    },
+    {
+      "cik": "0000789019",
+      "status": "CANDIDATE_REQUIRES_REVIEW",
+      "source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630_htm.xml",
+        "accession": "0001193125-26-323660",
+        "filed": "2026-07-29",
+        "sha256": "56e56d82ee2d82cb75d37b85df51d4807ffc1e1a3cc4e02ec87513b7574aa886",
+        "availability_policy": "DATE_ONLY_END_OF_DAY_UTC",
+        "as_of": "2026-09-24",
+        "submissions_url": "https://data.sec.gov/submissions/CIK0000789019.json",
+        "submissions_sha256": "a5848ba348a3d3ae08c3c40bf4599379014be077911e6550ed3a8182a34a6a7b",
+        "filing_index_sha256": "bf17f342b5ffc274ba7a8ea55dd0837915546613ccb44b04705c73fd31966ae0",
+        "retrieved_utc": "2026-10-19T15:44:23.437965+00:00"
+      },
+      "candidates": 3,
+      "class_scoped_candidates": 0,
+      "permitted_for_valuation": false
+    },
+    {
+      "cik": "0001652044",
+      "status": "CANDIDATE_REQUIRES_REVIEW",
+      "source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000071/goog-20260630_htm.xml",
+        "accession": "0001652044-26-000071",
+        "filed": "2026-07-23",
+        "sha256": "1376c154c799dd52e1c2be723bfaf269fc204191d2205eaab7a54122a23b8f4b",
+        "availability_policy": "DATE_ONLY_END_OF_DAY_UTC",
+        "as_of": "2026-09-24",
+        "submissions_url": "https://data.sec.gov/submissions/CIK0001652044.json",
+        "submissions_sha256": "648cea84d824309b518807fd7e7fdb72d6855e12e8afa221d2caa047d5c9f2ca",
+        "filing_index_sha256": "7bc604df4b8748ab1de9dbe1b986fb039c03fe90f6a4c8ee00061688c1ed0c38",
+        "retrieved_utc": "2026-10-19T15:44:24.131300+00:00"
+      },
+      "candidates": 11,
+      "class_scoped_candidates": 9,
+      "permitted_for_valuation": false
+    }
+  ],
+  "valuation_overrides": 0,
+  "publication_pointer_writes": 0
+}

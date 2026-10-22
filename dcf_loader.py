@@ -13,6 +13,9 @@ from dcf_code import FinancialData, number
 from storage import Store
 
 SCHEMA = "dcf-financials-v1"
+# Origin used only to shape the request the internal service binding carries; nothing
+# resolves it and no request leaves the account.
+ZION_BINDING_ORIGIN = "https://zion.internal"
 HISTORY_FIELDS = (
     "revenue",
     "ebit",
@@ -55,10 +58,15 @@ def iso_date(value, label):
         raise ValueError(f"{label} requires a valid ISO date (YYYY-MM-DD).") from None
 
 
-def eligibility(company):
+def eligibility(company, *, allow_financial=False):
+    """FCFF operating-company gate. Equity-only consumers (bank excess returns,
+    residual income) pass ``allow_financial=True``: they value financial firms
+    by design and enforce their own applicability rules."""
     text = " ".join(
         str(company.get(k, "")) for k in ["sector", "industry", "security_type"]
     ).lower()
+    if allow_financial:
+        return
     if company.get("eligible") is not True or any(
         x in text
         for x in [
@@ -93,12 +101,15 @@ def typed_number(value, label):
     return number(value, label)
 
 
-def parse_document(doc, *, minority_may_be_negative=False):
+def parse_document(doc, *, minority_may_be_negative=False, allow_financial=False):
     """Validate a financial document.
 
     The default is strict for FCFF DCF and EV-based methods. Equity-only callers
     (P/E, P/B) pass ``minority_may_be_negative=True`` to keep a reported negative
-    noncontrolling interest unchanged.
+    noncontrolling interest unchanged. Consumers that value financial firms by
+    design (bank excess returns, residual income projections) additionally pass
+    ``allow_financial=True`` to skip the FCFF operating-company gate while keeping
+    every structural, currency, units and provenance check.
     """
     if not isinstance(doc, dict) or doc.get("schema_version") != SCHEMA:
         raise ValueError(f"Financial document must use {SCHEMA}.")
@@ -107,7 +118,7 @@ def parse_document(doc, *, minority_may_be_negative=False):
             raise ValueError(f"Missing {section} section.")
     company, market, bridge, source = (doc[k] for k in ["company", "market", "bridge", "source"])
     symbol = ticker_symbol(company.get("ticker"))
-    eligibility(company)
+    eligibility(company, allow_financial=allow_financial)
     asof = iso_date(doc.get("valuation_date"), "Valuation date")
     if asof > datetime.now(timezone.utc).date():
         raise ValueError("Valuation date cannot be in the future.")
@@ -783,7 +794,27 @@ def configured_url(name):
     return base
 
 
-def load_document(source, ticker, asof):
+def zion_history_endpoint():
+    """Transport and origin for the attested native-history leg.
+
+    A runtime that carries the internal Zion service binding reaches the private history API
+    without leaving the account, so the binding is preferred and no public HTTPS origin is
+    required for it. The credential is unchanged either way: the private route accepts only
+    the private bearer, and that same value signs the evidence the enterprise valuation
+    verifies. A deployment with no binding still needs an HTTPS base URL.
+    """
+    try:
+        from zion_equity_claims_service import ServiceBindingHTTP, service_binding
+
+        binding = service_binding()
+    except ImportError:
+        binding = None
+    if binding is not None:
+        return ServiceBindingHTTP(binding), ZION_BINDING_ORIGIN
+    return JsonHTTP(), configured_url("ZION_HISTORY_BASE_URL")
+
+
+def load_document(source, ticker, asof, *, cik=None, expected_release_id=None):
     iso_date(asof, "Valuation date")
     if source == "sample":
         return demo_document()
@@ -807,6 +838,13 @@ def load_document(source, ticker, asof):
         return load_yahoo(ticker, asof, http)
     if source == "sec":
         return load_sec(ticker, asof, http)
+    if source == "zion_history":
+        from zion_history_provider import load_history
+
+        transport, base = zion_history_endpoint()
+        return load_history(ticker, asof, transport, cik=cik, base=base,
+                            token=provider_setting('ZION_HISTORY_TOKEN'),
+                            expected_release_id=expected_release_id)
     if source == "zion":
         base = configured_url("ZION_API_BASE_URL")
         token = provider_setting("ZION_API_TOKEN")

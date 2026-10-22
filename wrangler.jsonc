@@ -14,9 +14,17 @@
     {"name": "WRITE_LIMIT", "namespace_id": "1946100603", "simple": {"limit": 10, "period": 60}},
     {"name": "MCP_LIMIT", "namespace_id": "1946100604", "simple": {"limit": 60, "period": 60}}
   ],
+  // Production environment. ZION_FINANCIAL_QUERY is deliberately absent: every Zion
+  // financial-data Worker in this account is a staging deployment, so binding it here
+  // would make a production release depend on a staging data plane. The equity-claims
+  // route returns 503 without a binding. Add the binding only when a production Zion
+  // thin Worker exists -- see the staging block below for the arming that is intended.
   "services": [
-    {"binding": "ZION_VALUATIONS", "service": "zion-valuation"},
-    {"binding": "ZION_DATASET_CATALOG", "service": "zion-datasets", "entrypoint": "Catalog"}
+    {"binding":"FINANCIAL_DATA","service":"zion-security-funnel-staging"},
+    {"binding":"ZION_FINANCIAL_QUERY","service":"zion-financial-serving-v2-thin-staging"},
+    {"binding":"ZION_BENCHMARK_QUERY","service":"zion-ddfi-benchmark-staging"},
+    {"binding":"ZION_VALUATIONS","service":"zion-valuation"},
+    {"binding":"ZION_DATASET_CATALOG","service":"zion-datasets","entrypoint":"Catalog"}
   ],
   "r2_buckets": [{"binding": "PPE_DATA", "bucket_name": "financial-system-datasets"}],
   "d1_databases": [
@@ -32,7 +40,10 @@
     "head_sampling_rate": 0.1
   },
   "vars": {
-    "EDGAR_IDENTITY": "Scott Switzer scswitzer@chapman.edu"
+    "EDGAR_IDENTITY":"Scott Switzer scswitzer@chapman.edu",
+    "DEPLOY_ENVIRONMENT":"production",
+    "ZION_EQUITY_CLAIMS_CALLER":"dcf-valuation-engine",
+    "ZION_BENCHMARK_BASE_URL":"https://zion-ddfi-benchmark-staging.scswitzer.workers.dev"
   },
   "build": {
     "command": "python3 scripts/embed_assets.py"
@@ -52,10 +63,15 @@
         {"name": "WRITE_LIMIT", "namespace_id": "1946200603", "simple": {"limit": 10, "period": 60}},
         {"name": "MCP_LIMIT", "namespace_id": "1946200604", "simple": {"limit": 60, "period": 60}}
       ],
+      // The only scoped internal dependency on the Zion equity-claims route. It reaches
+      // the staging thin Worker over a Cloudflare service binding, so no public hostname,
+      // no bearer credential and no egress leave this account.
       "services": [
-        {"binding": "FINANCIAL_DATA", "service": "zion-security-funnel-staging"},
-        {"binding": "ZION_VALUATIONS", "service": "zion-valuation"},
-        {"binding": "ZION_DATASET_CATALOG", "service": "zion-datasets", "entrypoint": "Catalog"}
+        {"binding":"FINANCIAL_DATA","service":"zion-security-funnel-staging"},
+        {"binding":"ZION_FINANCIAL_QUERY","service":"zion-financial-serving-v2-thin-staging"},
+        {"binding":"ZION_BENCHMARK_QUERY","service":"zion-ddfi-benchmark-staging"},
+        {"binding":"ZION_VALUATIONS","service":"zion-valuation"},
+        {"binding":"ZION_DATASET_CATALOG","service":"zion-datasets","entrypoint":"Catalog"}
       ],
       "r2_buckets": [{"binding": "PPE_DATA", "bucket_name": "financial-system-datasets"}],
       "d1_databases": [
@@ -80,7 +96,13 @@
       "vars": {
         "EDGAR_IDENTITY": "Scott Switzer scswitzer@chapman.edu",
         "DEPLOY_ENVIRONMENT": "staging",
-        "PPE_POINTER_OVERRIDE": "control/valuation/CANDIDATE-staging.json"
+        "PPE_POINTER_OVERRIDE": "control/valuation/CANDIDATE-staging.json",
+        "ZION_EQUITY_CLAIMS_CALLER": "dcf-valuation-engine",
+        // Benchmark assumptions are a separate Zion dependency from the equity-claims route:
+        // they resolve over HTTPS against the staging DDFI benchmark Worker, which authenticates
+        // with the same staging private bearer the history leg uses. The credential itself is a
+        // Worker secret (ZION_BENCHMARK_TOKEN); only the origin is configuration.
+        "ZION_BENCHMARK_BASE_URL": "https://zion-ddfi-benchmark-staging.scswitzer.workers.dev"
       },
       "build": {
         "command": "python3 scripts/embed_assets.py"
