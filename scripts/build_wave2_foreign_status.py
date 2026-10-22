@@ -232,7 +232,7 @@ def render_markdown(document: dict) -> str:
         "in the window. The sample starts with " + ", ".join(summary["no_annual_examples"])
         + "; these are mostly recently listed SPACs and new registrants that should re-enter "
         "the wave after their first annual report.",
-        f"- ADR status is still `UNKNOWN_NOT_IN_CONTRACTS` for every row; this classification "
+        "- ADR status is still `UNKNOWN_NOT_IN_CONTRACTS` for every row; this classification "
         "does not fill that column and must not be used as if it did.",
         "",
         "## Method and limits",
