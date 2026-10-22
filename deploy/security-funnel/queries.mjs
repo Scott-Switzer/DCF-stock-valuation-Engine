@@ -3,18 +3,25 @@ import {FULL,historyRoute} from './history.mjs';
 import {ENRICH} from './enrichment.mjs';
 const fail=code=>{throw Error(code)};
 async function read(env,key,hash){const o=await env.DATA.get(key);if(!o||o.size>16*1048576)fail('DATA_UNAVAILABLE');const raw=await o.text();if(hash){const actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw))),x=>x.toString(16).padStart(2,'0')).join('');if(actual!==hash)fail('DATA_INTEGRITY');}return JSON.parse(raw);}
-export function requestQuery(query,symbols){
+export function requestQuery(query,symbols,aliases={}){
  if(typeof query!=='string'||query.length>2000)fail('INVALID_QUESTION');
  const words=query.toUpperCase().replace(/['’]S\b/g,'').match(/[A-Z0-9][A-Z0-9.-]*/g)||[];
- const stop=new Set(['A','I','ON','IN','TO','FROM','OF','AND','FOR','IT','AS','AT','BE','BY','DO','OR','SO','ALL']);
+ const stop=new Set(['A','I','ON','IN','TO','FROM','OF','AND','FOR','IT','AS','AT','BE','BY','DO','OR','SO','ALL','HAS','HAVE','HAD','HOW','WHAT','WAS','IS','ARE','THE','DOES','DID','CAN','WILL','SHOW','ME','PLEASE','ITS','THAT','THIS','AN','WITH','ABOUT','OVER','BETWEEN','TELL','RECENT','LATEST','PAST','LAST','YEAR','YEARS','ANNUAL','COMPANY','STOCK']);
  const explicit=query.match(/\$([A-Za-z][A-Za-z0-9.-]*)/g)?.map(s=>s.slice(1).toUpperCase())||[];
  const command=/^(?:price|prices|growth|return|revenue|sales|financials|margin)\s+([A-Za-z][A-Za-z0-9.-]*)\b/i.exec(query)?.[1]?.toUpperCase();
  const matches=[...new Set([...explicit,...(command&&Object.hasOwn(symbols,command)?[command]:[]),...words.filter(w=>!stop.has(w)&&Object.hasOwn(symbols,w))])];
+ {
+  const normalized=companyWords(query),found=[];
+  for(const [name,candidates]of Object.entries(aliases))if(name.length>=3&&(' '+normalized+' ').includes(' '+name+' '))found.push({name,candidates});
+  if(found.length){const longest=Math.max(...found.map(f=>f.name.length));matches.splice(0,matches.length,...new Set([...matches,...found.filter(f=>f.name.length===longest).flatMap(f=>f.candidates)]));}
+ }
  if(matches.length!==1)fail(matches.length?'ASK_FOR_ONE_TICKER':'INCLUDE_A_TICKER');
  const dates=query.match(/\d{4}-\d{2}-\d{2}/g)||[];
  for(const d of dates)if(!Number.isFinite(Date.parse(d))||new Date(d).toISOString().slice(0,10)!==d)fail('INVALID_DATE');
  const text=query.toLowerCase(),symbol=matches[0];
- if(/\b(revenue|sales|margin|financials|financial history)\b/.test(text))return {action:'financials',symbol,dates,metric:/margin/.test(text)?'operating_margin':'revenue'};
+ if(!dates.length&&/\b(revenue|sales|margin|financials)\b/.test(text)){const years=query.match(/\b(?:19|20)\d{2}\b/g)||[];if(years.length===1)dates.push(years[0]+'-01-01',years[0]+'-12-31');else if(years.length===2)dates.push(years[0]+'-01-01',years[1]+'-12-31');}
+ if(dates.length>2||(dates.length===2&&dates[0]>dates[1]))fail('INVALID_DATE_RANGE');
+ if(/\b(revenue|sales|margin|financials|financial history)\b/.test(text))return {action:'financials',symbol,dates,metric:/margin/.test(text)?'operating_margin':/\b(growth|grew|change)\b/.test(text)?'revenue_growth':'revenue'};
  if(/\b(price|prices|return|growth|grew)\b/.test(text)){
   const growth=/\b(growth|return|grew|change|between|from)\b/.test(text)&&dates.length===2;
   if(dates.length!==(growth?2:1))fail('PRICE_NEEDS_ONE_DATE_OR_TWO_FOR_GROWTH');
@@ -22,6 +29,26 @@ export function requestQuery(query,symbols){
   return {action:growth?'growth':'price',symbol,dates,basis:/unadjusted|raw/.test(text)?'raw_observed_price':growth?'split_adjusted_price':'raw_observed_price'};
  }
  fail('ASK_FOR_PRICE_GROWTH_OR_FINANCIALS');
+}
+export function companyWords(value){return value.toLowerCase().replace(/['’]s\b/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\b(incorporated|inc|corporation|corp|limited|ltd|plc)\b/g,' ').replace(/\s+/g,' ').trim();}
+export function companyAliases(directory){
+ const names={};for(const [symbol,rows]of Object.entries(directory||{}))for(const row of rows){if(!row.name)continue;const name=companyWords(row.name);(names[name]??=[]).push(symbol);}
+ return names;
+}
+function reportedNumber(value){return typeof value==='string'&&/^-?\d+(?:\.\d+)?$/.test(value)?Number(value):NaN;}
+export function revenueGrowth(rows){
+ const ordered=[...rows].sort((a,b)=>a.period_end.localeCompare(b.period_end)),result=[],gaps=[];
+ if(new Set(ordered.map(r=>r.period_end)).size!==ordered.length)fail('AMBIGUOUS_ANNUAL_REVENUE_PERIODS');
+ for(let i=1;i<ordered.length;i++){
+  const before=ordered[i-1],after=ordered[i],a=reportedNumber(before.value_decimal),b=reportedNumber(after.value_decimal);
+  const days=r=>(Date.parse(r.period_end)-Date.parse(r.period_start))/86400000+1;
+  const consecutive=(Date.parse(after.period_start)-Date.parse(before.period_end))/86400000===1;
+  if(!Number.isFinite(a)||!Number.isFinite(b)||a<=0||b<0||!before.unit||before.unit!==after.unit||!consecutive||![before,after].every(r=>days(r)>=330&&days(r)<=380)){
+   gaps.push({period_end:after.period_end,reason:'ANNUAL_REVENUE_NOT_COMPARABLE_OR_CONSECUTIVE'});continue;
+  }
+  result.push({metric:'revenue_growth',period_end:after.period_end,prior_period_end:before.period_end,value_decimal:String(b/a-1),unit:'ratio',available_at:[before.available_at,after.available_at].sort().at(-1),derivation:{formula:'current annual revenue / previous annual revenue - 1',components:[before,after]},source_observation_ids:[...new Set([...(before.source_observation_ids||[]),...(after.source_observation_ids||[])])]});
+ }
+ return {observations:result,gaps};
 }
 export function priceGrowth(first,last,basis){
  const a=first?.[basis],b=last?.[basis];
@@ -32,7 +59,10 @@ export function priceGrowth(first,last,basis){
 }
 export async function queryRoute(env,u,dependencies={}){
  const index=await read(env,FULL+'symbol-batches.json');
- const parsed=requestQuery(u.searchParams.get('query'),index),part=await read(env,FULL+`batches/${index[parsed.symbol]}.json`),security=part.rows.find(r=>r.symbol===parsed.symbol);
+ const directoryObject=await env.DATA.get(ENRICH+'sec-directory-index.json');let aliases={};
+ if(directoryObject){if(directoryObject.size>1048576)fail('DIRECTORY_REFERENCE_BUDGET');const ref=await directoryObject.json(),directory=await read(env,ref.key,ref.sha256);aliases=companyAliases(directory.index);}
+ const parsed=requestQuery(u.searchParams.get('query'),index,aliases);
+ const part=await read(env,FULL+`batches/${index[parsed.symbol]}.json`),security=part.rows.find(r=>r.symbol===parsed.symbol);
  const base={world:'real/us-public-markets',symbol:parsed.symbol,action:parsed.action,complete_valuation:false};
  const getHistory=dependencies.history||((url)=>historyRoute(env,url));
  if(parsed.action==='price'||parsed.action==='growth'){
@@ -69,16 +99,19 @@ export async function queryRoute(env,u,dependencies={}){
  }
 
  const all=data.observations||[];
- let observations=all.filter(r=>r.metric==='revenue'&&(!parsed.dates[0]||r.period_end>=parsed.dates[0])&&(!parsed.dates[1]||r.period_end<=parsed.dates[1]));
+ const revenues=all.filter(r=>r.metric==='revenue');
+ let observations=revenues.filter(r=>(!parsed.dates[0]||r.period_end>=parsed.dates[0])&&(!parsed.dates[1]||r.period_end<=parsed.dates[1]));
  if(parsed.metric==='operating_margin'){observations=observations.flatMap(r=>{
   const income=all.find(i=>i.metric==='operating_income'&&i.period_end===r.period_end&&i.period_start===r.period_start);
-  const revenue=Number(r.value_decimal),profit=Number(income?.value_decimal);
+  const revenue=reportedNumber(r.value_decimal),profit=reportedNumber(income?.value_decimal);
   if(!income||!Number.isFinite(revenue)||revenue===0||!Number.isFinite(profit))return [];
   return [{metric:'operating_margin',period_start:r.period_start,period_end:r.period_end,value_decimal:String(profit/revenue),unit:'ratio',available_at:[r.available_at,income.available_at].sort().at(-1),derivation:{formula:'operating_income / revenue',components:[income,r]},source_observation_ids:[...new Set([...(income.source_observation_ids||[]),...(r.source_observation_ids||[])])]}];
  });}
+ let growthGaps=[];
+ if(parsed.metric==='revenue_growth'){const computed=revenueGrowth(revenues);observations=computed.observations.filter(r=>(!parsed.dates[0]||r.period_end>=parsed.dates[0])&&(!parsed.dates[1]||r.period_end<=parsed.dates[1]));growthGaps=computed.gaps.filter(r=>(!parsed.dates[0]||r.period_end>=parsed.dates[0])&&(!parsed.dates[1]||r.period_end<=parsed.dates[1]));}
  observations.sort((a,b)=>a.period_end.localeCompare(b.period_end));
- const lines=observations.slice(-15).map(r=>`${r.period_end}: ${r.value_decimal??r.value??'missing'} ${r.unit||''}`);
- return {...base,answer:lines.length?`${parsed.symbol} annual ${parsed.metric}:\n${lines.join('\n')}`:`No annual ${parsed.metric} observations are available for ${parsed.symbol} in this range.`,result:{...data,observations},source:{provider:'SEC',cik,source_cutoff:'2026-09-24'},warnings:data.next?['More observations are available; narrow the date range.']:[]};
+ const lines=observations.slice(-15).map(r=>`${r.period_end}: ${r.unit==='ratio'?(Number(r.value_decimal)*100).toFixed(2)+'%':Number(r.value_decimal).toLocaleString('en-US')+' '+r.unit}`);
+ return {...base,answer:lines.length?`${parsed.symbol} annual ${parsed.metric.replaceAll('_',' ')}${parsed.metric==='revenue_growth'?' (year over year)':''}:\n${lines.join('\n')}`:`No annual ${parsed.metric} observations are available for ${parsed.symbol} in this range.`,result:{...data,observations,calculation_gaps:growthGaps},source:{provider:'SEC',cik,source_cutoff:'2026-09-24'},warnings:[...(observations.length>15?['Showing the latest 15 of '+observations.length+' available annual observations.']:[]),...(growthGaps.length?['Some annual growth rates could not be computed; explicit gaps are included.']:[])]};
 }
 export async function companyPacket(env,symbol){
  if(!/^[A-Z0-9][A-Z0-9.-]{0,24}$/.test(symbol||''))fail('INVALID_SYMBOL');

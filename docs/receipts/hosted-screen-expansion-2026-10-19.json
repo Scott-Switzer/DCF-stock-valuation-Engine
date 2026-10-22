@@ -1,0 +1,57 @@
+{
+  "execution": "LIVE_AUTHENTICATED_HOSTED_SCREEN_PREPARE_CALCULATE_AND_BRIDGE",
+  "cases": [
+    {
+      "ticker": "ABT",
+      "cik": "0000001800",
+      "screen_status": 200,
+      "prepare_status": 200,
+      "issuer_identity": "CURRENT_SEC_ALIAS_ONLY",
+      "history_coverage": {
+        "conventional_three_period_dcf_eligible": true,
+        "missing_periods_imputed": false,
+        "observed_periods": 3,
+        "periods": [
+          "2023-12-31",
+          "2024-12-31",
+          "2025-12-31"
+        ],
+        "status": "THREE_CONSECUTIVE_ANNUAL_PERIODS"
+      },
+      "enterprise_status": 200,
+      "enterprise_value": 129528150191.19327,
+      "matches_independent_cohort": true,
+      "bridge_status": 201,
+      "value_per_share": 58.637858181911774,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf"
+    },
+    {
+      "ticker": "AP",
+      "cik": "0000006176",
+      "screen_status": 200,
+      "prepare_status": 200,
+      "issuer_identity": "CURRENT_SEC_ALIAS_ONLY",
+      "history_coverage": {
+        "conventional_three_period_dcf_eligible": false,
+        "missing_periods_imputed": false,
+        "observed_periods": 1,
+        "periods": [
+          "2020-12-31"
+        ],
+        "status": "SPARSE_ANNUAL_OBSERVATIONS"
+      },
+      "enterprise_status": 200,
+      "enterprise_value": 58581614.90662662,
+      "matches_independent_cohort": true,
+      "bridge_status": 201,
+      "value_per_share": 2.293503274329231,
+      "source_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf"
+    }
+  ],
+  "anonymous_screen_status": 401,
+  "account_signup_status": 200,
+  "status": "PASS",
+  "slack_messages_sent": 0,
+  "production_writes": 0,
+  "publication_pointer_writes": 0
+}

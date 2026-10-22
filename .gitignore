@@ -23,3 +23,10 @@ python_modules/
 worker_runtime/
 cloud_packet_runtime/
 /deploy/valuation-completion/python_modules
+
+.venv-ddfi-test/
+artifacts/zero-subscription-integration/companyfacts/
+# Shared runtime/source directories can also be local symlinks.
+/.venv
+/python_modules
+/artifacts/zero-subscription-integration/companyfacts

@@ -212,7 +212,11 @@ def load_method(
     ticker = ticker_symbol(ticker)
     http = http or JsonHTTP(budget=40)
     if snapshot is not None:
-        parse_document(snapshot, minority_may_be_negative=True)
+        # Intake keeps structural/currency/provenance checks but skips the FCFF
+        # operating-company gate: DDM and relative are equity methods that serve
+        # financial issuers, and each method's own evaluation enforces its
+        # applicability (evaluate() blocks financial firms from DCF).
+        parse_document(snapshot, minority_may_be_negative=True, allow_financial=True)
         dcf = deepcopy(snapshot)
         if dcf["company"]["ticker"] != ticker:
             raise ValueError("Company snapshot ticker does not match.")

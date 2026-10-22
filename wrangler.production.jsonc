@@ -1,0 +1,105 @@
+// Production uses the existing verified source Workers; no new resources.
+// PPE_POINTER_OVERRIDE is intentionally absent: retain the production CURRENT behavior.
+// Owner data access forwards the caller bearer and never uses the server secrets below.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dcf-valuation-engine",
+  "main": "worker_runtime/worker.py",
+  "account_id": "51b88c6a6ef833b3c2ff46e98d5d9356",
+  "compatibility_date": "2026-10-06",
+  "compatibility_flags": [
+    "python_workers"
+  ],
+  "workers_dev": true,
+  "ratelimits": [
+    {
+      "name": "PREVIEW_LIMIT",
+      "namespace_id": "1946100601",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    },
+    {
+      "name": "REFERENCE_LIMIT",
+      "namespace_id": "1946100602",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    },
+    {
+      "name": "WRITE_LIMIT",
+      "namespace_id": "1946100603",
+      "simple": {
+        "limit": 10,
+        "period": 60
+      }
+    },
+    {
+      "name": "MCP_LIMIT",
+      "namespace_id": "1946100604",
+      "simple": {
+        "limit": 60,
+        "period": 60
+      }
+    }
+  ],
+  "services": [
+    {"binding":"FINANCIAL_DATA","service":"zion-security-funnel-staging"},
+    {
+      "binding": "ZION_VALUATIONS",
+      "service": "zion-valuation"
+    },
+    {
+      "binding": "ZION_DATASET_CATALOG",
+      "service": "zion-datasets",
+      "entrypoint": "Catalog"
+    },
+    {
+      "binding": "ZION_FINANCIAL_QUERY",
+      "service": "zion-financial-serving-v2-thin-staging"
+    },
+    {
+      "binding": "ZION_BENCHMARK_QUERY",
+      "service": "zion-ddfi-benchmark-staging"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "PPE_DATA",
+      "bucket_name": "financial-system-datasets"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dcf-valuations",
+      "database_id": "77b1393e-ef20-4081-9dd7-4a7ab787c933",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1
+  },
+  "vars": {
+    "EDGAR_IDENTITY": "Scott Switzer scswitzer@chapman.edu",
+    "DEPLOY_ENVIRONMENT": "production",
+    "ZION_EQUITY_CLAIMS_CALLER": "dcf-valuation-engine",
+    "ZION_BENCHMARK_BASE_URL": "https://zion-ddfi-benchmark-staging.scswitzer.workers.dev"
+  },
+  "build": {
+    "command": "python3 -c \"import runpy, shutil; runpy.run_path('scripts/embed_assets.py'); shutil.copyfile('production_worker.py', 'worker_runtime/worker.py'); shutil.copyfile('owner_data_proxy.py', 'worker_runtime/owner_data_proxy.py')\""
+  },
+  "preview_urls": false,
+  "secrets": {
+    "required": [
+      "RECORD_SALT",
+      "ZION_OWNER_DATA_TOKEN",
+      "ZION_SERVICE_TOKEN",
+      "ZION_HISTORY_TOKEN",
+      "ZION_BENCHMARK_TOKEN"
+    ]
+  }
+}

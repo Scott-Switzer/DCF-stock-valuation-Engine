@@ -1,0 +1,276 @@
+{
+ "base": "https://dcf-valuation-engine-staging-zion.scswitzer.workers.dev",
+ "evidence_cutoff": "2026-09-24",
+ "results": {
+  "AAPL_bridge": {
+   "detail": {
+    "attestation": "CLOUDFLARE_SERVICE_BINDING",
+    "authenticated_via": "SERVICE_CREDENTIAL",
+    "benchmarks": [
+     "sales_capital",
+     "tax_rate",
+     "wacc"
+    ],
+    "binding": "ZION_FINANCIAL_QUERY",
+    "bridge_valuation_date": "2026-10-15",
+    "caller": "dcf-valuation-engine",
+    "companion_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+    "cutoff_policy": "DATE_ONLY_END_OF_DAY_UTC_V1",
+    "engine_release_id": "b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb",
+    "enterprise_value": 1678931860843.8276,
+    "equity_value": 1739874860843.8276,
+    "evidence_cutoff": "2026-09-24",
+    "id": "8a244920-eed2-4454-b2b0-b918f7e9608f",
+    "matches_local_run": true,
+    "noncontrolling_policy": "DEDUCT_REPORTED",
+    "preferred_evidence_state": "REVIEWED_ABSENT",
+    "reconciliation": "MEMBER_SHA256_AGREES_WITH_ENGINE_PINNED_MEMBER",
+    "scenario": "NO_PREFERRED_OUTSTANDING",
+    "served_cutoff_utc": "2026-09-24T23:59:59.999999999Z",
+    "snapshot_date": "2026-09-24",
+    "value_per_share": 119.21703451950214
+   },
+   "http_status": 201,
+   "ok": true
+  },
+  "AAPL_export": {
+   "detail": {
+    "bytes": 200228,
+    "cik": "0000320193",
+    "content_type": "application/json",
+    "disposition": "attachment; filename=\"AAPL-equity-claims-8a244920-eed2-4454-b2b0-b918f7e9608f.json\"",
+    "value_per_share": 119.21703451950214
+   },
+   "http_status": 200,
+   "ok": true
+  },
+  "AAPL_export_other_identity": {
+   "detail": "a second library identity",
+   "http_status": 404,
+   "ok": true
+  },
+  "AAPL_financials": {
+   "detail": {
+    "adapter": "zion-native-history-v1",
+    "attestation_schema": "zion-native-evidence-mac-v1",
+    "historical_cutoff": "2026-09-24T00:00:00Z",
+    "history_rows": 3,
+    "kind": "zion"
+   },
+   "http_status": 200,
+   "ok": true
+  },
+  "GOOGL_bridge": {
+   "detail": {
+    "attestation": "CLOUDFLARE_SERVICE_BINDING",
+    "authenticated_via": "SERVICE_CREDENTIAL",
+    "benchmarks": [
+     "sales_capital",
+     "tax_rate",
+     "wacc"
+    ],
+    "binding": "ZION_FINANCIAL_QUERY",
+    "bridge_valuation_date": "2026-10-15",
+    "caller": "dcf-valuation-engine",
+    "companion_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+    "cutoff_policy": "DATE_ONLY_END_OF_DAY_UTC_V1",
+    "engine_release_id": "b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb",
+    "enterprise_value": 2179137903112.5725,
+    "equity_value": 2311757903112.5723,
+    "evidence_cutoff": "2026-09-24",
+    "id": "f56dad2a-3d1b-4c16-812d-7989b090c84f",
+    "matches_local_run": true,
+    "noncontrolling_policy": "DEDUCT_REPORTED",
+    "preferred_evidence_state": "REPORTED",
+    "reconciliation": "MEMBER_SHA256_AGREES_WITH_ENGINE_PINNED_MEMBER",
+    "scenario": "AS_CONVERTED_MAX_RATE",
+    "served_cutoff_utc": "2026-09-24T23:59:59.999999999Z",
+    "snapshot_date": "2026-09-24",
+    "value_per_share": 188.18558019134235
+   },
+   "http_status": 201,
+   "ok": true
+  },
+  "GOOGL_export": {
+   "detail": {
+    "bytes": 194021,
+    "cik": "0001652044",
+    "content_type": "application/json",
+    "disposition": "attachment; filename=\"GOOGL-equity-claims-f56dad2a-3d1b-4c16-812d-7989b090c84f.json\"",
+    "value_per_share": 188.18558019134235
+   },
+   "http_status": 200,
+   "ok": true
+  },
+  "GOOGL_export_other_identity": {
+   "detail": "a second library identity",
+   "http_status": 404,
+   "ok": true
+  },
+  "GOOGL_financials": {
+   "detail": {
+    "adapter": "zion-native-history-v1",
+    "attestation_schema": "zion-native-evidence-mac-v1",
+    "historical_cutoff": "2026-09-24T00:00:00Z",
+    "history_rows": 3,
+    "kind": "zion"
+   },
+   "http_status": 200,
+   "ok": true
+  },
+  "MSFT_bridge": {
+   "detail": {
+    "attestation": "CLOUDFLARE_SERVICE_BINDING",
+    "authenticated_via": "SERVICE_CREDENTIAL",
+    "benchmarks": [
+     "sales_capital",
+     "tax_rate",
+     "wacc"
+    ],
+    "binding": "ZION_FINANCIAL_QUERY",
+    "bridge_valuation_date": "2026-10-15",
+    "caller": "dcf-valuation-engine",
+    "companion_release_id": "162c3745857617b185579b874a9adcf16e25a0a553ed4277080acdfbc474aebf",
+    "cutoff_policy": "DATE_ONLY_END_OF_DAY_UTC_V1",
+    "engine_release_id": "b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb",
+    "enterprise_value": 2046624766262.0305,
+    "equity_value": 2016579766262.0305,
+    "evidence_cutoff": "2026-09-24",
+    "id": "24192a36-4e71-4d83-bcf1-7e3afad2a3c4",
+    "matches_local_run": true,
+    "noncontrolling_policy": "DEDUCT_REPORTED",
+    "preferred_evidence_state": "REVIEWED_ABSENT",
+    "reconciliation": "MEMBER_SHA256_AGREES_WITH_ENGINE_PINNED_MEMBER",
+    "scenario": "NO_PREFERRED_OUTSTANDING",
+    "served_cutoff_utc": "2026-09-24T23:59:59.999999999Z",
+    "snapshot_date": "2026-09-24",
+    "value_per_share": 271.57328289297936
+   },
+   "http_status": 201,
+   "ok": true
+  },
+  "MSFT_export": {
+   "detail": {
+    "bytes": 213373,
+    "cik": "0000789019",
+    "content_type": "application/json",
+    "disposition": "attachment; filename=\"MSFT-equity-claims-24192a36-4e71-4d83-bcf1-7e3afad2a3c4.json\"",
+    "value_per_share": 271.57328289297936
+   },
+   "http_status": 200,
+   "ok": true
+  },
+  "MSFT_export_other_identity": {
+   "detail": "a second library identity",
+   "http_status": 404,
+   "ok": true
+  },
+  "MSFT_financials": {
+   "detail": {
+    "adapter": "zion-native-history-v1",
+    "attestation_schema": "zion-native-evidence-mac-v1",
+    "historical_cutoff": "2026-09-24T00:00:00Z",
+    "history_rows": 3,
+    "kind": "zion"
+   },
+   "http_status": 200,
+   "ok": true
+  },
+  "claims_status": {
+   "detail": {
+    "adapter_version": "zion-equity-claims-v1",
+    "binding": "ZION_FINANCIAL_QUERY",
+    "caller": "dcf-valuation-engine",
+    "caller_approved": true,
+    "configured": true,
+    "credentials_exposed": false,
+    "note": "A service binding keeps this dependency inside the account. Configuration does not certify that any filer or release is materialized.",
+    "route": "/private/v1/equity-claims",
+    "service_credential_configured": true
+   },
+   "http_status": 200,
+   "ok": true
+  },
+  "edited_attested_bundle": {
+   "detail": {
+    "error": "Native Zion history: evidence attestation mismatch; caller-supplied bundle rejected"
+   },
+   "http_status": 400,
+   "ok": true
+  },
+  "foreign_issuer_bundle": {
+   "detail": {
+    "error": "Financial history and equity claims must name the same issuer."
+   },
+   "http_status": 400,
+   "ok": true
+  },
+  "foreign_origin_write": {
+   "detail": {
+    "error": "Cross-site writes are not allowed."
+   },
+   "http_status": 403,
+   "ok": true
+  },
+  "forged_attestation": {
+   "detail": {
+    "error": "Native Zion history: evidence attestation mismatch; caller-supplied bundle rejected"
+   },
+   "http_status": 400,
+   "ok": true
+  },
+  "health": {
+   "detail": {
+    "commit_matches": true,
+    "expected_commit": "9472f155ba774cfac6ee50ad605bc78f036f64f7",
+    "model": "cuig-dcf-v1",
+    "release": {
+     "asset_sha256": "d7b7dc099630caf30ab1e52df2f8d29a44d7dec0452a12e34224b0983d5c7b59",
+     "commit": "9472f155ba774cfac6ee50ad605bc78f036f64f7",
+     "tracked_dirty": false
+    },
+    "status": "healthy"
+   },
+   "http_status": 200,
+   "ok": true
+  },
+  "providers": {
+   "detail": {
+    "api": false,
+    "auto": true,
+    "manual": true,
+    "sample": true,
+    "sec": true,
+    "zion": false,
+    "zion_benchmarks": true,
+    "zion_history": true,
+    "zion_valuation": true
+   },
+   "http_status": 200,
+   "ok": true
+  },
+  "ready": {
+   "detail": {
+    "custom_api_configured": false,
+    "ppe_binding_configured": true,
+    "sample": true,
+    "sec_configured": true,
+    "status": "ready",
+    "zion_configured": false,
+    "zion_valuation_configured": true
+   },
+   "http_status": 200,
+   "ok": true
+  },
+  "wrong_engine_pin": {
+   "detail": {
+    "error": "Zion equity claims service: the internal service refused the request with HTTP 404 (RELEASE_NOT_APPROVED)"
+   },
+   "http_status": 503,
+   "ok": true
+  }
+ },
+ "revision": "9472f155ba774cfac6ee50ad605bc78f036f64f7",
+ "selection_mode": "historical",
+ "valuation_date": "2026-10-15"
+}
