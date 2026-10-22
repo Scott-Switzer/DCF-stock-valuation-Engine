@@ -1,0 +1,55 @@
+{
+  "by_exchange": {
+    "": 166,
+    "CBOE": 42,
+    "NYSE": 1512,
+    "Nasdaq": 2521,
+    "TXSE": 3
+  },
+  "by_status": {
+    "ISSUER_ALREADY_COVERED_OTHER_LISTING": 234,
+    "NAMED_HIGH_IMPACT_OMISSION": 14,
+    "NEW_EXCHANGE_LISTED_COMMON": 3996
+  },
+  "by_tier": {
+    "TIER_1_NAMED": 14,
+    "TIER_2_WAVE": 3996,
+    "TIER_3_REVIEW": 234
+  },
+  "excluded": {
+    "DERIVATIVE": 131,
+    "OTC_LISTING": 2575,
+    "PREFERRED": 379,
+    "SUSPECT_DERIVATIVE": 714
+  },
+  "identity_limits": [
+    "ADR status is not present in either input; every row says UNKNOWN_NOT_IN_CONTRACTS.",
+    "Tier 2 is not ranked by size or liquidity; that needs a market-cap or index-membership source.",
+    "Share-class and derivative classification uses ticker syntax only.",
+    "An issuer already represented by one listing is never proposed as a new issuer."
+  ],
+  "in_scope_candidates": 4244,
+  "missing_tickers": 8043,
+  "named_omissions_found": [
+    "ADBE",
+    "AMZN",
+    "BRK-A",
+    "BRK-B",
+    "COST",
+    "GOOG",
+    "GOOGL",
+    "IBM",
+    "META",
+    "MO",
+    "ORCL",
+    "TSLA",
+    "V",
+    "XOM"
+  ],
+  "named_omissions_missing_from_candidates": [],
+  "new_issuers": 3839,
+  "schema_version": "universe-expansion-proposal-v1",
+  "sec_listed_tickers": 10428,
+  "universe_issuers_resolved": 2364,
+  "universe_symbols": 2629
+}
