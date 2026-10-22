@@ -263,15 +263,21 @@ is authorized by this report.
 
 ### R3 — Session index producer + serving
 
-- **Change**: wire `session-index.ts` into `finalizeDailyRefresh`: write and verify an immutable
-  content-addressed index first, then advance CURRENT once with its release and index pin, and add the verified lookup to the thin worker's market route.
+- **Status**: implemented behind staging flags on the review branches, not deployed.
+  Publication writes the index only with `DAILY_SESSION_INDEX=enabled` (ppe
+  `ea8efebe1`); serving answers `session=YYYY-MM-DD` only with `SESSION_INDEX_ENABLED`
+  true (zion-terminal `94f2e2b`, contract fixture `6d42f58`).
+- **Change**: `maybeFinalizeDailyRun` extends a verified prior index, writes and re-reads the
+  immutable object, then advances CURRENT once with release and index pins; the thin market
+  route verifies pin, freshness, entry and release bytes before returning rows.
 - **Touches**: data-plane worker and thin source serving code; one new R2 object per
   session; CURRENT gains one optional block. No stored price object changes.
-- **Cost**: producer change is already written and tested (~0.5 day to wire + deploy);
-  serving change ~1 day including staging; 300-session index ≈ 100 KB.
+- **Cost**: implementation complete; the remaining ~0.5 day is enabling the staging flag,
+  publishing one session and running the live acceptance below; index ≈ 100 KB at 300 sessions.
 - **Validation**: published staging session is served by date; a flipped byte in the index
   or a session object returns `SOURCE_LIMITED` with `SESSION_INDEX_*`, never a wrong row;
-  `previous_version` chain remains readable for older sessions; tamper test in staging.
+  the producer-generated fixture is served by the thin worker and a one-field tamper is
+  rejected; `previous_version` chain remains readable for older sessions.
 - **Rollback**: remove `sessions_index` from CURRENT (serving falls back), stop writing the
   index; session objects and CURRENT remain valid.
 
