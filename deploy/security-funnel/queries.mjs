@@ -69,12 +69,21 @@ export function dailyQuote(pointer,daily,symbol,requestedDate=null){
  if(!Number.isFinite(price)||price<=0)fail('LATEST_PRICE_MISSING');
  return {symbol,date:session,price,basis:'SOURCE_REPORTED_CLOSE',provider:bar.provider||daily.provider,feed:bar.feed||daily.feed,source_security_id:bar.security_id||null,source_key:pointer.data_key,source_sha256:pointer.sha256};
 }
+async function currentDailyPointer(env){
+ const object=await env.DATA.get('control/daily-prices/CURRENT.json');
+ if(!object)return null;
+ if(object.size>65536)fail('LATEST_PRICE_REFERENCE_INVALID');
+ const pointer=JSON.parse(await object.text()),sha=pointer.sha256;
+ if(!/^[a-f0-9]{64}$/.test(sha||'')||pointer.version!==sha||pointer.data_key!==`gold/daily-prices/releases/${sha}/data.json`)fail('LATEST_PRICE_REFERENCE_INVALID');
+ return {session:pointer.session,data_key:pointer.data_key,sha256:sha};
+}
 async function latestQuote(env,symbol,requestedDate){
- const capabilities=await read(env,'staging/security-funnel/2026-10-20/9beaa712e71650a2/existing-capabilities.json',null,1048576);
- const pointer=capabilities.daily_pointer;
+ const live=await currentDailyPointer(env);
+ const capabilities=live?null:await read(env,'staging/security-funnel/2026-10-20/9beaa712e71650a2/existing-capabilities.json',null,1048576);
+ const pointer=live||capabilities.daily_pointer;
  if(!/^gold\/daily-prices\/releases\/[a-f0-9]{64}\/data.json$/.test(pointer.data_key||'')||!/^[a-f0-9]{64}$/.test(pointer.sha256||''))fail('LATEST_PRICE_REFERENCE_INVALID');
  const daily=await read(env,pointer.data_key,pointer.sha256,8*1048576),result=dailyQuote(pointer,daily,symbol,requestedDate);
- return {world:'real/us-public-markets',symbol,action:'latest_price',complete_valuation:false,answer:`${symbol}: $${result.price.toFixed(4)} — latest stored ${result.provider||'provider'} close, as of ${result.date}.`,result,source:{provider:result.provider,feed:result.feed,release:pointer.sha256,date:result.date,source_security_id:result.source_security_id},warnings:['Latest close in the connected snapshot; collector updates are not automatically followed. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.']};
+ return {world:'real/us-public-markets',symbol,action:'latest_price',complete_valuation:false,answer:`${symbol}: $${result.price.toFixed(4)} — latest stored ${result.provider||'provider'} close, as of ${result.date}.`,result,source:{provider:result.provider,feed:result.feed,release:pointer.sha256,date:result.date,source_security_id:result.source_security_id},warnings:[live?`Latest close from the collector's current daily release pointer. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.`:`Latest close in the connected snapshot; the collector's current pointer was unavailable, so this may be older. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.`]};
 }
 export async function queryRoute(env,u,dependencies={}){
  const index=await read(env,FULL+'symbol-batches.json');

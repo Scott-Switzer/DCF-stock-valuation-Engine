@@ -55,3 +55,14 @@ assert.throws(()=>dailyQuote(pointer,daily,'AAPL','2026-10-19'),/REQUESTED_DATE/
 assert.throws(()=>dailyQuote(pointer,{...daily,bars:[{...daily.bars[0],close:null}]},'AAPL'),/MISSING/);
 assert.throws(()=>dailyQuote(pointer,{...daily,bars:[...daily.bars,...daily.bars]},'AAPL'),/AMBIGUOUS/);
 assert.throws(()=>dailyQuote(pointer,{...daily,session:'2026-10-19'},'AAPL'),/MISMATCH/);
+
+const liveRaw=JSON.stringify({session:'2026-10-21',provider:'alpaca',feed:'sip',bars:[{provider_symbol:'PEP',session_date:'2026-10-21',close:'50.25',security_id:'live-source'}]});
+const liveSha=createHash('sha256').update(liveRaw).digest('hex'),liveKey='gold/daily-prices/releases/'+liveSha+'/data.json';
+db.set('control/daily-prices/CURRENT.json',JSON.stringify({version:liveSha,sha256:liveSha,session:'2026-10-21',data_key:liveKey}));
+db.set(liveKey,liveRaw);
+const live=await queryRoute(env,new URL('https://internal/query?query=PEP+price'));
+assert.equal(live.result.price,50.25);assert.equal(live.result.date,'2026-10-21');assert.equal(live.source.release,liveSha);
+assert.ok(!live.warnings.some(w=>/may be older/.test(w)));
+db.set('control/daily-prices/CURRENT.json',JSON.stringify({version:'0'.repeat(64),sha256:liveSha,session:'2026-10-21',data_key:liveKey}));
+await assert.rejects(queryRoute(env,new URL('https://internal/query?query=PEP+price')),/LATEST_PRICE_REFERENCE_INVALID/);
+db.delete('control/daily-prices/CURRENT.json');
