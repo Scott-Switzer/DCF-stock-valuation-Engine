@@ -45,3 +45,13 @@ const growthPacket={observations:annual,source_records:{prior:{},current:{}}},gr
 source.rows[0].valuation.inputs={key:'growth',sha256:growthSha};db.set(FULL+'batches/0.json',JSON.stringify(source));db.set('growth',growthRaw);
 const requestedYear=await queryRoute(env,new URL('https://internal/query?query=PEP+revenue+growth+in+2025'));
 assert.equal(requestedYear.result.observations.length,1);assert.equal(requestedYear.result.observations[0].prior_period_end,'2024-12-31');
+const {dailyQuote}=await import('../queries.mjs');
+assert.equal(requestQuery('AAPL price',symbols).action,'latest_price');
+assert.equal(requestQuery('What is the latest Apple price?',symbols,aliases).action,'latest_price');
+assert.throws(()=>requestQuery('Apple price growth',symbols,aliases),/DATE/);
+const pointer={session:'2026-10-20',data_key:'synthetic',sha256:'synthetic'},daily={session:'2026-10-20',provider:'fixture',bars:[{provider_symbol:'AAPL',session_date:'2026-10-20',close:'100.5',security_id:'fixture-source'}]};
+assert.equal(dailyQuote(pointer,daily,'AAPL').price,100.5);
+assert.throws(()=>dailyQuote(pointer,daily,'AAPL','2026-10-19'),/REQUESTED_DATE/);
+assert.throws(()=>dailyQuote(pointer,{...daily,bars:[{...daily.bars[0],close:null}]},'AAPL'),/MISSING/);
+assert.throws(()=>dailyQuote(pointer,{...daily,bars:[...daily.bars,...daily.bars]},'AAPL'),/AMBIGUOUS/);
+assert.throws(()=>dailyQuote(pointer,{...daily,session:'2026-10-19'},'AAPL'),/MISMATCH/);
