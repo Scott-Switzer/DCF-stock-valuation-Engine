@@ -350,3 +350,38 @@ counts are in the accompanying JSON: 4078 candidates; {'TIER_1_NAMED': 14, 'TIER
 'TIER_3_REVIEW': 236}; 3,677 distinct new issuers. The two extra Alphabet listings (GOOGM, GOOGN)
 are review rows of an issuer the named set already introduces, not wave-2 issuers.
 The earlier 4,244 headline included those unverified listings and is superseded.
+
+## Repair status — 2026-10-22 (execution record)
+
+The diagnostics above were executed as follows. No staging flag was enabled, no release or
+pointer was republished, and nothing was pushed or deployed.
+
+| Candidate | Status | Evidence |
+| --- | --- | --- |
+| R1 Walmart revenue pin | Applied in both registries; engine release rebuild still required | `116c8d4`; 24 engine tests pass, including a test that the ambiguity rule still fires without the pin and a digest test that both registries agree |
+| R2 Bank/insurer certification | Worksheet delivered; accounting decision still open | `docs/revenue-certification-2026-10-22.md`; five issuers, per-period accessions, mappings marked `PROPOSED_NOT_CERTIFIED` |
+| R3 Session index | Code and drills complete; staging enablement not run | 36 producer tests and 22 serving tests pass, covering retention eviction, republish, lost race, rollback and pin bounds |
+| R4 Wave 1 identities | Resolved to dated receipts | `docs/identity-receipts-2026-10-22.md`; 14 listings, 12 issuers, all share classes resolved from cover pages |
+| R4 Wave 2 foreign status | Classified; ADR status still unknown by design | `docs/wave2-foreign-status-2026-10-22.md`; 3,665 issuers / 3,828 listings, 0 read errors |
+| R5 Benchmark publication | Forward-only metadata enforced; no backfill claimed | `docs/benchmark-publication-ledger-2026-10-22.md`; 7/7 releases refuse historical selection |
+
+What the execution changed in the diagnosis:
+
+- **Walmart** now resolves revenue from total `Revenues` (FY2026 713.163B). The pin is the
+  smallest defensible change; the ambiguity rule itself is untouched.
+- **GE** files no insurance or lending tag in its last ten annual reports, and its 2023 revenue
+  is restated from 67.954B to 35.348B by a later filing. The blanket quarantine is therefore a
+  stale-evidence question for GE, not a present statement-family question.
+- **Citigroup** files total `Revenues`, not `RevenuesNetOfInterestExpense`; **JPMorgan** files
+  both with equal values; **Allstate** has current premiums evidence; **Goldman** files only the
+  net-of-interest concept.
+- **XOM** now maps to CIK 0002115436 (ExxonMobil Holdings Corp), whose 8-K12B names CIK
+  0000034088 as predecessor. The successor has no annual report; historical packets belong to
+  the predecessor. A packet built from the successor alone would be empty.
+- **Wave 2** is not one cohort: 844 listings (22%) are IFRS filers outside the us-gaap engine,
+  184 are N-CSR investment companies, 91 are mixed-form, 280 have no annual report yet, and
+  2,429 are taxonomy-compatible domestic 10-K filers. ADR status remains
+  `UNKNOWN_NOT_IN_CONTRACTS` for every row and is not inferred from exchange or ticker.
+
+Not done, and deliberately so: engine/cohort release publication, staging flag enablement,
+any deployment, and any push or pull request.
