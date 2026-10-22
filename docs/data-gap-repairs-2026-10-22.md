@@ -336,3 +336,7 @@ themselves certify its present statement family. Reassess that evidence by perio
 R1 changes derived dataset contents by publishing a new release even though raw SEC
 source data remains unchanged; the earlier phrase "No dataset change" means no raw-source
 mutation, not an exemption from release validation.
+
+Latest regenerated proposal excludes 166 rows lacking exchange evidence. Authoritative
+counts are in the accompanying JSON: 4078 candidates; {'TIER_1_NAMED': 14, 'TIER_2_WAVE': 3830, 'TIER_3_REVIEW': 234}.
+The earlier 4,244 headline included those unverified listings and is superseded.

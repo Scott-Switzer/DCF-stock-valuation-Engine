@@ -101,3 +101,9 @@ def test_loaders_reject_inconsistent_inputs(tmp_path):
         assert "shape" in str(error)
     else:
         raise AssertionError("unexpected SEC shape was accepted")
+
+
+def test_missing_exchange_is_not_claimed_as_exchange_listed():
+    candidates, summary = build_candidates(set(), [sec_row(99, "UNVERIFIED", exchange="")])
+    assert candidates == []
+    assert summary['excluded']['EXCHANGE_UNVERIFIED'] == 1

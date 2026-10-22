@@ -141,6 +141,9 @@ def build_candidates(
         if instrument == "SUSPECT_DERIVATIVE":
             excluded["SUSPECT_DERIVATIVE"] += 1
             continue
+        if not row["exchange"].strip():
+            excluded["EXCHANGE_UNVERIFIED"] += 1
+            continue
         already = row["cik"] in covered_ciks
         if already:
             status, tier = "ISSUER_ALREADY_COVERED_OTHER_LISTING", "TIER_3_REVIEW"
