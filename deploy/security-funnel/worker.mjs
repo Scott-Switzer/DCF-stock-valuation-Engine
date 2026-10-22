@@ -1,3 +1,4 @@
+import {readSnapshot,stampedRead} from './snapshot.mjs';
 import {queryRoute,companyPacket} from './queries.mjs';
 // Private staging reconciliation. No upstream acquisition or bulk archive replay.
 import {connectionRoute,publishedConnection} from './connections.mjs';
@@ -287,8 +288,9 @@ export default {
     const u=new URL(request.url);
     try {
       let result;
-      if(request.method==='GET'&&u.pathname==='/query')return Response.json(await queryRoute(env,u),{headers:{'Cache-Control':'private, no-store'}});
-      if(request.method==='GET'&&u.pathname==='/company-packet')return Response.json(await companyPacket(env,u.searchParams.get('symbol')),{headers:{'Cache-Control':'private, no-store'}});
+      if(request.method==='GET'&&u.pathname==='/snapshot')return Response.json(await readSnapshot(env),{headers:{'Cache-Control':'private, no-store'}});
+      if(request.method==='GET'&&u.pathname==='/query')return Response.json(await stampedRead(env,request.headers.get('x-zion-bundle-id'),()=>queryRoute(env,u)),{headers:{'Cache-Control':'private, no-store'}});
+      if(request.method==='GET'&&u.pathname==='/company-packet')return Response.json(await stampedRead(env,request.headers.get('x-zion-bundle-id'),()=>companyPacket(env,u.searchParams.get('symbol'))),{headers:{'Cache-Control':'private, no-store'}});
       if(request.method==='GET'&&['/stored-history','/financial-history'].includes(u.pathname)){
         const target=new URL('https://zion.internal/private/v1/'+(u.pathname==='/stored-history'?'stock-history':'financial-history'));target.search=u.search;
         let financialWindow=null;
@@ -364,6 +366,6 @@ export default {
       }
       else return new Response('Not found',{status:404});
       return Response.json(result,{headers:{'Cache-Control':'private, no-store'}});
-    } catch(e) {return Response.json({error:e.message},{status:422,headers:{'Cache-Control':'private, no-store'}});}
+    } catch(e) {return Response.json({error:e.message,bundle_id:e.snapshot?.bundle_id||null,data_as_of:null,source_releases:e.snapshot?.source_releases||{}},{status:e.message==='RELEASE_MISMATCH'?409:422,headers:{'Cache-Control':'private, no-store'}});}
   }
 };
