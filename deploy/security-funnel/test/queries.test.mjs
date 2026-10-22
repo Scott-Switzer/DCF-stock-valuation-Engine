@@ -41,6 +41,22 @@ assert.equal(requestQuery('How has Apple revenue growth changed?',{...symbols,HA
 assert.equal(requestQuery('$HAS revenue growth',{...symbols,HAS:0},aliases).symbol,'HAS');
 assert.throws(()=>requestQuery('AAPL Microsoft revenue growth',symbols,aliases),/ONE_TICKER/);
 assert.deepEqual(requestQuery('Apple revenue growth in 2025',symbols,aliases).dates,['2025-01-01','2025-12-31']);
+// Two named companies must not silently resolve to whichever name is longest.
+assert.throws(()=>requestQuery('Apple and Microsoft revenue 2025',symbols,aliases),/ONE_TICKER/);
+assert.equal(requestQuery('Apple revenue growth',symbols,aliases).symbol,'AAPL');
+// A shorter alias captured inside a longer company name is not a second company.
+const nested=companyAliases({AAPL:[{name:'Apple Inc.'}],APLE:[{name:'Apple Hospitality REIT'}],MSFT:[{name:'Microsoft Corporation'}]});
+assert.equal(requestQuery('Apple Hospitality REIT revenue 2025',{...symbols,APLE:1},nested).symbol,'APLE');
+assert.throws(()=>requestQuery('$ZZZZ revenue',symbols),/UNKNOWN_TICKER/);
+assert.equal(requestQuery('$HAS revenue',{...symbols,HAS:0}).symbol,'HAS');
+// Stored financials are annual; a quarterly or TTM question must not be answered annually.
+assert.throws(()=>requestQuery('AAPL quarterly revenue 2025',symbols),/ONLY_ANNUAL/);
+assert.throws(()=>requestQuery('AAPL revenue Q1 2025',symbols),/ONLY_ANNUAL/);
+assert.throws(()=>requestQuery('AAPL TTM revenue',symbols),/ONLY_ANNUAL/);
+// A bare year is not an exact trading session; it must not serve the latest close.
+assert.throws(()=>requestQuery('AAPL price 2025',symbols),/EXACT_SESSION_DATE/);
+assert.throws(()=>requestQuery('AAPL return 2025',symbols),/EXACT_SESSION_DATE/);
+assert.equal(requestQuery('AAPL price today',symbols).action,'latest_price');
 const growthPacket={observations:annual,source_records:{prior:{},current:{}}},growthRaw=JSON.stringify(growthPacket),growthSha=createHash('sha256').update(growthRaw).digest('hex');
 source.rows[0].valuation.inputs={key:'growth',sha256:growthSha};db.set(FULL+'batches/0.json',JSON.stringify(source));db.set('growth',growthRaw);
 const requestedYear=await queryRoute(env,new URL('https://internal/query?query=PEP+revenue+growth+in+2025'));

@@ -1,21 +1,48 @@
 // One financial query implementation for Slack, the terminal and the website.
 import {FULL,historyRoute} from './history.mjs';
 import {ENRICH} from './enrichment.mjs';
-const fail=code=>{throw Error(code)};
+// Stable machine codes stay first so clients can branch on them; the sentence after
+// the colon is what a website, Slack or MCP caller shows the person who asked.
+const HINTS={
+ INVALID_QUESTION:'Enter a financial question of at most 2,000 characters.',
+ UNKNOWN_TICKER:'That ticker is not in the stored universe. Use a covered US symbol or a company name.',
+ INCLUDE_A_TICKER:'Name one covered company or ticker, for example "AAPL revenue 2025".',
+ ASK_FOR_ONE_TICKER:'Ask about one company at a time.',
+ INVALID_DATE:'Use a real calendar date formatted YYYY-MM-DD.',
+ INVALID_DATE_RANGE:'Use one year or two dates, earliest first.',
+ PRICE_NEEDS_EXACT_SESSION_DATE:'Price and return questions need an exact trading session (YYYY-MM-DD) or a start and end date; a bare year has no single close.',
+ PRICE_NEEDS_ONE_DATE_OR_TWO_FOR_GROWTH:'Use one exact session date, or two dates for growth.',
+ START_MUST_PRECEDE_END:'The start date must come before the end date.',
+ ASK_FOR_PRICE_GROWTH_OR_FINANCIALS:'Ask for a price, price growth, revenue, revenue growth or operating margin.',
+ ONLY_ANNUAL_FINANCIALS_SUPPORTED:'Stored financial history is annual; ask about a fiscal year rather than a quarter or TTM.',
+ NO_UNIQUE_PRICE_ON_REQUESTED_DATE:'No unique stored close exists on that session; use an exact exchange trading day.',
+ REQUESTED_DATE_NOT_IN_LATEST_RELEASE:'Only the latest stored session is served for recent prices; ask for that date or an older historical session.'
+};
+const fail=code=>{throw Error(HINTS[code]?code+': '+HINTS[code]:code)};
 async function read(env,key,hash,max=16*1048576){const o=await env.DATA.get(key);if(!o||o.size>max)fail('DATA_UNAVAILABLE');const raw=await o.text();if(hash){const actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw))),x=>x.toString(16).padStart(2,'0')).join('');if(actual!==hash)fail('DATA_INTEGRITY');}return JSON.parse(raw);}
 export function requestQuery(query,symbols,aliases={}){
  if(typeof query!=='string'||query.length>2000)fail('INVALID_QUESTION');
  const words=query.toUpperCase().replace(/['’]S\b/g,'').match(/[A-Z0-9][A-Z0-9.-]*/g)||[];
  const stop=new Set(['A','I','ON','IN','TO','FROM','OF','AND','FOR','IT','AS','AT','BE','BY','DO','OR','SO','ALL','HAS','HAVE','HAD','HOW','WHAT','WAS','IS','ARE','THE','DOES','DID','CAN','WILL','SHOW','ME','PLEASE','ITS','THAT','THIS','AN','WITH','ABOUT','OVER','BETWEEN','TELL','RECENT','LATEST','PAST','LAST','YEAR','YEARS','ANNUAL','COMPANY','STOCK']);
  const explicit=query.match(/\$([A-Za-z][A-Za-z0-9.-]*)/g)?.map(s=>s.slice(1).toUpperCase())||[];
+ const unknown=explicit.filter(s=>!Object.hasOwn(symbols,s));
+ if(unknown.length)fail('UNKNOWN_TICKER');
  const command=/^(?:price|prices|growth|return|revenue|sales|financials|margin)\s+([A-Za-z][A-Za-z0-9.-]*)\b/i.exec(query)?.[1]?.toUpperCase();
  const matches=[...new Set([...explicit,...(command&&Object.hasOwn(symbols,command)?[command]:[]),...words.filter(w=>!stop.has(w)&&Object.hasOwn(symbols,w))])];
  {
   const normalized=companyWords(query),found=[];
   for(const [name,candidates]of Object.entries(aliases))if(name.length>=3&&(' '+normalized+' ').includes(' '+name+' '))found.push({name,candidates});
-  if(found.length){const longest=Math.max(...found.map(f=>f.name.length));matches.splice(0,matches.length,...new Set([...matches,...found.filter(f=>f.name.length===longest).flatMap(f=>f.candidates)]));}
+  // A shorter name contained in a longer matched name is a substring capture
+  // ("apple" inside "apple hospitality"), not a second company.
+  const tops=found.filter(f=>!found.some(g=>g!==f&&(' '+g.name+' ').includes(' '+f.name+' ')));
+  const named=[...new Set(tops.flatMap(f=>f.candidates))];
+  // Two companies named in one question must not silently resolve to one of them.
+  if(named.length>1)fail('ASK_FOR_ONE_TICKER');
+  if(named.length===1)matches.splice(0,matches.length,...new Set([...matches,...named]));
  }
  if(matches.length!==1)fail(matches.length?'ASK_FOR_ONE_TICKER':'INCLUDE_A_TICKER');
+ // Stored financials are annual only; never answer a quarterly or TTM question with annual figures.
+ if(/\b(?:quarterly|quarter|quarters|ttm|trailing)\b|\bq[1-4]\b/i.test(query))fail('ONLY_ANNUAL_FINANCIALS_SUPPORTED');
  const dates=query.match(/\d{4}-\d{2}-\d{2}/g)||[];
  for(const d of dates)if(!Number.isFinite(Date.parse(d))||new Date(d).toISOString().slice(0,10)!==d)fail('INVALID_DATE');
  const text=query.toLowerCase(),symbol=matches[0];
@@ -23,6 +50,8 @@ export function requestQuery(query,symbols,aliases={}){
  if(dates.length>2||(dates.length===2&&dates[0]>dates[1]))fail('INVALID_DATE_RANGE');
  if(/\b(revenue|sales|margin|financials|financial history)\b/.test(text))return {action:'financials',symbol,dates,metric:/margin/.test(text)?'operating_margin':/\b(growth|grew|change)\b/.test(text)?'revenue_growth':'revenue'};
  if(/\b(price|prices|return|growth|grew)\b/.test(text)){
+  // A bare year is not a trading session; silently serving the latest close would misstate the date.
+  if(!dates.length&&/\b(?:19|20)\d{2}\b/.test(query))fail('PRICE_NEEDS_EXACT_SESSION_DATE');
   const growthRequested=/\b(growth|return|grew|change)\b/.test(text);
   if(!dates.length&&!growthRequested)return {action:'latest_price',symbol,dates,basis:'raw_observed_price'};
   const growth=(growthRequested||/\b(between|from)\b/.test(text))&&dates.length===2;
@@ -69,6 +98,30 @@ export function dailyQuote(pointer,daily,symbol,requestedDate=null){
  if(!Number.isFinite(price)||price<=0)fail('LATEST_PRICE_MISSING');
  return {symbol,date:session,price,basis:'SOURCE_REPORTED_CLOSE',provider:bar.provider||daily.provider,feed:bar.feed||daily.feed,source_security_id:bar.security_id||null,source_key:pointer.data_key,source_sha256:pointer.sha256};
 }
+// Immutable release objects cannot change under a fixed digest, so an isolate can
+// reuse the parsed symbol index and company-name map instead of re-reading and
+// re-hashing the SEC directory on every question.
+let INDEX_CACHE=null,ALIAS_CACHE=null;
+async function symbolIndex(env){
+ const object=await env.DATA.get(FULL+'symbol-batches.json');
+ if(!object)return null;
+ const etag=object.etag||null;
+ if(etag&&INDEX_CACHE?.etag===etag)return INDEX_CACHE.value;
+ if(object.size>16*1048576)fail('DATA_UNAVAILABLE');
+ const value=JSON.parse(await object.text());
+ if(etag)INDEX_CACHE={etag,value};
+ return value;
+}
+async function directoryAliases(env){
+ const object=await env.DATA.get(ENRICH+'sec-directory-index.json');
+ if(!object)return {};
+ if(object.size>1048576)fail('DIRECTORY_REFERENCE_BUDGET');
+ const ref=await object.json();
+ if(ALIAS_CACHE?.sha256===ref.sha256)return ALIAS_CACHE.value;
+ const directory=await read(env,ref.key,ref.sha256),value=companyAliases(directory.index);
+ ALIAS_CACHE={sha256:ref.sha256,value};
+ return value;
+}
 async function currentDailyPointer(env){
  const object=await env.DATA.get('control/daily-prices/CURRENT.json');
  if(!object)return null;
@@ -86,9 +139,9 @@ async function latestQuote(env,symbol,requestedDate){
  return {world:'real/us-public-markets',symbol,action:'latest_price',complete_valuation:false,answer:`${symbol}: $${result.price.toFixed(4)} — latest stored ${result.provider||'provider'} close, as of ${result.date}.`,result,source:{provider:result.provider,feed:result.feed,release:pointer.sha256,date:result.date,source_security_id:result.source_security_id},warnings:[live?`Latest close from the collector's current daily release pointer. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.`:`Latest close in the connected snapshot; the collector's current pointer was unavailable, so this may be older. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.`]};
 }
 export async function queryRoute(env,u,dependencies={}){
- const index=await read(env,FULL+'symbol-batches.json');
- const directoryObject=await env.DATA.get(ENRICH+'sec-directory-index.json');let aliases={};
- if(directoryObject){if(directoryObject.size>1048576)fail('DIRECTORY_REFERENCE_BUDGET');const ref=await directoryObject.json(),directory=await read(env,ref.key,ref.sha256);aliases=companyAliases(directory.index);}
+ const index=await symbolIndex(env);
+ if(!index)fail('DATA_UNAVAILABLE');
+ const aliases=await directoryAliases(env);
  const parsed=requestQuery(u.searchParams.get('query'),index,aliases);
  const part=await read(env,FULL+`batches/${index[parsed.symbol]}.json`),security=part.rows.find(r=>r.symbol===parsed.symbol);
  const base={world:'real/us-public-markets',symbol:parsed.symbol,action:parsed.action,complete_valuation:false};

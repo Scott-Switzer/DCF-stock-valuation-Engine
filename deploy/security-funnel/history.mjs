@@ -152,13 +152,14 @@ async function history(env,u){
   adjustment_base:'SOURCE_LAST_TRADING_DAY_RETROSPECTIVE;NOT_PIT_QUOTE',historical_availability:'NOT_ESTABLISHED',rights:RIGHTS,rows:[]};
  if(u.searchParams.get('metadata_only')==='true')return result;
  if(q.part>=refs.length){if(!refs.length&&q.part===0)return {...result,next:null};fail('HISTORY_PART_OUT_OF_RANGE');}
- const ref=refs[q.part].ref,p=await openMaterialized(env,ref),ids=await p.column('permno'),dates=await p.column('dlycaldt'),positions=[];
+ const ref=refs[q.part].ref,p=await openMaterialized(env,ref),positions=[];
+ const priceColumns=['raw_observed_price','split_adjusted_price','distribution_adjusted_price','source_total_return','source_return_ex_ordinary_dividends','missing_adjustment_factors'];
+ // One decode for every column a page needs; per-column decodes reread the whole part.
+ const data=await p.columns(['permno','dlycaldt',...priceColumns]),ids=data.permno,dates=data.dlycaldt;
  for(let i=0;i<ids.length;i++)if(String(ids[i])===id&&(!q.from||dates[i]>=q.from)&&(!q.to||dates[i]<=q.to))positions.push(i);
  if(q.offset>positions.length)fail('HISTORY_OFFSET_OUT_OF_RANGE');
  const take=positions.slice(q.offset,q.offset+q.limit),rows=take.map(i=>({date:dates[i],permno:Number(id)}));
- for(const name of ['raw_observed_price','split_adjusted_price','distribution_adjusted_price','source_total_return','source_return_ex_ordinary_dividends','missing_adjustment_factors']){
-  const values=await p.column(name);for(let j=0;j<take.length;j++)rows[j][name]=values[take[j]];
- }
+ for(const name of priceColumns)for(let j=0;j<take.length;j++)rows[j][name]=data[name][take[j]];
  result.rows=rows;result.source={key:ref.key,sha256:ref.sha256};
  const more=q.offset+take.length<positions.length;
  result.next=more?{part:q.part,offset:q.offset+take.length}:q.part+1<refs.length?{part:q.part+1,offset:0}:null;

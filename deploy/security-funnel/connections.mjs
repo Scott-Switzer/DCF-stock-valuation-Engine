@@ -11,6 +11,10 @@ const fail=s=>{throw new Error(s);};
 const hex=b=>Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,'0')).join('');
 const sha=async b=>hex(await crypto.subtle.digest('SHA-256',typeof b==='string'?enc.encode(b):b));
 const safe=v=>typeof v==='bigint'?v.toString():v instanceof Date?v.toISOString().slice(0,10):v;
+// Reuse an already verified part within this isolate. Values are immutable release
+// objects keyed by key and digest, so a hit cannot serve different bytes.
+const MATERIALIZED_CACHE=new Map(),CACHE_LIMIT=2,CACHE_BYTES=16*1048576;
+const remember=(key,value)=>{MATERIALIZED_CACHE.delete(key);MATERIALIZED_CACHE.set(key,value);while(MATERIALIZED_CACHE.size>CACHE_LIMIT)MATERIALIZED_CACHE.delete(MATERIALIZED_CACHE.keys().next().value);};
 async function put(env,key,v){await env.DATA.put(key,JSON.stringify(v,(_,v)=>safe(v)),{httpMetadata:{contentType:'application/json'}});}
 async function json(bucket,key,digest=null,max=16*1048576){
  const o=await bucket.get(key);if(!o||o.size>max)fail('CONNECTION_OBJECT_UNAVAILABLE');
@@ -19,17 +23,28 @@ async function json(bucket,key,digest=null,max=16*1048576){
 export async function openMaterialized(env,ref,scope='materialized'){
  const approved=scope==='materialized'?ref.key.startsWith('research/financial-research-canonical-v1/'):scope==='pinned-crsp-sample-factors'&&/^raw\/wrds\/crspsamp_all__stkdlycumulativeadjfactor\/releases\/[A-Za-z0-9_-]+\//.test(ref.key);
  if(!approved||!ref.key.endsWith('.parquet'))fail('UNAPPROVED_MATERIALIZED_OBJECT');
- const o=await env.RESEARCH.get(ref.key);if(!o||o.size!==ref.bytes||o.size>64*1048576)fail('MATERIALIZED_OBJECT_SIZE');
- const file=await o.arrayBuffer();if(await sha(file)!==ref.sha256)fail('MATERIALIZED_OBJECT_HASH');
- const metadata=await parquetMetadataAsync(file);if(Number(metadata.num_rows)!==ref.rows)fail('MATERIALIZED_ROW_COUNT');
- const options={file,metadata,compressors:{ZSTD:(input,size)=>decompress(input,new Uint8Array(size))},parsers:{dateFromDays:days=>new Date(days*86400000).toISOString().slice(0,10)}};
- return {column:async name=>{
-  const values=[];
-  await parquetRead({...options,columns:[name],onChunk:chunk=>{
+ const cacheKey=ref.key+'\0'+ref.sha256+'\0'+ref.bytes+'\0'+ref.rows;
+ let opened=MATERIALIZED_CACHE.get(cacheKey);
+ if(!opened){
+  const o=await env.RESEARCH.get(ref.key);if(!o||o.size!==ref.bytes||o.size>64*1048576)fail('MATERIALIZED_OBJECT_SIZE');
+  const file=await o.arrayBuffer();if(await sha(file)!==ref.sha256)fail('MATERIALIZED_OBJECT_HASH');
+  const metadata=await parquetMetadataAsync(file);if(Number(metadata.num_rows)!==ref.rows)fail('MATERIALIZED_ROW_COUNT');
+  const options={file,metadata,compressors:{ZSTD:(input,size)=>decompress(input,new Uint8Array(size))},parsers:{dateFromDays:days=>new Date(days*86400000).toISOString().slice(0,10)}};
+  opened={options};
+  if(file.byteLength<=CACHE_BYTES)remember(cacheKey,opened);
+ }
+ // One decode per requested column set: callers that need several columns of a
+ // part must not decompress the whole object once per column.
+ const read=async names=>{
+  const out=Object.fromEntries(names.map(n=>[n,[]]));
+  await parquetRead({...opened.options,columns:names,onChunk:chunk=>{
+   const values=out[chunk.columnName];if(!values)return;
    for(let i=0;i<chunk.columnData.length;i++)values[chunk.rowStart+i]=chunk.columnData[i];
   }});
-  if(values.length!==ref.rows)fail('PARQUET_COLUMN_ROW_COUNT');return values;
- }};
+  for(const n of names)if(out[n].length!==ref.rows)fail('PARQUET_COLUMN_ROW_COUNT');
+  return out;
+ };
+ return {column:async name=>(await read([name]))[name],columns:read};
 }
 async function selectedRows(env,ref,key,targets,columns){
  const p=await openMaterialized(env,ref),ids=await p.column(key),positions=[];
