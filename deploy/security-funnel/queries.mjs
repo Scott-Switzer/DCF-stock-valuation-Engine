@@ -2,7 +2,7 @@
 import {FULL,historyRoute} from './history.mjs';
 import {ENRICH} from './enrichment.mjs';
 const fail=code=>{throw Error(code)};
-async function read(env,key,hash){const o=await env.DATA.get(key);if(!o||o.size>16*1048576)fail('DATA_UNAVAILABLE');const raw=await o.text();if(hash){const actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw))),x=>x.toString(16).padStart(2,'0')).join('');if(actual!==hash)fail('DATA_INTEGRITY');}return JSON.parse(raw);}
+async function read(env,key,hash,max=16*1048576){const o=await env.DATA.get(key);if(!o||o.size>max)fail('DATA_UNAVAILABLE');const raw=await o.text();if(hash){const actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw))),x=>x.toString(16).padStart(2,'0')).join('');if(actual!==hash)fail('DATA_INTEGRITY');}return JSON.parse(raw);}
 export function requestQuery(query,symbols,aliases={}){
  if(typeof query!=='string'||query.length>2000)fail('INVALID_QUESTION');
  const words=query.toUpperCase().replace(/['’]S\b/g,'').match(/[A-Z0-9][A-Z0-9.-]*/g)||[];
@@ -23,7 +23,9 @@ export function requestQuery(query,symbols,aliases={}){
  if(dates.length>2||(dates.length===2&&dates[0]>dates[1]))fail('INVALID_DATE_RANGE');
  if(/\b(revenue|sales|margin|financials|financial history)\b/.test(text))return {action:'financials',symbol,dates,metric:/margin/.test(text)?'operating_margin':/\b(growth|grew|change)\b/.test(text)?'revenue_growth':'revenue'};
  if(/\b(price|prices|return|growth|grew)\b/.test(text)){
-  const growth=/\b(growth|return|grew|change|between|from)\b/.test(text)&&dates.length===2;
+  const growthRequested=/\b(growth|return|grew|change)\b/.test(text);
+  if(!dates.length&&!growthRequested)return {action:'latest_price',symbol,dates,basis:'raw_observed_price'};
+  const growth=(growthRequested||/\b(between|from)\b/.test(text))&&dates.length===2;
   if(dates.length!==(growth?2:1))fail('PRICE_NEEDS_ONE_DATE_OR_TWO_FOR_GROWTH');
   if(growth&&dates[0]>=dates[1])fail('START_MUST_PRECEDE_END');
   return {action:growth?'growth':'price',symbol,dates,basis:/unadjusted|raw/.test(text)?'raw_observed_price':growth?'split_adjusted_price':'raw_observed_price'};
@@ -57,6 +59,22 @@ export function priceGrowth(first,last,basis){
  if(years<=0)fail('START_MUST_PRECEDE_END');
  return {start_date:first.date,end_date:last.date,start_price:a,end_price:b,change:b/a-1,annualized_growth:Math.pow(b/a,1/years)-1,basis,includes_dividends:false};
 }
+export function dailyQuote(pointer,daily,symbol,requestedDate=null){
+ const matches=(daily.bars||[]).filter(b=>(b.provider_symbol||b.symbol)===symbol);
+ if(matches.length!==1)fail(matches.length?'AMBIGUOUS_LATEST_QUOTE':'NO_PRICE_IN_LATEST_STORED_RELEASE');
+ const bar=matches[0],session=bar.session_date||daily.session;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(session||'')||session!==pointer.session||daily.session!==pointer.session)fail('LATEST_QUOTE_SESSION_MISMATCH');
+ if(requestedDate&&requestedDate!==session)fail('REQUESTED_DATE_NOT_IN_LATEST_RELEASE');
+ const price=typeof bar.close==='number'?bar.close:reportedNumber(bar.close);
+ if(!Number.isFinite(price)||price<=0)fail('LATEST_PRICE_MISSING');
+ return {symbol,date:session,price,basis:'SOURCE_REPORTED_CLOSE',provider:bar.provider||daily.provider,feed:bar.feed||daily.feed,source_security_id:bar.security_id||null,source_key:pointer.data_key,source_sha256:pointer.sha256};
+}
+async function latestQuote(env,symbol,requestedDate){
+ const pointer=await read(env,'gold/daily-prices/CURRENT.json',null,1048576);
+ if(!/^gold\/daily-prices\/releases\/[a-f0-9]{64}\/data.json$/.test(pointer.data_key||'')||!/^[a-f0-9]{64}$/.test(pointer.sha256||''))fail('LATEST_PRICE_REFERENCE_INVALID');
+ const daily=await read(env,pointer.data_key,pointer.sha256,8*1048576),result=dailyQuote(pointer,daily,symbol,requestedDate);
+ return {world:'real/us-public-markets',symbol,action:'latest_price',complete_valuation:false,answer:`${symbol}: $${result.price.toFixed(4)} — latest stored ${result.provider||'provider'} close, as of ${result.date}.`,result,source:{provider:result.provider,feed:result.feed,release:pointer.sha256,date:result.date,source_security_id:result.source_security_id},warnings:['Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.']};
+}
 export async function queryRoute(env,u,dependencies={}){
  const index=await read(env,FULL+'symbol-batches.json');
  const directoryObject=await env.DATA.get(ENRICH+'sec-directory-index.json');let aliases={};
@@ -64,6 +82,8 @@ export async function queryRoute(env,u,dependencies={}){
  const parsed=requestQuery(u.searchParams.get('query'),index,aliases);
  const part=await read(env,FULL+`batches/${index[parsed.symbol]}.json`),security=part.rows.find(r=>r.symbol===parsed.symbol);
  const base={world:'real/us-public-markets',symbol:parsed.symbol,action:parsed.action,complete_valuation:false};
+ if(parsed.action==='latest_price')return latestQuote(env,parsed.symbol);
+ if(parsed.action==='price'&&security.full_history?.date_max&&parsed.dates[0]>security.full_history.date_max)return latestQuote(env,parsed.symbol,parsed.dates[0]);
  const getHistory=dependencies.history||((url)=>historyRoute(env,url));
  if(parsed.action==='price'||parsed.action==='growth'){
   const pages=await Promise.all(parsed.dates.map(async date=>{
