@@ -20,6 +20,13 @@ Correction to the earlier handoff: the "20 successes then 429 on staging" claim 
 reproducible from outside the runtime. §2.3 records what the binding actually does, which is
 approximate rather than strict.
 
+Guard status: the four wrong-answer guards (`ASK_FOR_ONE_TICKER`,
+`ONLY_ANNUAL_FINANCIALS_SUPPORTED`, `PRICE_NEEDS_EXACT_SESSION_DATE`, `UNKNOWN_TICKER`) and the
+missing-metric/range diagnostics were verified live earlier today against the staging website
+and the funnel worker. They were not re-run in this increment; production's website release
+predates them, and its query path is served by the funnel deployment whose tree equals
+`a035120`, so the guards should hold there but are not independently re-verified here.
+
 ## 2. The production limiter blocker, closed
 
 ### 2.1 Root cause
