@@ -70,10 +70,11 @@ export function dailyQuote(pointer,daily,symbol,requestedDate=null){
  return {symbol,date:session,price,basis:'SOURCE_REPORTED_CLOSE',provider:bar.provider||daily.provider,feed:bar.feed||daily.feed,source_security_id:bar.security_id||null,source_key:pointer.data_key,source_sha256:pointer.sha256};
 }
 async function latestQuote(env,symbol,requestedDate){
- const pointer=await read(env,'gold/daily-prices/CURRENT.json',null,1048576);
+ const capabilities=await read(env,'staging/security-funnel/2026-10-20/9beaa712e71650a2/existing-capabilities.json',null,1048576);
+ const pointer=capabilities.daily_pointer;
  if(!/^gold\/daily-prices\/releases\/[a-f0-9]{64}\/data.json$/.test(pointer.data_key||'')||!/^[a-f0-9]{64}$/.test(pointer.sha256||''))fail('LATEST_PRICE_REFERENCE_INVALID');
  const daily=await read(env,pointer.data_key,pointer.sha256,8*1048576),result=dailyQuote(pointer,daily,symbol,requestedDate);
- return {world:'real/us-public-markets',symbol,action:'latest_price',complete_valuation:false,answer:`${symbol}: $${result.price.toFixed(4)} — latest stored ${result.provider||'provider'} close, as of ${result.date}.`,result,source:{provider:result.provider,feed:result.feed,release:pointer.sha256,date:result.date,source_security_id:result.source_security_id},warnings:['Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.']};
+ return {world:'real/us-public-markets',symbol,action:'latest_price',complete_valuation:false,answer:`${symbol}: $${result.price.toFixed(4)} — latest stored ${result.provider||'provider'} close, as of ${result.date}.`,result,source:{provider:result.provider,feed:result.feed,release:pointer.sha256,date:result.date,source_security_id:result.source_security_id},warnings:['Latest close in the connected snapshot; collector updates are not automatically followed. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.']};
 }
 export async function queryRoute(env,u,dependencies={}){
  const index=await read(env,FULL+'symbol-batches.json');
