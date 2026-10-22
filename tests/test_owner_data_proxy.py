@@ -171,14 +171,19 @@ def test_production_entrypoint_keeps_normal_wsgi_routes(monkeypatch):
         return 'normal-wsgi'
     async def handle(request, env):
         return 'owner-proxy'
+    async def enforce(env, request):
+        return None
     app = SimpleNamespace(config={}, jinja_loader=None)
     monkeypatch.setitem(sys.modules, 'workers', SimpleNamespace(
-        WorkerEntrypoint=object, wsgi=SimpleNamespace(fetch=wsgi_fetch)))
+        WorkerEntrypoint=object, wsgi=SimpleNamespace(fetch=wsgi_fetch), Response=Response))
+    monkeypatch.setitem(sys.modules, 'jinja2', SimpleNamespace(DictLoader=dict))
     monkeypatch.setitem(sys.modules, 'app', SimpleNamespace(app=app))
     monkeypatch.setitem(sys.modules, 'embedded_assets', SimpleNamespace(ASSETS={}))
+    monkeypatch.setitem(sys.modules, 'edge_limits', SimpleNamespace(enforce=enforce))
     monkeypatch.setattr(proxy, 'handle', handle)
-    spec = importlib.util.spec_from_file_location('production_worker_under_test',
-             Path(__file__).resolve().parents[1] / 'production_worker.py')
+    # worker.py is the module both the staging and the production build compile.
+    spec = importlib.util.spec_from_file_location('worker_under_test',
+             Path(__file__).resolve().parents[1] / 'worker.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     worker = module.Default()

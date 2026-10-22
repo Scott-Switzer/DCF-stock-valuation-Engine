@@ -89,8 +89,10 @@
     "ZION_EQUITY_CLAIMS_CALLER": "dcf-valuation-engine",
     "ZION_BENCHMARK_BASE_URL": "https://zion-ddfi-benchmark-staging.scswitzer.workers.dev"
   },
+  // One entrypoint for both environments: the module staging already proves awaits the
+  // edge rate limiter. A second copy could silently omit that call again.
   "build": {
-    "command": "python3 -c \"import runpy, shutil; runpy.run_path('scripts/embed_assets.py'); shutil.copyfile('production_worker.py', 'worker_runtime/worker.py'); shutil.copyfile('owner_data_proxy.py', 'worker_runtime/owner_data_proxy.py')\""
+    "command": "python3 scripts/embed_assets.py"
   },
   "preview_urls": false,
   "secrets": {
