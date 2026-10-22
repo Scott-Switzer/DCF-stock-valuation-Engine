@@ -136,9 +136,9 @@ validation.
 
 Artifacts (generated, reproducible):
 
-- `docs/universe-expansion-2026-10-22.csv` — 4,244 in-scope candidates, 11 columns.
+- `docs/universe-expansion-2026-10-22.csv` — 4,078 in-scope candidates, 11 columns.
 - `docs/universe-expansion-2026-10-22.json` — counts, exclusions, identity limits.
-- `scripts/propose_universe_expansion.py` + `tests/test_universe_expansion.py` (7 tests).
+- `scripts/propose_universe_expansion.py` + `tests/test_universe_expansion.py` (8 tests).
 
 Inputs: the stored Alpaca stock-history catalog (2,629 symbols, release `12bf4774…`) and
 SEC's `company_tickers_exchange.json` (10,428 listed tickers; 5,975 issuers have at least
@@ -147,14 +147,15 @@ one ticker absent from the cohort).
 | Segment | Count |
 | --- | --- |
 | Named high-impact omissions (XOM, GOOGL, GOOG, AMZN, TSLA, META, ORCL, COST, IBM, ADBE, MO, BRK-A, BRK-B, V) | 14 |
-| New exchange-listed common equity, issuer not represented at all | 3,996 listings / 3,839 issuers |
+| New exchange-listed common equity, issuer not represented at all | 3,830 listings / 3,665 issuers |
 | Additional listing of an already-covered issuer (share class, second listing) | 234 |
 | Excluded: OTC (outside Alpaca coverage) | 2,575 |
+| Excluded: exchange not verified | 166 |
 | Excluded: preferred / derivative / suspect 5-letter instruments | 1,224 |
 
 Identity rules enforced by the generator and the tests: `cik` is zero-padded to ten digits;
 `data_key`-style ticker syntax is the only classification signal; a candidate whose CIK is
-already represented is never labelled a new issuer; duplicate tickers keep the first identity;
+already represented is never labelled a new issuer; duplicate ticker rows with conflicting CIKs are rejected;
 tiers sort deterministically. Of the 2,629 stored symbols, 2,364 resolve to a CIK in SEC's
 current file; the other 265 (delisted, renamed, or notation differences) are not asserted
 either way.
@@ -162,7 +163,7 @@ either way.
 What the proposal deliberately does **not** claim:
 
 - **ADR status is unknown.** Neither input carries it; every row says
-  `UNKNOWN_NOT_IN_CONTRACTS`. Adding 3,839 issuers without that column would sweep in
+  `UNKNOWN_NOT_IN_CONTRACTS`. Adding 3,665 issuers without that column would sweep in
   foreign private issuers and ADRs that Alpaca may not trade.
 - **Tier 2 is unranked.** Ordering by liquidity or index membership needs a market-cap
   input the current contracts do not carry. The named set is the evidence-driven first wave.
@@ -277,11 +278,11 @@ is authorized by this report.
 
 - **Wave 1 (recommended)**: the 14 named omissions. Ingest identity + packets + price
   history for 14 listings across 12 issuers (GOOG/GOOGL and BRK-A/BRK-B share issuers), publish one new cohort release.
-- **Wave 2**: 3,839 issuers. Requires the ADR/FPI column and a liquidity or index ranking
+- **Wave 2**: 3,665 issuers. Requires the ADR/FPI column and a liquidity or index ranking
   first; without them this is an unbounded scope.
 - **Cost**: wave 1 ~0.5 day and a small release (12 issuer packets plus 14 listing mappings and price
   pages). Wave 2: about 1.25 M additional price rows on top of the current 856,633 (≈2.5×
-  the cohort) and ≈3,800 new packet builds — measure with a 25-issuer dry run before
+  the cohort) and ≈3,665 new packet builds — measure with a 25-issuer dry run before
   committing; expect a multi-day ingest and a materially larger R2 footprint, still inside
   the current spend cap only if the dry run confirms bytes per issuer.
 - **Validation**: every new symbol resolves to exactly one CIK; no duplicate issuer packet per CIK, while preserving distinct share-class listings in the
@@ -311,7 +312,7 @@ is authorized by this report.
   R3 solves it without touching data).
 - Lowering the ambiguity rule to "pick the larger value" (would silently redefine revenue
   for every retailer).
-- Adding the 3,996 wave-2 symbols as a single cohort without identity ranking.
+- Adding the 3,830 wave-2 symbols as a single cohort without identity ranking.
 
 ## 6. What remains open
 
