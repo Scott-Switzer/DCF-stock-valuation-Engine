@@ -18,7 +18,7 @@ const HINTS={
  NO_UNIQUE_PRICE_ON_REQUESTED_DATE:'No unique stored close exists on that session; use an exact exchange trading day.',
  REQUESTED_DATE_NOT_IN_LATEST_RELEASE:'Only the latest stored session is served for recent prices; ask for that date or an older historical session.'
 };
-const fail=code=>{throw Error(HINTS[code]?code+': '+HINTS[code]:code)};
+const fail=(code,detail)=>{throw Error((HINTS[code]?code+': '+HINTS[code]:code)+(detail?' '+detail:''))};
 async function read(env,key,hash,max=16*1048576){const o=await env.DATA.get(key);if(!o||o.size>max)fail('DATA_UNAVAILABLE');const raw=await o.text();if(hash){const actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw))),x=>x.toString(16).padStart(2,'0')).join('');if(actual!==hash)fail('DATA_INTEGRITY');}return JSON.parse(raw);}
 export function requestQuery(query,symbols,aliases={}){
  if(typeof query!=='string'||query.length>2000)fail('INVALID_QUESTION');
@@ -26,7 +26,7 @@ export function requestQuery(query,symbols,aliases={}){
  const stop=new Set(['A','I','ON','IN','TO','FROM','OF','AND','FOR','IT','AS','AT','BE','BY','DO','OR','SO','ALL','HAS','HAVE','HAD','HOW','WHAT','WAS','IS','ARE','THE','DOES','DID','CAN','WILL','SHOW','ME','PLEASE','ITS','THAT','THIS','AN','WITH','ABOUT','OVER','BETWEEN','TELL','RECENT','LATEST','PAST','LAST','YEAR','YEARS','ANNUAL','COMPANY','STOCK']);
  const explicit=query.match(/\$([A-Za-z][A-Za-z0-9.-]*)/g)?.map(s=>s.slice(1).toUpperCase())||[];
  const unknown=explicit.filter(s=>!Object.hasOwn(symbols,s));
- if(unknown.length)fail('UNKNOWN_TICKER');
+ if(unknown.length)fail('UNKNOWN_TICKER',`The stored universe holds ${Object.keys(symbols).length} symbols and ${unknown.join(', ')} is not one of them.`);
  const command=/^(?:price|prices|growth|return|revenue|sales|financials|margin)\s+([A-Za-z][A-Za-z0-9.-]*)\b/i.exec(query)?.[1]?.toUpperCase();
  const matches=[...new Set([...explicit,...(command&&Object.hasOwn(symbols,command)?[command]:[]),...words.filter(w=>!stop.has(w)&&Object.hasOwn(symbols,w))])];
  {
@@ -87,6 +87,21 @@ export function priceGrowth(first,last,basis){
  const years=(Date.parse(last.date)-Date.parse(first.date))/(365.25*86400000);
  if(years<=0)fail('START_MUST_PRECEDE_END');
  return {start_date:first.date,end_date:last.date,start_price:a,end_price:b,change:b/a-1,annualized_growth:Math.pow(b/a,1/years)-1,basis,includes_dividends:false};
+}
+// A missing metric is a stored-data gap, not an unknown company or an empty range.
+// Say which one it is and cite the reasons already recorded on the stored row.
+export function coverageExplanation(row,requested,data){
+ const cloud=row.financials?.cloud||{},stored=row.valuation?.inputs||{},available=cloud.annual_metrics_available||[];
+ const observed=data.observations||[],date_min=stored.date_min||null,date_max=stored.date_max||null;
+ const dates=requested?.dates||[],outside=dates.length===2&&date_min&&date_max&&(dates[1]<date_min||dates[0]>date_max);
+ const reason=outside?'REQUESTED_RANGE_OUTSIDE_STORED_COVERAGE':!observed.length?'NO_STORED_ANNUAL_OBSERVATIONS':'METRIC_NOT_REPORTED_BY_ISSUER';
+ const parts=[];
+ if(reason==='REQUESTED_RANGE_OUTSIDE_STORED_COVERAGE')parts.push(`The requested range is outside stored coverage for ${row.symbol} (${date_min} to ${date_max}).`);
+ else if(reason==='NO_STORED_ANNUAL_OBSERVATIONS')parts.push(`The stored SEC release has no annual observations for ${row.symbol}${cloud.status?' ('+cloud.status+')':''}.`);
+ else parts.push(`Stored annual history for ${row.symbol} covers ${date_min} to ${date_max} without a ${requested?.metric||'requested'} observation; metrics present: ${available.length?available.join(', '):'none'}.`);
+ if(cloud.coverage_gap_reasons?.length)parts.push(`Source coverage gaps: ${cloud.coverage_gap_reasons.join(', ')}.`);
+ parts.push(reason==='REQUESTED_RANGE_OUTSIDE_STORED_COVERAGE'?'Ask for a period inside stored coverage.':'This is a stored-data gap, not an unknown company or an empty result.');
+ return {reason,date_min,date_max,cloud_status:cloud.status||null,metrics_present:available,coverage_gap_reasons:cloud.coverage_gap_reasons||[],sentence:parts.join(' ')};
 }
 export function dailyQuote(pointer,daily,symbol,requestedDate=null){
  const matches=(daily.bars||[]).filter(b=>(b.provider_symbol||b.symbol)===symbol);
@@ -194,7 +209,8 @@ export async function queryRoute(env,u,dependencies={}){
  if(parsed.metric==='revenue_growth'){const computed=revenueGrowth(revenues);observations=computed.observations.filter(r=>(!parsed.dates[0]||r.period_end>=parsed.dates[0])&&(!parsed.dates[1]||r.period_end<=parsed.dates[1]));growthGaps=computed.gaps.filter(r=>(!parsed.dates[0]||r.period_end>=parsed.dates[0])&&(!parsed.dates[1]||r.period_end<=parsed.dates[1]));}
  observations.sort((a,b)=>a.period_end.localeCompare(b.period_end));
  const lines=observations.slice(-15).map(r=>`${r.period_end}: ${r.unit==='ratio'?(Number(r.value_decimal)*100).toFixed(2)+'%':Number(r.value_decimal).toLocaleString('en-US')+' '+r.unit}`);
- return {...base,answer:lines.length?`${parsed.symbol} annual ${parsed.metric.replaceAll('_',' ')}${parsed.metric==='revenue_growth'?' (year over year)':''}:\n${lines.join('\n')}`:`No annual ${parsed.metric} observations are available for ${parsed.symbol} in this range.`,result:{...data,observations,calculation_gaps:growthGaps},source:{provider:'SEC',cik,source_cutoff:'2026-09-24'},warnings:[...(observations.length>15?['Showing the latest 15 of '+observations.length+' available annual observations.']:[]),...(growthGaps.length?['Some annual growth rates could not be computed; explicit gaps are included.']:[])]};
+ const coverage=lines.length?null:coverageExplanation(security,parsed,data);
+ return {...base,answer:lines.length?`${parsed.symbol} annual ${parsed.metric.replaceAll('_',' ')}${parsed.metric==='revenue_growth'?' (year over year)':''}:\n${lines.join('\n')}`:`No annual ${parsed.metric} observations are available for ${parsed.symbol} in this range. ${coverage.sentence}`,result:{...data,observations,calculation_gaps:growthGaps,...(coverage?{coverage}:{})},source:{provider:'SEC',cik,source_cutoff:'2026-09-24',...(coverage?{coverage_status:coverage.reason}:{})},warnings:[...(observations.length>15?['Showing the latest 15 of '+observations.length+' available annual observations.']:[]),...(growthGaps.length?['Some annual growth rates could not be computed; explicit gaps are included.']:[]),...(coverage?[coverage.sentence]:[])]};
 }
 export async function companyPacket(env,symbol){
  if(!/^[A-Z0-9][A-Z0-9.-]{0,24}$/.test(symbol||''))fail('INVALID_SYMBOL');

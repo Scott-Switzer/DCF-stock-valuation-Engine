@@ -47,7 +47,8 @@ assert.equal(requestQuery('Apple revenue growth',symbols,aliases).symbol,'AAPL')
 // A shorter alias captured inside a longer company name is not a second company.
 const nested=companyAliases({AAPL:[{name:'Apple Inc.'}],APLE:[{name:'Apple Hospitality REIT'}],MSFT:[{name:'Microsoft Corporation'}]});
 assert.equal(requestQuery('Apple Hospitality REIT revenue 2025',{...symbols,APLE:1},nested).symbol,'APLE');
-assert.throws(()=>requestQuery('$ZZZZ revenue',symbols),/UNKNOWN_TICKER/);
+// An unknown ticker must name the stored universe instead of leaving the caller to guess coverage.
+assert.throws(()=>requestQuery('$ZZZZ revenue',symbols),/UNKNOWN_TICKER.*4 symbols/s);
 assert.equal(requestQuery('$HAS revenue',{...symbols,HAS:0}).symbol,'HAS');
 // Stored financials are annual; a quarterly or TTM question must not be answered annually.
 assert.throws(()=>requestQuery('AAPL quarterly revenue 2025',symbols),/ONLY_ANNUAL/);
@@ -71,6 +72,21 @@ assert.throws(()=>dailyQuote(pointer,daily,'AAPL','2026-10-19'),/REQUESTED_DATE/
 assert.throws(()=>dailyQuote(pointer,{...daily,bars:[{...daily.bars[0],close:null}]},'AAPL'),/MISSING/);
 assert.throws(()=>dailyQuote(pointer,{...daily,bars:[...daily.bars,...daily.bars]},'AAPL'),/AMBIGUOUS/);
 assert.throws(()=>dailyQuote(pointer,{...daily,session:'2026-10-19'},'AAPL'),/MISMATCH/);
+
+// A missing metric must name its stored-data cause instead of implying an empty range.
+const coverDb=new Map(),putCover=(key,value)=>coverDb.set(key,value);
+const coverEnv={DATA:{get:async key=>{const value=coverDb.get(key);return value?{size:value.length,text:async()=>value}:null;}}};
+const coverRow=(row)=>{const raw=JSON.stringify(row),sha256=createHash('sha256').update(raw).digest('hex');putCover(FULL+'symbol-batches.json',JSON.stringify({WMT:0}));putCover(FULL+'batches/0.json',JSON.stringify({rows:[{symbol:'WMT',identity:{cik:'0000000002'},financials:{cloud:row.cloud},valuation:{inputs:{key:'wmt',sha256,date_min:row.date_min,date_max:row.date_max}}}]}));putCover('wmt',raw);};
+coverRow({cloud:{status:'CLOUD_HISTORY_VERIFIED',annual_metrics_available:['assets','cash'],coverage_gap_reasons:['REVENUE_CONCEPT_NOT_MAPPED']},date_min:'2008-01-31',date_max:'2026-07-31',observations:[{metric:'assets',period_start:'2025-01-01',period_end:'2025-12-31',value_decimal:'100',unit:'USD',available_at:'2026-02-01',source_observation_ids:['a']}],source_records:{a:{}}});
+const uncovered=await queryRoute(coverEnv,new URL('https://internal/query?query=WMT+revenue+2025'));
+assert.equal(uncovered.result.coverage.reason,'METRIC_NOT_REPORTED_BY_ISSUER');
+assert.match(uncovered.answer,/without a revenue observation/);assert.match(uncovered.answer,/REVENUE_CONCEPT_NOT_MAPPED/);
+assert.match(uncovered.answer,/not an unknown company/);assert.equal(uncovered.source.coverage_status,'METRIC_NOT_REPORTED_BY_ISSUER');
+coverRow({cloud:{status:'CLOUD_HISTORY_EMPTY'},date_min:null,date_max:null,observations:[],source_records:{}});
+assert.equal((await queryRoute(coverEnv,new URL('https://internal/query?query=WMT+revenue'))).result.coverage.reason,'NO_STORED_ANNUAL_OBSERVATIONS');
+coverRow({cloud:{status:'CLOUD_HISTORY_VERIFIED',annual_metrics_available:['assets']},date_min:'2008-01-31',date_max:'2026-07-31',observations:[{metric:'assets',period_start:'2025-01-01',period_end:'2025-12-31',value_decimal:'100',unit:'USD',available_at:'2026-02-01',source_observation_ids:['a']}],source_records:{a:{}}});
+const outsideRange=await queryRoute(coverEnv,new URL('https://internal/query?query=WMT+revenue+2001'));
+assert.equal(outsideRange.result.coverage.reason,'REQUESTED_RANGE_OUTSIDE_STORED_COVERAGE');assert.match(outsideRange.answer,/2008-01-31 to 2026-07-31/);
 
 const liveRaw=JSON.stringify({session:'2026-10-21',provider:'alpaca',feed:'sip',bars:[{provider_symbol:'PEP',session_date:'2026-10-21',close:'50.25',security_id:'live-source'}]});
 const liveSha=createHash('sha256').update(liveRaw).digest('hex'),liveKey='gold/daily-prices/releases/'+liveSha+'/data.json';
