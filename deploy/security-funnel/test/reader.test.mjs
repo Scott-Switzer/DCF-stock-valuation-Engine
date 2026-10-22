@@ -12,6 +12,13 @@ assert.deepEqual((await p.column('permno')).map(Number),[101,101,202,202]);
 assert.deepEqual(await p.column('dlycaldt'),['2025-01-01','2025-01-02','2025-02-01','2025-02-02']);
 assert.deepEqual(await p.column('split_adjusted_price'),[10,11,null,20]);
 assert.deepEqual(await p.column('missing_adjustment_factors'),[false,false,true,false]);
+// A multi-column read must return each column aligned to its own row offsets.
+const multi=await p.columns(['permno','dlycaldt','split_adjusted_price','missing_adjustment_factors']);
+assert.deepEqual(multi.permno.map(Number),[101,101,202,202]);
+assert.deepEqual(multi.dlycaldt,['2025-01-01','2025-01-02','2025-02-01','2025-02-02']);
+assert.deepEqual(multi.split_adjusted_price,[10,11,null,20]);
+assert.deepEqual(multi.missing_adjustment_factors,[false,false,true,false]);
+assert.deepEqual((await p.columns(['permno'])).permno.map(Number),[101,101,202,202]);
 await assert.rejects(openMaterialized(env,{...ref,sha256:'0'.repeat(64)}),/MATERIALIZED_OBJECT_HASH/);
 await assert.rejects(openMaterialized(env,{...ref,rows:5}),/MATERIALIZED_ROW_COUNT/);
 await assert.rejects(openMaterialized(env,{...ref,key:'raw/wrds/unapproved/data.parquet'},'pinned-crsp-sample-factors'),/UNAPPROVED/);
