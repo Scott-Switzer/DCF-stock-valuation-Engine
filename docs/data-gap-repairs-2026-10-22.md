@@ -276,15 +276,15 @@ is authorized by this report.
 ### R4 — Universe expansion in waves
 
 - **Wave 1 (recommended)**: the 14 named omissions. Ingest identity + packets + price
-  history for 14 issuers, publish one new cohort release.
+  history for 14 listings across 12 issuers (GOOG/GOOGL and BRK-A/BRK-B share issuers), publish one new cohort release.
 - **Wave 2**: 3,839 issuers. Requires the ADR/FPI column and a liquidity or index ranking
   first; without them this is an unbounded scope.
-- **Cost**: wave 1 ~0.5 day and a small release (14 issuers × packets, plus their price
+- **Cost**: wave 1 ~0.5 day and a small release (12 issuer packets plus 14 listing mappings and price
   pages). Wave 2: about 1.25 M additional price rows on top of the current 856,633 (≈2.5×
   the cohort) and ≈3,800 new packet builds — measure with a 25-issuer dry run before
   committing; expect a multi-day ingest and a materially larger R2 footprint, still inside
   the current spend cap only if the dry run confirms bytes per issuer.
-- **Validation**: every new symbol resolves to exactly one CIK; no duplicate CIK in the
+- **Validation**: every new symbol resolves to exactly one CIK; no duplicate issuer packet per CIK, while preserving distinct share-class listings in the
   cohort; ADR/foreign-issuer rows excluded unless explicitly approved; unaffected packet
   hashes unchanged; the readiness count changes by the approved number only.
 - **Rollback**: publish the new cohort as a new release and keep the old pointer; repoint
