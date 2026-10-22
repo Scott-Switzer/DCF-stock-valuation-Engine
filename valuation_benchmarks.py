@@ -20,6 +20,30 @@ def encoded(value):
     return json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
 
 
+PUBLICATION_METHODS={'PUBLISHER_STATED','FIRST_OBSERVED'}
+
+
+def publication_status(manifest):
+    """Report whether a release can be used for historical selection.
+
+    A date alone is not evidence: a hand-edited manifest could carry any date.
+    Historical mode requires a date plus recorded evidence whose method is
+    reviewed and whose observation is dated, matching the importer contract.
+    """
+    published=manifest.get('published_at');evidence=manifest.get('publication_evidence')
+    if not published:
+        return {'available':False,'published_at':None,'method':None,
+                'reason':'NO_PUBLICATION_DATE'}
+    if not isinstance(evidence,dict) or evidence.get('method') not in PUBLICATION_METHODS:
+        return {'available':False,'published_at':published,'method':None,
+                'reason':'NO_REVIEWED_PUBLICATION_EVIDENCE'}
+    if not evidence.get('observed_at') or not str(evidence.get('source_url','')).startswith('https://'):
+        return {'available':False,'published_at':published,'method':evidence.get('method'),
+                'reason':'INCOMPLETE_PUBLICATION_EVIDENCE'}
+    return {'available':True,'published_at':published,'method':evidence['method'],
+            'observed_at':evidence['observed_at'],'reason':None}
+
+
 def load_benchmark(root, release, subject, measure, *, as_of=None):
     if not isinstance(release,str) or not re.fullmatch('[0-9a-f]{64}',release):
         raise ValueError('Exact assumption release hash required')
@@ -34,10 +58,13 @@ def load_benchmark(root, release, subject, measure, *, as_of=None):
         if member.stat().st_size>4*1048576:raise ValueError('Assumption file budget exceeded')
         if hashlib.sha256(member.read_bytes()).hexdigest()!=manifest.get('files',{}).get(name):
             raise ValueError('Assumption source integrity mismatch')
+    status=publication_status(manifest)
     if as_of is not None:
         cutoff=date.fromisoformat(as_of)
-        if not manifest.get('published_at') or date.fromisoformat(manifest['published_at'])>cutoff:
-            raise ValueError('Benchmark vintage unavailable at historical cutoff')
+        if not status['available']:
+            raise ValueError('Benchmark vintage unavailable at historical cutoff: '+status['reason'])
+        if date.fromisoformat(manifest['published_at'])>cutoff:
+            raise ValueError('Benchmark vintage unavailable at historical cutoff: published after cutoff')
     data=json.loads((path/'normalized.json').read_bytes())
     if (data.get('schema_version')!=VERSION or data.get('dataset_id')!=manifest.get('dataset_id')
             or data.get('region')!=manifest.get('region')):
@@ -52,6 +79,7 @@ def load_benchmark(root, release, subject, measure, *, as_of=None):
         raise ValueError('Benchmark is not a company fact')
     row.update(release_id=release,dataset_id=manifest['dataset_id'],region=manifest['region'],
                source_url=manifest['source_url'],published_at=manifest.get('published_at'),
+               publication_method=status['method'],
                selection_mode='HISTORICAL_PUBLISHED' if as_of else 'CURRENT_EXPLICIT_SELECTION')
     return row
 
