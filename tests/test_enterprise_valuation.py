@@ -172,6 +172,9 @@ def test_calculate_enterprise_api_enforces_server_evidence_attestation(tmp_path,
     manifest = {
         'schema_version': 'damodaran-assumptions-v1', 'dataset_id': 'cost_of_capital', 'region': 'US',
         'published_at': '2026-01-01', 'source_url': 'https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls',
+        'publication_evidence': {'method': 'FIRST_OBSERVED',
+                                 'source_url': 'https://pages.stern.nyu.edu/~adamodar/datahistory.html',
+                                 'observed_at': '2026-01-02T00:00:00Z'},
         'files': {'source.bin': hashlib.sha256(raw).hexdigest(), 'normalized.json': hashlib.sha256(data).hexdigest()},
     }
     rid = hashlib.sha256(encoded(manifest)).hexdigest()
