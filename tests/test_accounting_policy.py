@@ -10,6 +10,16 @@ from pathlib import Path
 # exercised explicitly by patching the header builder.
 os.environ.setdefault("EDGAR_IDENTITY", "Test Analyst test@example.invalid")
 
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _direct_fetch_dev_mode(monkeypatch):
+    # These tests exercise the direct SEC companyconcept fetch itself, which
+    # is a local-development path behind DCF_ALLOW_DIRECT_FETCH; the
+    # production fail-closed gate is covered in tests/test_direct_gate.py.
+    monkeypatch.setenv("DCF_ALLOW_DIRECT_FETCH", "1")
+
 from accounting_policy import (
     apply_policy,
     audit_adjustments,

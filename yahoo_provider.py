@@ -1,9 +1,15 @@
-"""Yahoo current snapshots; annual facts are never represented as point-in-time filings."""
+"""Yahoo current snapshots; annual facts are never represented as point-in-time filings.
+
+This provider is a local-development path only. Production loads go through
+the Zion serving layer (published packets plus served price history), so
+``load_yahoo`` fails closed unless DCF_ALLOW_DIRECT_FETCH=1 is set; see
+``dcf_loader.require_direct_fetch``.
+"""
 
 from datetime import datetime, timezone, date
 import math
 from urllib.parse import quote
-from dcf_loader import JsonHTTP, ProviderError, blank_document, ticker_symbol, parse_document
+from dcf_loader import JsonHTTP, ProviderError, blank_document, ticker_symbol, parse_document, require_direct_fetch
 
 BASE = "https://query2.finance.yahoo.com"
 HEADERS = {"User-Agent": "DCF-Valuation-Engine/1.0", "Accept": "application/json"}
@@ -65,6 +71,10 @@ def market_quote(meta, asof):
 
 def latest_quote(ticker, asof, http=None):
     """Price for watchlist refresh. Never loads statements, peers or capital costs."""
+    require_direct_fetch(
+        "The Yahoo Finance one-day quote",
+        "served price history (served_market.latest_price)",
+    )
     symbol = ticker_symbol(ticker)
     http = http or JsonHTTP()
     meta = latest_chart(http, symbol).get("meta", {})
@@ -160,6 +170,10 @@ def annual_facts(packet, ticker, asof):
 
 
 def load_yahoo(ticker, asof, http=None, include_capital_costs=True, require_wacc=True, packet=None):
+    require_direct_fetch(
+        "The Yahoo Finance snapshot provider",
+        "a published served packet (SEC-first) plus served price history",
+    )
     ticker = ticker_symbol(ticker)
     now = datetime.now(timezone.utc)
     if asof != now.date().isoformat():
