@@ -25,7 +25,12 @@ export async function stampedRead(env,expected,read){
   const result=await read(before);
   const after=await readSnapshot(env);
   if(after.bundle_id!==before.bundle_id||(result.bundle_id&&result.bundle_id!==before.bundle_id))throw Error('RELEASE_MISMATCH');
-  if(result.source?.release&&!Object.values(before.source_releases).includes(result.source.release))throw Error('RELEASE_MISMATCH');
+  if(result.source?.release&&!Object.values(before.source_releases).includes(result.source.release)){
+   // The source authority verifies indexed historical releases. Preserve their
+   // real release ID and require its parent index to belong to this bundle.
+   const index=before.source_releases.daily_session_index;
+   if(result.bundle_id!==before.bundle_id||!index||result.source.session_index_sha256!==index||result.source.session_index_key!==`control/daily-prices/sessions/${index}.json`)throw Error('RELEASE_MISMATCH');
+  }
   return {...result,bundle_id:before.bundle_id,data_as_of:answerDate(result),source_releases:before.source_releases};
  }catch(error){error.snapshot=before;throw error;}
 }
