@@ -131,3 +131,26 @@ catalog endpoint remains available for pagination and detailed source schemas.
 No licensed records, raw files, inferred units, or invented availability dates
 are returned through this question route. Website owner access, terminal, Slack,
 and MCP reuse these same shared routes.
+
+### Explicit request objects
+
+The same GET `/query` accepts either `query` text or one JSON-encoded `request`.
+They are mutually exclusive; duplicate inputs, unsupported fields and invalid
+calendar dates fail instead of silently changing the question.
+
+```json
+{"action":"price","symbol":"ON","date":"2020-01-02"}
+{"action":"growth","symbol":"AAPL","date_from":"2020-01-02","date_to":"2021-01-04","basis":"split_adjusted_price"}
+{"action":"financials","symbol":"AAPL","metric":"revenue","date_from":"2024-01-01","date_to":"2025-12-31"}
+{"action":"dataset_catalog","search":"comp","offset":50,"limit":10}
+```
+
+A price without `date` means latest stored close. Financial requests use annual
+observations; both dates or neither must be supplied. Catalog limits are 1–50;
+follow `next_offset` while retaining the same source bundle. Structured symbols
+avoid ambiguity for short tickers such as `A` and `ON`.
+
+The website `/api/data/query` forwards this same input and retains owner-only
+price/catalog access. `scripts/finance.py --request '<JSON>' --json` uses the same
+API. MCP `query_financial_data` accepts `{request: ...}` or `{query: ...}` without
+adding tools or credential scope. Invalid inputs never authorize acquisition.

@@ -17,3 +17,23 @@ def test_data_page_uses_existing_site_and_no_embedded_private_credentials():
     assert response.status_code == 200
     assert b'financial-query' in response.data
     assert b'FINANCIAL_DATA_TOKEN' not in response.data
+
+
+def test_structured_queries_preserve_private_price_and_catalog_access():
+    import json
+    client = app.test_client()
+    env = SimpleNamespace(FINANCIAL_DATA_TOKEN='private-test')
+    for action in ['price', 'dataset_catalog']:
+        response = client.get('/api/data/query', query_string={'request': json.dumps({'action': action, 'symbol': 'AAPL'})},
+                              environ_overrides={'workers.env': env})
+        assert response.status_code == 403
+    # Public SEC requests get past access checks, but this fixture has no service.
+    response = client.get('/api/data/query', query_string={'request': '{"action":"financials","symbol":"AAPL"}'},
+                          environ_overrides={'workers.env': env})
+    assert response.status_code == 503
+
+
+def test_ambiguous_and_malformed_inputs_are_rejected_before_dispatch():
+    client = app.test_client()
+    for query in ['query=AAPL&request={}', 'request=null', 'request={', 'query=x&query=y', 'query=']:
+        assert client.get('/api/data/query?' + query).status_code == 400

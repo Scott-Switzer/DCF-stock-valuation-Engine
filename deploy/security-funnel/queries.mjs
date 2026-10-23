@@ -1,6 +1,7 @@
 // One financial query implementation for Slack, the terminal and the website.
 import {FULL,historyRoute} from './history.mjs';
 import {ENRICH} from './enrichment.mjs';
+import {queryInput,structuredQuery} from './query-input.mjs';
 // Stable machine codes stay first so clients can branch on them; the sentence after
 // the colon is what a website, Slack or MCP caller shows the person who asked.
 const HINTS={
@@ -186,34 +187,36 @@ async function sessionQuote(env,symbol,date,snapshot){
   source:{provider:release.provider,feed:release.feed,release:sha,date,source_security_id:result.source_security_id,...(indexed?{session_index_sha256:index,session_index_key:data.coverage.session_index_key}:{})},
   warnings:['Source-reported daily close; row publication time and point-in-time eligibility are not established. No CRSP/provider history splice or split adjustment is implied.']};
 }
-async function collectionCatalog(env,search,snapshot){
+async function collectionCatalog(env,search,snapshot,offset=0,limit=50){
  const release=snapshot?.source_releases?.COLLECTION_CATALOG_KEY;
  if(!release)fail('CATALOG_NOT_CONNECTED');
  const url=new URL('https://zion.internal/private/v1/datasets/catalog');
- url.searchParams.set('limit','50');if(search)url.searchParams.set('search',search);
+ url.searchParams.set('limit',String(limit));url.searchParams.set('offset',String(offset));if(search)url.searchParams.set('search',search);
  const response=await env.FINANCIAL_API.fetch(new Request(url,{headers:{Authorization:'Bearer '+env.TOKEN,'x-zion-bundle-id':snapshot.bundle_id},signal:AbortSignal.timeout(15000)}));
  const data=await boundedSourceJson(response,262144);
  if(!response.ok)fail(data.error?.code||'CATALOG_UNAVAILABLE');
  if(response.headers.get('x-zion-bundle-id')!==snapshot.bundle_id||data.release_id!==release)fail('RELEASE_MISMATCH');
- if(!Array.isArray(data.entries)||data.entries.length>50)fail('CATALOG_RESPONSE_INVALID');
+ if(!Array.isArray(data.entries)||data.entries.length>limit)fail('CATALOG_RESPONSE_INVALID');
  // Explicit metadata projection: this route must never return records or files.
  const entries=data.entries.map(row=>Object.fromEntries(['id','dataset','release','source','family','rows_declared','objects','columns'].map(key=>[key,row[key]])));
  return {world:'real/us-public-markets',symbol:'WRDS',action:'dataset_catalog',complete_valuation:false,
   answer:`WRDS catalog: ${data.registered_releases} registered releases across ${data.unique_datasets} datasets; ${data.matching_releases} match this request. Showing ${entries.length}. These are source archives, not normalized or point-in-time-certified financial facts.`,
-  result:{registered_releases:data.registered_releases,unique_datasets:data.unique_datasets,matching_releases:data.matching_releases,next_offset:data.next_offset,entries,metadata_only:true},
+  result:{registered_releases:data.registered_releases,unique_datasets:data.unique_datasets,matching_releases:data.matching_releases,offset,limit,next_offset:data.next_offset,entries,metadata_only:true},
   source:{provider:'WRDS',release,catalog_path:'/private/v1/datasets/catalog'},
   warnings:['Metadata only; declared row counts are not independently certified coverage. Partial remote exports are excluded from the new registrations.','Licensed payloads are not returned by this question route. Dataset-specific units, identity, and availability policies remain required before financial serving.']};
 }
 export async function queryRoute(env,u,dependencies={}){
  const snapshot=dependencies.snapshot;
- const question=u.searchParams.get('query');
- if(typeof question!=='string'||question.length>2000)fail('INVALID_QUESTION');
- const catalog=/^(?:show |list )?wrds (?:coverage|catalog|datasets|tables)(?:\s+([a-z0-9_.-]{1,128}))?\s*\??$/i.exec(question.trim());
+ const input=queryInput(u);
+ if(input.request?.action==='dataset_catalog'){
+  const request=structuredQuery(input.request);
+  return collectionCatalog(env,request.search,snapshot,request.offset,request.limit);
+ }
+ const catalog=input.question&&/^(?:show |list )?wrds (?:coverage|catalog|datasets|tables)(?:\s+([a-z0-9_.-]{1,128}))?\s*\??$/i.exec(input.question.trim());
  if(catalog)return collectionCatalog(env,catalog[1]||'',snapshot);
  const index=await symbolIndex(env);
  if(!index)fail('DATA_UNAVAILABLE');
- const aliases=await directoryAliases(env);
- const parsed=requestQuery(u.searchParams.get('query'),index,aliases);
+ const parsed=input.request?structuredQuery(input.request,index):requestQuery(input.question,index,await directoryAliases(env));
  const part=await read(env,FULL+`batches/${index[parsed.symbol]}.json`),security=part.rows.find(r=>r.symbol===parsed.symbol);
  const base={world:'real/us-public-markets',symbol:parsed.symbol,action:parsed.action,complete_valuation:false};
  if(parsed.action==='latest_price')return latestQuote(env,parsed.symbol);
