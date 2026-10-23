@@ -16,6 +16,7 @@ const HINTS={
  ASK_FOR_PRICE_GROWTH_OR_FINANCIALS:'Ask for a price, price growth, revenue, revenue growth or operating margin.',
  ONLY_ANNUAL_FINANCIALS_SUPPORTED:'Stored financial history is annual; ask about a fiscal year rather than a quarter or TTM.',
  NO_UNIQUE_PRICE_ON_REQUESTED_DATE:'No unique stored close exists on that session; use an exact exchange trading day.',
+ SESSION_NOT_INDEXED:'That session has not been published in the stored daily index. No other date was substituted.',
  REQUESTED_DATE_NOT_IN_LATEST_RELEASE:'Only the latest stored session is served for recent prices; ask for that date or an older historical session.'
 };
 const fail=(code,detail)=>{throw Error((HINTS[code]?code+': '+HINTS[code]:code)+(detail?' '+detail:''))};
@@ -153,8 +154,62 @@ async function latestQuote(env,symbol,requestedDate){
  const daily=await read(env,pointer.data_key,pointer.sha256,8*1048576),result=dailyQuote(pointer,daily,symbol,requestedDate);
  return {world:'real/us-public-markets',symbol,action:'latest_price',complete_valuation:false,answer:`${symbol}: $${result.price.toFixed(4)} — latest stored ${result.provider||'provider'} close, as of ${result.date}.`,result,source:{provider:result.provider,feed:result.feed,release:pointer.sha256,date:result.date,source_security_id:result.source_security_id},warnings:[live?`Latest close from the collector's current daily release pointer. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.`:`Latest close in the connected snapshot; the collector's current pointer was unavailable, so this may be older. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.`]};
 }
+// Reuse the source service's hash-verified session index instead of maintaining
+// another index reader here. Historical session releases belong to the bundle
+// transitively through that immutable index, not through today's price release.
+async function boundedSourceJson(response,max=65536){
+ if(!response.body)fail('DATA_UNAVAILABLE');
+ const reader=response.body.getReader(),chunks=[];let bytes=0;
+ for(;;){const {done,value}=await reader.read();if(done)break;bytes+=value.length;if(bytes>max){await reader.cancel();fail('SOURCE_RESPONSE_TOO_LARGE');}chunks.push(value);}
+ const raw=new Uint8Array(bytes);let offset=0;for(const chunk of chunks){raw.set(chunk,offset);offset+=chunk.length;}
+ return JSON.parse(new TextDecoder().decode(raw));
+}
+async function sessionQuote(env,symbol,date,snapshot){
+ if(!snapshot?.bundle_id)fail('BUNDLE_UNAVAILABLE');
+ const url=new URL('https://zion.internal/v1/market/prices/'+encodeURIComponent(symbol));
+ url.searchParams.set('session',date);url.searchParams.set('limit','2');
+ const response=await env.FINANCIAL_API.fetch(new Request(url,{headers:{Authorization:'Bearer '+env.TOKEN,'x-zion-bundle-id':snapshot.bundle_id},signal:AbortSignal.timeout(15000)}));
+ const data=await boundedSourceJson(response);
+ if(!response.ok)fail(data.error?.code||'MARKET_SESSION_UNAVAILABLE');
+ if(data.bundle_id!==snapshot.bundle_id)fail('RELEASE_MISMATCH');
+ const release=data.release||{},sha=release.market_release_id,index=snapshot.source_releases?.daily_session_index;
+ if(!/^[a-f0-9]{64}$/.test(sha||'')||release.sha256!==sha||release.data_key!==`gold/daily-prices/releases/${sha}/data.json`||release.session!==date)fail('MARKET_SESSION_MISMATCH');
+ const indexed=data.coverage?.index_status==='SESSION_INDEX_VERIFIED';
+ if(indexed){
+  if(!/^[a-f0-9]{64}$/.test(index||'')||data.source_releases?.daily_session_index!==index||data.coverage.session_index_key!==`control/daily-prices/sessions/${index}.json`)fail('RELEASE_MISMATCH');
+ }else if(sha!==snapshot.source_releases?.daily_prices)fail('RELEASE_MISMATCH');
+ const rows=data.data?.prices;
+ if(!Array.isArray(rows)||rows.length!==1||(rows[0].provider_symbol||rows[0].symbol)!==symbol)fail('NO_UNIQUE_PRICE_ON_REQUESTED_DATE');
+ const result=dailyQuote({session:date,data_key:release.data_key,sha256:sha},{session:date,provider:release.provider,feed:release.feed,bars:rows},symbol,date);
+ return {world:'real/us-public-markets',symbol,action:'price',complete_valuation:false,bundle_id:data.bundle_id,
+  answer:`${symbol}: $${result.price.toFixed(4)} on ${date} (${release.provider} stored daily close).`,result,
+  source:{provider:release.provider,feed:release.feed,release:sha,date,source_security_id:result.source_security_id,...(indexed?{session_index_sha256:index,session_index_key:data.coverage.session_index_key}:{})},
+  warnings:['Source-reported daily close; row publication time and point-in-time eligibility are not established. No CRSP/provider history splice or split adjustment is implied.']};
+}
+async function collectionCatalog(env,search,snapshot){
+ const release=snapshot?.source_releases?.COLLECTION_CATALOG_KEY;
+ if(!release)fail('CATALOG_NOT_CONNECTED');
+ const url=new URL('https://zion.internal/private/v1/datasets/catalog');
+ url.searchParams.set('limit','50');if(search)url.searchParams.set('search',search);
+ const response=await env.FINANCIAL_API.fetch(new Request(url,{headers:{Authorization:'Bearer '+env.TOKEN,'x-zion-bundle-id':snapshot.bundle_id},signal:AbortSignal.timeout(15000)}));
+ const data=await boundedSourceJson(response,262144);
+ if(!response.ok)fail(data.error?.code||'CATALOG_UNAVAILABLE');
+ if(response.headers.get('x-zion-bundle-id')!==snapshot.bundle_id||data.release_id!==release)fail('RELEASE_MISMATCH');
+ if(!Array.isArray(data.entries)||data.entries.length>50)fail('CATALOG_RESPONSE_INVALID');
+ // Explicit metadata projection: this route must never return records or files.
+ const entries=data.entries.map(row=>Object.fromEntries(['id','dataset','release','source','family','rows_declared','objects','columns'].map(key=>[key,row[key]])));
+ return {world:'real/us-public-markets',symbol:'WRDS',action:'dataset_catalog',complete_valuation:false,
+  answer:`WRDS catalog: ${data.registered_releases} registered releases across ${data.unique_datasets} datasets; ${data.matching_releases} match this request. Showing ${entries.length}. These are source archives, not normalized or point-in-time-certified financial facts.`,
+  result:{registered_releases:data.registered_releases,unique_datasets:data.unique_datasets,matching_releases:data.matching_releases,next_offset:data.next_offset,entries,metadata_only:true},
+  source:{provider:'WRDS',release,catalog_path:'/private/v1/datasets/catalog'},
+  warnings:['Metadata only; declared row counts are not independently certified coverage. Partial remote exports are excluded from the new registrations.','Licensed payloads are not returned by this question route. Dataset-specific units, identity, and availability policies remain required before financial serving.']};
+}
 export async function queryRoute(env,u,dependencies={}){
  const snapshot=dependencies.snapshot;
+ const question=u.searchParams.get('query');
+ if(typeof question!=='string'||question.length>2000)fail('INVALID_QUESTION');
+ const catalog=/^(?:show |list )?wrds (?:coverage|catalog|datasets|tables)(?:\s+([a-z0-9_.-]{1,128}))?\s*\??$/i.exec(question.trim());
+ if(catalog)return collectionCatalog(env,catalog[1]||'',snapshot);
  const index=await symbolIndex(env);
  if(!index)fail('DATA_UNAVAILABLE');
  const aliases=await directoryAliases(env);
@@ -162,7 +217,7 @@ export async function queryRoute(env,u,dependencies={}){
  const part=await read(env,FULL+`batches/${index[parsed.symbol]}.json`),security=part.rows.find(r=>r.symbol===parsed.symbol);
  const base={world:'real/us-public-markets',symbol:parsed.symbol,action:parsed.action,complete_valuation:false};
  if(parsed.action==='latest_price')return latestQuote(env,parsed.symbol);
- if(parsed.action==='price'&&security.full_history?.date_max&&parsed.dates[0]>security.full_history.date_max)return latestQuote(env,parsed.symbol,parsed.dates[0]);
+ if(parsed.action==='price'&&security.full_history?.date_max&&parsed.dates[0]>security.full_history.date_max)return sessionQuote(env,parsed.symbol,parsed.dates[0],snapshot);
  const getHistory=dependencies.history||((url)=>historyRoute(env,url));
  if(parsed.action==='price'||parsed.action==='growth'){
   const pages=await Promise.all(parsed.dates.map(async date=>{

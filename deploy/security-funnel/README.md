@@ -113,3 +113,21 @@ CRSP sample-factor partition in Cloudflare and compares its identity/date covera
 to histories with missing factors. It checks whether full-factor aliases are exact
 payload duplicates. It reports repair candidates; it never splices sample adjustment
 bases into the full history or labels candidates as repaired rows.
+
+### Shared reader integration (October 22, 2026)
+
+Exact recent-session questions such as `PEP price 2026-10-21` call the existing
+thin `/v1/market/prices/PEP?session=2026-10-21` endpoint. The answer retains the
+session's release hash and its parent `daily_session_index` hash. The source and
+shared API must agree on the bundle; an absent session is never replaced with
+the latest close. This adds daily-session lookup, not cross-provider returns or
+point-in-time certification.
+
+`WRDS coverage` and `WRDS datasets comp` use the existing private collection
+catalog. The source snapshot must register `COLLECTION_CATALOG_KEY`; a different
+catalog deployment fails closed. Only whitelisted metadata is returned (at most
+50 entries); declared rows do not establish completeness. The authenticated
+catalog endpoint remains available for pagination and detailed source schemas.
+No licensed records, raw files, inferred units, or invented availability dates
+are returned through this question route. Website owner access, terminal, Slack,
+and MCP reuse these same shared routes.
