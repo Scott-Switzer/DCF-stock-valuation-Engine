@@ -145,7 +145,7 @@ calendar dates fail instead of silently changing the question.
 {"action":"dataset_catalog","search":"comp","offset":50,"limit":10}
 ```
 
-A price without `date` means latest stored close. Financial requests use annual
+A price without `date` means latest stored close. Financial requests default to annual
 observations; both dates or neither must be supplied. Catalog limits are 1–50;
 follow `next_offset` while retaining the same source bundle. Structured symbols
 avoid ambiguity for short tickers such as `A` and `ON`.
@@ -154,3 +154,20 @@ The website `/api/data/query` forwards this same input and retains owner-only
 price/catalog access. `scripts/finance.py --request '<JSON>' --json` uses the same
 API. MCP `query_financial_data` accepts `{request: ...}` or `{query: ...}` without
 adding tools or credential scope. Invalid inputs never authorize acquisition.
+
+
+Structured financial requests also accept `frequency: "quarterly"` or `"ttm"`;
+`AAPL quarterly revenue 2025` and `AAPL TTM operating margin` use the same native
+SEC engine. Quarter validation, TTM construction, source revisions and availability
+remain owned by that engine. No annual packet or fallback replaces missing periods.
+Explicit dates filter period ends. Without dates the engine defaults to 2015 or
+its later minimum through the company cutoff, and the answer discloses that limit.
+`Q1 2025` is rejected because fiscal and calendar quarters are not interchangeable.
+Nonannual revenue growth is rejected until an explicit comparison policy exists.
+
+The adapter bounds bytes, pages and elapsed time, preserves source records and
+gaps, rejects changed source identity, and aligns margin periods/currencies.
+Both annual source fallback and quarterly/TTM calls require
+`materialized_only=true` (Zion #57): a missing company reports a gap without
+queuing acquisition. The existing source may still cache calculations over stored
+materializations. Deploy that source change before this reader.

@@ -25,7 +25,7 @@ export function structuredQuery(value,symbols={}){
   if(!Number.isSafeInteger(offset)||offset<0||offset>1000000||!Number.isSafeInteger(limit)||limit<1||limit>50)invalid('Catalog offset must be 0–1,000,000 and limit 1–50.');
   return {action,search,offset,limit};
  }
- const allowed={price:['date'],growth:['date_from','date_to','basis'],financials:['metric','date_from','date_to']}[action];
+ const allowed={price:['date'],growth:['date_from','date_to','basis'],financials:['metric','frequency','date_from','date_to']}[action];
  if(!allowed)invalid('Use price, growth, financials, or dataset_catalog.');
  fields(value,['action','symbol',...allowed]);
  if(typeof value.symbol!=='string'||!Object.hasOwn(symbols,value.symbol.toUpperCase()))invalid('Symbol is not in the stored universe.');
@@ -42,5 +42,7 @@ export function structuredQuery(value,symbols={}){
  }
  const metric=value.metric??'revenue';
  if(!['revenue','revenue_growth','operating_margin'].includes(metric))invalid('Unsupported financial metric.');
- return {action,symbol,dates,metric};
+ const frequency=value.frequency??'annual';
+ if(!['annual','quarterly','ttm'].includes(frequency))invalid('Unsupported financial frequency.');
+ return {action,symbol,dates,metric,frequency};
 }

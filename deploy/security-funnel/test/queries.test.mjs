@@ -50,10 +50,10 @@ assert.equal(requestQuery('Apple Hospitality REIT revenue 2025',{...symbols,APLE
 // An unknown ticker must name the stored universe instead of leaving the caller to guess coverage.
 assert.throws(()=>requestQuery('$ZZZZ revenue',symbols),/UNKNOWN_TICKER.*4 symbols/s);
 assert.equal(requestQuery('$HAS revenue',{...symbols,HAS:0}).symbol,'HAS');
-// Stored financials are annual; a quarterly or TTM question must not be answered annually.
-assert.throws(()=>requestQuery('AAPL quarterly revenue 2025',symbols),/ONLY_ANNUAL/);
-assert.throws(()=>requestQuery('AAPL revenue Q1 2025',symbols),/ONLY_ANNUAL/);
-assert.throws(()=>requestQuery('AAPL TTM revenue',symbols),/ONLY_ANNUAL/);
+// Quarterly and TTM questions must retain their frequency; fiscal quarter labels stay explicit.
+assert.equal(requestQuery('AAPL quarterly revenue 2025',symbols).frequency,'quarterly');
+assert.throws(()=>requestQuery('AAPL revenue Q1 2025',symbols),/EXACT_PERIOD_RANGE/);
+assert.equal(requestQuery('AAPL TTM revenue',symbols).frequency,'ttm');
 // A bare year is not an exact trading session; it must not serve the latest close.
 assert.throws(()=>requestQuery('AAPL price 2025',symbols),/EXACT_SESSION_DATE/);
 assert.throws(()=>requestQuery('AAPL return 2025',symbols),/EXACT_SESSION_DATE/);
