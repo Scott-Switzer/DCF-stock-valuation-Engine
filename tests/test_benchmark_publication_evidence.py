@@ -147,9 +147,9 @@ class TestPublicationEvidenceContract:
 
 
 class TestFailClosedResolution:
-    def test_manifest_publication_metadata_wins_unchanged(self):
+    def test_bare_manifest_date_stays_unavailable_without_evidence(self):
         published, record, availability = resolve_publication("a" * 64, "sha", "2026-01-08", None)
-        assert (published, record, availability) == ("2026-01-08", None, AVAILABLE)
+        assert (published, record, availability) == ("2026-01-08", None, UNAVAILABLE)
 
     def test_evidence_for_other_bytes_fails_closed(self):
         published, record, availability = resolve_publication(

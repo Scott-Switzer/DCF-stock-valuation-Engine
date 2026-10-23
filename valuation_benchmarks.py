@@ -155,8 +155,10 @@ def resolve_publication(release, source_sha256, manifest_published_at, entry, ma
     without a usable date the release stays unavailable at any historical
     cutoff instead of being backdated.
     """
-    if manifest_published_at and publication_status(manifest or {}).get("available"):
-        return str(manifest_published_at),(manifest or {}).get("publication_evidence"),AVAILABLE
+    if manifest_published_at:
+        status = publication_status(manifest or {})
+        return (str(manifest_published_at), (manifest or {}).get("publication_evidence"),
+                AVAILABLE if status["available"] else UNAVAILABLE)
     if not isinstance(entry,dict) or entry.get('source_sha256')!=source_sha256:
         return None,None,UNAVAILABLE
     if entry.get('published_at') is None:
@@ -202,8 +204,11 @@ def load_benchmark(root, release, subject, measure, *, as_of=None, evidence=None
     )
     if as_of is not None:
         cutoff=date.fromisoformat(as_of)
-        if not published or date.fromisoformat(published)>cutoff:
-            raise ValueError('Benchmark vintage unavailable at historical cutoff')
+        if availability != AVAILABLE or not published:
+            reason=publication_status(manifest).get('reason') or 'NO_REVIEWED_PUBLICATION_EVIDENCE'
+            raise ValueError('Benchmark vintage unavailable at historical cutoff: '+reason)
+        if date.fromisoformat(published)>cutoff:
+            raise ValueError('Benchmark vintage unavailable at historical cutoff: published after cutoff')
     selected=[r for r in data['records'] if r['subject']==subject and r['measure']==measure]
     if len(selected)!=1 or selected[0]['value_decimal'] is None:
         raise ValueError('Benchmark missing or ambiguous; select explicit industry/measure')
