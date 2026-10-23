@@ -154,6 +154,7 @@ async function latestQuote(env,symbol,requestedDate){
  return {world:'real/us-public-markets',symbol,action:'latest_price',complete_valuation:false,answer:`${symbol}: $${result.price.toFixed(4)} — latest stored ${result.provider||'provider'} close, as of ${result.date}.`,result,source:{provider:result.provider,feed:result.feed,release:pointer.sha256,date:result.date,source_security_id:result.source_security_id},warnings:[live?`Latest close from the collector's current daily release pointer. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.`:`Latest close in the connected snapshot; the collector's current pointer was unavailable, so this may be older. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.`]};
 }
 export async function queryRoute(env,u,dependencies={}){
+ const snapshot=dependencies.snapshot;
  const index=await symbolIndex(env);
  if(!index)fail('DATA_UNAVAILABLE');
  const aliases=await directoryAliases(env);

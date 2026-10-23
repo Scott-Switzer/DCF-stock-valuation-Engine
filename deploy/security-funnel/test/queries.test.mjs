@@ -107,6 +107,6 @@ const promoted={...env,TOKEN:'test',FINANCIAL_API:{fetch:async request=>{
  assert.equal(request.headers.get('x-zion-bundle-id'),'a'.repeat(64));canonicalCalls++;
  return Response.json({observations:url.searchParams.get('date_from')==='2000-01-01'?packet.observations:[],source_records:packet.source_records,coverage_gaps:[]});
 }}};
-const promotedAnswer=await queryRoute(promoted,new URL('https://internal/query?query=PEP+revenue+2025'),{bundle_id:'a'.repeat(64),source_releases:{SEC_ENGINE_MANIFEST_KEY:canonical}});
+const promotedAnswer=await queryRoute(promoted,new URL('https://internal/query?query=PEP+revenue+2025'),{snapshot:{bundle_id:'a'.repeat(64),source_releases:{SEC_ENGINE_MANIFEST_KEY:canonical}}});
 assert.equal(canonicalCalls,2);assert.equal(promotedAnswer.source.release,canonical);
 assert.equal(promotedAnswer.result.observations[0].value_decimal,'100');
