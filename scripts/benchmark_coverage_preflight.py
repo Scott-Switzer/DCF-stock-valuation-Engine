@@ -27,7 +27,6 @@ sys.path.insert(0, str(ROOT))
 
 from valuation_benchmarks import (  # noqa: E402
     AVAILABLE,
-    UNAVAILABLE,
     coverage_catalog,
     load_benchmark,
     load_publication_evidence,

@@ -19,7 +19,7 @@ import argparse
 import hashlib
 import json
 import sys
-from datetime import date, datetime
+from datetime import datetime
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 

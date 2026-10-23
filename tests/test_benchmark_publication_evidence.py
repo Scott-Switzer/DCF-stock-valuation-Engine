@@ -10,7 +10,6 @@ unchanged. No test asserts a benchmark value beyond the fixture's own numbers.
 
 import hashlib
 import json
-from datetime import datetime, timedelta, timezone
 
 import pytest
 
