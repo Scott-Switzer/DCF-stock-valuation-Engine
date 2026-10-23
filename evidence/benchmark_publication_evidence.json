@@ -1,0 +1,143 @@
+{
+  "curated_from": [
+    "data/ddfi/registry/pilot_ingest_report.json (server Last-Modified records)",
+    "data/ddfi/evidence/ (byte-identical preserved source bytes)"
+  ],
+  "evidence_rule": "published_at is the provider HTTP Last-Modified date of the exact source bytes bound to evidence_sha256; download time and stated vintage are disclosed but never used for availability",
+  "releases": [
+    {
+      "dataset_id": "margins",
+      "download_retrieved_at": "2026-10-14T19:28:12.209527+00:00",
+      "historical_availability": "UNKNOWN_UNLESS_PUBLICATION_EVIDENCE_SUPPLIED",
+      "publication_evidence": null,
+      "published_at": null,
+      "region": "US",
+      "release_id": "5ce3d0a0f23f1ff104671dc021c70f6e558a6a259aef88465a11f0375389e96d",
+      "source_sha256": "25b04fce9740d9a471d50e176bf55aa6b7608cd0621b00072508a20e7c35ed7a",
+      "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/margin.xls",
+      "stated_publication_date": null,
+      "stated_vintage_role": "DISCLOSED_NOT_USED_FOR_AVAILABILITY",
+      "unavailable_reason": "no preserved publication evidence for these exact source bytes; download time and stated vintage are disclosed but never used for availability"
+    },
+    {
+      "dataset_id": "industry_betas",
+      "download_retrieved_at": "2026-10-14T19:28:11.277035+00:00",
+      "historical_availability": "AVAILABLE_FROM_PUBLISHED_AT",
+      "publication_evidence": {
+        "evidence_path": "evidence/betas_us_january_2026__fa5d91af58046937__betas.xls",
+        "evidence_sha256": "fa5d91af58046937e2db27a764b077dde9d5414df5f69214328f163b940e42a5",
+        "method": "SERVER_LAST_MODIFIED",
+        "observed_at": "2026-10-14T20:50:21.531103+00:00",
+        "server_last_modified": "Sun, 12 Apr 2026 16:39:33 GMT",
+        "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/betas.xls",
+        "statement": "HTTP Last-Modified of the exact source bytes, recorded at ingest and bound to evidence_sha256"
+      },
+      "published_at": "2026-04-12",
+      "region": "US",
+      "release_id": "69e27f1c09fbc024d76e9a1c0cbcf2b01957ca988122bbe4cc28a17662e39b6b",
+      "source_sha256": "fa5d91af58046937e2db27a764b077dde9d5414df5f69214328f163b940e42a5",
+      "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/betas.xls",
+      "stated_publication_date": null,
+      "stated_vintage_role": "DISCLOSED_NOT_USED_FOR_AVAILABILITY"
+    },
+    {
+      "dataset_id": "cost_of_capital",
+      "download_retrieved_at": "2026-10-14T19:28:12.165271+00:00",
+      "historical_availability": "AVAILABLE_FROM_PUBLISHED_AT",
+      "publication_evidence": {
+        "evidence_path": "evidence/cost_of_capital_us_january_2026__d38b149c731bba68__wacc.xls",
+        "evidence_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+        "method": "SERVER_LAST_MODIFIED",
+        "observed_at": "2026-10-14T20:50:21.531103+00:00",
+        "server_last_modified": "Mon, 12 Jan 2026 13:41:41 GMT",
+        "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+        "statement": "HTTP Last-Modified of the exact source bytes, recorded at ingest and bound to evidence_sha256"
+      },
+      "published_at": "2026-01-12",
+      "region": "US",
+      "release_id": "6a7510cfc34cde5490e9e9ee89455d55a81805311e66f6b2f1d9a60328efc3b8",
+      "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+      "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/wacc.xls",
+      "stated_publication_date": null,
+      "stated_vintage_role": "DISCLOSED_NOT_USED_FOR_AVAILABILITY"
+    },
+    {
+      "dataset_id": "implied_erp",
+      "download_retrieved_at": "2026-10-14T19:28:12.299833+00:00",
+      "historical_availability": "AVAILABLE_FROM_PUBLISHED_AT",
+      "publication_evidence": {
+        "evidence_path": "evidence/implied_erp_january_2026__bb4d8da0a371a00a__histimpl.xls",
+        "evidence_sha256": "bb4d8da0a371a00af06172ec41dcef35a9ae30d6ab9c03d58ab5d2187e1e406f",
+        "method": "SERVER_LAST_MODIFIED",
+        "observed_at": "2026-10-14T20:50:21.531103+00:00",
+        "server_last_modified": "Thu, 08 Jan 2026 19:22:50 GMT",
+        "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/histimpl.xls",
+        "statement": "HTTP Last-Modified of the exact source bytes, recorded at ingest and bound to evidence_sha256"
+      },
+      "published_at": "2026-01-08",
+      "region": "US",
+      "release_id": "87b92aedda847932195e178ebefc6c70f8a1b3afd93d5171ae7d2c024bd7e0c5",
+      "source_sha256": "bb4d8da0a371a00af06172ec41dcef35a9ae30d6ab9c03d58ab5d2187e1e406f",
+      "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/histimpl.xls",
+      "stated_publication_date": "2024-01-05",
+      "stated_vintage_role": "DISCLOSED_NOT_USED_FOR_AVAILABILITY"
+    },
+    {
+      "dataset_id": "multiples",
+      "download_retrieved_at": "2026-10-14T19:28:12.281522+00:00",
+      "historical_availability": "AVAILABLE_FROM_PUBLISHED_AT",
+      "publication_evidence": {
+        "evidence_path": "evidence/ev_ebitda_us_january_2026__c75ec898b79d449e__vebitda.xls",
+        "evidence_sha256": "c75ec898b79d449ec417e53f1063aac93041ae4952dd4325acd5f8079eda711d",
+        "method": "SERVER_LAST_MODIFIED",
+        "observed_at": "2026-10-14T20:50:21.531103+00:00",
+        "server_last_modified": "Thu, 08 Jan 2026 19:22:49 GMT",
+        "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/vebitda.xls",
+        "statement": "HTTP Last-Modified of the exact source bytes, recorded at ingest and bound to evidence_sha256"
+      },
+      "published_at": "2026-01-08",
+      "region": "US",
+      "release_id": "899542d35d98a989b77f5ad4e9e7964316ac77043b83e2b3b5cdeb9fac5b92fc",
+      "source_sha256": "c75ec898b79d449ec417e53f1063aac93041ae4952dd4325acd5f8079eda711d",
+      "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/vebitda.xls",
+      "stated_publication_date": null,
+      "stated_vintage_role": "DISCLOSED_NOT_USED_FOR_AVAILABILITY"
+    },
+    {
+      "dataset_id": "reinvestment",
+      "download_retrieved_at": "2026-10-14T19:28:12.241451+00:00",
+      "historical_availability": "AVAILABLE_FROM_PUBLISHED_AT",
+      "publication_evidence": {
+        "evidence_path": "evidence/capex_us_january_2026__97216e369c8c6bd6__capex.xls",
+        "evidence_sha256": "97216e369c8c6bd69987ed2ace0933381cc278b7d423a0c7b4944effded4c58e",
+        "method": "SERVER_LAST_MODIFIED",
+        "observed_at": "2026-10-14T20:50:21.531103+00:00",
+        "server_last_modified": "Thu, 08 Jan 2026 19:22:52 GMT",
+        "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/capex.xls",
+        "statement": "HTTP Last-Modified of the exact source bytes, recorded at ingest and bound to evidence_sha256"
+      },
+      "published_at": "2026-01-08",
+      "region": "US",
+      "release_id": "a7a323992ca45b4984c8115a1a5684093b1ff0e3839d8fd2b373a27cc10272f6",
+      "source_sha256": "97216e369c8c6bd69987ed2ace0933381cc278b7d423a0c7b4944effded4c58e",
+      "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/capex.xls",
+      "stated_publication_date": null,
+      "stated_vintage_role": "DISCLOSED_NOT_USED_FOR_AVAILABILITY"
+    },
+    {
+      "dataset_id": "country_risk",
+      "download_retrieved_at": "2026-10-14T19:29:26.502675+00:00",
+      "historical_availability": "UNKNOWN_UNLESS_PUBLICATION_EVIDENCE_SUPPLIED",
+      "publication_evidence": null,
+      "published_at": null,
+      "region": "Global",
+      "release_id": "fba2da429a413c130bd08f834bf47948acc875bd43584112ec9ed25d5587c178",
+      "source_sha256": "b5200e8abcb09f55a4a56c9493657d7556af30ede0d10928c403e352627109c9",
+      "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/ctryprem.xlsx",
+      "stated_publication_date": null,
+      "stated_vintage_role": "DISCLOSED_NOT_USED_FOR_AVAILABILITY",
+      "unavailable_reason": "no preserved publication evidence for these exact source bytes; download time and stated vintage are disclosed but never used for availability"
+    }
+  ],
+  "schema_version": "damodaran-publication-evidence-v1"
+}

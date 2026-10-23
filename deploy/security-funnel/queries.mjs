@@ -154,6 +154,7 @@ async function latestQuote(env,symbol,requestedDate){
  return {world:'real/us-public-markets',symbol,action:'latest_price',complete_valuation:false,answer:`${symbol}: $${result.price.toFixed(4)} — latest stored ${result.provider||'provider'} close, as of ${result.date}.`,result,source:{provider:result.provider,feed:result.feed,release:pointer.sha256,date:result.date,source_security_id:result.source_security_id},warnings:[live?`Latest close from the collector's current daily release pointer. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.`:`Latest close in the connected snapshot; the collector's current pointer was unavailable, so this may be older. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.`]};
 }
 export async function queryRoute(env,u,dependencies={}){
+ const snapshot=dependencies.snapshot;
  const index=await symbolIndex(env);
  if(!index)fail('DATA_UNAVAILABLE');
  const aliases=await directoryAliases(env);
@@ -180,16 +181,18 @@ export async function queryRoute(env,u,dependencies={}){
  const cik=security.identity.cik;if(!/^\d{10}$/.test(cik||''))fail('ISSUER_NOT_CONNECTED');
  let data;
  const stored=security.valuation.inputs;
+ const engine=snapshot?.source_releases?.SEC_ENGINE_MANIFEST_KEY||'b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb';
  if(stored?.key&&stored?.sha256){data=await read(env,stored.key,stored.sha256);}
- else {
-  data={observations:[],source_records:{},coverage_gaps:[],source_cutoff:'2026-09-24'};
+ const materializedRelease=data?.source_release_id||data?.provenance?.release_id||'b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb';
+ if(!data||materializedRelease!==engine) {
+  data={source_release_id:engine,observations:[],source_records:{},coverage_gaps:[],source_cutoff:'2026-09-24'};
   for(const [from,to]of [['1900-01-01','1999-12-31'],['2000-01-01','2026-09-24']]){
    const url=new URL('https://zion.internal/private/v1/financial-history');
-   for(const [k,v]of Object.entries({cik,metrics:'revenue,operating_income',frequency:'annual',date_from:from,date_to:to,limit:'1000',release_id:'b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb'}))url.searchParams.set(k,v);
+   for(const [k,v]of Object.entries({cik,metrics:'revenue,operating_income',frequency:'annual',date_from:from,date_to:to,limit:'1000',release_id:engine}))url.searchParams.set(k,v);
    let cursor=null;
    for(let n=0;n<8;n++){
     if(cursor)url.searchParams.set('cursor',cursor);
-    const response=await env.FINANCIAL_API.fetch(new Request(url,{headers:{Authorization:'Bearer '+env.TOKEN}}));const page=await response.json();if(response.status!==200)fail(page.error?.code||'FINANCIAL_HISTORY_NOT_MATERIALIZED');
+    const response=await env.FINANCIAL_API.fetch(new Request(url,{headers:{Authorization:'Bearer '+env.TOKEN,...(snapshot?.bundle_id?{'x-zion-bundle-id':snapshot.bundle_id}:{})}}));const page=await response.json();if(response.status!==200)fail(page.error?.code||'FINANCIAL_HISTORY_NOT_MATERIALIZED');
     data.observations.push(...(page.observations||[]));Object.assign(data.source_records,page.source_records||{});data.coverage_gaps.push(...(page.coverage_gaps||[]));
     cursor=page.pagination?.next_cursor;if(!cursor)break;if(n===7)fail('FINANCIAL_HISTORY_PAGE_BUDGET');
    }

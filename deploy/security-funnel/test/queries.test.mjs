@@ -98,3 +98,15 @@ assert.ok(!live.warnings.some(w=>/may be older/.test(w)));
 db.set('control/daily-prices/CURRENT.json',JSON.stringify({version:'0'.repeat(64),sha256:liveSha,session:'2026-10-21',data_key:liveKey}));
 await assert.rejects(queryRoute(env,new URL('https://internal/query?query=PEP+price')),/LATEST_PRICE_REFERENCE_INVALID/);
 db.delete('control/daily-prices/CURRENT.json');
+
+
+// A stored materialization must not hide a promoted canonical financial release.
+const canonical='f'.repeat(64);let canonicalCalls=0;
+const promoted={...env,TOKEN:'test',FINANCIAL_API:{fetch:async request=>{
+ const url=new URL(request.url);assert.equal(url.searchParams.get('release_id'),canonical);
+ assert.equal(request.headers.get('x-zion-bundle-id'),'a'.repeat(64));canonicalCalls++;
+ return Response.json({observations:url.searchParams.get('date_from')==='2000-01-01'?packet.observations:[],source_records:packet.source_records,coverage_gaps:[]});
+}}};
+const promotedAnswer=await queryRoute(promoted,new URL('https://internal/query?query=PEP+revenue+2025'),{snapshot:{bundle_id:'a'.repeat(64),source_releases:{SEC_ENGINE_MANIFEST_KEY:canonical}}});
+assert.equal(canonicalCalls,2);assert.equal(promotedAnswer.source.release,canonical);
+assert.equal(promotedAnswer.result.observations[0].value_decimal,'100');
