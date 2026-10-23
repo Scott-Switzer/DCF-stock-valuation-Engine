@@ -1,6 +1,6 @@
 """Read-only consumer of PPE's immutable Damodaran assumption releases."""
 from copy import deepcopy
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 import hashlib
 import json
@@ -40,6 +40,15 @@ def publication_status(manifest):
     if not evidence.get('observed_at') or not str(evidence.get('source_url','')).startswith('https://'):
         return {'available':False,'published_at':published,'method':evidence.get('method'),
                 'reason':'INCOMPLETE_PUBLICATION_EVIDENCE'}
+    try:
+        published_date=date.fromisoformat(str(published))
+        observed=datetime.fromisoformat(str(evidence['observed_at']).replace('Z','+00:00'))
+    except ValueError:
+        return {'available':False,'published_at':published,'method':evidence.get('method'),
+                'reason':'UNPARSEABLE_PUBLICATION_EVIDENCE'}
+    if observed.date()<published_date:
+        return {'available':False,'published_at':published,'method':evidence.get('method'),
+                'reason':'EVIDENCE_PRECEDES_PUBLICATION'}
     return {'available':True,'published_at':published,'method':evidence['method'],
             'observed_at':evidence['observed_at'],'reason':None}
 

@@ -61,12 +61,22 @@ def test_form_counts_stops_at_the_window():
 
 def test_checkpoint_is_resumed_by_cik(tmp_path):
     path = tmp_path / "checkpoint.jsonl"
+    # Version-1 lines predate the classifier_version field and remain usable.
     first = {"cik": "0000000001", "foreign_status": "DOMESTIC_10K"}
     second = {"cik": "0000000002", "foreign_status": "FOREIGN_PRIVATE_ISSUER_20F"}
     path.write_text(json.dumps(first) + "\n" + json.dumps(second) + "\n")
     checked = read_checked(path)
     assert set(checked) == {"0000000001", "0000000002"}
     assert checked["0000000002"]["foreign_status"] == "FOREIGN_PRIVATE_ISSUER_20F"
+
+
+def test_a_checkpoint_from_an_older_classifier_is_refetched(tmp_path):
+    path = tmp_path / "checkpoint.jsonl"
+    stale = {"cik": "0000000001", "classifier_version": 0, "foreign_status": "DOMESTIC_10K"}
+    current = {"cik": "0000000002", "classifier_version": 1, "foreign_status": "DOMESTIC_10K"}
+    path.write_text(json.dumps(stale) + "\n" + json.dumps(current) + "\n")
+    checked = read_checked(path)
+    assert set(checked) == {"0000000002"}
 
 
 ROOT = Path(__file__).parents[1]

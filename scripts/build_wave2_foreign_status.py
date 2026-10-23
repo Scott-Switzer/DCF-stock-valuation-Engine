@@ -37,6 +37,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 SCHEMA_VERSION = "wave2-foreign-status-v1"
+CLASSIFIER_VERSION = 1
 SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
 SUBMISSIONS_PAGE_URL = "https://data.sec.gov/submissions/{name}"
 MAX_ARCHIVE_PAGES = 2
@@ -141,6 +142,9 @@ def read_checked(path: Path) -> dict[str, dict]:
         if not line.strip():
             continue
         row = json.loads(line)
+        # A checkpoint written before the version field existed used version 1.
+        if row.get("classifier_version", 1) != CLASSIFIER_VERSION:
+            continue
         done[row["cik"]] = row
     return done
 
@@ -169,6 +173,7 @@ def crawl(rows: list[dict], *, checkpoint: Path, user_agent: str, sleep: float) 
                 record = {
                     "cik": cik,
                     "entity_name": "",
+                    "classifier_version": CLASSIFIER_VERSION,
                     "annual_forms": {form: 0 for form in ANNUAL_FORMS},
                     "foreign_status": "SOURCE_UNAVAILABLE",
                     "engine_taxonomy": "UNKNOWN",
@@ -183,6 +188,7 @@ def crawl(rows: list[dict], *, checkpoint: Path, user_agent: str, sleep: float) 
                 record = {
                     "cik": cik,
                     "entity_name": entity_name,
+                    "classifier_version": CLASSIFIER_VERSION,
                     "annual_forms": counts,
                     "foreign_status": status,
                     "engine_taxonomy": taxonomy,

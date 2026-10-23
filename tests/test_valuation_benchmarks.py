@@ -99,6 +99,18 @@ def test_assumption_api_exposes_versioned_record(tmp_path,monkeypatch):
     assert response.json['release_id']==rid
 
 
+def test_evidence_observed_before_publication_is_refused(tmp_path):
+    rid=release(tmp_path,published='2026-01-05',evidence=evidence('2026-01-01T00:00:00Z'))
+    with pytest.raises(ValueError,match='EVIDENCE_PRECEDES_PUBLICATION'):
+        load_benchmark(tmp_path,rid,'Software','wacc',as_of='2026-02-01')
+
+
+def test_unparseable_evidence_is_refused_rather_than_trusted(tmp_path):
+    rid=release(tmp_path,published='2026-01-05',evidence=evidence('not-a-timestamp'))
+    with pytest.raises(ValueError,match='UNPARSEABLE_PUBLICATION_EVIDENCE'):
+        load_benchmark(tmp_path,rid,'Software','wacc',as_of='2026-02-01')
+
+
 def test_incomplete_evidence_is_reported_as_incomplete(tmp_path):
     rid=release(tmp_path,published='2026-01-05',evidence={'method':'FIRST_OBSERVED'})
     with pytest.raises(ValueError,match='INCOMPLETE_PUBLICATION_EVIDENCE'):
