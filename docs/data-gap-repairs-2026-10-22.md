@@ -138,7 +138,7 @@ Artifacts (generated, reproducible):
 
 - `docs/universe-expansion-2026-10-22.csv` — 4,078 in-scope candidates, 11 columns.
 - `docs/universe-expansion-2026-10-22.json` — counts, exclusions, identity limits.
-- `scripts/propose_universe_expansion.py` + `tests/test_universe_expansion.py` (8 tests).
+- `scripts/propose_universe_expansion.py` + `tests/test_universe_expansion.py` (9 tests).
 
 Inputs: the stored Alpaca stock-history catalog (2,629 symbols, release `12bf4774…`) and
 SEC's `company_tickers_exchange.json` (10,428 listed tickers; 5,975 issuers have at least
@@ -147,15 +147,16 @@ one ticker absent from the cohort).
 | Segment | Count |
 | --- | --- |
 | Named high-impact omissions (XOM, GOOGL, GOOG, AMZN, TSLA, META, ORCL, COST, IBM, ADBE, MO, BRK-A, BRK-B, V) | 14 |
-| New exchange-listed common equity, issuer not represented at all | 3,830 listings / 3,665 issuers |
-| Additional listing of an already-covered issuer (share class, second listing) | 234 |
+| New exchange-listed common equity, issuer not represented anywhere in the proposal | 3,828 listings / 3,665 issuers |
+| Additional listing of a represented issuer (234 of covered issuers, 2 more Alphabet listings) | 236 |
 | Excluded: OTC (outside Alpaca coverage) | 2,575 |
 | Excluded: exchange not verified | 166 |
 | Excluded: preferred / derivative / suspect 5-letter instruments | 1,224 |
 
 Identity rules enforced by the generator and the tests: `cik` is zero-padded to ten digits;
 `data_key`-style ticker syntax is the only classification signal; a candidate whose CIK is
-already represented is never labelled a new issuer; duplicate ticker rows with conflicting CIKs are rejected;
+already represented is never labelled a new issuer, and neither is an extra listing of an issuer
+that a named omission already introduces; duplicate ticker rows with conflicting CIKs are rejected;
 tiers sort deterministically. Of the 2,629 stored symbols, 2,364 resolve to a CIK in SEC's
 current file; the other 265 (delisted, renamed, or notation differences) are not asserted
 either way.
@@ -262,15 +263,21 @@ is authorized by this report.
 
 ### R3 — Session index producer + serving
 
-- **Change**: wire `session-index.ts` into `finalizeDailyRefresh`: write and verify an immutable
-  content-addressed index first, then advance CURRENT once with its release and index pin, and add the verified lookup to the thin worker's market route.
+- **Status**: implemented behind staging flags on the review branches, not deployed.
+  Publication writes the index only with `DAILY_SESSION_INDEX=enabled` (ppe
+  `ea8efebe1`); serving answers `session=YYYY-MM-DD` only with `SESSION_INDEX_ENABLED`
+  true (zion-terminal `94f2e2b`, contract fixture `6d42f58`).
+- **Change**: `maybeFinalizeDailyRun` extends a verified prior index, writes and re-reads the
+  immutable object, then advances CURRENT once with release and index pins; the thin market
+  route verifies pin, freshness, entry and release bytes before returning rows.
 - **Touches**: data-plane worker and thin source serving code; one new R2 object per
   session; CURRENT gains one optional block. No stored price object changes.
-- **Cost**: producer change is already written and tested (~0.5 day to wire + deploy);
-  serving change ~1 day including staging; 300-session index ≈ 100 KB.
+- **Cost**: implementation complete; the remaining ~0.5 day is enabling the staging flag,
+  publishing one session and running the live acceptance below; index ≈ 100 KB at 300 sessions.
 - **Validation**: published staging session is served by date; a flipped byte in the index
   or a session object returns `SOURCE_LIMITED` with `SESSION_INDEX_*`, never a wrong row;
-  `previous_version` chain remains readable for older sessions; tamper test in staging.
+  the producer-generated fixture is served by the thin worker and a one-field tamper is
+  rejected; `previous_version` chain remains readable for older sessions.
 - **Rollback**: remove `sessions_index` from CURRENT (serving falls back), stop writing the
   index; session objects and CURRENT remain valid.
 
@@ -312,7 +319,7 @@ is authorized by this report.
   R3 solves it without touching data).
 - Lowering the ambiguity rule to "pick the larger value" (would silently redefine revenue
   for every retailer).
-- Adding the 3,830 wave-2 symbols as a single cohort without identity ranking.
+- Adding the 3,828 wave-2 symbols as a single cohort without identity ranking.
 
 ## 6. What remains open
 
@@ -339,5 +346,42 @@ source data remains unchanged; the earlier phrase "No dataset change" means no r
 mutation, not an exemption from release validation.
 
 Latest regenerated proposal excludes 166 rows lacking exchange evidence. Authoritative
-counts are in the accompanying JSON: 4078 candidates; {'TIER_1_NAMED': 14, 'TIER_2_WAVE': 3830, 'TIER_3_REVIEW': 234}.
+counts are in the accompanying JSON: 4078 candidates; {'TIER_1_NAMED': 14, 'TIER_2_WAVE': 3828,
+'TIER_3_REVIEW': 236}; 3,677 distinct new issuers. The two extra Alphabet listings (GOOGM, GOOGN)
+are review rows of an issuer the named set already introduces, not wave-2 issuers.
 The earlier 4,244 headline included those unverified listings and is superseded.
+
+## Repair status — 2026-10-22 (execution record)
+
+The diagnostics above were executed as follows. No staging flag was enabled, no release or
+pointer was republished, and nothing was pushed or deployed.
+
+| Candidate | Status | Evidence |
+| --- | --- | --- |
+| R1 Walmart revenue pin | Applied in both registries; engine release rebuild still required | `116c8d4`; 24 engine tests pass, including a test that the ambiguity rule still fires without the pin and a digest test that both registries agree |
+| R2 Bank/insurer certification | Worksheet delivered; accounting decision still open | `docs/revenue-certification-2026-10-22.md`; five issuers, per-period accessions, mappings marked `PROPOSED_NOT_CERTIFIED` |
+| R3 Session index | Code and drills complete; staging enablement not run | 36 producer tests and 22 serving tests pass, covering retention eviction, republish, lost race, rollback and pin bounds |
+| R4 Wave 1 identities | Resolved to dated receipts | `docs/identity-receipts-2026-10-22.md`; 14 listings, 12 issuers, all share classes resolved from cover pages |
+| R4 Wave 2 foreign status | Classified; ADR status still unknown by design | `docs/wave2-foreign-status-2026-10-22.md`; 3,665 issuers / 3,828 listings, 0 read errors |
+| R5 Benchmark publication | Forward-only metadata enforced; no backfill claimed | `docs/benchmark-publication-ledger-2026-10-22.md`; 7/7 releases refuse historical selection |
+
+What the execution changed in the diagnosis:
+
+- **Walmart** now resolves revenue from total `Revenues` (FY2026 713.163B). The pin is the
+  smallest defensible change; the ambiguity rule itself is untouched.
+- **GE** files no insurance or lending tag in its last ten annual reports, and its 2023 revenue
+  is restated from 67.954B to 35.348B by a later filing. The blanket quarantine is therefore a
+  stale-evidence question for GE, not a present statement-family question.
+- **Citigroup** files total `Revenues`, not `RevenuesNetOfInterestExpense`; **JPMorgan** files
+  both with equal values; **Allstate** has current premiums evidence; **Goldman** files only the
+  net-of-interest concept.
+- **XOM** now maps to CIK 0002115436 (ExxonMobil Holdings Corp), whose 8-K12B names CIK
+  0000034088 as predecessor. The successor has no annual report; historical packets belong to
+  the predecessor. A packet built from the successor alone would be empty.
+- **Wave 2** is not one cohort: 844 listings (22%) are IFRS filers outside the us-gaap engine,
+  184 are N-CSR investment companies, 91 are mixed-form, 280 have no annual report yet, and
+  2,429 are taxonomy-compatible domestic 10-K filers. ADR status remains
+  `UNKNOWN_NOT_IN_CONTRACTS` for every row and is not inferred from exchange or ticker.
+
+Not done, and deliberately so: engine/cohort release publication, staging flag enablement,
+any deployment, and any push or pull request.

@@ -1,0 +1,17 @@
+{
+  "extractor": "cover-v5",
+  "receipt": {
+    "url": "https://www.sec.gov/Archives/edgar/data/34088/000003408826000045/xom-20251231.htm",
+    "sha256": "a5a921c21e42e6fd77f30452ab07ca16af1be6861bab1ce3856269c6ce0065a5",
+    "bytes": 5591183,
+    "fetched_at": "2026-10-22T22:26:07+00:00"
+  },
+  "mappings": {
+    "XOM": {
+      "class_title": "Common Stock, without par value",
+      "letter": "NONE",
+      "excerpt": "Common Stock, without par value |  | XOM |  | New York Stock Exchange",
+      "method": "cover_table_columns"
+    }
+  }
+}

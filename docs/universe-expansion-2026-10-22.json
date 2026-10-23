@@ -7,13 +7,14 @@
   },
   "by_status": {
     "ISSUER_ALREADY_COVERED_OTHER_LISTING": 234,
+    "ISSUER_NAMED_OTHER_LISTING": 2,
     "NAMED_HIGH_IMPACT_OMISSION": 14,
-    "NEW_EXCHANGE_LISTED_COMMON": 3830
+    "NEW_EXCHANGE_LISTED_COMMON": 3828
   },
   "by_tier": {
     "TIER_1_NAMED": 14,
-    "TIER_2_WAVE": 3830,
-    "TIER_3_REVIEW": 234
+    "TIER_2_WAVE": 3828,
+    "TIER_3_REVIEW": 236
   },
   "excluded": {
     "DERIVATIVE": 131,
@@ -26,7 +27,8 @@
     "ADR status is not present in either input; every row says UNKNOWN_NOT_IN_CONTRACTS.",
     "Tier 2 is not ranked by size or liquidity; that needs a market-cap or index-membership source.",
     "Share-class and derivative classification uses ticker syntax only.",
-    "An issuer already represented by one listing is never proposed as a new issuer."
+    "An issuer already represented by one listing is never proposed as a new issuer.",
+    "A listing of an issuer that a named omission already represents is review, not a new issuer."
   ],
   "in_scope_candidates": 4078,
   "missing_tickers": 8043,

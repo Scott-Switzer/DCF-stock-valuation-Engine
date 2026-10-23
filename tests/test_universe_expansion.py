@@ -103,6 +103,23 @@ def test_loaders_reject_inconsistent_inputs(tmp_path):
         raise AssertionError("unexpected SEC shape was accepted")
 
 
+def test_extra_listing_of_a_named_issuer_is_review_not_a_new_issuer():
+    rows = [
+        sec_row(1652044, "GOOG"),
+        sec_row(1652044, "GOOGL"),
+        sec_row(1652044, "GOOGM"),
+        sec_row(1652044, "GOOGN"),
+    ]
+    candidates, summary = build_candidates(set(), rows)
+    labelled = {row["ticker"]: (row["tier"], row["status"]) for row in candidates}
+    assert labelled["GOOG"] == ("TIER_1_NAMED", "NAMED_HIGH_IMPACT_OMISSION")
+    assert labelled["GOOGL"] == ("TIER_1_NAMED", "NAMED_HIGH_IMPACT_OMISSION")
+    assert labelled["GOOGM"] == ("TIER_3_REVIEW", "ISSUER_NAMED_OTHER_LISTING")
+    assert labelled["GOOGN"] == ("TIER_3_REVIEW", "ISSUER_NAMED_OTHER_LISTING")
+    assert summary["by_tier"] == {"TIER_1_NAMED": 2, "TIER_3_REVIEW": 2}
+    assert summary["new_issuers"] == 1
+
+
 def test_missing_exchange_is_not_claimed_as_exchange_listed():
     candidates, summary = build_candidates(set(), [sec_row(99, "UNVERIFIED", exchange="")])
     assert candidates == []

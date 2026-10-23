@@ -1,0 +1,17 @@
+{
+  "extractor": "cover-v5",
+  "receipt": {
+    "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983226000093/cost-20260830.htm",
+    "sha256": "8a6e450bb93dee55b0b2c3d264d1afc58a9a68ddf8dd0051555eb4a9e640b373",
+    "bytes": 1456599,
+    "fetched_at": "2026-10-22T22:25:56+00:00"
+  },
+  "mappings": {
+    "COST": {
+      "class_title": "Common Stock, $.005 Par Value",
+      "letter": "NONE",
+      "excerpt": "Common Stock, $.005 Par Value | COST | The NASDAQ Global Select Market",
+      "method": "cover_table_columns"
+    }
+  }
+}

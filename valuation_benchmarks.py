@@ -27,7 +27,7 @@ TARGETS={
 }
 # The only reviewed publication-evidence methods. SERVER_LAST_MODIFIED binds the
 # publication date to the provider's own timestamp for the exact bytes.
-PUBLICATION_METHODS={'SERVER_LAST_MODIFIED','PUBLISHER_STATED'}
+PUBLICATION_METHODS={'SERVER_LAST_MODIFIED','PUBLISHER_STATED','FIRST_OBSERVED'}
 AVAILABLE='AVAILABLE_FROM_PUBLISHED_AT'
 UNAVAILABLE='UNKNOWN_UNLESS_PUBLICATION_EVIDENCE_SUPPLIED'
 
@@ -119,15 +119,44 @@ def load_publication_evidence(root):
     return {entry['release_id']:entry for entry in entries}
 
 
-def resolve_publication(release, source_sha256, manifest_published_at, entry):
+def publication_status(manifest):
+    """Report whether a release can be used for historical selection.
+
+    A date alone is not evidence: a hand-edited manifest could carry any date.
+    Historical mode requires a date plus recorded evidence whose method is
+    reviewed and whose observation is dated, matching the importer contract.
+    """
+    published=manifest.get('published_at');evidence=manifest.get('publication_evidence')
+    if not published:
+        return {'available':False,'published_at':None,'method':None,
+                'reason':'NO_PUBLICATION_DATE'}
+    if not isinstance(evidence,dict) or evidence.get('method') not in PUBLICATION_METHODS:
+        return {'available':False,'published_at':published,'method':None,
+                'reason':'NO_REVIEWED_PUBLICATION_EVIDENCE'}
+    if not evidence.get('observed_at') or not str(evidence.get('source_url','')).startswith('https://'):
+        return {'available':False,'published_at':published,'method':evidence.get('method'),
+                'reason':'INCOMPLETE_PUBLICATION_EVIDENCE'}
+    try:
+        published_date=date.fromisoformat(str(published))
+        observed=datetime.fromisoformat(str(evidence['observed_at']).replace('Z','+00:00'))
+    except ValueError:
+        return {'available':False,'published_at':published,'method':evidence.get('method'),
+                'reason':'UNPARSEABLE_PUBLICATION_EVIDENCE'}
+    if observed.date()<published_date:
+        return {'available':False,'published_at':published,'method':evidence.get('method'),
+                'reason':'EVIDENCE_PRECEDES_PUBLICATION'}
+    return {'available':True,'published_at':published,'method':evidence['method'],
+            'observed_at':evidence['observed_at'],'reason':None}
+
+def resolve_publication(release, source_sha256, manifest_published_at, entry, manifest=None):
     """Resolve ``published_at`` from release metadata or byte-bound evidence.
 
     Anything that is not source evidence for these exact bytes fails closed:
     without a usable date the release stays unavailable at any historical
     cutoff instead of being backdated.
     """
-    if manifest_published_at:
-        return str(manifest_published_at),None,AVAILABLE
+    if manifest_published_at and publication_status(manifest or {}).get("available"):
+        return str(manifest_published_at),(manifest or {}).get("publication_evidence"),AVAILABLE
     if not isinstance(entry,dict) or entry.get('source_sha256')!=source_sha256:
         return None,None,UNAVAILABLE
     if entry.get('published_at') is None:
@@ -169,6 +198,7 @@ def load_benchmark(root, release, subject, measure, *, as_of=None, evidence=None
         manifest.get('files',{}).get('source.bin'),
         manifest.get('published_at'),
         (load_publication_evidence(root) if evidence is None else evidence).get(release),
+        manifest=manifest,
     )
     if as_of is not None:
         cutoff=date.fromisoformat(as_of)
@@ -185,6 +215,7 @@ def load_benchmark(root, release, subject, measure, *, as_of=None, evidence=None
     row.update(release_id=release,dataset_id=manifest['dataset_id'],region=manifest['region'],
                source_url=manifest['source_url'],published_at=published,
                publication_evidence=publication_evidence,historical_availability=availability,
+               publication_method=(publication_evidence or {}).get("method"),
                selection_mode='HISTORICAL_PUBLISHED' if as_of else 'CURRENT_EXPLICIT_SELECTION')
     return row
 

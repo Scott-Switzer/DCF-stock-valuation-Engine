@@ -1,0 +1,23 @@
+{
+  "extractor": "cover-v5",
+  "receipt": {
+    "url": "https://www.sec.gov/Archives/edgar/data/1067983/000119312526083899/brka-20251231.htm",
+    "sha256": "4a03ea811fdc75465dea65c251edfe10af2cb3a38b1aafda5ff180b8eefa445b",
+    "bytes": 10396935,
+    "fetched_at": "2026-10-22T22:25:55+00:00"
+  },
+  "mappings": {
+    "BRK-A": {
+      "class_title": "Class A Common Stock",
+      "letter": "A",
+      "excerpt": "Class A Common Stock Class B Common Stock 1.125% Senior Notes due 2027 2.150% Senior Notes due 2028 1.500% Senior Notes due 2030 2.000% Senior Notes due 2034 1.625% Senior Notes due 2035 2.375% Senior Notes due 2039 0.500% Senior Notes due 2041 2.625% Senior Notes due 2059 |  | BRK.A BRK.B BRK27 BRK",
+      "method": "cover_table_columns"
+    },
+    "BRK-B": {
+      "class_title": "Class B Common Stock",
+      "letter": "B",
+      "excerpt": "Class A Common Stock Class B Common Stock 1.125% Senior Notes due 2027 2.150% Senior Notes due 2028 1.500% Senior Notes due 2030 2.000% Senior Notes due 2034 1.625% Senior Notes due 2035 2.375% Senior Notes due 2039 0.500% Senior Notes due 2041 2.625% Senior Notes due 2059 |  | BRK.A BRK.B BRK27 BRK",
+      "method": "cover_table_columns"
+    }
+  }
+}

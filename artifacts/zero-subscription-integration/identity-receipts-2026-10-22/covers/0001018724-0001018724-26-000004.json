@@ -1,0 +1,17 @@
+{
+  "extractor": "cover-v5",
+  "receipt": {
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000004/amzn-20251231.htm",
+    "sha256": "09fc02859de8aeeaf427a809dc593dd66694a1c529fbae2b6383b9431bb166a0",
+    "bytes": 1968457,
+    "fetched_at": "2026-10-22T22:25:52+00:00"
+  },
+  "mappings": {
+    "AMZN": {
+      "class_title": "Common Stock, par value $.01 per share",
+      "letter": "NONE",
+      "excerpt": "Common Stock, par value $.01 per share | AMZN | Nasdaq Global Select Market",
+      "method": "cover_table_columns"
+    }
+  }
+}

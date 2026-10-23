@@ -1,0 +1,17 @@
+{
+  "extractor": "cover-v5",
+  "receipt": {
+    "url": "https://www.sec.gov/Archives/edgar/data/796343/000079634326000003/adbe-20251128.htm",
+    "sha256": "2bc99215a8c018f9b1f9cfb31dfb4ed860a7a72b79d73b9b1686d51c997af4a9",
+    "bytes": 2321291,
+    "fetched_at": "2026-10-22T22:25:52+00:00"
+  },
+  "mappings": {
+    "ADBE": {
+      "class_title": "Common Stock, $0.0001 par value per share",
+      "letter": "NONE",
+      "excerpt": "Common Stock, $0.0001 par value per share | ADBE | NASDAQ",
+      "method": "cover_table_columns"
+    }
+  }
+}

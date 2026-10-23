@@ -1,0 +1,519 @@
+{
+  "schema_version": "revenue-certification-worksheet-v1",
+  "observed_at": "2026-10-22",
+  "issuers": [
+    {
+      "ticker": "GE",
+      "cik": "0000040545",
+      "entity_name": "GENERAL ELECTRIC COMPANY",
+      "expected_name": "GENERAL ELECTRIC COMPANY",
+      "name_matches": true,
+      "per_period": [
+        {
+          "period_end": "2023-12-31",
+          "concepts": {
+            "Revenues": {
+              "value": "35348000000",
+              "accession": "0000040545-26-000008",
+              "filed": "2026-01-29",
+              "variants": 3
+            }
+          },
+          "conflicts": [
+            "same period end 2023-12-31 has 2 distinct values: 67954000000 filed 2024-02-02 (10-K 0000040545-24-000027); 35348000000 filed 2025-02-03 (10-K 0000040545-25-000015); 35348000000 filed 2026-01-29 (10-K 0000040545-26-000008)"
+          ],
+          "candidate_count": 1
+        },
+        {
+          "period_end": "2024-12-31",
+          "concepts": {
+            "Revenues": {
+              "value": "38702000000",
+              "accession": "0000040545-26-000008",
+              "filed": "2026-01-29",
+              "variants": 2
+            }
+          },
+          "conflicts": [],
+          "candidate_count": 1
+        },
+        {
+          "period_end": "2025-12-31",
+          "concepts": {
+            "Revenues": {
+              "value": "45855000000",
+              "accession": "0000040545-26-000008",
+              "filed": "2026-01-29",
+              "variants": 1
+            }
+          },
+          "conflicts": [],
+          "candidate_count": 1
+        }
+      ],
+      "evidence_tags": {
+        "PremiumsEarnedNet": {
+          "present": false
+        },
+        "InterestAndDividendIncomeOperating": {
+          "present": false
+        },
+        "PolicyholderBenefitsAndClaimsIncurredNet": {
+          "present": false
+        },
+        "LoansAndLeasesReceivableNetReportedAmount": {
+          "present": false
+        }
+      },
+      "evidence_in_latest_period": [],
+      "evidence_historical_only": [],
+      "proposed_mapping": {
+        "statement_family": "GENERAL_TOTAL_REVENUE",
+        "primary_concept": "Revenues",
+        "component_concept": null,
+        "rationale": "Only the total Revenues concept carries an annual 10-K value.",
+        "candidate_concepts_with_values": [
+          "Revenues"
+        ],
+        "candidate_values": {
+          "Revenues": "45855000000"
+        },
+        "latest_period": "2025-12-31",
+        "latest_primary_value": "45855000000",
+        "status": "PROPOSED_NOT_CERTIFIED",
+        "certification_required": "Accounting owner must confirm that Revenues is the total revenue line the issuer's income statement presents for 2025-12-31, and whether any component tag remains a component only.",
+        "single_candidate": true
+      },
+      "open_questions": [
+        "Two filings report different values for the same fiscal period (restatement or reclassification); confirm which value is the income-statement total as presented, and whether the engine should use the latest filing.",
+        "No insurance or lending tag appears in the latest 10-K fact set; the blanket quarantine may be stale for this issuer."
+      ]
+    },
+    {
+      "ticker": "ALL",
+      "cik": "0000899051",
+      "entity_name": "ALLSTATE CORP",
+      "expected_name": "ALLSTATE CORP",
+      "name_matches": true,
+      "per_period": [
+        {
+          "period_end": "2023-12-31",
+          "concepts": {
+            "Revenues": {
+              "value": "57094000000",
+              "accession": "0000899051-26-000031",
+              "filed": "2026-02-20",
+              "variants": 3
+            }
+          },
+          "conflicts": [],
+          "candidate_count": 1
+        },
+        {
+          "period_end": "2024-12-31",
+          "concepts": {
+            "Revenues": {
+              "value": "64106000000",
+              "accession": "0000899051-26-000031",
+              "filed": "2026-02-20",
+              "variants": 2
+            }
+          },
+          "conflicts": [],
+          "candidate_count": 1
+        },
+        {
+          "period_end": "2025-12-31",
+          "concepts": {
+            "Revenues": {
+              "value": "67685000000",
+              "accession": "0000899051-26-000031",
+              "filed": "2026-02-20",
+              "variants": 1
+            }
+          },
+          "conflicts": [],
+          "candidate_count": 1
+        }
+      ],
+      "evidence_tags": {
+        "PremiumsEarnedNet": {
+          "present": true,
+          "latest_period_end": "2025-12-31",
+          "latest_accession": "0000899051-26-000031",
+          "latest_filed": "2026-02-20",
+          "periods": [
+            "2023-12-31",
+            "2024-12-31",
+            "2025-12-31"
+          ]
+        },
+        "InterestAndDividendIncomeOperating": {
+          "present": true,
+          "latest_period_end": "2025-12-31",
+          "latest_accession": "0000899051-26-000031",
+          "latest_filed": "2026-02-20",
+          "periods": [
+            "2023-12-31",
+            "2024-12-31",
+            "2025-12-31"
+          ]
+        },
+        "PolicyholderBenefitsAndClaimsIncurredNet": {
+          "present": false
+        },
+        "LoansAndLeasesReceivableNetReportedAmount": {
+          "present": false
+        }
+      },
+      "evidence_in_latest_period": [
+        "PremiumsEarnedNet",
+        "InterestAndDividendIncomeOperating"
+      ],
+      "evidence_historical_only": [],
+      "proposed_mapping": {
+        "statement_family": "INSURER_TOTAL_REVENUE",
+        "primary_concept": "Revenues",
+        "component_concept": "PremiumsEarnedNet",
+        "rationale": "The issuer reports both total Revenues and premiums earned; the total is the income-statement revenue line, premiums are a component.",
+        "candidate_concepts_with_values": [
+          "Revenues"
+        ],
+        "candidate_values": {
+          "Revenues": "67685000000",
+          "PremiumsEarnedNet": "61449000000",
+          "InterestAndDividendIncomeOperating": "3747000000"
+        },
+        "latest_period": "2025-12-31",
+        "latest_primary_value": "67685000000",
+        "status": "PROPOSED_NOT_CERTIFIED",
+        "certification_required": "Accounting owner must confirm that Revenues is the total revenue line the issuer's income statement presents for 2025-12-31, and whether PremiumsEarnedNet remains a component only.",
+        "single_candidate": true
+      },
+      "open_questions": []
+    },
+    {
+      "ticker": "C",
+      "cik": "0000831001",
+      "entity_name": "Citigroup Inc",
+      "expected_name": "CITIGROUP INC",
+      "name_matches": true,
+      "per_period": [
+        {
+          "period_end": "2023-12-31",
+          "concepts": {
+            "Revenues": {
+              "value": "78066000000",
+              "accession": "0000831001-26-000011",
+              "filed": "2026-02-20",
+              "variants": 3
+            }
+          },
+          "conflicts": [
+            "same period end 2023-12-31 has 2 distinct values: 78462000000 filed 2024-02-23 (10-K 0000831001-24-000033); 78462000000 filed 2025-02-21 (10-K 0000831001-25-000067); 78066000000 filed 2026-02-20 (10-K 0000831001-26-000011)"
+          ],
+          "candidate_count": 1
+        },
+        {
+          "period_end": "2024-12-31",
+          "concepts": {
+            "Revenues": {
+              "value": "80722000000",
+              "accession": "0000831001-26-000011",
+              "filed": "2026-02-20",
+              "variants": 2
+            }
+          },
+          "conflicts": [
+            "same period end 2024-12-31 has 2 distinct values: 81139000000 filed 2025-02-21 (10-K 0000831001-25-000067); 80722000000 filed 2026-02-20 (10-K 0000831001-26-000011)"
+          ],
+          "candidate_count": 1
+        },
+        {
+          "period_end": "2025-12-31",
+          "concepts": {
+            "Revenues": {
+              "value": "85225000000",
+              "accession": "0000831001-26-000011",
+              "filed": "2026-02-20",
+              "variants": 1
+            }
+          },
+          "conflicts": [],
+          "candidate_count": 1
+        }
+      ],
+      "evidence_tags": {
+        "PremiumsEarnedNet": {
+          "present": true,
+          "latest_period_end": "2016-12-31",
+          "latest_accession": "0000831001-17-000038",
+          "latest_filed": "2017-02-24",
+          "periods": [
+            "2016-12-31"
+          ]
+        },
+        "InterestAndDividendIncomeOperating": {
+          "present": true,
+          "latest_period_end": "2025-12-31",
+          "latest_accession": "0000831001-26-000011",
+          "latest_filed": "2026-02-20",
+          "periods": [
+            "2023-12-31",
+            "2024-12-31",
+            "2025-12-31"
+          ]
+        },
+        "PolicyholderBenefitsAndClaimsIncurredNet": {
+          "present": true,
+          "latest_period_end": "2025-12-31",
+          "latest_accession": "0000831001-26-000011",
+          "latest_filed": "2026-02-20",
+          "periods": [
+            "2023-12-31",
+            "2024-12-31",
+            "2025-12-31"
+          ]
+        },
+        "LoansAndLeasesReceivableNetReportedAmount": {
+          "present": false
+        }
+      },
+      "evidence_in_latest_period": [
+        "InterestAndDividendIncomeOperating",
+        "PolicyholderBenefitsAndClaimsIncurredNet"
+      ],
+      "evidence_historical_only": [
+        "PremiumsEarnedNet"
+      ],
+      "proposed_mapping": {
+        "statement_family": "BANK_TOTAL_REVENUE",
+        "primary_concept": "Revenues",
+        "component_concept": "InterestAndDividendIncomeOperating",
+        "rationale": "The issuer shows current lending evidence but files total Revenues rather than revenue net of interest expense; the total is the income-statement line.",
+        "candidate_concepts_with_values": [
+          "Revenues"
+        ],
+        "candidate_values": {
+          "Revenues": "85225000000",
+          "InterestAndDividendIncomeOperating": "142864000000",
+          "PolicyholderBenefitsAndClaimsIncurredNet": "87000000"
+        },
+        "latest_period": "2025-12-31",
+        "latest_primary_value": "85225000000",
+        "status": "PROPOSED_NOT_CERTIFIED",
+        "certification_required": "Accounting owner must confirm that Revenues is the total revenue line the issuer's income statement presents for 2025-12-31, and whether InterestAndDividendIncomeOperating remains a component only.",
+        "single_candidate": true
+      },
+      "open_questions": [
+        "Two filings report different values for the same fiscal period (restatement or reclassification); confirm which value is the income-statement total as presented, and whether the engine should use the latest filing."
+      ]
+    },
+    {
+      "ticker": "GS",
+      "cik": "0000886982",
+      "entity_name": "The Goldman Sachs Group, Inc.",
+      "expected_name": "THE GOLDMAN SACHS GROUP, INC.",
+      "name_matches": true,
+      "per_period": [
+        {
+          "period_end": "2023-12-31",
+          "concepts": {
+            "RevenuesNetOfInterestExpense": {
+              "value": "46254000000",
+              "accession": "0000886982-26-000091",
+              "filed": "2026-02-25",
+              "variants": 3
+            }
+          },
+          "conflicts": [],
+          "candidate_count": 1
+        },
+        {
+          "period_end": "2024-12-31",
+          "concepts": {
+            "RevenuesNetOfInterestExpense": {
+              "value": "53512000000",
+              "accession": "0000886982-26-000091",
+              "filed": "2026-02-25",
+              "variants": 2
+            }
+          },
+          "conflicts": [],
+          "candidate_count": 1
+        },
+        {
+          "period_end": "2025-12-31",
+          "concepts": {
+            "RevenuesNetOfInterestExpense": {
+              "value": "58283000000",
+              "accession": "0000886982-26-000091",
+              "filed": "2026-02-25",
+              "variants": 1
+            }
+          },
+          "conflicts": [],
+          "candidate_count": 1
+        }
+      ],
+      "evidence_tags": {
+        "PremiumsEarnedNet": {
+          "present": false
+        },
+        "InterestAndDividendIncomeOperating": {
+          "present": true,
+          "latest_period_end": "2025-12-31",
+          "latest_accession": "0000886982-26-000091",
+          "latest_filed": "2026-02-25",
+          "periods": [
+            "2023-12-31",
+            "2024-12-31",
+            "2025-12-31"
+          ]
+        },
+        "PolicyholderBenefitsAndClaimsIncurredNet": {
+          "present": false
+        },
+        "LoansAndLeasesReceivableNetReportedAmount": {
+          "present": false
+        }
+      },
+      "evidence_in_latest_period": [
+        "InterestAndDividendIncomeOperating"
+      ],
+      "evidence_historical_only": [],
+      "proposed_mapping": {
+        "statement_family": "BANK_NET_REVENUE",
+        "primary_concept": "RevenuesNetOfInterestExpense",
+        "component_concept": "InterestAndDividendIncomeOperating",
+        "rationale": "The issuer reports revenue net of interest expense, which is the total its income statement presents for a bank.",
+        "candidate_concepts_with_values": [
+          "RevenuesNetOfInterestExpense"
+        ],
+        "candidate_values": {
+          "RevenuesNetOfInterestExpense": "58283000000",
+          "InterestAndDividendIncomeOperating": "80373000000"
+        },
+        "latest_period": "2025-12-31",
+        "latest_primary_value": "58283000000",
+        "status": "PROPOSED_NOT_CERTIFIED",
+        "certification_required": "Accounting owner must confirm that RevenuesNetOfInterestExpense is the total revenue line the issuer's income statement presents for 2025-12-31, and whether InterestAndDividendIncomeOperating remains a component only.",
+        "single_candidate": true
+      },
+      "open_questions": []
+    },
+    {
+      "ticker": "JPM",
+      "cik": "0000019617",
+      "entity_name": "JPMORGAN CHASE & CO",
+      "expected_name": "JPMORGAN CHASE & CO",
+      "name_matches": true,
+      "per_period": [
+        {
+          "period_end": "2023-12-31",
+          "concepts": {
+            "Revenues": {
+              "value": "158104000000",
+              "accession": "0001628280-26-008131",
+              "filed": "2026-02-13",
+              "variants": 3
+            },
+            "RevenuesNetOfInterestExpense": {
+              "value": "158104000000",
+              "accession": "0001628280-26-008131",
+              "filed": "2026-02-13",
+              "variants": 3
+            }
+          },
+          "conflicts": [],
+          "candidate_count": 2
+        },
+        {
+          "period_end": "2024-12-31",
+          "concepts": {
+            "Revenues": {
+              "value": "177556000000",
+              "accession": "0001628280-26-008131",
+              "filed": "2026-02-13",
+              "variants": 2
+            },
+            "RevenuesNetOfInterestExpense": {
+              "value": "177556000000",
+              "accession": "0001628280-26-008131",
+              "filed": "2026-02-13",
+              "variants": 2
+            }
+          },
+          "conflicts": [],
+          "candidate_count": 2
+        },
+        {
+          "period_end": "2025-12-31",
+          "concepts": {
+            "Revenues": {
+              "value": "182447000000",
+              "accession": "0001628280-26-008131",
+              "filed": "2026-02-13",
+              "variants": 1
+            },
+            "RevenuesNetOfInterestExpense": {
+              "value": "182447000000",
+              "accession": "0001628280-26-008131",
+              "filed": "2026-02-13",
+              "variants": 1
+            }
+          },
+          "conflicts": [],
+          "candidate_count": 2
+        }
+      ],
+      "evidence_tags": {
+        "PremiumsEarnedNet": {
+          "present": false
+        },
+        "InterestAndDividendIncomeOperating": {
+          "present": false
+        },
+        "PolicyholderBenefitsAndClaimsIncurredNet": {
+          "present": false
+        },
+        "LoansAndLeasesReceivableNetReportedAmount": {
+          "present": false
+        }
+      },
+      "evidence_in_latest_period": [],
+      "evidence_historical_only": [],
+      "proposed_mapping": {
+        "statement_family": "BANK_NET_REVENUE",
+        "primary_concept": "RevenuesNetOfInterestExpense",
+        "component_concept": "InterestAndDividendIncomeOperating",
+        "rationale": "The issuer reports revenue net of interest expense, which is the total its income statement presents for a bank.",
+        "candidate_concepts_with_values": [
+          "Revenues",
+          "RevenuesNetOfInterestExpense"
+        ],
+        "candidate_values": {
+          "Revenues": "182447000000",
+          "RevenuesNetOfInterestExpense": "182447000000"
+        },
+        "latest_period": "2025-12-31",
+        "latest_primary_value": "182447000000",
+        "status": "PROPOSED_NOT_CERTIFIED",
+        "certification_required": "Accounting owner must confirm that RevenuesNetOfInterestExpense is the total revenue line the issuer's income statement presents for 2025-12-31, and whether InterestAndDividendIncomeOperating remains a component only.",
+        "single_candidate": false
+      },
+      "open_questions": [
+        "Several revenue concepts carry a value for 2025-12-31; confirm which is the income-statement total.",
+        "No insurance or lending tag appears in the latest 10-K fact set; the blanket quarantine may be stale for this issuer."
+      ]
+    }
+  ],
+  "limits": [
+    "Only 10-K annual facts with a 330-400 day duration are read; quarterly and TTM figures are out of scope.",
+    "A tag whose only facts are quarterly or older than the ten-year window reads as absent here, even when the engine's taxonomy scan still sees it.",
+    "A concept value here is what the filing reported, not a restated or normalised figure.",
+    "The proposed mapping is mechanical and uncertified; it does not change the engine's quarantine.",
+    "Historical insurance or lending tags are evidence pointers, not proof that the issuer's present statement family is financial.",
+    "No packet, release, source pointer, or deployed bundle was modified."
+  ]
+}

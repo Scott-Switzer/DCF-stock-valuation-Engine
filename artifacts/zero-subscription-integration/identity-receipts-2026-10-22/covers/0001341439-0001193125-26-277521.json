@@ -1,0 +1,17 @@
+{
+  "extractor": "cover-v5",
+  "receipt": {
+    "url": "https://www.sec.gov/Archives/edgar/data/1341439/000119312526277521/orcl-20260531.htm",
+    "sha256": "39bcde3b42579bb99306f9d6e51c369892c6dacf289cfb9cbb0b8d831f08bc33",
+    "bytes": 6874052,
+    "fetched_at": "2026-10-22T22:26:01+00:00"
+  },
+  "mappings": {
+    "ORCL": {
+      "class_title": "Common Stock, par value $0.01 per share",
+      "letter": "NONE",
+      "excerpt": "Common Stock, par value $0.01 per share | ORCL | New York Stock Exchange",
+      "method": "cover_table_columns"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "extractor": "cover-v5",
+  "receipt": {
+    "url": "https://www.sec.gov/Archives/edgar/data/764180/000076418026000017/mo-20251231.htm",
+    "sha256": "9d93767fe2e40aca3dd0de238eeffa0c5ea4b06a36b42752614c7c5bbd4e7334",
+    "bytes": 3409445,
+    "fetched_at": "2026-10-22T22:26:00+00:00"
+  },
+  "mappings": {
+    "MO": {
+      "class_title": "Common Stock, $0.33 1/3 par value",
+      "letter": "NONE",
+      "excerpt": "Common Stock, $0.33 1/3 par value | MO | New York Stock Exchange",
+      "method": "cover_table_columns"
+    }
+  }
+}
