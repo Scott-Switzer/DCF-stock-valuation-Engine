@@ -22,10 +22,16 @@ assert.equal(margin.result.observations[0].value_decimal,'0.2');
 assert.deepEqual(margin.result.observations[0].source_observation_ids,['income','rev']);
 assert.equal(margin.result.observations[0].derivation.components.length,2);
 const source=JSON.parse(db.get(FULL+'batches/0.json'));source.rows[0].valuation.inputs={};db.set(FULL+'batches/0.json',JSON.stringify(source));
-const calls=[];env.FINANCIAL_API={fetch:async request=>{const url=new URL(request.url);calls.push(url);return Response.json({observations:[],source_records:{},pagination:{next_cursor:url.searchParams.get('date_from')==='1900-01-01'&&!url.searchParams.has('cursor')?'next':null}});}};
-await queryRoute(env,new URL('https://internal/query?query=PEP+revenue'));
-assert.equal(calls.length,3);assert.equal(calls.at(-1).searchParams.get('date_to'),'2026-09-24');
+const calls=[];env.FINANCIAL_API={fetch:async request=>{const url=new URL(request.url);calls.push(url);return Response.json({provenance:{company_maximum_as_of:'2026-10-02T00:00:00Z'},observations:[],source_records:{},pagination:{next_cursor:url.searchParams.get('date_from')==='1900-01-01'&&!url.searchParams.has('cursor')?'next':null}});}};
+const fallback=await queryRoute(env,new URL('https://internal/query?query=PEP+revenue'));
+assert.equal(calls.length,3);
+// The recent window must leave date_to to the owning source so its own company cutoff applies.
+assert.equal(calls.at(-1).searchParams.get('date_from'),'2000-01-01');assert.equal(calls.at(-1).searchParams.has('date_to'),false);
+assert.equal(fallback.result.source_cutoff,'2026-10-02');assert.equal(fallback.source.source_cutoff,'2026-10-02');
 assert.ok(calls.every(url=>url.searchParams.has('release_id')));
+// A response that does not name the company cutoff must not inherit a stale universe date.
+const unbounded={...env,TOKEN:'test',FINANCIAL_API:{fetch:async()=>Response.json({observations:[],source_records:{},pagination:{next_cursor:null}})}};
+await assert.rejects(queryRoute(unbounded,new URL('https://internal/query?query=PEP+revenue')),/SOURCE_CUTOFF_UNAVAILABLE/);
 
 const {companyAliases,revenueGrowth}=await import('../queries.mjs');
 const aliases=companyAliases({AAPL:[{name:'Apple Inc.'}],MSFT:[{name:'Microsoft Corporation'}]});
@@ -105,8 +111,9 @@ const canonical='f'.repeat(64);let canonicalCalls=0;
 const promoted={...env,TOKEN:'test',FINANCIAL_API:{fetch:async request=>{
  const url=new URL(request.url);assert.equal(url.searchParams.get('release_id'),canonical);
  assert.equal(request.headers.get('x-zion-bundle-id'),'a'.repeat(64));canonicalCalls++;
- return Response.json({observations:url.searchParams.get('date_from')==='2000-01-01'?packet.observations:[],source_records:packet.source_records,coverage_gaps:[]});
+ return Response.json({provenance:{company_maximum_as_of:'2026-10-02T00:00:00Z'},observations:url.searchParams.get('date_from')==='2000-01-01'?packet.observations:[],source_records:packet.source_records,coverage_gaps:[]});
 }}};
 const promotedAnswer=await queryRoute(promoted,new URL('https://internal/query?query=PEP+revenue+2025'),{snapshot:{bundle_id:'a'.repeat(64),source_releases:{SEC_ENGINE_MANIFEST_KEY:canonical}}});
 assert.equal(canonicalCalls,2);assert.equal(promotedAnswer.source.release,canonical);
+assert.equal(promotedAnswer.source.source_cutoff,'2026-10-02');
 assert.equal(promotedAnswer.result.observations[0].value_decimal,'100');
