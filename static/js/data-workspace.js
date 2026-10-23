@@ -40,9 +40,28 @@
     });
     return revocation;
   }
+  function clearAnswer() {
+    if (el("financial-answer")) el("financial-answer").textContent = "";
+    ["financial-coverage", "financial-warnings", "financial-source"].forEach((id) => {
+      if (el(id)) { el(id).replaceChildren(); el(id).hidden = true; }
+    });
+    if (el("financial-evidence")) { el("financial-evidence").hidden = true; el("financial-evidence").open = false; }
+  }
+  function renderAnswerEvidence(result) {
+    const coverage = el("financial-coverage"), warnings = el("financial-warnings"), source = el("financial-source");
+    if (!coverage || !warnings || !source) return;
+    coverage.textContent = result.data_as_of
+      ? "Latest period in this answer: " + result.data_as_of + ". This is coverage, not a real-time freshness claim."
+      : "No observation date applies to this answer.";
+    coverage.hidden = false;
+    for (const warning of result.warnings || []) warnings.append(node("li", warning));
+    warnings.hidden = !warnings.childNodes.length;
+    source.textContent = JSON.stringify({source:result.source, bundle_id:result.bundle_id, data_as_of:result.data_as_of, source_releases:result.source_releases}, null, 2);
+    source.hidden = false; el("financial-evidence").hidden = false;
+  }
   function clear(unloading = false) {
     ownerKey = ""; generation += 1;
-    if (el("financial-answer")) el("financial-answer").textContent = "";
+    clearAnswer();
     for (const controller of pending) controller.abort(); pending.clear(); channels.clear();
     stocks = {}; prices = {}; collections = {}; files = {};
     el("data-owner-key").value = ""; el("data-controls").disabled = true;
@@ -205,6 +224,7 @@
   const onSubmit = (id, callback) => el(id).addEventListener("submit", (event) => { event.preventDefault(); return callback(); });
   if (el("financial-query")) onSubmit("financial-query", async () => {
     const epoch = generation, controller = new AbortController(); pending.add(controller);
+    clearAnswer();
     const button = el("financial-query").querySelector("button"); button.disabled = true;
     el("financial-answer").textContent = "Loading…";
     try {
@@ -214,8 +234,9 @@
       });
       const result = await response.json(); if (epoch !== generation) return;
       el("financial-answer").textContent = response.ok ? result.answer : response.status === 403
-        ? "Connect this tab below with your owner data key to request private prices."
+        ? "Connect this tab below with your owner data key to request private prices or WRDS metadata."
         : result.error || "This question could not be answered.";
+      if (response.ok) renderAnswerEvidence(result);
     } catch (_) { if (epoch === generation) el("financial-answer").textContent = "Request unavailable. Please try again."; }
     finally { pending.delete(controller); button.disabled = false; }
   });
