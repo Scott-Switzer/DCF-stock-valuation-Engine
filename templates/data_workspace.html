@@ -6,9 +6,13 @@
   <section class="intro"><p class="eyebrow">Private owner workspace</p><h1>Explore your stored data</h1><p class="lead">Browse stock history, dataset releases, and the files behind them. Values retain their source fields, units, and gaps.</p></section>
   <section class="panel" aria-labelledby="financial-query-heading">
     <h2 id="financial-query-heading">Ask your financial data</h2>
-    <p>Ask for a company's revenue, revenue growth, operating margin, or a historical stock price. Public SEC questions work immediately; connect this tab below for private prices.</p>
+    <p>Ask for annual, quarterly or TTM revenue and operating margin, annual revenue growth, or a historical stock price. Public SEC questions work immediately; connect this tab below for private prices and WRDS metadata.</p>
     <form id="financial-query"><label for="question">Question</label><input id="question" class="financial-question" value="Apple revenue growth" maxlength="2000" required><button type="submit">Ask</button></form>
+    <p class="help">Examples: “Apple quarterly revenue 2025”, “AAPL TTM operating margin”, or “PEP price 2026-10-21”. Dates refer to period ends or exact trading sessions.</p>
     <pre id="financial-answer" class="financial-answer" role="status" aria-live="polite"></pre>
+    <p id="financial-coverage" class="help" hidden></p>
+    <ul id="financial-warnings" class="help" hidden></ul>
+    <details id="financial-evidence" hidden><summary>Source and snapshot details</summary><pre id="financial-source"></pre></details>
   </section>
   <section class="panel" aria-labelledby="data-connect-heading">
     <h2 id="data-connect-heading">Connect this tab</h2>
