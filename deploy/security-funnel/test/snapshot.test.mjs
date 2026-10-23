@@ -16,3 +16,10 @@ test('preserves source releases and uses answer coverage rather than freshness o
  await assert.rejects(()=>stampedRead(env,null,async()=>({source:{release:'unlisted'}})),/RELEASE_MISMATCH/);
  assert.equal(answerDate({result:{observations:[]}}),null);
 });
+test('accepts a prior-session release anchored to a bundle-pinned session index',async()=>{
+ const env={TOKEN:'test',FINANCIAL_API:{fetch:async()=>Response.json({...snapshot,source_releases:{...snapshot.source_releases,daily_session_index:'index-1'}})}};
+ const result=await stampedRead(env,snapshot.bundle_id,async()=>({source:{provider:'alpaca',release:'prior-session-release',session_index_release:'index-1'},result:{date:'2026-10-21'}}));
+ assert.equal(result.source.release,'prior-session-release');assert.equal(result.data_as_of,'2026-10-21');
+ await assert.rejects(()=>stampedRead(env,snapshot.bundle_id,async()=>({source:{release:'prior-session-release',session_index_release:'unlisted-index'}})),/RELEASE_MISMATCH/);
+ await assert.rejects(()=>stampedRead(env,snapshot.bundle_id,async()=>({source:{release:'prior-session-release'}})),/RELEASE_MISMATCH/);
+});
