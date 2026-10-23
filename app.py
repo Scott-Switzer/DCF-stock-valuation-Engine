@@ -932,27 +932,46 @@ def shared_financial_query():
     owner = getattr(env, "FINANCIAL_OWNER_USER_ID", "") if env else ""
     user = accounts.current_user() if owner else None
     bearer = request.headers.get("Authorization", "")
-    question = request.args.get("query", "")
-    public_financials = bool(re.search(r"\b(revenue|sales|margin|financials)\b", question, re.I))
+    questions, structured = request.args.getlist("query"), request.args.getlist("request")
+    if len(questions) + len(structured) != 1:
+        return jsonify(error="Provide exactly one query or structured request."), 400
+    question = questions[0] if questions else ""
+    if questions and (not question.strip() or len(question) > 2000):
+        return jsonify(error="Enter a financial question of at most 2,000 characters."), 400
+    value = None
+    if structured:
+        try:
+            if len(structured[0]) > 4096:
+                raise ValueError()
+            value = json.loads(structured[0])
+            if not isinstance(value, dict):
+                raise ValueError()
+        except (ValueError, TypeError):
+            return jsonify(error="Structured request must be a JSON object of at most 4,096 characters."), 400
+    public_financials = (value.get("action") == "financials" if value is not None else
+                         bool(re.search(r"\b(revenue|sales|margin|financials)\b", question, re.I)))
     from owner_benchmark_access import _bearer_valid
     private_access = bool(_bearer_valid(provider_value) or
                           (token and hmac.compare_digest(bearer, "Bearer " + token)) or
                           (owner and user and user["id"] == owner))
     if not private_access and not public_financials:
         return jsonify(error="Enter your private financial-system access key to use price data."), 403
-    question = request.args.get("query", "")
-    if not question or len(question) > 2000:
-        return jsonify(error="Enter a financial question of at most 2,000 characters."), 400
     service = getattr(env, "FINANCIAL_DATA", None)
     if not service or not token:
         return jsonify(error="Shared financial data is not configured."), 503
+    pinned_bundle = request.headers.get("x-zion-bundle-id")
+    if pinned_bundle and not re.fullmatch(r"[a-f0-9]{64}", pinned_bundle):
+        return jsonify(error="Invalid bundle ID."), 400
+    headers = {"Authorization": "Bearer " + token}
+    if pinned_bundle:
+        headers["x-zion-bundle-id"] = pinned_bundle
     from urllib.parse import urlencode
     from ppe_provider import _wait
     from js import Request, Object
     from pyodide.ffi import to_js
     response = _wait(service.fetch(Request.new(
-        "https://financial.internal/query?" + urlencode({"query": question}),
-        to_js({"headers": {"Authorization": "Bearer " + token}}, dict_converter=Object.fromEntries),
+        "https://financial.internal/query?" + urlencode({"request": structured[0]} if structured else {"query": question}),
+        to_js({"headers": headers}, dict_converter=Object.fromEntries),
     )), time.monotonic() + 45)
     raw = str(_wait(response.text(), time.monotonic() + 10))
     if not private_access and response.status == 200:

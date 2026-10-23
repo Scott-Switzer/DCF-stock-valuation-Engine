@@ -36,7 +36,7 @@ jobs:
           node deploy/security-funnel/test/valuation.test.mjs
           node deploy/security-funnel/test/enrichment.test.mjs
           node deploy/security-funnel/test/queries.test.mjs
-          node --test deploy/security-funnel/test/snapshot.test.mjs deploy/security-funnel/test/session-query.test.mjs deploy/security-funnel/test/catalog-query.test.mjs
+          node --test deploy/security-funnel/test/snapshot.test.mjs deploy/security-funnel/test/session-query.test.mjs deploy/security-funnel/test/catalog-query.test.mjs deploy/security-funnel/test/structured-query.test.mjs deploy/security-funnel/test/period-query.test.mjs
       - name: Syntax-check every shipped script
         run: |
           for f in static/js/*.js; do

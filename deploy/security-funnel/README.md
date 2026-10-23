@@ -131,3 +131,50 @@ catalog endpoint remains available for pagination and detailed source schemas.
 No licensed records, raw files, inferred units, or invented availability dates
 are returned through this question route. Website owner access, terminal, Slack,
 and MCP reuse these same shared routes.
+
+### Explicit request objects
+
+The same GET `/query` accepts either `query` text or one JSON-encoded `request`.
+They are mutually exclusive; duplicate inputs, unsupported fields and invalid
+calendar dates fail instead of silently changing the question.
+
+```json
+{"action":"price","symbol":"ON","date":"2020-01-02"}
+{"action":"growth","symbol":"AAPL","date_from":"2020-01-02","date_to":"2021-01-04","basis":"split_adjusted_price"}
+{"action":"financials","symbol":"AAPL","metric":"revenue","date_from":"2024-01-01","date_to":"2025-12-31"}
+{"action":"dataset_catalog","search":"comp","offset":50,"limit":10}
+```
+
+A price without `date` means latest stored close. Financial requests default to annual
+observations; both dates or neither must be supplied. Catalog limits are 1–50;
+follow `next_offset` while retaining the same source bundle. Structured symbols
+avoid ambiguity for short tickers such as `A` and `ON`.
+
+The website `/api/data/query` forwards this same input and retains owner-only
+price/catalog access. `scripts/finance.py --request '<JSON>' --json` uses the same
+API. The separate [Financial Assistant Gateway MCP reader](https://github.com/Scott-Switzer/financial-assistant-gateway/pull/23) `query_financial_data` accepts `{request: ...}` or `{query: ...}` without
+adding tools or credential scope. Invalid inputs never authorize acquisition.
+
+
+Structured financial requests also accept `frequency: "quarterly"` or `"ttm"`;
+`AAPL quarterly revenue 2025` and `AAPL TTM operating margin` use the same native
+SEC engine. Quarter validation, TTM construction, source revisions and availability
+remain owned by that engine. No annual packet or fallback replaces missing periods.
+Explicit dates filter period ends. Without dates the engine defaults to 2015 or
+its later minimum through the company cutoff, and the answer discloses that limit.
+`Q1 2025` is rejected because fiscal and calendar quarters are not interchangeable.
+Nonannual revenue growth is rejected until an explicit comparison policy exists.
+
+The adapter bounds bytes, pages and elapsed time, preserves source records and
+gaps, rejects changed source identity, and aligns margin periods/currencies.
+Both annual source fallback and quarterly/TTM calls require
+`materialized_only=true` (Zion #57): a missing company reports a gap without
+queuing acquisition. The existing source may still cache calculations over stored
+materializations. Deploy that source change before this reader.
+
+
+To keep multi-request results consistent, retain `bundle_id` from the first reply
+and send `x-zion-bundle-id` on the website/shared API, `--bundle-id` on the CLI,
+or the optional top-level `bundle_id` on the Gateway MCP reader. A changed
+snapshot returns `RELEASE_MISMATCH`; restart pagination rather than mixing pages.
+This reader is separate from the DCF application's legacy `mcp.py` valuation tools.

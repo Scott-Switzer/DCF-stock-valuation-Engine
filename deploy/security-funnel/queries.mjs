@@ -1,6 +1,9 @@
 // One financial query implementation for Slack, the terminal and the website.
 import {FULL,historyRoute} from './history.mjs';
 import {ENRICH} from './enrichment.mjs';
+import {boundedSourceJson} from './source-json.mjs';
+import {periodFinancials} from './period-financials.mjs';
+import {queryInput,structuredQuery} from './query-input.mjs';
 // Stable machine codes stay first so clients can branch on them; the sentence after
 // the colon is what a website, Slack or MCP caller shows the person who asked.
 const HINTS={
@@ -14,7 +17,9 @@ const HINTS={
  PRICE_NEEDS_ONE_DATE_OR_TWO_FOR_GROWTH:'Use one exact session date, or two dates for growth.',
  START_MUST_PRECEDE_END:'The start date must come before the end date.',
  ASK_FOR_PRICE_GROWTH_OR_FINANCIALS:'Ask for a price, price growth, revenue, revenue growth or operating margin.',
- ONLY_ANNUAL_FINANCIALS_SUPPORTED:'Stored financial history is annual; ask about a fiscal year rather than a quarter or TTM.',
+ EXACT_PERIOD_RANGE_REQUIRED:'Fiscal quarter labels are ambiguous. Use quarterly plus exact period-end date bounds.',
+ AMBIGUOUS_FREQUENCY:'Choose quarterly or TTM, not both.',
+ FREQUENCY_REQUIRES_FINANCIAL_METRIC:'Quarterly and TTM frequency apply to financial metrics, not prices.',
  NO_UNIQUE_PRICE_ON_REQUESTED_DATE:'No unique stored close exists on that session; use an exact exchange trading day.',
  SESSION_NOT_INDEXED:'That session has not been published in the stored daily index. No other date was substituted.',
  REQUESTED_DATE_NOT_IN_LATEST_RELEASE:'Only the latest stored session is served for recent prices; ask for that date or an older historical session.'
@@ -24,7 +29,7 @@ async function read(env,key,hash,max=16*1048576){const o=await env.DATA.get(key)
 export function requestQuery(query,symbols,aliases={}){
  if(typeof query!=='string'||query.length>2000)fail('INVALID_QUESTION');
  const words=query.toUpperCase().replace(/['’]S\b/g,'').match(/[A-Z0-9][A-Z0-9.-]*/g)||[];
- const stop=new Set(['A','I','ON','IN','TO','FROM','OF','AND','FOR','IT','AS','AT','BE','BY','DO','OR','SO','ALL','HAS','HAVE','HAD','HOW','WHAT','WAS','IS','ARE','THE','DOES','DID','CAN','WILL','SHOW','ME','PLEASE','ITS','THAT','THIS','AN','WITH','ABOUT','OVER','BETWEEN','TELL','RECENT','LATEST','PAST','LAST','YEAR','YEARS','ANNUAL','COMPANY','STOCK']);
+ const stop=new Set(['A','I','ON','IN','TO','FROM','OF','AND','FOR','IT','AS','AT','BE','BY','DO','OR','SO','ALL','HAS','HAVE','HAD','HOW','WHAT','WAS','IS','ARE','THE','DOES','DID','CAN','WILL','SHOW','ME','PLEASE','ITS','THAT','THIS','AN','WITH','ABOUT','OVER','BETWEEN','TELL','RECENT','LATEST','PAST','LAST','YEAR','YEARS','ANNUAL','QUARTERLY','QUARTER','QUARTERS','TTM','TRAILING','COMPANY','STOCK']);
  const explicit=query.match(/\$([A-Za-z][A-Za-z0-9.-]*)/g)?.map(s=>s.slice(1).toUpperCase())||[];
  const unknown=explicit.filter(s=>!Object.hasOwn(symbols,s));
  if(unknown.length)fail('UNKNOWN_TICKER',`The stored universe holds ${Object.keys(symbols).length} symbols and ${unknown.join(', ')} is not one of them.`);
@@ -42,14 +47,21 @@ export function requestQuery(query,symbols,aliases={}){
   if(named.length===1)matches.splice(0,matches.length,...new Set([...matches,...named]));
  }
  if(matches.length!==1)fail(matches.length?'ASK_FOR_ONE_TICKER':'INCLUDE_A_TICKER');
- // Stored financials are annual only; never answer a quarterly or TTM question with annual figures.
- if(/\b(?:quarterly|quarter|quarters|ttm|trailing)\b|\bq[1-4]\b/i.test(query))fail('ONLY_ANNUAL_FINANCIALS_SUPPORTED');
+ // Fiscal quarter labels need explicit period-end dates; calendar Q1 is not universal.
+ if(/\bq[1-4]\b|\b(?:first|second|third|fourth|[1-4](?:st|nd|rd|th)?)\s+quarter\b|\bquarter\s+[1-4]\b/i.test(query))fail('EXACT_PERIOD_RANGE_REQUIRED');
+ const quarterly=/\b(?:quarterly|quarter|quarters)\b/i.test(query),ttm=/\b(?:ttm|trailing)\b/i.test(query);
+ if(quarterly&&ttm)fail('AMBIGUOUS_FREQUENCY');
+ const frequency=quarterly?'quarterly':ttm?'ttm':'annual';
  const dates=query.match(/\d{4}-\d{2}-\d{2}/g)||[];
  for(const d of dates)if(!Number.isFinite(Date.parse(d))||new Date(d).toISOString().slice(0,10)!==d)fail('INVALID_DATE');
  const text=query.toLowerCase(),symbol=matches[0];
  if(!dates.length&&/\b(revenue|sales|margin|financials)\b/.test(text)){const years=query.match(/\b(?:19|20)\d{2}\b/g)||[];if(years.length===1)dates.push(years[0]+'-01-01',years[0]+'-12-31');else if(years.length===2)dates.push(years[0]+'-01-01',years[1]+'-12-31');}
  if(dates.length>2||(dates.length===2&&dates[0]>dates[1]))fail('INVALID_DATE_RANGE');
- if(/\b(revenue|sales|margin|financials|financial history)\b/.test(text))return {action:'financials',symbol,dates,metric:/margin/.test(text)?'operating_margin':/\b(growth|grew|change)\b/.test(text)?'revenue_growth':'revenue'};
+ if(/\b(revenue|sales|margin|financials|financial history)\b/.test(text)){
+  if(dates.length===1)dates.push(dates[0]);
+  return {action:'financials',symbol,dates,frequency,metric:/margin/.test(text)?'operating_margin':/\b(growth|grew|change)\b/.test(text)?'revenue_growth':'revenue'};
+ }
+ if(frequency!=='annual')fail('FREQUENCY_REQUIRES_FINANCIAL_METRIC');
  if(/\b(price|prices|return|growth|grew)\b/.test(text)){
   // A bare year is not a trading session; silently serving the latest close would misstate the date.
   if(!dates.length&&/\b(?:19|20)\d{2}\b/.test(query))fail('PRICE_NEEDS_EXACT_SESSION_DATE');
@@ -157,13 +169,6 @@ async function latestQuote(env,symbol,requestedDate){
 // Reuse the source service's hash-verified session index instead of maintaining
 // another index reader here. Historical session releases belong to the bundle
 // transitively through that immutable index, not through today's price release.
-async function boundedSourceJson(response,max=65536){
- if(!response.body)fail('DATA_UNAVAILABLE');
- const reader=response.body.getReader(),chunks=[];let bytes=0;
- for(;;){const {done,value}=await reader.read();if(done)break;bytes+=value.length;if(bytes>max){await reader.cancel();fail('SOURCE_RESPONSE_TOO_LARGE');}chunks.push(value);}
- const raw=new Uint8Array(bytes);let offset=0;for(const chunk of chunks){raw.set(chunk,offset);offset+=chunk.length;}
- return JSON.parse(new TextDecoder().decode(raw));
-}
 async function sessionQuote(env,symbol,date,snapshot){
  if(!snapshot?.bundle_id)fail('BUNDLE_UNAVAILABLE');
  const url=new URL('https://zion.internal/v1/market/prices/'+encodeURIComponent(symbol));
@@ -186,34 +191,36 @@ async function sessionQuote(env,symbol,date,snapshot){
   source:{provider:release.provider,feed:release.feed,release:sha,date,source_security_id:result.source_security_id,...(indexed?{session_index_sha256:index,session_index_key:data.coverage.session_index_key}:{})},
   warnings:['Source-reported daily close; row publication time and point-in-time eligibility are not established. No CRSP/provider history splice or split adjustment is implied.']};
 }
-async function collectionCatalog(env,search,snapshot){
+async function collectionCatalog(env,search,snapshot,offset=0,limit=50){
  const release=snapshot?.source_releases?.COLLECTION_CATALOG_KEY;
  if(!release)fail('CATALOG_NOT_CONNECTED');
  const url=new URL('https://zion.internal/private/v1/datasets/catalog');
- url.searchParams.set('limit','50');if(search)url.searchParams.set('search',search);
+ url.searchParams.set('limit',String(limit));url.searchParams.set('offset',String(offset));if(search)url.searchParams.set('search',search);
  const response=await env.FINANCIAL_API.fetch(new Request(url,{headers:{Authorization:'Bearer '+env.TOKEN,'x-zion-bundle-id':snapshot.bundle_id},signal:AbortSignal.timeout(15000)}));
  const data=await boundedSourceJson(response,262144);
  if(!response.ok)fail(data.error?.code||'CATALOG_UNAVAILABLE');
  if(response.headers.get('x-zion-bundle-id')!==snapshot.bundle_id||data.release_id!==release)fail('RELEASE_MISMATCH');
- if(!Array.isArray(data.entries)||data.entries.length>50)fail('CATALOG_RESPONSE_INVALID');
+ if(!Array.isArray(data.entries)||data.entries.length>limit)fail('CATALOG_RESPONSE_INVALID');
  // Explicit metadata projection: this route must never return records or files.
  const entries=data.entries.map(row=>Object.fromEntries(['id','dataset','release','source','family','rows_declared','objects','columns'].map(key=>[key,row[key]])));
  return {world:'real/us-public-markets',symbol:'WRDS',action:'dataset_catalog',complete_valuation:false,
   answer:`WRDS catalog: ${data.registered_releases} registered releases across ${data.unique_datasets} datasets; ${data.matching_releases} match this request. Showing ${entries.length}. These are source archives, not normalized or point-in-time-certified financial facts.`,
-  result:{registered_releases:data.registered_releases,unique_datasets:data.unique_datasets,matching_releases:data.matching_releases,next_offset:data.next_offset,entries,metadata_only:true},
+  result:{registered_releases:data.registered_releases,unique_datasets:data.unique_datasets,matching_releases:data.matching_releases,offset,limit,next_offset:data.next_offset,entries,metadata_only:true},
   source:{provider:'WRDS',release,catalog_path:'/private/v1/datasets/catalog'},
   warnings:['Metadata only; declared row counts are not independently certified coverage. Partial remote exports are excluded from the new registrations.','Licensed payloads are not returned by this question route. Dataset-specific units, identity, and availability policies remain required before financial serving.']};
 }
 export async function queryRoute(env,u,dependencies={}){
  const snapshot=dependencies.snapshot;
- const question=u.searchParams.get('query');
- if(typeof question!=='string'||question.length>2000)fail('INVALID_QUESTION');
- const catalog=/^(?:show |list )?wrds (?:coverage|catalog|datasets|tables)(?:\s+([a-z0-9_.-]{1,128}))?\s*\??$/i.exec(question.trim());
+ const input=queryInput(u);
+ if(input.request?.action==='dataset_catalog'){
+  const request=structuredQuery(input.request);
+  return collectionCatalog(env,request.search,snapshot,request.offset,request.limit);
+ }
+ const catalog=input.question&&/^(?:show |list )?wrds (?:coverage|catalog|datasets|tables)(?:\s+([a-z0-9_.-]{1,128}))?\s*\??$/i.exec(input.question.trim());
  if(catalog)return collectionCatalog(env,catalog[1]||'',snapshot);
  const index=await symbolIndex(env);
  if(!index)fail('DATA_UNAVAILABLE');
- const aliases=await directoryAliases(env);
- const parsed=requestQuery(u.searchParams.get('query'),index,aliases);
+ const parsed=input.request?structuredQuery(input.request,index):requestQuery(input.question,index,await directoryAliases(env));
  const part=await read(env,FULL+`batches/${index[parsed.symbol]}.json`),security=part.rows.find(r=>r.symbol===parsed.symbol);
  const base={world:'real/us-public-markets',symbol:parsed.symbol,action:parsed.action,complete_valuation:false};
  if(parsed.action==='latest_price')return latestQuote(env,parsed.symbol);
@@ -234,6 +241,7 @@ export async function queryRoute(env,u,dependencies={}){
   return {...base,answer:`${parsed.symbol}: $${value.toFixed(4)} on ${rows[0].date} (unadjusted historical price).`,result:{date:rows[0].date,price:value,basis:parsed.basis},warnings,source:{provider:'CRSP',release:pages[0].input_sha256,permno:pages[0].permno,coverage:pages[0].coverage}};
  }
  const cik=security.identity.cik;if(!/^\d{10}$/.test(cik||''))fail('ISSUER_NOT_CONNECTED');
+ if(parsed.frequency&&parsed.frequency!=='annual')return periodFinancials(env,parsed,cik,snapshot);
  let data;
  const stored=security.valuation.inputs;
  const engine=snapshot?.source_releases?.SEC_ENGINE_MANIFEST_KEY||'b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb';
@@ -243,7 +251,7 @@ export async function queryRoute(env,u,dependencies={}){
   data={source_release_id:engine,observations:[],source_records:{},coverage_gaps:[],source_cutoff:'2026-09-24'};
   for(const [from,to]of [['1900-01-01','1999-12-31'],['2000-01-01','2026-09-24']]){
    const url=new URL('https://zion.internal/private/v1/financial-history');
-   for(const [k,v]of Object.entries({cik,metrics:'revenue,operating_income',frequency:'annual',date_from:from,date_to:to,limit:'1000',release_id:engine}))url.searchParams.set(k,v);
+   for(const [k,v]of Object.entries({cik,metrics:'revenue,operating_income',frequency:'annual',date_from:from,date_to:to,limit:'1000',release_id:engine,materialized_only:'true'}))url.searchParams.set(k,v);
    let cursor=null;
    for(let n=0;n<8;n++){
     if(cursor)url.searchParams.set('cursor',cursor);
