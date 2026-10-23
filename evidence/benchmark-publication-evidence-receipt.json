@@ -1,0 +1,70 @@
+{
+  "catalog_keys": [
+    "/Users/scottthomasswitzer/Documents/Secret/artifacts/zero-subscription-integration/damodaran-releases/publication_evidence.json",
+    "/Users/scottthomasswitzer/Documents/Secret/worktrees/path1-benchmark-vintage/evidence/benchmark_publication_evidence.json"
+  ],
+  "catalog_sha256": "573174e1cd3e30e570a9db1f2143288c032d65cfd254a44b022277f7fdb0c521",
+  "entries": [
+    {
+      "dataset_id": "margins",
+      "evidence_sha256": null,
+      "historical_availability": "UNKNOWN_UNLESS_PUBLICATION_EVIDENCE_SUPPLIED",
+      "published_at": null,
+      "release_id": "5ce3d0a0f23f1ff104671dc021c70f6e558a6a259aef88465a11f0375389e96d",
+      "source_sha256": "25b04fce9740d9a471d50e176bf55aa6b7608cd0621b00072508a20e7c35ed7a"
+    },
+    {
+      "dataset_id": "industry_betas",
+      "evidence_sha256": "fa5d91af58046937e2db27a764b077dde9d5414df5f69214328f163b940e42a5",
+      "historical_availability": "AVAILABLE_FROM_PUBLISHED_AT",
+      "published_at": "2026-04-12",
+      "release_id": "69e27f1c09fbc024d76e9a1c0cbcf2b01957ca988122bbe4cc28a17662e39b6b",
+      "source_sha256": "fa5d91af58046937e2db27a764b077dde9d5414df5f69214328f163b940e42a5"
+    },
+    {
+      "dataset_id": "cost_of_capital",
+      "evidence_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6",
+      "historical_availability": "AVAILABLE_FROM_PUBLISHED_AT",
+      "published_at": "2026-01-12",
+      "release_id": "6a7510cfc34cde5490e9e9ee89455d55a81805311e66f6b2f1d9a60328efc3b8",
+      "source_sha256": "d38b149c731bba6847d077ef67c9a4bfa0a54f947ba480b2f9ea89f5451d39a6"
+    },
+    {
+      "dataset_id": "implied_erp",
+      "evidence_sha256": "bb4d8da0a371a00af06172ec41dcef35a9ae30d6ab9c03d58ab5d2187e1e406f",
+      "historical_availability": "AVAILABLE_FROM_PUBLISHED_AT",
+      "published_at": "2026-01-08",
+      "release_id": "87b92aedda847932195e178ebefc6c70f8a1b3afd93d5171ae7d2c024bd7e0c5",
+      "source_sha256": "bb4d8da0a371a00af06172ec41dcef35a9ae30d6ab9c03d58ab5d2187e1e406f"
+    },
+    {
+      "dataset_id": "multiples",
+      "evidence_sha256": "c75ec898b79d449ec417e53f1063aac93041ae4952dd4325acd5f8079eda711d",
+      "historical_availability": "AVAILABLE_FROM_PUBLISHED_AT",
+      "published_at": "2026-01-08",
+      "release_id": "899542d35d98a989b77f5ad4e9e7964316ac77043b83e2b3b5cdeb9fac5b92fc",
+      "source_sha256": "c75ec898b79d449ec417e53f1063aac93041ae4952dd4325acd5f8079eda711d"
+    },
+    {
+      "dataset_id": "reinvestment",
+      "evidence_sha256": "97216e369c8c6bd69987ed2ace0933381cc278b7d423a0c7b4944effded4c58e",
+      "historical_availability": "AVAILABLE_FROM_PUBLISHED_AT",
+      "published_at": "2026-01-08",
+      "release_id": "a7a323992ca45b4984c8115a1a5684093b1ff0e3839d8fd2b373a27cc10272f6",
+      "source_sha256": "97216e369c8c6bd69987ed2ace0933381cc278b7d423a0c7b4944effded4c58e"
+    },
+    {
+      "dataset_id": "country_risk",
+      "evidence_sha256": null,
+      "historical_availability": "UNKNOWN_UNLESS_PUBLICATION_EVIDENCE_SUPPLIED",
+      "published_at": null,
+      "release_id": "fba2da429a413c130bd08f834bf47948acc875bd43584112ec9ed25d5587c178",
+      "source_sha256": "b5200e8abcb09f55a4a56c9493657d7556af30ede0d10928c403e352627109c9"
+    }
+  ],
+  "production_writes": 0,
+  "release_objects_modified": 0,
+  "releases_fail_closed": 2,
+  "releases_recorded": 5,
+  "status": "PREPARED_NOT_PROMOTED"
+}
