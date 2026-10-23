@@ -959,13 +959,19 @@ def shared_financial_query():
     service = getattr(env, "FINANCIAL_DATA", None)
     if not service or not token:
         return jsonify(error="Shared financial data is not configured."), 503
+    pinned_bundle = request.headers.get("x-zion-bundle-id")
+    if pinned_bundle and not re.fullmatch(r"[a-f0-9]{64}", pinned_bundle):
+        return jsonify(error="Invalid bundle ID."), 400
+    headers = {"Authorization": "Bearer " + token}
+    if pinned_bundle:
+        headers["x-zion-bundle-id"] = pinned_bundle
     from urllib.parse import urlencode
     from ppe_provider import _wait
     from js import Request, Object
     from pyodide.ffi import to_js
     response = _wait(service.fetch(Request.new(
         "https://financial.internal/query?" + urlencode({"request": structured[0]} if structured else {"query": question}),
-        to_js({"headers": {"Authorization": "Bearer " + token}}, dict_converter=Object.fromEntries),
+        to_js({"headers": headers}, dict_converter=Object.fromEntries),
     )), time.monotonic() + 45)
     raw = str(_wait(response.text(), time.monotonic() + 10))
     if not private_access and response.status == 200:

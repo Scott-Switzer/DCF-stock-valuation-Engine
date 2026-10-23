@@ -11,6 +11,8 @@ test('structured requests resolve explicit symbols without natural-language ambi
 });
 test('unsupported or contradictory fields cannot silently widen the query',()=>{
  for(const request of [
+  {action:'dataset_catalog',search:null,limit:null},
+  {action:'financials',symbol:'AAPL',metric:null},
   {action:['price'],symbol:'AAPL'},
   {action:'toString',symbol:'AAPL'},
   {action:'price',symbol:'AAPL',date:'2025-02-30'},
@@ -37,4 +39,10 @@ test('catalog pagination reuses the existing route and only returns metadata',as
  }}};
  const result=await queryRoute(env,url({action:'dataset_catalog',search:'comp',offset:50,limit:10}),{snapshot:{bundle_id:bundle,source_releases:{COLLECTION_CATALOG_KEY:release}}});
  assert.ok(fetched);assert.equal(result.result.offset,50);assert.equal(result.result.next_offset,60);assert.equal(result.result.entries[0].raw_records,undefined);
+});
+
+test('repeated JSON fields including escaped spellings are rejected',()=>{
+ for(const raw of ['{"action":"price","symbol":"AAPL","symbol":"ON"}', '{"action":"price","symbol":"AAPL","sym\\u0062ol":"ON"}']){
+  assert.throws(()=>queryInput(new URL('https://internal/query?'+new URLSearchParams({request:raw}))),/Repeated JSON field/);
+ }
 });

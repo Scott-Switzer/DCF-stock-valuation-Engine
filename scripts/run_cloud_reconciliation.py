@@ -25,10 +25,15 @@ def credential():
     raise RuntimeError('Private API credential is not configured')
 
 
-def request(path, method='POST'):
+def request(path, method='POST', *, bundle_id=None):
+    if bundle_id is not None:
+        import re
+        if not re.fullmatch(r'[a-f0-9]{64}', bundle_id):
+            raise ValueError('Invalid bundle ID')
     req = Request(BASE + path, data=b'' if method == 'POST' else None, method=method,
                   headers={'Authorization': 'Bearer ' + credential(),
-                           'User-Agent': 'Zion-Security-Funnel/1.0'})
+                           'User-Agent': 'Zion-Security-Funnel/1.0',
+                           **({'x-zion-bundle-id': bundle_id} if bundle_id else {})})
     try:
         with urlopen(req, timeout=300) as response:
             return json.load(response)

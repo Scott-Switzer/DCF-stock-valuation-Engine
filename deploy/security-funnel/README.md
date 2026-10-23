@@ -152,7 +152,7 @@ avoid ambiguity for short tickers such as `A` and `ON`.
 
 The website `/api/data/query` forwards this same input and retains owner-only
 price/catalog access. `scripts/finance.py --request '<JSON>' --json` uses the same
-API. MCP `query_financial_data` accepts `{request: ...}` or `{query: ...}` without
+API. The separate [Financial Assistant Gateway MCP reader](https://github.com/Scott-Switzer/financial-assistant-gateway/pull/23) `query_financial_data` accepts `{request: ...}` or `{query: ...}` without
 adding tools or credential scope. Invalid inputs never authorize acquisition.
 
 
@@ -171,3 +171,10 @@ Both annual source fallback and quarterly/TTM calls require
 `materialized_only=true` (Zion #57): a missing company reports a gap without
 queuing acquisition. The existing source may still cache calculations over stored
 materializations. Deploy that source change before this reader.
+
+
+To keep multi-request results consistent, retain `bundle_id` from the first reply
+and send `x-zion-bundle-id` on the website/shared API, `--bundle-id` on the CLI,
+or the optional top-level `bundle_id` on the Gateway MCP reader. A changed
+snapshot returns `RELEASE_MISMATCH`; restart pagination rather than mixing pages.
+This reader is separate from the DCF application's legacy `mcp.py` valuation tools.

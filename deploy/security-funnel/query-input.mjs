@@ -8,6 +8,16 @@ export function queryInput(url){
  if(questions.length){if(!questions[0].trim()||questions[0].length>2000)invalid('Question must contain 1–2,000 characters.');return {question:questions[0]};}
  if(requests[0].length>4096)invalid('Structured request exceeds 4,096 characters.');
  let request;try{request=JSON.parse(requests[0]);}catch{invalid('Structured request must be valid JSON.');}
+ // The contract is flat. Scan complete JSON strings so escaped key names also
+ // collide; JSON.parse alone silently keeps the last repeated property.
+ const keys=new Set();
+ for(let i=0;i<requests[0].length;i++){
+  if(requests[0][i]!==String.fromCharCode(34))continue;
+  const start=i++;
+  while(i<requests[0].length){if(requests[0][i]==='\\'){i+=2;continue;}if(requests[0][i]===String.fromCharCode(34))break;i++;}
+  let next=i+1;while(/\s/.test(requests[0][next]||'')&&next<requests[0].length)next++;
+  if(requests[0][next]===':'){const key=JSON.parse(requests[0].slice(start,i+1));if(keys.has(key))invalid('Repeated JSON field: '+key);keys.add(key);}
+ }
  object(request);return {request};
 }
 function date(value){
@@ -16,6 +26,7 @@ function date(value){
 }
 export function structuredQuery(value,symbols={}){
  object(value);
+ if(Object.values(value).some(v=>v===null))invalid('Explicit null is not an omitted field.');
  const action=value.action;
  if(typeof action!=='string'||!['price','growth','financials','dataset_catalog'].includes(action))invalid('Unsupported action.');
  if(action==='dataset_catalog'){
