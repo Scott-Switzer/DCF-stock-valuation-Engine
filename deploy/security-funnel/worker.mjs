@@ -289,7 +289,7 @@ export default {
     try {
       let result;
       if(request.method==='GET'&&u.pathname==='/snapshot')return Response.json(await readSnapshot(env),{headers:{'Cache-Control':'private, no-store'}});
-      if(request.method==='GET'&&u.pathname==='/query')return Response.json(await stampedRead(env,request.headers.get('x-zion-bundle-id'),()=>queryRoute(env,u)),{headers:{'Cache-Control':'private, no-store'}});
+      if(request.method==='GET'&&u.pathname==='/query')return Response.json(await stampedRead(env,request.headers.get('x-zion-bundle-id'),snapshot=>queryRoute(env,u,snapshot)),{headers:{'Cache-Control':'private, no-store'}});
       if(request.method==='GET'&&u.pathname==='/company-packet')return Response.json(await stampedRead(env,request.headers.get('x-zion-bundle-id'),()=>companyPacket(env,u.searchParams.get('symbol'))),{headers:{'Cache-Control':'private, no-store'}});
       if(request.method==='GET'&&['/stored-history','/financial-history'].includes(u.pathname)){
         const target=new URL('https://zion.internal/private/v1/'+(u.pathname==='/stored-history'?'stock-history':'financial-history'));target.search=u.search;
