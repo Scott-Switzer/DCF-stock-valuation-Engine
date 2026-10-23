@@ -49,3 +49,13 @@ test('repeated pagination and missing stored materializations fail without parti
  const {env}=fixture();env.FINANCIAL_API.fetch=async()=>Response.json({error:{code:'MATERIALIZATION_REQUIRED'}},{status:202});
  await assert.rejects(queryRoute(env,url({action:'financials',symbol:'AAPL',frequency:'quarterly'}),{snapshot}),/MATERIALIZATION_REQUIRED/);
 });
+
+test('a single exact financial date means that period end for quarterly and TTM reads',async()=>{
+ for(const frequency of ['quarterly','ttm']){
+  const question=`AAPL ${frequency} revenue 2025-03-31`;
+  assert.deepEqual(requestQuery(question,{AAPL:0}).dates,['2025-03-31','2025-03-31']);
+  const {env,calls}=fixture(x=>({...x,frequency,observations:x.observations.map(r=>({...r,frequency}))}));
+  await queryRoute(env,new URL('https://internal/query?'+new URLSearchParams({query:question})),{snapshot});
+  assert.equal(calls[0].searchParams.get('date_from'),'2025-03-31');assert.equal(calls[0].searchParams.get('date_to'),'2025-03-31');
+ }
+});

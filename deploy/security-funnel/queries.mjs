@@ -57,7 +57,10 @@ export function requestQuery(query,symbols,aliases={}){
  const text=query.toLowerCase(),symbol=matches[0];
  if(!dates.length&&/\b(revenue|sales|margin|financials)\b/.test(text)){const years=query.match(/\b(?:19|20)\d{2}\b/g)||[];if(years.length===1)dates.push(years[0]+'-01-01',years[0]+'-12-31');else if(years.length===2)dates.push(years[0]+'-01-01',years[1]+'-12-31');}
  if(dates.length>2||(dates.length===2&&dates[0]>dates[1]))fail('INVALID_DATE_RANGE');
- if(/\b(revenue|sales|margin|financials|financial history)\b/.test(text))return {action:'financials',symbol,dates,frequency,metric:/margin/.test(text)?'operating_margin':/\b(growth|grew|change)\b/.test(text)?'revenue_growth':'revenue'};
+ if(/\b(revenue|sales|margin|financials|financial history)\b/.test(text)){
+  if(dates.length===1)dates.push(dates[0]);
+  return {action:'financials',symbol,dates,frequency,metric:/margin/.test(text)?'operating_margin':/\b(growth|grew|change)\b/.test(text)?'revenue_growth':'revenue'};
+ }
  if(frequency!=='annual')fail('FREQUENCY_REQUIRES_FINANCIAL_METRIC');
  if(/\b(price|prices|return|growth|grew)\b/.test(text)){
   // A bare year is not a trading session; silently serving the latest close would misstate the date.
