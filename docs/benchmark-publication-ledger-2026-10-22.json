@@ -1,0 +1,146 @@
+{
+  "schema_version": "benchmark-publication-ledger-v1",
+  "observed_at": "2026-10-22",
+  "release_root": "../../artifacts/zero-subscription-integration/damodaran-releases",
+  "summary": {
+    "releases": 7,
+    "published": 0,
+    "unavailable": 7,
+    "missing_historical_refusal": []
+  },
+  "releases": [
+    {
+      "release_id": "5ce3d0a0f23f1ff104671dc021c70f6e558a6a259aef88465a11f0375389e96d",
+      "dataset_id": "margins",
+      "region": "US",
+      "source_update_label": "2026-01-05T00:00:00",
+      "publication": {
+        "available": false,
+        "published_at": null,
+        "method": null,
+        "reason": "NO_PUBLICATION_DATE"
+      },
+      "current_selection": {
+        "subject": "Advertising",
+        "measure": "gross_margin",
+        "value_decimal": "0.36242944995377313",
+        "selection_mode": "CURRENT_EXPLICIT_SELECTION"
+      },
+      "historical_refusal": "Benchmark vintage unavailable at historical cutoff: NO_PUBLICATION_DATE"
+    },
+    {
+      "release_id": "69e27f1c09fbc024d76e9a1c0cbcf2b01957ca988122bbe4cc28a17662e39b6b",
+      "dataset_id": "industry_betas",
+      "region": "US",
+      "source_update_label": "2026-01-05T00:00:00",
+      "publication": {
+        "available": false,
+        "published_at": null,
+        "method": null,
+        "reason": "NO_PUBLICATION_DATE"
+      },
+      "current_selection": {
+        "subject": "Advertising",
+        "measure": "levered_beta",
+        "value_decimal": "1.210506967409714",
+        "selection_mode": "CURRENT_EXPLICIT_SELECTION"
+      },
+      "historical_refusal": "Benchmark vintage unavailable at historical cutoff: NO_PUBLICATION_DATE"
+    },
+    {
+      "release_id": "6a7510cfc34cde5490e9e9ee89455d55a81805311e66f6b2f1d9a60328efc3b8",
+      "dataset_id": "cost_of_capital",
+      "region": "US",
+      "source_update_label": "2026-01-05T00:00:00",
+      "publication": {
+        "available": false,
+        "published_at": null,
+        "method": null,
+        "reason": "NO_PUBLICATION_DATE"
+      },
+      "current_selection": {
+        "subject": "Advertising",
+        "measure": "cost_of_equity",
+        "value_decimal": "0.09348861074647324",
+        "selection_mode": "CURRENT_EXPLICIT_SELECTION"
+      },
+      "historical_refusal": "Benchmark vintage unavailable at historical cutoff: NO_PUBLICATION_DATE"
+    },
+    {
+      "release_id": "87b92aedda847932195e178ebefc6c70f8a1b3afd93d5171ae7d2c024bd7e0c5",
+      "dataset_id": "implied_erp",
+      "region": "US",
+      "source_update_label": "2024-01-05T00:00:00",
+      "publication": {
+        "available": false,
+        "published_at": null,
+        "method": null,
+        "reason": "NO_PUBLICATION_DATE"
+      },
+      "current_selection": {
+        "subject": "1960",
+        "measure": "treasury_rate",
+        "value_decimal": "0.0276",
+        "selection_mode": "CURRENT_EXPLICIT_SELECTION"
+      },
+      "historical_refusal": "Benchmark vintage unavailable at historical cutoff: NO_PUBLICATION_DATE"
+    },
+    {
+      "release_id": "899542d35d98a989b77f5ad4e9e7964316ac77043b83e2b3b5cdeb9fac5b92fc",
+      "dataset_id": "multiples",
+      "region": "US",
+      "source_update_label": "2026-01-05T00:00:00",
+      "publication": {
+        "available": false,
+        "published_at": null,
+        "method": null,
+        "reason": "NO_PUBLICATION_DATE"
+      },
+      "current_selection": {
+        "subject": "Advertising",
+        "measure": "ev_ebitda_positive",
+        "value_decimal": "11.998645075035455",
+        "selection_mode": "CURRENT_EXPLICIT_SELECTION"
+      },
+      "historical_refusal": "Benchmark vintage unavailable at historical cutoff: NO_PUBLICATION_DATE"
+    },
+    {
+      "release_id": "a7a323992ca45b4984c8115a1a5684093b1ff0e3839d8fd2b373a27cc10272f6",
+      "dataset_id": "reinvestment",
+      "region": "US",
+      "source_update_label": "2026-01-05T00:00:00",
+      "publication": {
+        "available": false,
+        "published_at": null,
+        "method": null,
+        "reason": "NO_PUBLICATION_DATE"
+      },
+      "current_selection": {
+        "subject": "Advertising",
+        "measure": "capital_expenditures",
+        "value_decimal": "705566999.9999999000000",
+        "selection_mode": "CURRENT_EXPLICIT_SELECTION"
+      },
+      "historical_refusal": "Benchmark vintage unavailable at historical cutoff: NO_PUBLICATION_DATE"
+    },
+    {
+      "release_id": "fba2da429a413c130bd08f834bf47948acc875bd43584112ec9ed25d5587c178",
+      "dataset_id": "country_risk",
+      "region": "Global",
+      "source_update_label": "None",
+      "publication": {
+        "available": false,
+        "published_at": null,
+        "method": null,
+        "reason": "NO_PUBLICATION_DATE"
+      },
+      "current_selection": {
+        "subject": "Abu Dhabi",
+        "measure": "default_spread",
+        "value_decimal": "0.004195048511608233",
+        "selection_mode": "CURRENT_EXPLICIT_SELECTION"
+      },
+      "historical_refusal": "Benchmark vintage unavailable at historical cutoff: NO_PUBLICATION_DATE"
+    }
+  ]
+}

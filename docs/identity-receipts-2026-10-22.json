@@ -1,0 +1,1105 @@
+{
+  "schema_version": "identity-receipts-v1",
+  "observed_at": "2026-10-22",
+  "ticker_file": {
+    "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+    "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+    "bytes": 523092,
+    "fetched_at": "2026-10-22T22:25:42+00:00",
+    "listing_count": 10428
+  },
+  "listings": [
+    {
+      "ticker": "ADBE",
+      "cik": "0000796343",
+      "issuer_name_in_ticker_file": "ADOBE INC.",
+      "submissions_name": "ADOBE INC.",
+      "exchange": "Nasdaq",
+      "ticker_syntax_class": "UNMARKED",
+      "sibling_listings": [],
+      "former_names": [
+        "ADOBE SYSTEMS INC"
+      ],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "7372",
+      "sic_description": "Services-Prepackaged Software",
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 8,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": {
+        "form": "10-K",
+        "filing_date": "2026-01-15",
+        "accession": "0000796343-26-000003",
+        "document": "adbe-20251128.htm",
+        "period": "2025-11-28",
+        "items": ""
+      },
+      "share_class": {
+        "resolved": "NONE",
+        "letter": "NONE",
+        "class_title": "Common Stock, $0.0001 par value per share",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0000796343-26-000003",
+        "annual_report_cik": "0000796343",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/796343/000079634326000003/adbe-20251128.htm",
+        "document_sha256": "2bc99215a8c018f9b1f9cfb31dfb4ed860a7a72b79d73b9b1686d51c997af4a9",
+        "excerpt": "Common Stock, $0.0001 par value per share | ADBE | NASDAQ"
+      },
+      "succession": null,
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0000796343.json",
+          "sha256": "6000ab8cebb0c0fa7a8065741eddcc736d007739dffa337dcd4c8082d5ecfe25",
+          "bytes": 161886,
+          "fetched_at": "2026-10-22T22:25:44+00:00"
+        }
+      }
+    },
+    {
+      "ticker": "AMZN",
+      "cik": "0001018724",
+      "issuer_name_in_ticker_file": "AMAZON COM INC",
+      "submissions_name": "AMAZON COM INC",
+      "exchange": "Nasdaq",
+      "ticker_syntax_class": "UNMARKED",
+      "sibling_listings": [],
+      "former_names": [],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "5961",
+      "sic_description": "Retail-Catalog & Mail-Order Houses",
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 6,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": {
+        "form": "10-K",
+        "filing_date": "2026-02-06",
+        "accession": "0001018724-26-000004",
+        "document": "amzn-20251231.htm",
+        "period": "2025-12-31",
+        "items": ""
+      },
+      "share_class": {
+        "resolved": "NONE",
+        "letter": "NONE",
+        "class_title": "Common Stock, par value $.01 per share",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0001018724-26-000004",
+        "annual_report_cik": "0001018724",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000004/amzn-20251231.htm",
+        "document_sha256": "09fc02859de8aeeaf427a809dc593dd66694a1c529fbae2b6383b9431bb166a0",
+        "excerpt": "Common Stock, par value $.01 per share | AMZN | Nasdaq Global Select Market"
+      },
+      "succession": null,
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0001018724.json",
+          "sha256": "1f5bb6be4033e2378bfa0d14e0d9276a08d8dfb070b263f59ca0e77d68ced058",
+          "bytes": 159904,
+          "fetched_at": "2026-10-22T22:25:45+00:00"
+        }
+      }
+    },
+    {
+      "ticker": "BRK-A",
+      "cik": "0001067983",
+      "issuer_name_in_ticker_file": "BERKSHIRE HATHAWAY INC",
+      "submissions_name": "BERKSHIRE HATHAWAY INC",
+      "exchange": "NYSE",
+      "ticker_syntax_class": "A",
+      "sibling_listings": [
+        "BRK-B"
+      ],
+      "former_names": [
+        "NBH INC"
+      ],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "6331",
+      "sic_description": "Fire, Marine & Casualty Insurance",
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 10,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": {
+        "form": "10-K",
+        "filing_date": "2026-03-02",
+        "accession": "0001193125-26-083899",
+        "document": "brka-20251231.htm",
+        "period": "2025-12-31",
+        "items": ""
+      },
+      "share_class": {
+        "resolved": "A",
+        "letter": "A",
+        "class_title": "Class A Common Stock",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0001193125-26-083899",
+        "annual_report_cik": "0001067983",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/1067983/000119312526083899/brka-20251231.htm",
+        "document_sha256": "4a03ea811fdc75465dea65c251edfe10af2cb3a38b1aafda5ff180b8eefa445b",
+        "excerpt": "Class A Common Stock Class B Common Stock 1.125% Senior Notes due 2027 2.150% Senior Notes due 2028 1.500% Senior Notes due 2030 2.000% Senior Notes due 2034 1.625% Senior Notes due 2035 2.375% Senior Notes due 2039 0.500% Senior Notes due 2041 2.625% Senior Notes due 2059 |  | BRK.A BRK.B BRK27 BRK"
+      },
+      "succession": null,
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0001067983.json",
+          "sha256": "ab313de3258a0251e6f41c0398573a0c5a94618fd2f67b9cf1d136f3eaad9da2",
+          "bytes": 161248,
+          "fetched_at": "2026-10-22T22:25:46+00:00"
+        }
+      }
+    },
+    {
+      "ticker": "BRK-B",
+      "cik": "0001067983",
+      "issuer_name_in_ticker_file": "BERKSHIRE HATHAWAY INC",
+      "submissions_name": "BERKSHIRE HATHAWAY INC",
+      "exchange": "NYSE",
+      "ticker_syntax_class": "B",
+      "sibling_listings": [
+        "BRK-A"
+      ],
+      "former_names": [
+        "NBH INC"
+      ],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "6331",
+      "sic_description": "Fire, Marine & Casualty Insurance",
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 10,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": {
+        "form": "10-K",
+        "filing_date": "2026-03-02",
+        "accession": "0001193125-26-083899",
+        "document": "brka-20251231.htm",
+        "period": "2025-12-31",
+        "items": ""
+      },
+      "share_class": {
+        "resolved": "B",
+        "letter": "B",
+        "class_title": "Class B Common Stock",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0001193125-26-083899",
+        "annual_report_cik": "0001067983",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/1067983/000119312526083899/brka-20251231.htm",
+        "document_sha256": "4a03ea811fdc75465dea65c251edfe10af2cb3a38b1aafda5ff180b8eefa445b",
+        "excerpt": "Class A Common Stock Class B Common Stock 1.125% Senior Notes due 2027 2.150% Senior Notes due 2028 1.500% Senior Notes due 2030 2.000% Senior Notes due 2034 1.625% Senior Notes due 2035 2.375% Senior Notes due 2039 0.500% Senior Notes due 2041 2.625% Senior Notes due 2059 |  | BRK.A BRK.B BRK27 BRK"
+      },
+      "succession": null,
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0001067983.json",
+          "sha256": "ab313de3258a0251e6f41c0398573a0c5a94618fd2f67b9cf1d136f3eaad9da2",
+          "bytes": 161248,
+          "fetched_at": "2026-10-22T22:25:46+00:00"
+        }
+      }
+    },
+    {
+      "ticker": "COST",
+      "cik": "0000909832",
+      "issuer_name_in_ticker_file": "COSTCO WHOLESALE CORP /NEW",
+      "submissions_name": "COSTCO WHOLESALE CORP /NEW",
+      "exchange": "Nasdaq",
+      "ticker_syntax_class": "UNMARKED",
+      "sibling_listings": [],
+      "former_names": [
+        "COSTCO COMPANIES INC",
+        "PRICE/COSTCO INC"
+      ],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "5331",
+      "sic_description": "Retail-Variety Stores",
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 10,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": {
+        "form": "10-K",
+        "filing_date": "2026-10-07",
+        "accession": "0000909832-26-000093",
+        "document": "cost-20260830.htm",
+        "period": "2026-08-30",
+        "items": ""
+      },
+      "share_class": {
+        "resolved": "NONE",
+        "letter": "NONE",
+        "class_title": "Common Stock, $.005 Par Value",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0000909832-26-000093",
+        "annual_report_cik": "0000909832",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/909832/000090983226000093/cost-20260830.htm",
+        "document_sha256": "8a6e450bb93dee55b0b2c3d264d1afc58a9a68ddf8dd0051555eb4a9e640b373",
+        "excerpt": "Common Stock, $.005 Par Value | COST | The NASDAQ Global Select Market"
+      },
+      "succession": null,
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1",
+          "bytes": 158362,
+          "fetched_at": "2026-10-22T22:25:45+00:00"
+        }
+      }
+    },
+    {
+      "ticker": "GOOG",
+      "cik": "0001652044",
+      "issuer_name_in_ticker_file": "Alphabet Inc.",
+      "submissions_name": "Alphabet Inc.",
+      "exchange": "Nasdaq",
+      "ticker_syntax_class": "UNMARKED",
+      "sibling_listings": [
+        "GOOGL",
+        "GOOGM",
+        "GOOGN"
+      ],
+      "former_names": [],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "7370",
+      "sic_description": "Services-Computer Programming, Data Processing, Etc.",
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 3,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": {
+        "form": "10-K",
+        "filing_date": "2026-02-05",
+        "accession": "0001652044-26-000018",
+        "document": "goog-20251231.htm",
+        "period": "2025-12-31",
+        "items": ""
+      },
+      "share_class": {
+        "resolved": "C",
+        "letter": "C",
+        "class_title": "Class C Capital Stock, $0.001 par value",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0001652044-26-000018",
+        "annual_report_cik": "0001652044",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000018/goog-20251231.htm",
+        "document_sha256": "32ad7a6f6d58a43897fcef0d6da6827eaf4fd8f8818a8be056f73b822fac6f34",
+        "excerpt": "Class C Capital Stock, $0.001 par value | GOOG | Nasdaq Stock Market LLC"
+      },
+      "succession": null,
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0001652044.json",
+          "sha256": "648cea84d824309b518807fd7e7fdb72d6855e12e8afa221d2caa047d5c9f2ca",
+          "bytes": 152401,
+          "fetched_at": "2026-10-22T22:25:49+00:00"
+        }
+      }
+    },
+    {
+      "ticker": "GOOGL",
+      "cik": "0001652044",
+      "issuer_name_in_ticker_file": "Alphabet Inc.",
+      "submissions_name": "Alphabet Inc.",
+      "exchange": "Nasdaq",
+      "ticker_syntax_class": "UNMARKED",
+      "sibling_listings": [
+        "GOOG",
+        "GOOGM",
+        "GOOGN"
+      ],
+      "former_names": [],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "7370",
+      "sic_description": "Services-Computer Programming, Data Processing, Etc.",
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 3,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": {
+        "form": "10-K",
+        "filing_date": "2026-02-05",
+        "accession": "0001652044-26-000018",
+        "document": "goog-20251231.htm",
+        "period": "2025-12-31",
+        "items": ""
+      },
+      "share_class": {
+        "resolved": "A",
+        "letter": "A",
+        "class_title": "Class A Common Stock, $0.001 par value",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0001652044-26-000018",
+        "annual_report_cik": "0001652044",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000018/goog-20251231.htm",
+        "document_sha256": "32ad7a6f6d58a43897fcef0d6da6827eaf4fd8f8818a8be056f73b822fac6f34",
+        "excerpt": "Class A Common Stock, $0.001 par value | GOOGL | Nasdaq Stock Market LLC"
+      },
+      "succession": null,
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0001652044.json",
+          "sha256": "648cea84d824309b518807fd7e7fdb72d6855e12e8afa221d2caa047d5c9f2ca",
+          "bytes": 152401,
+          "fetched_at": "2026-10-22T22:25:49+00:00"
+        }
+      }
+    },
+    {
+      "ticker": "IBM",
+      "cik": "0000051143",
+      "issuer_name_in_ticker_file": "INTERNATIONAL BUSINESS MACHINES CORP",
+      "submissions_name": "INTERNATIONAL BUSINESS MACHINES CORP",
+      "exchange": "NYSE",
+      "ticker_syntax_class": "UNMARKED",
+      "sibling_listings": [],
+      "former_names": [],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "3570",
+      "sic_description": "Computer & office Equipment",
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 7,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": {
+        "form": "10-K",
+        "filing_date": "2026-02-24",
+        "accession": "0000051143-26-000010",
+        "document": "ibm-20251231.htm",
+        "period": "2025-12-31",
+        "items": ""
+      },
+      "share_class": {
+        "resolved": "NONE",
+        "letter": "NONE",
+        "class_title": "Capital stock, par value $.20 per share",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0000051143-26-000010",
+        "annual_report_cik": "0000051143",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/51143/000005114326000010/ibm-20251231.htm",
+        "document_sha256": "b304cb1fb1ce22eb11a61dc64e39d38023ce4f88e0bc6fc2f98193650e927bc9",
+        "excerpt": "Capital stock, par value $.20 per share | IBM | New York Stock Exchange"
+      },
+      "succession": null,
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0000051143.json",
+          "sha256": "b6352f714b8da18b7a79a6a99c01739f68bca948c594eea35ac4d7729c660431",
+          "bytes": 167131,
+          "fetched_at": "2026-10-22T22:25:43+00:00"
+        }
+      }
+    },
+    {
+      "ticker": "META",
+      "cik": "0001326801",
+      "issuer_name_in_ticker_file": "Meta Platforms, Inc.",
+      "submissions_name": "Meta Platforms, Inc.",
+      "exchange": "Nasdaq",
+      "ticker_syntax_class": "UNMARKED",
+      "sibling_listings": [],
+      "former_names": [
+        "Facebook Inc"
+      ],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "7370",
+      "sic_description": "Services-Computer Programming, Data Processing, Etc.",
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 2,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": {
+        "form": "10-K",
+        "filing_date": "2026-01-29",
+        "accession": "0001628280-26-003942",
+        "document": "meta-20251231.htm",
+        "period": "2025-12-31",
+        "items": ""
+      },
+      "share_class": {
+        "resolved": "A",
+        "letter": "A",
+        "class_title": "Class A Common Stock, $0.000006 par value",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0001628280-26-003942",
+        "annual_report_cik": "0001326801",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/meta-20251231.htm",
+        "document_sha256": "506ab2fcbc451e25e62a690389f96899f3c2c5de837b02c9b201586bc7915940",
+        "excerpt": "Class A Common Stock, $0.000006 par value | META | The Nasdaq Stock Market LLC"
+      },
+      "succession": null,
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0001326801.json",
+          "sha256": "9b30ae4418f3523df18b51c8421b6184511fa2102706c384bf24f03dd6e9615d",
+          "bytes": 158182,
+          "fetched_at": "2026-10-22T22:25:47+00:00"
+        }
+      }
+    },
+    {
+      "ticker": "MO",
+      "cik": "0000764180",
+      "issuer_name_in_ticker_file": "ALTRIA GROUP, INC.",
+      "submissions_name": "ALTRIA GROUP, INC.",
+      "exchange": "NYSE",
+      "ticker_syntax_class": "UNMARKED",
+      "sibling_listings": [],
+      "former_names": [
+        "ALTRIA GROUP INC",
+        "PHILIP MORRIS COMPANIES INC"
+      ],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "2111",
+      "sic_description": "Cigarettes",
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 12,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": {
+        "form": "10-K",
+        "filing_date": "2026-02-25",
+        "accession": "0000764180-26-000017",
+        "document": "mo-20251231.htm",
+        "period": "2025-12-31",
+        "items": ""
+      },
+      "share_class": {
+        "resolved": "NONE",
+        "letter": "NONE",
+        "class_title": "Common Stock, $0.33 1/3 par value",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0000764180-26-000017",
+        "annual_report_cik": "0000764180",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/764180/000076418026000017/mo-20251231.htm",
+        "document_sha256": "9d93767fe2e40aca3dd0de238eeffa0c5ea4b06a36b42752614c7c5bbd4e7334",
+        "excerpt": "Common Stock, $0.33 1/3 par value | MO | New York Stock Exchange"
+      },
+      "succession": null,
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0000764180.json",
+          "sha256": "65bb662191f9cd0ea1d1228d4bbdf1eb8bb1ea42f95bf30547e4f4f5835a696a",
+          "bytes": 160830,
+          "fetched_at": "2026-10-22T22:25:43+00:00"
+        }
+      }
+    },
+    {
+      "ticker": "ORCL",
+      "cik": "0001341439",
+      "issuer_name_in_ticker_file": "ORACLE CORP",
+      "submissions_name": "ORACLE CORP",
+      "exchange": "NYSE",
+      "ticker_syntax_class": "UNMARKED",
+      "sibling_listings": [
+        "ORCL-PD"
+      ],
+      "former_names": [
+        "Ozark Holding Inc."
+      ],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "7372",
+      "sic_description": "Services-Prepackaged Software",
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 11,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": {
+        "form": "10-K",
+        "filing_date": "2026-06-22",
+        "accession": "0001193125-26-277521",
+        "document": "orcl-20260531.htm",
+        "period": "2026-05-31",
+        "items": ""
+      },
+      "share_class": {
+        "resolved": "NONE",
+        "letter": "NONE",
+        "class_title": "Common Stock, par value $0.01 per share",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0001193125-26-277521",
+        "annual_report_cik": "0001341439",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/1341439/000119312526277521/orcl-20260531.htm",
+        "document_sha256": "39bcde3b42579bb99306f9d6e51c369892c6dacf289cfb9cbb0b8d831f08bc33",
+        "excerpt": "Common Stock, par value $0.01 per share | ORCL | New York Stock Exchange"
+      },
+      "succession": null,
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0001341439.json",
+          "sha256": "c41260def74f2052a1bfc9088a063688e772e5f1e4a7007ecb46c30312c84719",
+          "bytes": 158495,
+          "fetched_at": "2026-10-22T22:25:48+00:00"
+        }
+      }
+    },
+    {
+      "ticker": "TSLA",
+      "cik": "0001318605",
+      "issuer_name_in_ticker_file": "Tesla, Inc.",
+      "submissions_name": "Tesla, Inc.",
+      "exchange": "Nasdaq",
+      "ticker_syntax_class": "UNMARKED",
+      "sibling_listings": [],
+      "former_names": [
+        "TESLA MOTORS INC"
+      ],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "3711",
+      "sic_description": "Motor Vehicles & Passenger Car Bodies",
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 8,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": {
+        "form": "10-K",
+        "filing_date": "2026-01-29",
+        "accession": "0001628280-26-003952",
+        "document": "tsla-20251231.htm",
+        "period": "2025-12-31",
+        "items": ""
+      },
+      "share_class": {
+        "resolved": "NONE",
+        "letter": "NONE",
+        "class_title": "Common stock",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0001628280-26-003952",
+        "annual_report_cik": "0001318605",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026003952/tsla-20251231.htm",
+        "document_sha256": "264b238f6e8a0c1a94d5e66b25ceb79d75d2262fb1883afe55c9236fc72baf41",
+        "excerpt": "Common stock | TSLA | The Nasdaq Global Select Market"
+      },
+      "succession": null,
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0001318605.json",
+          "sha256": "5c3f74e539b64214b1a95a3b27a665e110b6d7e8c0d73c0fb3e916f0e36132ce",
+          "bytes": 162225,
+          "fetched_at": "2026-10-22T22:25:46+00:00"
+        }
+      }
+    },
+    {
+      "ticker": "V",
+      "cik": "0001403161",
+      "issuer_name_in_ticker_file": "VISA INC.",
+      "submissions_name": "VISA INC.",
+      "exchange": "NYSE",
+      "ticker_syntax_class": "UNMARKED",
+      "sibling_listings": [],
+      "former_names": [],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "7389",
+      "sic_description": "Services-Business Services, NEC",
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 11,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": {
+        "form": "10-K",
+        "filing_date": "2025-11-06",
+        "accession": "0001403161-25-000089",
+        "document": "v-20250930.htm",
+        "period": "2025-09-30",
+        "items": ""
+      },
+      "share_class": {
+        "resolved": "A",
+        "letter": "A",
+        "class_title": "Class A Common Stock, par value $0.0001 per share",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0001403161-25-000089",
+        "annual_report_cik": "0001403161",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/1403161/000140316125000089/v-20250930.htm",
+        "document_sha256": "059fbd4f8e2ae7648b053c0e092e10d04e744f50e6d46403402de26977fba70d",
+        "excerpt": "Class A Common Stock, par value $0.0001 per share | V | New York Stock Exchange"
+      },
+      "succession": null,
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0001403161.json",
+          "sha256": "7f985aa8d9b9b7171d7784aa41af99770be5bc86afc2b1d508aa977f5aa0dc18",
+          "bytes": 159205,
+          "fetched_at": "2026-10-22T22:25:48+00:00"
+        }
+      }
+    },
+    {
+      "ticker": "XOM",
+      "cik": "0002115436",
+      "issuer_name_in_ticker_file": "ExxonMobil Holdings Corp",
+      "submissions_name": "ExxonMobil Holdings Corp",
+      "exchange": "NYSE",
+      "ticker_syntax_class": "UNMARKED",
+      "sibling_listings": [],
+      "former_names": [],
+      "entity_type": "operating",
+      "filer_category": "Large accelerated filer",
+      "sic": "2911",
+      "sic_description": "Petroleum Refining",
+      "statement_family": {
+        "family": "NO_ANNUAL_REPORT_FOUND",
+        "counts": {
+          "10-K": 0,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "latest_annual_report": null,
+      "share_class": {
+        "resolved": "NONE",
+        "letter": "NONE",
+        "class_title": "Common Stock, without par value",
+        "source": "annual_report_cover_page",
+        "annual_report_accession": "0000034088-26-000045",
+        "annual_report_cik": "0000034088",
+        "document_url": "https://www.sec.gov/Archives/edgar/data/34088/000003408826000045/xom-20251231.htm",
+        "document_sha256": "a5a921c21e42e6fd77f30452ab07ca16af1be6861bab1ce3856269c6ce0065a5",
+        "excerpt": "Common Stock, without par value |  | XOM |  | New York Stock Exchange"
+      },
+      "succession": {
+        "successor_cik": "0002115436",
+        "predecessor_cik": "0000034088",
+        "accession": "0001193125-26-291990",
+        "filed": "2026-07-01",
+        "shared_accessions": [
+          "0000034088-26-000093",
+          "0001193125-26-292453",
+          "0001193125-26-396148",
+          "0001193125-26-401391"
+        ],
+        "document_url": "https://www.sec.gov/Archives/edgar/data/2115436/000119312526291990/d71068d8k12b.htm",
+        "excerpt": "eck mark if the registrant has elected not to use the extended transition period for complying with any new or revised financial accounting standards provided pursuant to Section 13(a) of the Exchange Act. \u2610 Explanatory Note On July 1, 2026, Exxon Mobil Corporation, a New Jersey corporation and the predecessor registrant (\u201c ExxonMobil \u201d), completed its previously announced redomiciliation reorganization (the \u201c Redomiciliation Merger \u201d) pursuant to the Agreement and Plan of Merger, dated as of April 8, 2026 (the \u201c Merger Agreement \u201d), by and among ExxonMobil, ExxonMobil Holdings Corporation, a Texas corporation, and Ensign LLC, a Texas limited liability company. This Current Report on Form 8-K is being filed for the purpose of establishing ExxonMobil Holdings Corporation as the successor registrant of ExxonMobil\u2019s common stock pursuant to Rule 12g-3(a) under the Securities Exchange Act of 1934, as amended (the \u201c Exchange Act \u201d) and to disclose certain related matters. The Redomiciliation Merger became effective on July 1, 2026 in accordance with the terms of the Merger Agreement (the \u201c Effective Time \u201d). The foregoing description of the Merger Agreement is not complete and is qualified in its entirety by reference to the Merger Agreement, a copy of which was filed as Annex A to the proxy statement included in ExxonMobil\u2019s definitive proxy statement on Schedule 14A filed with the Commission on April 8, 2026. Item 1.01 Entry Into a Material Definitive Agreement. Upon the consummation of the Redomiciliation Merger and pursuant to the terms of the indenture, dated as of March 20",
+        "document_sha256": "31cd1c863abb5274727c87206c45daa19c09f879428ab788a43cb515fcaba34a",
+        "verified": true,
+        "predecessor_latest_annual_report": {
+          "form": "10-K",
+          "filing_date": "2026-02-18",
+          "accession": "0000034088-26-000045",
+          "document": "xom-20251231.htm",
+          "period": "2025-12-31",
+          "items": ""
+        }
+      },
+      "sources": {
+        "ticker_file": {
+          "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "sha256": "c4c73cd3ccd0ef974d9f70462abb7d1ec84b3102d7f95e1e1cdb6497fb71e408",
+          "bytes": 523092,
+          "fetched_at": "2026-10-22T22:25:42+00:00"
+        },
+        "submissions": {
+          "url": "https://data.sec.gov/submissions/CIK0002115436.json",
+          "sha256": "0bd1999e4151eb5bc672ec018c6f9bbffcab3c1ca8ae24a4d2e55be1f421de89",
+          "bytes": 7270,
+          "fetched_at": "2026-10-22T22:25:50+00:00"
+        }
+      }
+    }
+  ],
+  "issuers": [
+    {
+      "cik": "0000051143",
+      "name": "INTERNATIONAL BUSINESS MACHINES CORP",
+      "listings": [
+        "IBM"
+      ],
+      "former_names": [],
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 7,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "succession": null
+    },
+    {
+      "cik": "0000764180",
+      "name": "ALTRIA GROUP, INC.",
+      "listings": [
+        "MO"
+      ],
+      "former_names": [
+        "ALTRIA GROUP INC",
+        "PHILIP MORRIS COMPANIES INC"
+      ],
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 12,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "succession": null
+    },
+    {
+      "cik": "0000796343",
+      "name": "ADOBE INC.",
+      "listings": [
+        "ADBE"
+      ],
+      "former_names": [
+        "ADOBE SYSTEMS INC"
+      ],
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 8,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "succession": null
+    },
+    {
+      "cik": "0000909832",
+      "name": "COSTCO WHOLESALE CORP /NEW",
+      "listings": [
+        "COST"
+      ],
+      "former_names": [
+        "COSTCO COMPANIES INC",
+        "PRICE/COSTCO INC"
+      ],
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 10,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "succession": null
+    },
+    {
+      "cik": "0001018724",
+      "name": "AMAZON COM INC",
+      "listings": [
+        "AMZN"
+      ],
+      "former_names": [],
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 6,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "succession": null
+    },
+    {
+      "cik": "0001067983",
+      "name": "BERKSHIRE HATHAWAY INC",
+      "listings": [
+        "BRK-A",
+        "BRK-B"
+      ],
+      "former_names": [
+        "NBH INC"
+      ],
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 10,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "succession": null
+    },
+    {
+      "cik": "0001318605",
+      "name": "Tesla, Inc.",
+      "listings": [
+        "TSLA"
+      ],
+      "former_names": [
+        "TESLA MOTORS INC"
+      ],
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 8,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "succession": null
+    },
+    {
+      "cik": "0001326801",
+      "name": "Meta Platforms, Inc.",
+      "listings": [
+        "META"
+      ],
+      "former_names": [
+        "Facebook Inc"
+      ],
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 2,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "succession": null
+    },
+    {
+      "cik": "0001341439",
+      "name": "ORACLE CORP",
+      "listings": [
+        "ORCL"
+      ],
+      "former_names": [
+        "Ozark Holding Inc."
+      ],
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 11,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "succession": null
+    },
+    {
+      "cik": "0001403161",
+      "name": "VISA INC.",
+      "listings": [
+        "V"
+      ],
+      "former_names": [],
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 11,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "succession": null
+    },
+    {
+      "cik": "0001652044",
+      "name": "Alphabet Inc.",
+      "listings": [
+        "GOOG",
+        "GOOGL"
+      ],
+      "former_names": [],
+      "statement_family": {
+        "family": "DOMESTIC_10K",
+        "form": "10-K",
+        "counts": {
+          "10-K": 3,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "succession": null
+    },
+    {
+      "cik": "0002115436",
+      "name": "ExxonMobil Holdings Corp",
+      "listings": [
+        "XOM"
+      ],
+      "former_names": [],
+      "statement_family": {
+        "family": "NO_ANNUAL_REPORT_FOUND",
+        "counts": {
+          "10-K": 0,
+          "20-F": 0,
+          "40-F": 0
+        }
+      },
+      "succession": {
+        "status": "VERIFIED",
+        "predecessor_cik": "0000034088"
+      }
+    }
+  ],
+  "unresolved_share_classes": [],
+  "limits": [
+    "Receipts read SEC's public ticker file and submissions API only; no packet was built and no release changed.",
+    "Statement family is classified from annual-report form type (10-K domestic, 20-F/40-F foreign private issuer), not from company name or exchange.",
+    "Share class is taken from the latest annual report cover page; a class the cover page does not state stays unresolved rather than being guessed from ticker syntax.",
+    "ADR trading venue, free float and liquidity are not established by these receipts.",
+    "Submissions history is read newest-first with a bounded window of 2,500 filings plus at most three archive pages; an annual report older than that window would read as absent.",
+    "A CIK appearing here is an identity claim by SEC's own index, not an endorsement of data quality or filing completeness."
+  ]
+}

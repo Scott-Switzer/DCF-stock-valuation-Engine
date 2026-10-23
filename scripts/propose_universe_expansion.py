@@ -40,6 +40,10 @@ NAMED_OMISSIONS = (
     "BRK-B",
     "V",
 )
+OTHER_LISTING_STATUSES = frozenset({
+    "ISSUER_ALREADY_COVERED_OTHER_LISTING",
+    "ISSUER_NAMED_OTHER_LISTING",
+})
 EXCLUDED_EXCHANGES = {"OTC"}
 DERIVATIVE_SUFFIX = re.compile(r"-(WT|WS|U|UN|R|RT|CL)$")
 PREFERRED_SUFFIX = re.compile(r"-P[A-Z]?$")
@@ -125,6 +129,7 @@ def build_candidates(
     for row in sec_rows:
         cik_listings.setdefault(row["cik"], []).append(row["ticker"])
     named = set(named_omissions)
+    named_ciks = {row["cik"] for row in sec_rows if row["ticker"] in named}
     candidates: list[dict] = []
     excluded = Counter()
     for ticker in sorted(by_ticker):
@@ -149,6 +154,10 @@ def build_candidates(
             status, tier = "ISSUER_ALREADY_COVERED_OTHER_LISTING", "TIER_3_REVIEW"
         elif ticker in named:
             status, tier = "NAMED_HIGH_IMPACT_OMISSION", "TIER_1_NAMED"
+        elif row["cik"] in named_ciks:
+            # The issuer already enters through a named listing, so this is another
+            # listing of a represented issuer, not a new one for the wave.
+            status, tier = "ISSUER_NAMED_OTHER_LISTING", "TIER_3_REVIEW"
         else:
             status, tier = "NEW_EXCHANGE_LISTED_COMMON", "TIER_2_WAVE"
         candidates.append(
@@ -177,7 +186,9 @@ def build_candidates(
         "in_scope_candidates": len(candidates),
         "by_tier": dict(Counter(row["tier"] for row in candidates)),
         "by_status": dict(Counter(row["status"] for row in candidates)),
-        "new_issuers": len({row["cik"] for row in candidates if row["status"] != "ISSUER_ALREADY_COVERED_OTHER_LISTING"}),
+        "new_issuers": len({
+            row["cik"] for row in candidates if row["status"] not in OTHER_LISTING_STATUSES
+        }),
         "by_exchange": dict(Counter(row["exchange"] for row in candidates)),
         "excluded": dict(sorted(excluded.items())),
         "named_omissions_found": sorted(
@@ -189,6 +200,7 @@ def build_candidates(
             "Tier 2 is not ranked by size or liquidity; that needs a market-cap or index-membership source.",
             "Share-class and derivative classification uses ticker syntax only.",
             "An issuer already represented by one listing is never proposed as a new issuer.",
+            "A listing of an issuer that a named omission already represents is review, not a new issuer.",
         ],
     }
     return candidates, summary

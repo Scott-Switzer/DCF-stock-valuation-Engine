@@ -1,0 +1,14 @@
+{
+  "schema_version": "identity-succession-edges-v1",
+  "observed_at": "2026-10-22",
+  "note": "Only the two CIKs to compare are recorded here. Every claim in a receipt is read from SEC submissions and the 8-K12B explanatory note by scripts/build_identity_receipts.py, which fails if the accession is not shared or the note does not name the predecessor.",
+  "edges": [
+    {
+      "successor_cik": "0002115436",
+      "predecessor_cik": "0000034088",
+      "accession": "0001193125-26-291990",
+      "filed": "2026-07-01",
+      "reason": "ExxonMobil Holdings Corporation registered as successor registrant via Form 8-K12B after the July 2026 redomiciliation merger."
+    }
+  ]
+}

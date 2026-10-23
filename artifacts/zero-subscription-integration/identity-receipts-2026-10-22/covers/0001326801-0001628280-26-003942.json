@@ -1,0 +1,17 @@
+{
+  "extractor": "cover-v5",
+  "receipt": {
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/meta-20251231.htm",
+    "sha256": "506ab2fcbc451e25e62a690389f96899f3c2c5de837b02c9b201586bc7915940",
+    "bytes": 2371865,
+    "fetched_at": "2026-10-22T22:26:00+00:00"
+  },
+  "mappings": {
+    "META": {
+      "class_title": "Class A Common Stock, $0.000006 par value",
+      "letter": "A",
+      "excerpt": "Class A Common Stock, $0.000006 par value | META | The Nasdaq Stock Market LLC",
+      "method": "cover_table_columns"
+    }
+  }
+}

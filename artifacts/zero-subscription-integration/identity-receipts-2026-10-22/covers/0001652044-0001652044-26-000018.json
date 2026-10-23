@@ -1,0 +1,23 @@
+{
+  "extractor": "cover-v5",
+  "receipt": {
+    "url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000018/goog-20251231.htm",
+    "sha256": "32ad7a6f6d58a43897fcef0d6da6827eaf4fd8f8818a8be056f73b822fac6f34",
+    "bytes": 2616614,
+    "fetched_at": "2026-10-22T22:25:58+00:00"
+  },
+  "mappings": {
+    "GOOGL": {
+      "class_title": "Class A Common Stock, $0.001 par value",
+      "letter": "A",
+      "excerpt": "Class A Common Stock, $0.001 par value | GOOGL | Nasdaq Stock Market LLC",
+      "method": "cover_table_columns"
+    },
+    "GOOG": {
+      "class_title": "Class C Capital Stock, $0.001 par value",
+      "letter": "C",
+      "excerpt": "Class C Capital Stock, $0.001 par value | GOOG | Nasdaq Stock Market LLC",
+      "method": "cover_table_columns"
+    }
+  }
+}
