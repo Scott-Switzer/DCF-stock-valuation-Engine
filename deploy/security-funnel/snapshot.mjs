@@ -25,7 +25,12 @@ export async function stampedRead(env,expected,read){
   const result=await read(before);
   const after=await readSnapshot(env);
   if(after.bundle_id!==before.bundle_id||(result.bundle_id&&result.bundle_id!==before.bundle_id))throw Error('RELEASE_MISMATCH');
-  if(result.source?.release&&!Object.values(before.source_releases).includes(result.source.release))throw Error('RELEASE_MISMATCH');
+  // A prior-session daily release is not itself a bundle source; the bundle pins
+  // the session index that vouches for it. The funnel verifies the index against
+  // the CURRENT pin and the session object against its index entry before it
+  // answers, so an indexed release anchored to a bundle-pinned index is inside
+  // the bundle. An unlisted release with no listed index anchor still fails.
+  if(result.source?.release&&!Object.values(before.source_releases).includes(result.source.release)&&!(result.source?.session_index_release&&Object.values(before.source_releases).includes(result.source.session_index_release)))throw Error('RELEASE_MISMATCH');
   return {...result,bundle_id:before.bundle_id,data_as_of:answerDate(result),source_releases:before.source_releases};
  }catch(error){error.snapshot=before;throw error;}
 }

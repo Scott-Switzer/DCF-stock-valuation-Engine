@@ -110,3 +110,47 @@ const promoted={...env,TOKEN:'test',FINANCIAL_API:{fetch:async request=>{
 const promotedAnswer=await queryRoute(promoted,new URL('https://internal/query?query=PEP+revenue+2025'),{snapshot:{bundle_id:'a'.repeat(64),source_releases:{SEC_ENGINE_MANIFEST_KEY:canonical}}});
 assert.equal(canonicalCalls,2);assert.equal(promotedAnswer.source.release,canonical);
 assert.equal(promotedAnswer.result.observations[0].value_decimal,'100');
+
+// Prior recent sessions resolve through the verified session index pinned in
+// CURRENT; the latest session keeps the direct pointer path.
+const idxDb=new Map(),putIdx=(key,value)=>idxDb.set(key,value);
+const idxEnv={DATA:{get:async key=>{const value=idxDb.get(key);return value?{size:value.length,text:async()=>value}:null;}}};
+putIdx(FULL+'symbol-batches.json',JSON.stringify({PEP:0}));
+putIdx(FULL+'batches/0.json',JSON.stringify({rows:[{symbol:'PEP',identity:{cik:'0000000001'},full_history:{date_max:'2025-12-31'},valuation:{inputs:{}}}]}));
+const priorRaw=JSON.stringify({session:'2026-10-21',provider:'alpaca',feed:'sip',bars:[{provider_symbol:'PEP',session_date:'2026-10-21',close:49.75,security_id:'prior-source'}]});
+const priorSha=createHash('sha256').update(priorRaw).digest('hex'),priorKey='gold/daily-prices/releases/'+priorSha+'/data.json';
+const curRaw=JSON.stringify({session:'2026-10-22',provider:'alpaca',feed:'sip',bars:[{provider_symbol:'PEP',session_date:'2026-10-22',close:51.25,security_id:'current-source'}]});
+const curSha=createHash('sha256').update(curRaw).digest('hex'),curKey='gold/daily-prices/releases/'+curSha+'/data.json';
+putIdx(priorKey,priorRaw);putIdx(curKey,curRaw);
+const idxRaw=JSON.stringify({schema_version:1,updated_at:'2026-10-22T22:17:02.496Z',retention:{max_sessions:300},latest_session:'2026-10-22',sessions:{'2026-10-21':{release_id:priorSha,data_key:priorKey,bytes:priorRaw.length,rows:2629,provider:'alpaca',feed:'sip',published_at:'2026-10-21T22:05:00.000Z',previous_version:null},'2026-10-22':{release_id:curSha,data_key:curKey,bytes:curRaw.length,rows:2629,provider:'alpaca',feed:'sip',published_at:'2026-10-22T22:17:02.496Z',previous_version:priorSha}}});
+const idxSha=createHash('sha256').update(idxRaw).digest('hex'),idxKey='control/daily-prices/sessions/'+idxSha+'.json';
+putIdx(idxKey,idxRaw);
+const putCurrent=indexPin=>putIdx('control/daily-prices/CURRENT.json',JSON.stringify({schema_version:1,dataset:'daily-prices',version:curSha,session:'2026-10-22',provider:'alpaca',feed:'sip',data_key:curKey,sha256:curSha,published_at:'2026-10-22T22:17:02.496Z',previous_version:priorSha,...(indexPin?{sessions_index:indexPin}:{})}));
+putCurrent({key:idxKey,sha256:idxSha,bytes:idxRaw.length});
+const priorAnswer=await queryRoute(idxEnv,new URL('https://internal/query?query=PEP+price+on+2026-10-21'));
+assert.equal(priorAnswer.result.price,49.75);assert.equal(priorAnswer.result.date,'2026-10-21');
+assert.equal(priorAnswer.source.release,priorSha);assert.equal(priorAnswer.source.session_index_release,idxSha);
+assert.equal(priorAnswer.source.date,'2026-10-21');assert.match(priorAnswer.answer,/verified daily session index/);
+const latestAnswer=await queryRoute(idxEnv,new URL('https://internal/query?query=PEP+price'));
+assert.equal(latestAnswer.result.price,51.25);assert.equal(latestAnswer.result.date,'2026-10-22');assert.equal(latestAnswer.source.release,curSha);
+assert.equal(latestAnswer.source.session_index_release,undefined);
+await assert.rejects(queryRoute(idxEnv,new URL('https://internal/query?query=PEP+price+on+2026-10-20')),/REQUESTED_SESSION_NOT_INDEXED/);
+// A verified index whose latest session disagrees with CURRENT is stale, not a source.
+const staleRaw=idxRaw.replace('"latest_session":"2026-10-22"','"latest_session":"2026-10-20"');
+const staleSha=createHash('sha256').update(staleRaw).digest('hex'),staleKey='control/daily-prices/sessions/'+staleSha+'.json';
+putIdx(staleKey,staleRaw);putCurrent({key:staleKey,sha256:staleSha,bytes:staleRaw.length});
+await assert.rejects(queryRoute(idxEnv,new URL('https://internal/query?query=PEP+price+on+2026-10-21')),/SESSION_INDEX_STALE/);
+// Tampered index bytes fail integrity before any session row is read.
+putCurrent({key:idxKey,sha256:idxSha,bytes:idxRaw.length});putIdx(idxKey,idxRaw+' ');
+await assert.rejects(queryRoute(idxEnv,new URL('https://internal/query?query=PEP+price+on+2026-10-21')),/DATA_INTEGRITY/);
+putIdx(idxKey,idxRaw);
+// An entry whose data key does not derive from its own release id is rejected.
+const badEntry=JSON.parse(idxRaw);badEntry.sessions['2026-10-21'].data_key='gold/daily-prices/releases/'+'0'.repeat(64)+'/data.json';
+const badRaw=JSON.stringify(badEntry),badSha=createHash('sha256').update(badRaw).digest('hex'),badKey='control/daily-prices/sessions/'+badSha+'.json';
+putIdx(badKey,badRaw);putCurrent({key:badKey,sha256:badSha,bytes:badRaw.length});
+await assert.rejects(queryRoute(idxEnv,new URL('https://internal/query?query=PEP+price+on+2026-10-21')),/DATA_INTEGRITY/);
+// Without a pinned index the recent path stays latest-only, exactly as before.
+putCurrent(null);
+await assert.rejects(queryRoute(idxEnv,new URL('https://internal/query?query=PEP+price+on+2026-10-21')),/REQUESTED_DATE_NOT_IN_LATEST_RELEASE/);
+const unpinnedLatest=await queryRoute(idxEnv,new URL('https://internal/query?query=PEP+price'));
+assert.equal(unpinnedLatest.result.price,51.25);

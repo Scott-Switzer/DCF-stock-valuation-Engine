@@ -16,7 +16,9 @@ const HINTS={
  ASK_FOR_PRICE_GROWTH_OR_FINANCIALS:'Ask for a price, price growth, revenue, revenue growth or operating margin.',
  ONLY_ANNUAL_FINANCIALS_SUPPORTED:'Stored financial history is annual; ask about a fiscal year rather than a quarter or TTM.',
  NO_UNIQUE_PRICE_ON_REQUESTED_DATE:'No unique stored close exists on that session; use an exact exchange trading day.',
- REQUESTED_DATE_NOT_IN_LATEST_RELEASE:'Only the latest stored session is served for recent prices; ask for that date or an older historical session.'
+ REQUESTED_DATE_NOT_IN_LATEST_RELEASE:'Only the latest stored session is served for recent prices; ask for that date or an older historical session.',
+ REQUESTED_SESSION_NOT_INDEXED:'That session is not in the verified daily session index; ask for the latest session, an indexed recent session, or an older historical session.',
+ SESSION_INDEX_STALE:'The stored daily session index does not match the current daily release; only the latest stored session can be served until the index is republished.'
 };
 const fail=(code,detail)=>{throw Error((HINTS[code]?code+': '+HINTS[code]:code)+(detail?' '+detail:''))};
 async function read(env,key,hash,max=16*1048576){const o=await env.DATA.get(key);if(!o||o.size>max)fail('DATA_UNAVAILABLE');const raw=await o.text();if(hash){const actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw))),x=>x.toString(16).padStart(2,'0')).join('');if(actual!==hash)fail('DATA_INTEGRITY');}return JSON.parse(raw);}
@@ -143,13 +145,49 @@ async function currentDailyPointer(env){
  if(object.size>65536)fail('LATEST_PRICE_REFERENCE_INVALID');
  const pointer=JSON.parse(await object.text()),sha=pointer.sha256;
  if(!/^[a-f0-9]{64}$/.test(sha||'')||pointer.version!==sha||pointer.data_key!==`gold/daily-prices/releases/${sha}/data.json`)fail('LATEST_PRICE_REFERENCE_INVALID');
- return {session:pointer.session,data_key:pointer.data_key,sha256:sha};
+ // The daily publisher pins the verified session index into CURRENT when index
+ // publication is enabled. A malformed pin is treated as absent, which keeps
+ // prior-session requests on the latest-only rejection instead of trusting it.
+ const pin=pointer.sessions_index;
+ const sessions_index=(pin&&typeof pin==='object'&&/^[a-f0-9]{64}$/.test(pin.sha256||'')&&pin.key===`control/daily-prices/sessions/${pin.sha256}.json`&&Number.isInteger(pin.bytes)&&pin.bytes>0&&pin.bytes<=1048576)?{key:pin.key,sha256:pin.sha256,bytes:pin.bytes}:null;
+ return {session:pointer.session,data_key:pointer.data_key,sha256:sha,sessions_index};
+}
+// The session index is the only route to a prior daily session: the index object
+// is verified against the pin in CURRENT (exact bytes and sha256) and every
+// session object is verified against its index entry before any row is read.
+async function readSessionIndex(env,pin){
+ const object=await env.DATA.get(pin.key);
+ if(!object)fail('DATA_UNAVAILABLE');
+ if(object.size!==pin.bytes)fail('DATA_INTEGRITY');
+ const raw=await object.text();
+ const actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw))),x=>x.toString(16).padStart(2,'0')).join('');
+ if(actual!==pin.sha256)fail('DATA_INTEGRITY');
+ const index=JSON.parse(raw);
+ if(index?.schema_version!==1||!index.sessions||typeof index.sessions!=='object'||Array.isArray(index.sessions))fail('DATA_INTEGRITY');
+ return index;
+}
+async function indexedQuote(env,pointer,symbol,requestedDate){
+ const pin=pointer.sessions_index;
+ if(!pin)fail('REQUESTED_DATE_NOT_IN_LATEST_RELEASE');
+ const index=await readSessionIndex(env,pin);
+ if(index.latest_session!==pointer.session)fail('SESSION_INDEX_STALE');
+ const entry=index.sessions[requestedDate];
+ if(!entry)fail('REQUESTED_SESSION_NOT_INDEXED');
+ // The producer derives the data key from the release id; an entry whose key
+ // does not derive from its own release id is not the published contract.
+ if(!/^[a-f0-9]{64}$/.test(entry.release_id||'')||entry.data_key!==`gold/daily-prices/releases/${entry.release_id}/data.json`)fail('DATA_INTEGRITY');
+ const sessionPointer={session:requestedDate,data_key:entry.data_key,sha256:entry.release_id};
+ const daily=await read(env,sessionPointer.data_key,sessionPointer.sha256,8*1048576),result=dailyQuote(sessionPointer,daily,symbol,requestedDate);
+ return {world:'real/us-public-markets',symbol,action:'latest_price',complete_valuation:false,answer:`${symbol}: $${result.price.toFixed(4)} — stored ${result.provider||'provider'} close for ${result.date}, served from the verified daily session index.`,result,source:{provider:result.provider,feed:result.feed,release:sessionPointer.sha256,session_index_release:pin.sha256,date:result.date,source_security_id:result.source_security_id},warnings:[`Prior session close from the collector's verified daily session index. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.`]};
 }
 async function latestQuote(env,symbol,requestedDate){
  const live=await currentDailyPointer(env);
  const capabilities=live?null:await read(env,'staging/security-funnel/2026-10-20/9beaa712e71650a2/existing-capabilities.json',null,1048576);
  const pointer=live||capabilities.daily_pointer;
  if(!/^gold\/daily-prices\/releases\/[a-f0-9]{64}\/data.json$/.test(pointer.data_key||'')||!/^[a-f0-9]{64}$/.test(pointer.sha256||''))fail('LATEST_PRICE_REFERENCE_INVALID');
+ // A named session other than the latest resolves through the verified session
+ // index pinned in CURRENT; the latest session keeps the direct pointer path.
+ if(requestedDate&&requestedDate!==pointer.session)return indexedQuote(env,pointer,symbol,requestedDate);
  const daily=await read(env,pointer.data_key,pointer.sha256,8*1048576),result=dailyQuote(pointer,daily,symbol,requestedDate);
  return {world:'real/us-public-markets',symbol,action:'latest_price',complete_valuation:false,answer:`${symbol}: $${result.price.toFixed(4)} — latest stored ${result.provider||'provider'} close, as of ${result.date}.`,result,source:{provider:result.provider,feed:result.feed,release:pointer.sha256,date:result.date,source_security_id:result.source_security_id},warnings:[live?`Latest close from the collector's current daily release pointer. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.`:`Latest close in the connected snapshot; the collector's current pointer was unavailable, so this may be older. Stored close, not a real-time quote. Source-native reference; no CRSP/provider history splice is implied.`]};
 }
