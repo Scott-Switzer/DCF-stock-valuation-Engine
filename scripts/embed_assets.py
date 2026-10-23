@@ -50,6 +50,7 @@ module_names = [
     "auto_loading.py",
     "brief.py",
     "sec_first.py",
+    "served_market.py",
     "accounting_policy.py",
     "tax_policy.py",
     "decision_support.py",

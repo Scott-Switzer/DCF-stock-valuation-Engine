@@ -25,6 +25,50 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(
         auto_loading, "starter_peers", lambda ticker, http: ("Fixture peer set", ["CMPA", "CMPB"])
     )
+    # Served-data fixtures: the automatic load now takes statements only
+    # from a published packet and market inputs only from the serving
+    # layer. The packet mirrors the retired Yahoo fixture's statement
+    # values (common dividends raised to 30 for the DDM expectation), and
+    # the served market fakes mirror the old chart fixture (price 50,
+    # beta 1.0, risk-free rate 4 percent).
+    import ppe_provider
+    import served_market
+    from ppe_packets import build_packet
+    from test_sec_first import full_facts, observation
+
+    def packet_for(ticker, asof):
+        facts = full_facts()
+        for row in facts["facts"]["us-gaap"]["PaymentsOfDividendsCommonStock"]["units"]["USD"]:
+            row["val"] = 30
+        rows = [observation("revenue", 1000 + i * 100, i) for i in range(3)]
+        return build_packet(ticker, "0000000001", rows, facts, asof, {})
+
+    monkeypatch.setattr(
+        ppe_provider,
+        "load_packet",
+        lambda ticker, asof=None, **kwargs: packet_for(
+            ticker, asof or datetime.now(timezone.utc).date().isoformat()
+        ),
+    )
+    monkeypatch.setattr(
+        served_market,
+        "latest_price",
+        lambda symbol, asof, **kwargs: {
+            "ticker": symbol,
+            "price": 50.0,
+            "price_as_of": asof,
+            "provenance": {
+                "provider": "Zion serving layer price history (CRSP)",
+                "release": "fixture-release",
+                "permno": 1,
+                "basis": "raw_observed_price",
+            },
+        },
+    )
+    monkeypatch.setattr(served_market, "served_beta", lambda symbol, asof, **kwargs: (1.0, 150))
+    monkeypatch.setattr(
+        served_market, "risk_free_rate", lambda asof: {"rate": 0.04, "as_of": asof}
+    )
     # Fixture peers are treated as reviewed so these tests exercise method selection.
     # Unverified peers are covered by test_loaded_candidate_peers_are_not_preselected.
     monkeypatch.setattr(decision_support, "peer_review_status", lambda fit: "reviewed")
@@ -75,41 +119,47 @@ def test_premium_assumptions_recompute_loaded_wacc(client):
 
 
 def test_provider_failure_keeps_existing_work_and_returns_specific_error(client, monkeypatch):
+    import sec_first
+
     def failed(*args, **kwargs):
         raise auto_loading.ProviderError("Missing required financial observation.")
 
-    monkeypatch.setattr(auto_loading, "load_yahoo", failed)
+    monkeypatch.setattr(sec_first, "load_sec_first", failed)
     r = client.post("/api/load/dcf", json={"ticker": "TEST"})
     assert r.status_code == 503
     assert r.get_json()["error"] == "Missing required financial observation."
 
 
 def test_financial_firm_statement_failure_names_suitability(client, monkeypatch):
+    import sec_first
+
     def failed(*args, **kwargs):
         raise auto_loading.ProviderError(
-            "Yahoo missing OperatingIncome for 2023-12-31; cannot complete financials."
+            "Served packet missing OperatingIncome for 2023-12-31; cannot complete financials."
         )
 
-    monkeypatch.setattr(auto_loading, "load_yahoo", failed)
+    monkeypatch.setattr(sec_first, "load_sec_first", failed)
     # MRX is a registry-confirmed financial firm (SEC SIC 6200): no network needed.
     r = client.post("/api/load/dcf", json={"ticker": "MRX"})
     assert r.status_code == 503
     error = r.get_json()["error"]
     assert "financial firm" in error
-    assert "Yahoo missing OperatingIncome" in error
+    assert "Served packet missing OperatingIncome" in error
 
 
 def test_nonfinancial_statement_failure_keeps_original_error(client, monkeypatch):
+    import sec_first
+
     def failed(*args, **kwargs):
         raise auto_loading.ProviderError(
-            "Yahoo missing OperatingIncome for 2023-12-31; cannot complete financials."
+            "Served packet missing OperatingIncome for 2023-12-31; cannot complete financials."
         )
 
-    monkeypatch.setattr(auto_loading, "load_yahoo", failed)
+    monkeypatch.setattr(sec_first, "load_sec_first", failed)
     monkeypatch.setattr(auto_loading, "company_classification", lambda ticker, http: None)
     r = client.post("/api/load/dcf", json={"ticker": "TEST"})
     assert r.status_code == 503
-    assert r.get_json()["error"].startswith("Yahoo missing OperatingIncome")
+    assert r.get_json()["error"].startswith("Served packet missing OperatingIncome")
     assert "financial firm" not in r.get_json()["error"]
 
 
@@ -122,24 +172,24 @@ def test_default_pages_are_live_blank_not_sample(client):
 
 
 def test_relative_partial_peer_coverage_is_disclosed(client, monkeypatch):
-    real = auto_loading.load_company_metrics
+    real = auto_loading.load_peer_document
 
     def load(ticker, *args, **kwargs):
         if ticker == "CMPA":
             raise auto_loading.ProviderError("Missing metric")
         return real(ticker, *args, **kwargs)
 
-    monkeypatch.setattr(auto_loading, "load_company_metrics", load)
+    monkeypatch.setattr(auto_loading, "load_peer_document", load)
     r = client.post("/api/load/relative", json={"ticker": "TEST"})
     assert r.status_code == 200
     assert len(r.get_json()["financials"]["comparables"]) == 1
     assert any("Peer CMPA unavailable" in w for w in r.get_json()["warnings"])
 
 
-def test_historical_yahoo_snapshot_is_rejected(client):
+def test_historical_snapshot_is_rejected(client):
     r = client.post("/api/load/dcf", json={"ticker": "TEST", "valuation_date": "2020-01-01"})
     assert r.status_code == 503
-    assert "historical point-in-time" in r.get_json()["error"]
+    assert "DIRECT_FETCH_DISABLED" in r.get_json()["error"]
 
 
 @pytest.mark.parametrize("method", ["ddm", "relative"])
@@ -153,19 +203,48 @@ def test_loaded_financials_cannot_be_relabelled_as_another_ticker(client, method
     assert b"Load data for the new ticker" in r.data
 
 
+def _serve_test_packet_with(monkeypatch, mutator):
+    """Rebuild the TEST packet with one statement input changed.
+
+    Peers keep the fixture packet; only the target's served statements move,
+    mirroring the retired Yahoo-fixture mutation these tests used before.
+    """
+    import ppe_provider
+    from ppe_packets import build_packet
+    from test_sec_first import full_facts, observation
+
+    previous = ppe_provider.load_packet
+
+    def load_packet(ticker, asof=None, **kwargs):
+        if ticker != "TEST":
+            return previous(ticker, asof, **kwargs)
+        facts = full_facts()
+        mutator(facts["facts"]["us-gaap"])
+        for row in facts["facts"]["us-gaap"]["PaymentsOfDividendsCommonStock"]["units"]["USD"]:
+            row["val"] = 30
+        rows = [observation("revenue", 1000 + i * 100, i) for i in range(3)]
+        return build_packet(ticker, "0000000001", rows, facts, asof, {})
+
+    monkeypatch.setattr(ppe_provider, "load_packet", load_packet)
+
+
 @pytest.mark.parametrize("metric,value", [("capex", 500), ("net_income", -10)])
 def test_rv_loading_does_not_require_valid_dcf_terminal_value_or_positive_earnings(
     client, monkeypatch, metric, value
 ):
-    real = auto_loading.load_yahoo
+    def mutate(tags):
+        if metric == "capex":
+            for row in tags["PaymentsToAcquirePropertyPlantAndEquipment"]["units"]["USD"]:
+                row["val"] = value
+        else:
+            for tag in (
+                "NetIncomeLoss",
+                "NetIncomeLossAvailableToCommonStockholdersBasic",
+            ):
+                for row in tags[tag]["units"]["USD"]:
+                    row["val"] = value
 
-    def load(*args, **kwargs):
-        d = real(*args, **kwargs)
-        for h in d["historical"]:
-            h[metric] = value
-        return d
-
-    monkeypatch.setattr(auto_loading, "load_yahoo", load)
+    _serve_test_packet_with(monkeypatch, mutate)
     r = client.post("/api/load/relative", json={"ticker": "TEST"})
     assert r.status_code == 200, r.get_json()
     if metric == "net_income":
@@ -212,30 +291,23 @@ def test_blank_ticker_can_load_offline_example(client):
     [("relative", "short_returns"), ("relative", "preferred_equity"), ("ddm", "preferred_equity")],
 )
 def test_loading_only_requires_method_capital_costs(client, monkeypatch, method, scenario):
-    http = auto_loading.JsonHTTP()
     if scenario == "preferred_equity":
-        for metric in http.financials["timeseries"]["result"]:
-            for key, rows in metric.items():
-                if key in {"annualStockholdersEquity", "annualTotalEquityGrossMinorityInterest"}:
-                    for row in rows:
-                        row["reportedValue"]["raw"] = 440
-                elif key == "annualTotalAssets":
-                    for row in rows:
-                        row["reportedValue"]["raw"] = 740
-    real_get = http.get
+        def mutate(tags):
+            for row in tags["PreferredStockValue"]["units"]["USD"]:
+                row["val"] = 40
 
-    def get(url, **kwargs):
-        data = real_get(url, **kwargs)
-        if scenario == "short_returns" and "/chart/" in url:
-            chart = data["chart"]["result"][0]
-            chart["timestamp"] = chart["timestamp"][:2]
-            chart["indicators"]["adjclose"][0]["adjclose"] = chart["indicators"]["adjclose"][0][
-                "adjclose"
-            ][:2]
-        return data
+        _serve_test_packet_with(monkeypatch, mutate)
+    if scenario == "short_returns":
+        # Beta inputs are unusable (too little served history); a relative
+        # load must not care, because it never requests capital costs.
+        import served_market
 
-    http.get = get
-    monkeypatch.setattr(auto_loading, "JsonHTTP", lambda **kwargs: http)
+        def no_beta(symbol, asof, **kwargs):
+            raise auto_loading.ProviderError(
+                "Served market data: beta requires at least 104 aligned weekly total returns."
+            )
+
+        monkeypatch.setattr(served_market, "served_beta", no_beta)
     r = client.post("/api/load/" + method, json={"ticker": "TEST"})
     assert r.status_code == 200, r.get_json()
     if method == "relative":
@@ -281,7 +353,7 @@ def test_workspace_keeps_four_candidates_when_all_peer_snapshots_fail(client, mo
     def missing(*args, **kwargs):
         raise auto_loading.ProviderError("Missing required peer financials")
 
-    monkeypatch.setattr(auto_loading, "load_company_metrics", missing)
+    monkeypatch.setattr(auto_loading, "load_peer_document", missing)
     response = client.post("/api/assemble/relative", json={"financials": loaded["financials"]})
     assert response.status_code == 200, response.get_json()
     result = response.get_json()

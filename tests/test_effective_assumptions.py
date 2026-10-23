@@ -104,21 +104,26 @@ def test_edited_json_tax_shield_is_consistent_in_preview_brief_save_export(mode,
     assert brief['dcf']['intrinsic_value'] == preview['intrinsic_value']
 
 
-def test_yahoo_fallback_explicit_scenario_matches_editor_preview_and_brief(monkeypatch):
-    import auto_loading
-    import ppe_provider
+def test_snapshot_explicit_scenario_matches_editor_preview_and_brief(monkeypatch):
+    """An explicit scenario on an imported snapshot stays consistent.
+
+    This used to ride the Yahoo fallback baseline. The automatic load no
+    longer falls back, so the same consistency contract (explicit policy
+    recorded, preview and brief agreeing with the editor evaluation,
+    reported history unmutated) is asserted on the snapshot intake path
+    with the Yahoo-built document as the imported snapshot.
+    """
     from test_yahoo_provider import MockHTTP, TODAY
     from yahoo_provider import load_yahoo
 
+    monkeypatch.setenv("DCF_ALLOW_DIRECT_FETCH", "1")
     http = MockHTTP()
     doc = load_yahoo('TEST', TODAY, http)
     original = deepcopy(doc)
-    monkeypatch.setattr(ppe_provider, 'load_packet', lambda *a, **k: None)
-    monkeypatch.setattr(auto_loading, 'load_yahoo', lambda *a, **k: deepcopy(doc))
-    monkeypatch.setattr(auto_loading, 'company_classification', lambda *a: None)
     scenario = {'rates': [.231, .24, .25, .26, .27], 'evidence': {'filing': 'fixture', 'period_end': '2024-12-31'}}
-    bundle = load_method('dcf', 'TEST', TODAY, http=http, tax_scenario=scenario)
-    assert bundle['financials']['source']['statement_source'] == 'Yahoo'
+    bundle = load_method('dcf', 'TEST', TODAY, snapshot=deepcopy(doc), tax_scenario=scenario)
+    assert bundle['financials']['source']['tax_policy']['explicit'] is True
+    assert bundle['financials']['source']['tax_policy']['selected']['rates'] == scenario['rates']
     restored_doc, assumptions = form_payload(bundle['form'])
     edited = evaluate(restored_doc, assumptions)
     assert assumptions.tax_rates == scenario['rates']

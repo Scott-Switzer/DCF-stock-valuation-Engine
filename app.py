@@ -1385,8 +1385,7 @@ def brief_api():
 @app.post("/api/peer")
 def peer_api():
     try:
-        from auto_loading import relative_metrics
-        from yahoo_provider import load_company_metrics
+        from auto_loading import load_peer_document, relative_metrics
         from dcf_loader import JsonHTTP
 
         raw = request.get_json(silent=True)
@@ -1394,10 +1393,9 @@ def peer_api():
             raise ValueError("Provide a peer ticker.")
         symbol = ticker_symbol(raw.get("ticker"))
         asof = datetime.now(timezone.utc).date().isoformat()
-        from ppe_provider import prefer_ppe
 
         http = JsonHTTP(budget=12)
-        doc = prefer_ppe(load_company_metrics(symbol, asof, http), symbol, asof, deadline=http.deadline)
+        doc = load_peer_document(symbol, asof, http, deadline=http.deadline)
         return jsonify(
             ticker=symbol,
             name=doc["company"]["name"],
@@ -2050,7 +2048,11 @@ def providers():
             },
             "sample": {"configured": True, "label": "Offline example"},
             "manual": {"configured": True, "label": "Manual financials"},
-            "sec": {"configured": True, "label": "SEC company facts"},
+            "sec": {
+                "configured": bool(provider_value("DCF_ALLOW_DIRECT_FETCH").strip().lower() in {"1", "true", "yes", "on"}),
+                "label": "SEC company facts (direct, local development only)",
+                "note": "Direct EDGAR mode is disabled in production; statements come through the serving layer. Enabled only when DCF_ALLOW_DIRECT_FETCH=1.",
+            },
             "zion": {
                 "configured": bool(zion_base),
                 "label": "Custom company API (Zion-compatible)",

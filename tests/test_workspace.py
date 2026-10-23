@@ -55,7 +55,10 @@ def test_method_assembly_reuses_loaded_snapshot(client):
         "historical": [],
     }
     doc["source"]["capital_costs"] = {"cost_of_equity": 0.09, "wacc": 0.08}
-    with patch("auto_loading.load_yahoo", side_effect=AssertionError("company fetched twice")):
+    with (
+        patch("ppe_provider.load_packet", side_effect=AssertionError("company fetched twice")),
+        patch("sec_first.load_sec_first", side_effect=AssertionError("company fetched twice")),
+    ):
         response = client.post("/api/assemble/ddm", json={"financials": doc})
     assert response.status_code == 200, response.get_json()
     assert response.get_json()["financials"]["base_common_dividends"] == 30
