@@ -248,14 +248,25 @@ export async function queryRoute(env,u,dependencies={}){
  if(stored?.key&&stored?.sha256){data=await read(env,stored.key,stored.sha256);}
  const materializedRelease=data?.source_release_id||data?.provenance?.release_id||'b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb';
  if(!data||materializedRelease!==engine) {
-  data={source_release_id:engine,observations:[],source_records:{},coverage_gaps:[],source_cutoff:'2026-09-24'};
-  for(const [from,to]of [['1900-01-01','1999-12-31'],['2000-01-01','2026-09-24']]){
+  // The owning native source reports each company's own coverage ceiling. The
+  // recent window therefore omits date_to so the source applies its company
+  // bound, and that returned cutoff labels the answer; a pinned universe date
+  // would misstate companies whose materialization is newer or later cut off.
+  data={source_release_id:engine,observations:[],source_records:{},coverage_gaps:[]};
+  for(const [from,to]of [['1900-01-01','1999-12-31'],['2000-01-01',null]]){
    const url=new URL('https://zion.internal/private/v1/financial-history');
-   for(const [k,v]of Object.entries({cik,metrics:'revenue,operating_income',frequency:'annual',date_from:from,date_to:to,limit:'1000',release_id:engine,materialized_only:'true'}))url.searchParams.set(k,v);
+   for(const [k,v]of Object.entries({cik,metrics:'revenue,operating_income',frequency:'annual',date_from:from,limit:'1000',release_id:engine,materialized_only:'true'}))url.searchParams.set(k,v);
+   if(to)url.searchParams.set('date_to',to);
    let cursor=null;
    for(let n=0;n<8;n++){
     if(cursor)url.searchParams.set('cursor',cursor);
     const response=await env.FINANCIAL_API.fetch(new Request(url,{headers:{Authorization:'Bearer '+env.TOKEN,...(snapshot?.bundle_id?{'x-zion-bundle-id':snapshot.bundle_id}:{})}}));const page=await response.json();if(response.status!==200)fail(page.error?.code||'FINANCIAL_HISTORY_NOT_MATERIALIZED');
+    // Only the source names this company's cutoff; fail rather than label the
+    // company with another company's or a stale universe date.
+    const cutoff=String(page.provenance?.company_maximum_as_of||'').slice(0,10);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(cutoff))fail('FINANCIAL_SOURCE_CUTOFF_UNAVAILABLE');
+    if(data.source_cutoff&&data.source_cutoff!==cutoff)fail('FINANCIAL_SOURCE_CONTEXT_CHANGED');
+    data.source_cutoff=cutoff;
     data.observations.push(...(page.observations||[]));Object.assign(data.source_records,page.source_records||{});data.coverage_gaps.push(...(page.coverage_gaps||[]));
     cursor=page.pagination?.next_cursor;if(!cursor)break;if(n===7)fail('FINANCIAL_HISTORY_PAGE_BUDGET');
    }
@@ -276,7 +287,10 @@ export async function queryRoute(env,u,dependencies={}){
  observations.sort((a,b)=>a.period_end.localeCompare(b.period_end));
  const lines=observations.slice(-15).map(r=>`${r.period_end}: ${r.unit==='ratio'?(Number(r.value_decimal)*100).toFixed(2)+'%':Number(r.value_decimal).toLocaleString('en-US')+' '+r.unit}`);
  const coverage=lines.length?null:coverageExplanation(security,parsed,data);
- return {...base,answer:lines.length?`${parsed.symbol} annual ${parsed.metric.replaceAll('_',' ')}${parsed.metric==='revenue_growth'?' (year over year)':''}:\n${lines.join('\n')}`:`No annual ${parsed.metric} observations are available for ${parsed.symbol} in this range. ${coverage.sentence}`,result:{...data,observations,calculation_gaps:growthGaps,...(coverage?{coverage}:{})},source:{provider:'SEC',release:data.source_release_id||data.provenance?.release_id||'b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb',cik,source_cutoff:'2026-09-24',...(coverage?{coverage_status:coverage.reason}:{})},warnings:[...(observations.length>15?['Showing the latest 15 of '+observations.length+' available annual observations.']:[]),...(growthGaps.length?['Some annual growth rates could not be computed; explicit gaps are included.']:[]),...(coverage?[coverage.sentence]:[])]};
+ // A stored materialization carries no cutoff of its own unless it recorded one;
+ // report null instead of asserting the universe cutoff for that company.
+ const sourceCutoff=data.source_cutoff??(String(data.provenance?.company_maximum_as_of||'').slice(0,10)||null);
+ return {...base,answer:lines.length?`${parsed.symbol} annual ${parsed.metric.replaceAll('_',' ')}${parsed.metric==='revenue_growth'?' (year over year)':''}:\n${lines.join('\n')}`:`No annual ${parsed.metric} observations are available for ${parsed.symbol} in this range. ${coverage.sentence}`,result:{...data,observations,calculation_gaps:growthGaps,...(coverage?{coverage}:{})},source:{provider:'SEC',release:data.source_release_id||data.provenance?.release_id||'b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb',cik,source_cutoff:sourceCutoff,...(coverage?{coverage_status:coverage.reason}:{})},warnings:[...(observations.length>15?['Showing the latest 15 of '+observations.length+' available annual observations.']:[]),...(growthGaps.length?['Some annual growth rates could not be computed; explicit gaps are included.']:[]),...(coverage?[coverage.sentence]:[])]};
 }
 export async function companyPacket(env,symbol){
  if(!/^[A-Z0-9][A-Z0-9.-]{0,24}$/.test(symbol||''))fail('INVALID_SYMBOL');
