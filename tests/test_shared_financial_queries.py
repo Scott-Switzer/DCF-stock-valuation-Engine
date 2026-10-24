@@ -27,6 +27,9 @@ def test_structured_queries_preserve_private_price_and_catalog_access():
         response = client.get('/api/data/query', query_string={'request': json.dumps({'action': action, 'symbol': 'AAPL'})},
                               environ_overrides={'workers.env': env})
         assert response.status_code == 403
+    response = client.get('/api/data/query', query_string={'request': json.dumps({'action': 'dataset_detail', 'dataset_id': '1' * 32})},
+                          environ_overrides={'workers.env': env})
+    assert response.status_code == 403
     # Public SEC requests get past access checks, but this fixture has no service.
     response = client.get('/api/data/query', query_string={'request': '{"action":"financials","symbol":"AAPL"}'},
                           environ_overrides={'workers.env': env})

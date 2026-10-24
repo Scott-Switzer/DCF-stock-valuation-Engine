@@ -28,7 +28,13 @@ export function structuredQuery(value,symbols={}){
  object(value);
  if(Object.values(value).some(v=>v===null))invalid('Explicit null is not an omitted field.');
  const action=value.action;
- if(typeof action!=='string'||!['price','growth','financials','dataset_catalog'].includes(action))invalid('Unsupported action.');
+ if(typeof action!=='string'||!['price','growth','financials','dataset_catalog','dataset_detail'].includes(action))invalid('Unsupported action.');
+ if(action==='dataset_detail'){
+  fields(value,['action','dataset_id']);
+  const dataset_id=value.dataset_id??'';
+  if(typeof dataset_id!=='string'||!/^[a-f0-9]{32}$/.test(dataset_id))invalid('dataset_id must be the 32-character catalog id.');
+  return {action,dataset_id};
+ }
  if(action==='dataset_catalog'){
   fields(value,['action','search','offset','limit']);
   const search=value.search??'',offset=value.offset??0,limit=value.limit??50;
@@ -37,7 +43,7 @@ export function structuredQuery(value,symbols={}){
   return {action,search,offset,limit};
  }
  const allowed={price:['date'],growth:['date_from','date_to','basis'],financials:['metric','frequency','date_from','date_to']}[action];
- if(!allowed)invalid('Use price, growth, financials, or dataset_catalog.');
+ if(!allowed)invalid('Use price, growth, financials, dataset_catalog, or dataset_detail.');
  fields(value,['action','symbol',...allowed]);
  if(typeof value.symbol!=='string'||!Object.hasOwn(symbols,value.symbol.toUpperCase()))invalid('Symbol is not in the stored universe.');
  const symbol=value.symbol.toUpperCase();
