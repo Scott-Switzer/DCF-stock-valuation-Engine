@@ -191,6 +191,41 @@ async function sessionQuote(env,symbol,date,snapshot){
   source:{provider:release.provider,feed:release.feed,release:sha,date,source_security_id:result.source_security_id,...(indexed?{session_index_sha256:index,session_index_key:data.coverage.session_index_key}:{})},
   warnings:['Source-reported daily close; row publication time and point-in-time eligibility are not established. No CRSP/provider history splice or split adjustment is implied.']};
 }
+function projectedDetail(data){
+ // Strict metadata projection: primitives and whitelisted object/column descriptors only.
+ // Object payloads, raw records, file bytes and any unlisted keys are dropped.
+ const primitive=value=>value===null||['string','number','boolean'].includes(typeof value)?value:null;
+ const pick=(obj,keys)=>Object.fromEntries(keys.map(key=>[key,primitive(obj?.[key])]).filter(([k,value])=>value!==null||(obj&&Object.hasOwn(obj,k))));
+ const detail={};
+ for(const key of ['id','dataset','release','source','family','rows_declared','catalog_release_id','release_id','PIT_status','quality','schema_status','schema_version','store','object_hash_status'])if(data[key]!==undefined)detail[key]=primitive(data[key]);
+ if(data.manifest&&typeof data.manifest==='object'&&!Array.isArray(data.manifest))detail.manifest=pick(data.manifest,['key','sha256']);
+ if(data.normalization&&typeof data.normalization==='object'&&!Array.isArray(data.normalization)){
+  const norm=pick(data.normalization,['availability_time','canonical_ready','encoding','null_semantics','publication_state','status']);
+  if(Array.isArray(data.normalization.remaining_gates))norm.remaining_gates=data.normalization.remaining_gates.filter(g=>typeof g==='string').slice(0,50);
+  if(Object.keys(norm).length)detail.normalization=norm;
+ } else if(data.normalization!==undefined&&data.normalization!==null)detail.normalization=primitive(data.normalization);
+ if(Array.isArray(data.objects))detail.objects=data.objects.slice(0,200).map(obj=>pick(obj,['path','key','bytes','size','etag','stored_at','sha256','name','rows']));
+ if(Array.isArray(data.columns))detail.columns=data.columns.slice(0,500).map(col=>pick(col,['name','type','physical_type','logical_type','converted_type','repetition_type','scale','precision','nullable']));
+ return detail;
+}
+async function collectionDetail(env,dataset_id,snapshot){
+ if(!/^[a-f0-9]{32}$/.test(dataset_id||''))fail('INVALID_DATASET_ID');
+ const release=snapshot?.source_releases?.COLLECTION_CATALOG_KEY;
+ if(!release)fail('CATALOG_NOT_CONNECTED');
+ const url=new URL('https://zion.internal/private/v1/datasets/catalog/'+dataset_id);
+ const response=await env.FINANCIAL_API.fetch(new Request(url,{headers:{Authorization:'Bearer '+env.TOKEN,'x-zion-bundle-id':snapshot.bundle_id},signal:AbortSignal.timeout(15000)}));
+ const data=await boundedSourceJson(response,262144);
+ if(!response.ok)fail(data.error?.code||'CATALOG_UNAVAILABLE');
+ if(response.headers.get('x-zion-bundle-id')!==snapshot.bundle_id||data.catalog_release_id!==release)fail('RELEASE_MISMATCH');
+ const detail=projectedDetail(data);
+ if(!detail.id)fail('CATALOG_RESPONSE_INVALID');
+ const label=detail.dataset||detail.id;
+ return {world:'real/us-public-markets',symbol:'WRDS',action:'dataset_detail',complete_valuation:false,
+  answer:`WRDS dataset ${label} (${detail.family||'unknown family'}): ${detail.rows_declared??'unknown'} declared rows across ${Array.isArray(detail.objects)?detail.objects.length:'unknown'} objects; ${(detail.columns||[]).length} native columns listed. These are source archives, not normalized or point-in-time-certified financial facts.`,
+  result:{dataset_id,detail,metadata_only:true},
+  source:{provider:'WRDS',release,catalog_path:'/private/v1/datasets/catalog/'+dataset_id},
+  warnings:['Metadata only; declared row counts and column names are not independently certified coverage. Licensed payloads and raw records are never returned by this question route. Dataset-specific units, identity, and availability policies remain required before financial serving.']};
+}
 async function collectionCatalog(env,search,snapshot,offset=0,limit=50){
  const release=snapshot?.source_releases?.COLLECTION_CATALOG_KEY;
  if(!release)fail('CATALOG_NOT_CONNECTED');
@@ -216,6 +251,12 @@ export async function queryRoute(env,u,dependencies={}){
   const request=structuredQuery(input.request);
   return collectionCatalog(env,request.search,snapshot,request.offset,request.limit);
  }
+ if(input.request?.action==='dataset_detail'){
+  const request=structuredQuery(input.request);
+  return collectionDetail(env,request.dataset_id,snapshot);
+ }
+ const detail=input.question&&/^(?:show|describe|inspect)?\s*wrds dataset ([a-f0-9]{32})\s*\??$/i.exec(input.question.trim());
+ if(detail)return collectionDetail(env,detail[1].toLowerCase(),snapshot);
  const catalog=input.question&&/^(?:show |list )?wrds (?:coverage|catalog|datasets|tables)(?:\s+([a-z0-9_.-]{1,128}))?\s*\??$/i.exec(input.question.trim());
  if(catalog)return collectionCatalog(env,catalog[1]||'',snapshot);
  const index=await symbolIndex(env);

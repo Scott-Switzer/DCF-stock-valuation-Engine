@@ -143,12 +143,17 @@ calendar dates fail instead of silently changing the question.
 {"action":"growth","symbol":"AAPL","date_from":"2020-01-02","date_to":"2021-01-04","basis":"split_adjusted_price"}
 {"action":"financials","symbol":"AAPL","metric":"revenue","date_from":"2024-01-01","date_to":"2025-12-31"}
 {"action":"dataset_catalog","search":"comp","offset":50,"limit":10}
+{"action":"dataset_detail","dataset_id":"0123456789abcdef0123456789abcdef"}
 ```
 
 A price without `date` means latest stored close. Financial requests default to annual
 observations; both dates or neither must be supplied. Catalog limits are 1–50;
 follow `next_offset` while retaining the same source bundle. Structured symbols
-avoid ambiguity for short tickers such as `A` and `ON`.
+avoid ambiguity for short tickers such as `A` and `ON`. Dataset detail takes only
+the 32-character catalog id (`WRDS dataset <id>` works as natural language) and
+returns the same whitelisted metadata projection: id, dataset, family, release,
+declared rows, object descriptors and native column descriptors. Raw records,
+object payloads and unlisted keys are never returned.
 
 The website `/api/data/query` forwards this same input and retains owner-only
 price/catalog access. `scripts/finance.py --request '<JSON>' --json` uses the same

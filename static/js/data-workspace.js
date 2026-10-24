@@ -50,9 +50,21 @@
   function renderAnswerEvidence(result) {
     const coverage = el("financial-coverage"), warnings = el("financial-warnings"), source = el("financial-source");
     if (!coverage || !warnings || !source) return;
-    coverage.textContent = result.data_as_of
-      ? "Latest period in this answer: " + result.data_as_of + ". This is coverage, not a real-time freshness claim."
-      : "No observation date applies to this answer.";
+    const observations = (result.result && result.result.observations) || [];
+    const ends = observations.map((r) => r.period_end).filter(Boolean).sort();
+    const frequency = (result.result && (result.result.frequency || (result.result.request && result.result.request.frequency))) || result.action || null;
+    const cutoff = (result.source && result.source.source_cutoff) || (result.result && result.result.source_cutoff) || null;
+    const coverageInfo = result.result && result.result.coverage;
+    const gaps = (result.result && (result.result.coverage_gaps || result.result.calculation_gaps)) || [];
+    const lines = [];
+    lines.push(result.data_as_of ? "Latest period in this answer: " + result.data_as_of + ". This is coverage, not a real-time freshness claim." : "No observation date applies to this answer.");
+    if (frequency) lines.push("Frequency: " + frequency + ".");
+    if (ends.length) lines.push("Observed periods: " + ends[0] + " to " + ends[ends.length - 1] + " (" + observations.length + " observations)." );
+    else lines.push("Observations: 0.");
+    if (cutoff) lines.push("Source cutoff: " + cutoff + ".");
+    if (coverageInfo) lines.push("Coverage: " + (coverageInfo.reason || "gap") + (coverageInfo.date_min || coverageInfo.date_max ? " (stored " + (coverageInfo.date_min || "?") + " to " + (coverageInfo.date_max || "?") + ")" : "") + (coverageInfo.metrics_present && coverageInfo.metrics_present.length ? " Metrics present: " + coverageInfo.metrics_present.join(", ") + "." : "") + (coverageInfo.coverage_gap_reasons && coverageInfo.coverage_gap_reasons.length ? " Source gaps: " + coverageInfo.coverage_gap_reasons.join(", ") + "." : ""));
+    if (gaps.length) lines.push("Native gaps retained: " + gaps.length + ". See source details.");
+    coverage.textContent = lines.join(" ");
     coverage.hidden = false;
     for (const warning of result.warnings || []) warnings.append(node("li", warning));
     warnings.hidden = !warnings.childNodes.length;
