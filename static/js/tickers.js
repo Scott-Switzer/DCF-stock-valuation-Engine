@@ -349,10 +349,6 @@ const TICKER_DATA = [
     "n": "Acme United Corporation. Common Stock"
   },
   {
-    "s": "ACVA",
-    "n": "ACV Auctions Inc. Class A Common Stock"
-  },
-  {
     "s": "ACXP",
     "n": "Acurx Pharmaceuticals, Inc. - Common Stock"
   },
@@ -1386,7 +1382,7 @@ const TICKER_DATA = [
   },
   {
     "s": "AMTD",
-    "n": "AMTD IDEA Group American Depositary Shares, each representing six (6) Class A Ordinary Shares"
+    "n": "AMTD IDEA Group American Depositary Shares, each representing three hundred sixty (360) Class A Ordinary Shares"
   },
   {
     "s": "AMTM",
@@ -1639,6 +1635,10 @@ const TICKER_DATA = [
   {
     "s": "APWC",
     "n": "Asia Pacific Wire & Cable Corporation Limited  - Common shares, Par value .01 per share"
+  },
+  {
+    "s": "APXC",
+    "n": "Apex Critical Metals Corp. - American Depositary Shares"
   },
   {
     "s": "APXT",
@@ -2075,18 +2075,6 @@ const TICKER_DATA = [
   {
     "s": "ATI",
     "n": "ATI Inc. Common Stock"
-  },
-  {
-    "s": "ATII",
-    "n": "Archimedes Tech SPAC Partners II Co. - Ordinary Shares"
-  },
-  {
-    "s": "ATIIU",
-    "n": "Archimedes Tech SPAC Partners II Co. - Unit"
-  },
-  {
-    "s": "ATKR",
-    "n": "Atkore Inc. Common Stock"
   },
   {
     "s": "ATLC",
@@ -4073,10 +4061,6 @@ const TICKER_DATA = [
     "n": "BuzzFeed, Inc. - Class A Common Stock"
   },
   {
-    "s": "BZH",
-    "n": "Beazer Homes USA, Inc. Common Stock"
-  },
-  {
     "s": "BZUN",
     "n": "Baozun Inc. - American Depositary Shares"
   },
@@ -4598,7 +4582,7 @@ const TICKER_DATA = [
   },
   {
     "s": "CECO",
-    "n": "CECO Environmental Corp. - Common Stock"
+    "n": "CECO Environmental Corp. Common Stock"
   },
   {
     "s": "CEG",
@@ -6345,6 +6329,10 @@ const TICKER_DATA = [
     "n": "Dave Inc.  - Warrants"
   },
   {
+    "s": "DAVI",
+    "n": "Davion Healthcare Plc - Ordinary Shares"
+  },
+  {
     "s": "DB",
     "n": "Deutsche Bank AG Common Stock"
   },
@@ -6403,6 +6391,10 @@ const TICKER_DATA = [
   {
     "s": "DCI",
     "n": "Donaldson Company, Inc. Common Stock"
+  },
+  {
+    "s": "DCM",
+    "n": "DeFi Capital Markets, Inc. Common Stock"
   },
   {
     "s": "DCO",
@@ -7306,7 +7298,7 @@ const TICKER_DATA = [
   },
   {
     "s": "EFTY",
-    "n": "Etoiles Capital Group Co., Ltd. - Class A Ordinary Shares"
+    "n": "Etoiles Capital Group Co., Ltd. - Common Stock"
   },
   {
     "s": "EFX",
@@ -7947,10 +7939,6 @@ const TICKER_DATA = [
   {
     "s": "EVEX",
     "n": "Eve Holding, Inc. Common Stock"
-  },
-  {
-    "s": "EVEX-W",
-    "n": "Eve Holding, Inc. Warrants, each exercisable for one share of Common Stock at an exercise price of $11.50 per share"
   },
   {
     "s": "EVF",
@@ -11142,7 +11130,7 @@ const TICKER_DATA = [
   },
   {
     "s": "IBOC",
-    "n": "International Bancshares Corporation - Common Stock"
+    "n": "International Bancshares Corporation Common Stock"
   },
   {
     "s": "IBP",
@@ -12206,7 +12194,7 @@ const TICKER_DATA = [
   },
   {
     "s": "JKS",
-    "n": "JinkoSolar Holding Company Limited American Depositary Shares (each representing 4 Common Shares)"
+    "n": "Jinko Holdings Limited American Depositary Shares (each representing 4 Ordinary Shares)"
   },
   {
     "s": "JL",
@@ -13045,6 +13033,10 @@ const TICKER_DATA = [
     "n": "Lineage Cell Therapeutics, Inc. Common Stock"
   },
   {
+    "s": "LCU",
+    "n": "Lion Copper Corp. - Common Shares"
+  },
+  {
     "s": "LCUT",
     "n": "Lifetime Brands, Inc. - Common Stock"
   },
@@ -13557,10 +13549,6 @@ const TICKER_DATA = [
     "n": "Lead Real Estate Co., Ltd - American Depositary Shares"
   },
   {
-    "s": "LRHC",
-    "n": "La Rosa Holdings Corp. - Common Stock"
-  },
-  {
     "s": "LRMR",
     "n": "Larimar Therapeutics, Inc. - Common Stock"
   },
@@ -13642,7 +13630,7 @@ const TICKER_DATA = [
   },
   {
     "s": "LU",
-    "n": "Lufax Holding Ltd American Depositary Shares, each representing two (2) Ordinary Shares"
+    "n": "Lufax Holding Ltd American Depositary Shares (each representing twenty (20) Ordinary Shares)"
   },
   {
     "s": "LUCD",
@@ -13759,6 +13747,10 @@ const TICKER_DATA = [
   {
     "s": "LYB",
     "n": "LyondellBasell Industries NV Ordinary Shares Class A (Netherlands)"
+  },
+  {
+    "s": "LYCA",
+    "n": "Lycia Therapeutics, Inc. - Common Stock"
   },
   {
     "s": "LYEL",
@@ -14581,10 +14573,6 @@ const TICKER_DATA = [
     "n": "MiniMed Group, Inc. - Common Stock"
   },
   {
-    "s": "MMEDV",
-    "n": "MiniMed Group, Inc. - Common Stock When Issued"
-  },
-  {
     "s": "MMI",
     "n": "Marcus & Millichap, Inc. Common Stock"
   },
@@ -14925,8 +14913,16 @@ const TICKER_DATA = [
     "n": "Madison Square Garden Entertainment Corp. Class A Common Stock"
   },
   {
+    "s": "MSGK-V",
+    "n": "Madison Square Garden Sports Corp. Class A Common Stock When-Issued"
+  },
+  {
     "s": "MSGM",
     "n": "Motorsport Games Inc. - Class A Common Stock"
+  },
+  {
+    "s": "MSGR-V",
+    "n": "MSG Rangers Corp. Class A Common Stock When-Issued"
   },
   {
     "s": "MSGS",
@@ -15255,6 +15251,14 @@ const TICKER_DATA = [
   {
     "s": "NAMS",
     "n": "NewAmsterdam Pharma Company N.V. - Ordinary Shares"
+  },
+  {
+    "s": "NANO",
+    "n": "Forge Nano Holdings Inc. - Common stock"
+  },
+  {
+    "s": "NANOW",
+    "n": "Forge Nano Holdings Inc. - Warrants"
   },
   {
     "s": "NAT",
@@ -15598,7 +15602,7 @@ const TICKER_DATA = [
   },
   {
     "s": "NHP",
-    "n": "National Healthcare Properties, Inc. - Class A Common Stock"
+    "n": "National Healthcare Properties, Inc. - Common Stock"
   },
   {
     "s": "NHTC",
@@ -17245,6 +17249,10 @@ const TICKER_DATA = [
     "n": "Patria Investments Limited - Class A Common Shares"
   },
   {
+    "s": "PAXG",
+    "n": "Pine Tree Acquisition Corp. - Class A Ordinary Shares"
+  },
+  {
     "s": "PAXGU",
     "n": "Pine Tree Acquisition Corp. - Units"
   },
@@ -17491,10 +17499,6 @@ const TICKER_DATA = [
   {
     "s": "PEPG",
     "n": "PepGen Inc. - Common Stock"
-  },
-  {
-    "s": "PERF",
-    "n": "Perfect Corp. Class A Ordinary Share"
   },
   {
     "s": "PERI",
@@ -18010,7 +18014,7 @@ const TICKER_DATA = [
   },
   {
     "s": "POM",
-    "n": "POMDOCTOR LIMITED - American Depositary Shares"
+    "n": "POMDOCTOR LIMITED - Class A Ordinary Shares"
   },
   {
     "s": "PONO",
@@ -20049,10 +20053,6 @@ const TICKER_DATA = [
     "n": "Seadrill Limited Common Shares"
   },
   {
-    "s": "SDST",
-    "n": "Stardust Power Inc. - Common Stock"
-  },
-  {
     "s": "SE",
     "n": "Sea Limited American Depositary Shares, each representing one Class A Ordinary Share"
   },
@@ -20806,7 +20806,7 @@ const TICKER_DATA = [
   },
   {
     "s": "SOAR",
-    "n": "Volato Group, Inc. Class A Common Stock"
+    "n": "SOAR AI, Inc. Class A Common Stock"
   },
   {
     "s": "SOBO",
@@ -21115,6 +21115,10 @@ const TICKER_DATA = [
   {
     "s": "SRTA",
     "n": "Strata Critical Medical, Inc. - Class A Common Stock"
+  },
+  {
+    "s": "SRTM",
+    "n": "Stratum Holdings Corp. - Common Stock"
   },
   {
     "s": "SRTS",
@@ -22210,7 +22214,7 @@ const TICKER_DATA = [
   },
   {
     "s": "TMDE",
-    "n": "TMD Energy Limited Ordinary Shares"
+    "n": "TMD Energy Limited Class A Ordinary Shares"
   },
   {
     "s": "TMDX",
@@ -23235,10 +23239,6 @@ const TICKER_DATA = [
   {
     "s": "UTZ",
     "n": "Utz Brands Inc Class A Common Stock "
-  },
-  {
-    "s": "UUU",
-    "n": "Universal Safety Products, Inc. Common Stock"
   },
   {
     "s": "UUUU",
