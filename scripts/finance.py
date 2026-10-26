@@ -1,6 +1,8 @@
 """Ask the shared financial backend. No local acquisition or calculation."""
 import argparse
 import json
+import sys
+from pathlib import Path
 from urllib.parse import urlencode
 from run_cloud_reconciliation import request
 
@@ -23,6 +25,13 @@ def main():
             parser.error('--request must be a JSON object of at most 4,096 characters.')
     params = {'request': args.request} if args.request is not None else {'query': ' '.join(args.question)}
     result = request('/query?' + urlencode(params), 'GET', bundle_id=args.bundle_id)
+    # This entrypoint also runs directly from scripts/, outside the repo root.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from shared_query_contract import validate_shared_answer
+    try:
+        validate_shared_answer(result, args.bundle_id)
+    except ValueError as error:
+        parser.exit(1, str(error) + '\n')
     print(json.dumps(result, indent=2) if args.json else result['answer'])
 
 

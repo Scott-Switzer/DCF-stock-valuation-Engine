@@ -974,12 +974,19 @@ def shared_financial_query():
         to_js({"headers": headers}, dict_converter=Object.fromEntries),
     )), time.monotonic() + 45)
     raw = str(_wait(response.text(), time.monotonic() + 10))
-    if not private_access and response.status == 200:
-        value = json.loads(raw)
-        if value.get("action") != "financials" or value.get("source", {}).get("provider") != "SEC":
-            return jsonify(error="Private price data requires an access key."), 403
     if len(raw.encode()) > 2 * 1048576:
         return jsonify(error="Response exceeds the display limit; narrow the date range."), 422
+    if response.status == 200:
+        from shared_query_contract import validate_shared_answer
+        try:
+            value = validate_shared_answer(json.loads(raw), pinned_bundle)
+        except (ValueError, TypeError) as error:
+            code = "RELEASE_MISMATCH" if str(error) == "RELEASE_MISMATCH" else "BUNDLE_UNAVAILABLE"
+            return jsonify(error=code), (409 if code == "RELEASE_MISMATCH" else 502), {"Cache-Control": "private, no-store"}
+        if not private_access and (value.get("action") != "financials" or
+                                   not isinstance(value.get("source"), dict) or
+                                   value["source"].get("provider") != "SEC"):
+            return jsonify(error="Private price data requires an access key."), 403
     return app.response_class(raw, status=response.status, mimetype="application/json",
                               headers={"Cache-Control": "private, no-store"})
 def resolve_benchmark_selections(selections, valuation_date, *, max_selections=4):
