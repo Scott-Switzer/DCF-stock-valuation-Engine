@@ -7,7 +7,7 @@ import { chromium } from 'playwright';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const base = 'http://127.0.0.1:5179';
-const server = spawn(process.env.PYTHON || 'python3', ['tests/browser/fixture_server.py'], {cwd:root, stdio:['ignore','pipe','pipe']});
+const server = spawn(process.env.PYTHON || 'python3', ['tests/browser/fixture_server.py'], {cwd:root, stdio:['ignore','pipe','pipe'], env:{...process.env, PORT:'5179'}});
 let serverLog = ''; server.stdout.on('data', x => serverLog += x); server.stderr.on('data', x => serverLog += x);
 let browser, page;
 const output = new URL('./artifacts/', import.meta.url);
