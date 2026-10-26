@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node acceptance.mjs",
+    "test": "node acceptance.mjs && node coverage_panel.mjs",
     "typecheck": "node typecheck.mjs"
   },
   "devDependencies": {

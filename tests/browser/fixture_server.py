@@ -31,4 +31,4 @@ if __name__ == '__main__':
         app.config.update(STATE_PATH=str(Path(directory) / 'limits.sqlite3'), TESTING=True)
         auto_loading.load_method = frozen_load
         requests.sessions.Session.request = no_network
-        app.run(host='127.0.0.1', port=5179, debug=False, threaded=True)
+        app.run(host='127.0.0.1', port=int(os.environ.get('PORT', '5179')), debug=False, threaded=True)
