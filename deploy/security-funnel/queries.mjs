@@ -209,7 +209,7 @@ function projectedDetail(data){
  if(Array.isArray(data.columns))detail.columns=data.columns.slice(0,500).map(col=>pick(col,['name','type','physical_type','logical_type','converted_type','repetition_type','scale','precision','nullable']));
  return detail;
 }
-async function collectionDetail(env,dataset_id,snapshot){
+async function catalogDetail(env,dataset_id,snapshot){
  if(!/^[a-f0-9]{32}$/.test(dataset_id||''))fail('INVALID_DATASET_ID');
  const release=snapshot?.source_releases?.COLLECTION_CATALOG_KEY;
  if(!release)fail('CATALOG_NOT_CONNECTED');
@@ -218,6 +218,11 @@ async function collectionDetail(env,dataset_id,snapshot){
  const data=await boundedSourceJson(response,262144);
  if(!response.ok)fail(data.error?.code||'CATALOG_UNAVAILABLE');
  if(response.headers.get('x-zion-bundle-id')!==snapshot.bundle_id||data.catalog_release_id!==release)fail('RELEASE_MISMATCH');
+ return data;
+}
+async function collectionDetail(env,dataset_id,snapshot){
+ const data=await catalogDetail(env,dataset_id,snapshot);
+ const release=snapshot.source_releases.COLLECTION_CATALOG_KEY;
  const detail=projectedDetail(data);
  if(!detail.id)fail('CATALOG_RESPONSE_INVALID');
  const label=detail.dataset||detail.id;
@@ -245,9 +250,71 @@ async function collectionCatalog(env,search,snapshot,offset=0,limit=50){
   source:{provider:'WRDS',release,catalog_path:'/private/v1/datasets/catalog'},
   warnings:['Metadata only; declared row counts are not independently certified coverage. Partial remote exports are excluded from the new registrations.','Licensed payloads are not returned by this question route. Dataset-specific units, identity, and availability policies remain required before financial serving.']};
 }
+// Licensed archive access. The catalog supplies the store and the only object keys
+// this route may read, so a caller names an object index and never a path.
+const DATASET_STORES=new Set(['financial','research','filings','lakehouse']);
+const DATASET_COLUMNS=['name','type','converted_type','logical_type','repetition_type','scale','precision','field_id'];
+function catalogObjects(detail){
+ return (Array.isArray(detail.objects)?detail.objects:[]).map(row=>{
+  const key=typeof row?.key==='string'?row.key:typeof row?.path==='string'?row.path:null;
+  if(!key)return null;
+  return {key,...(typeof row.sha256==='string'?{sha256:row.sha256}:{}),...(Number.isSafeInteger(row.rows)?{rows:row.rows}:{}),...(Number.isSafeInteger(row.bytes)?{bytes:row.bytes}:{})};
+ }).filter(Boolean);
+}
+function projectedDatasetColumns(columns){
+ return (Array.isArray(columns)?columns:[]).slice(0,512).map(column=>Object.fromEntries(DATASET_COLUMNS.filter(key=>column?.[key]!==undefined).map(key=>[key,column[key]])));
+}
+async function datasetObject(env,request,snapshot,operation){
+ const detail=await catalogDetail(env,request.dataset_id,snapshot);
+ const store=typeof detail.store==='string'?detail.store:'';
+ if(!DATASET_STORES.has(store))fail('DATASET_STORE_UNSUPPORTED');
+ const object=catalogObjects(detail)[request.object_index];
+ if(!object)fail('DATASET_OBJECT_NOT_FOUND');
+ if(!env.ZION_DATASETS)fail('DATASET_READER_UNAVAILABLE');
+ const target=new URL('https://datasets.internal/v1/datasets/'+store+'/'+operation);
+ target.searchParams.set('path',object.key);
+ if(operation==='rows'){
+  if(request.columns)target.searchParams.set('columns',request.columns.join(','));
+  if(request.cursor)target.searchParams.set('cursor',request.cursor);
+  else target.searchParams.set('offset',String(request.offset));
+  target.searchParams.set('limit',String(request.limit));
+ }
+ const response=await env.ZION_DATASETS.fetch(new Request(target,{headers:{'User-Agent':'Zion-Security-Funnel/1.0'},signal:AbortSignal.timeout(20000)}));
+ const data=await boundedSourceJson(response,1048576);
+ if(!response.ok)fail(data.error?.code||'DATASET_READ_FAILED');
+ if(data.schema_version!=='zion-native-table-v1'||data.operation!==operation)fail('DATASET_RESPONSE_INVALID');
+ const source={provider:'WRDS',store,path:object.key,...(object.sha256?{sha256:object.sha256}:{}),
+  ...(typeof data.source?.etag==='string'?{etag:data.source.etag}:{}),
+  catalog_path:'/private/v1/datasets/catalog/'+request.dataset_id};
+ const base={world:'real/us-public-markets',symbol:'WRDS',action:'dataset_'+operation,complete_valuation:false,
+  result:{dataset_id:request.dataset_id,...(typeof detail.dataset==='string'?{dataset:detail.dataset}:{}),
+   ...(typeof detail.family==='string'?{family:detail.family}:{}),...(typeof detail.release==='string'?{release:detail.release}:{}),
+   store,path:object.key,object_index:request.object_index,...(object.sha256?{sha256:object.sha256}:{}),
+   ...(detail.catalog_release_id?{catalog_release_id:detail.catalog_release_id}:{}),metadata_only:false},
+  source};
+ const label=typeof detail.dataset==='string'?detail.dataset:request.dataset_id;
+ const warnings=['Native source fields are returned exactly as stored. They are not normalized, unit-checked, identity-resolved or point-in-time certified; dataset-specific gates remain required before financial use.','Licensed WRDS payloads stay private: do not redistribute. Responses are no-store and carry no redistribution right.'];
+ if(operation==='schema'){
+  const schema=data.data||{};
+  const columns=projectedDatasetColumns(schema.columns);
+  return {...base,answer:`WRDS ${label} (${store}/${object.key}): native parquet footer declares ${schema.row_count??'unknown'} rows across ${schema.row_groups??'unknown'} row groups and ${columns.length} columns. ${schema.schema_status||'schema status unknown'}.`,
+   result:{...base.result,schema:{schema_status:schema.schema_status,row_count_status:schema.row_count_status,row_count:schema.row_count,row_groups:schema.row_groups,columns}},
+   warnings};
+ }
+ const page=data.data||{},records=Array.isArray(page.rows)?page.rows:null;
+ if(!records)fail('DATASET_RESPONSE_INVALID');
+ return {...base,answer:`WRDS ${label} (${store}/${object.key}): returned ${records.length} native rows from offset ${page.row_offset??request.offset} of ${page.row_count??'unknown'}, ${projectedDatasetColumns(page.columns).length} columns selected.`,
+  result:{...base.result,row_count:page.row_count,row_offset:page.row_offset,limit:request.limit,
+   columns:projectedDatasetColumns(page.columns).map(column=>column.name),records,next_cursor:data.next_cursor??null},
+  warnings:[...warnings,data.next_cursor?'More rows are available; pass next_cursor back as cursor.':'This is the last page of the selected object.']};
+}
 export async function queryRoute(env,u,dependencies={}){
  const snapshot=dependencies.snapshot;
  const input=queryInput(u);
+ if(input.request?.action==='dataset_schema'||input.request?.action==='dataset_rows'){
+  const request=structuredQuery(input.request);
+  return datasetObject(env,request,snapshot,input.request.action==='dataset_schema'?'schema':'rows');
+ }
  if(input.request?.action==='dataset_catalog'){
   const request=structuredQuery(input.request);
   return collectionCatalog(env,request.search,snapshot,request.offset,request.limit);

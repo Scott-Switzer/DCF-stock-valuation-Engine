@@ -31,6 +31,10 @@
     {
       "binding": "FINANCIAL_API",
       "service": "zion-financial-serving-v2-thin-staging"
+    },
+    {
+      "binding": "ZION_DATASETS",
+      "service": "zion-datasets"
     }
   ]
 }
