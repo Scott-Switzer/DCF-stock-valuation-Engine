@@ -1,3 +1,4 @@
+import {validateCutoffPage} from './financial-cutoff.mjs';
 import {boundedSourceJson} from './source-json.mjs';
 const fail=code=>{throw Error(code);};
 const number=value=>typeof value==='string'&&/^-?\d+(?:\.\d+)?$/.test(value)?Number(value):NaN;
@@ -10,12 +11,14 @@ export async function periodFinancials(env,parsed,cik,snapshot){
  const url=new URL('https://zion.internal/private/v1/financial-history');
  for(const [key,value]of Object.entries({cik,frequency:parsed.frequency,metrics:parsed.metric==='operating_margin'?'revenue,operating_income':'revenue',release_id:release,materialized_only:'true',limit:'500'}))url.searchParams.set(key,value);
  if(parsed.dates.length){url.searchParams.set('date_from',parsed.dates[0]);url.searchParams.set('date_to',parsed.dates[1]);}
+ if(parsed.as_of!==undefined)url.searchParams.set('as_of',parsed.as_of);
  let data=null;const cursors=new Set(),deadline=Date.now()+35000;
  for(let pageNumber=0;pageNumber<8;pageNumber++){
   const left=deadline-Date.now();if(left<=0)fail('FINANCIAL_QUERY_DEADLINE');
   const response=await env.FINANCIAL_API.fetch(new Request(url,{headers:{Authorization:'Bearer '+env.TOKEN,'x-zion-bundle-id':snapshot.bundle_id},signal:AbortSignal.timeout(Math.min(left,20000))}));
   const page=await boundedSourceJson(response,2*1048576);
   if(response.status!==200)fail(page.error?.code||'STORED_FINANCIALS_UNAVAILABLE');
+  validateCutoffPage(page,parsed.as_of,{bundle:snapshot.bundle_id,release,cik,frequency:parsed.frequency});
   if(page.bundle_id!==snapshot.bundle_id||page.provenance?.release_id!==release||page.cik!==cik||page.frequency!==parsed.frequency)fail('FINANCIAL_SOURCE_MISMATCH');
   if(!Array.isArray(page.observations)||!Array.isArray(page.coverage_gaps)||!Array.isArray(page.accounting_checks)||!page.source_records||!page.pagination)fail('FINANCIAL_RESPONSE_INVALID');
   for(const r of page.observations){
@@ -55,8 +58,8 @@ export async function periodFinancials(env,parsed,cik,snapshot){
  if(gaps.length)warnings.push('Some margins could not be computed; explicit calculation gaps are included.');
  const result={world:'real/us-public-markets',symbol:parsed.symbol,action:'financials',complete_valuation:false,bundle_id:snapshot.bundle_id,
   answer:lines.length?`${parsed.symbol} ${label} ${parsed.metric.replaceAll('_',' ')}:\n${lines.join('\n')}`:`No ${label} ${parsed.metric.replaceAll('_',' ')} observations are available for ${parsed.symbol}. See the explicit coverage gaps.`,
-  result:{...data,observations,calculation_gaps:gaps,request:{frequency:parsed.frequency,date_from:parsed.dates[0]||null,date_to:parsed.dates[1]||null}},
-  source:{provider:'SEC',release,cik,source_cutoff:data.provenance.company_maximum_as_of||null},warnings};
+  result:{...data,observations,calculation_gaps:gaps,request:{...(parsed.as_of===undefined?{}:{as_of:parsed.as_of}),frequency:parsed.frequency,date_from:parsed.dates[0]||null,date_to:parsed.dates[1]||null}},
+  source:{provider:'SEC',release,cik,...(parsed.as_of===undefined?{}:{as_of:parsed.as_of}),source_cutoff:data.provenance.company_maximum_as_of||null},warnings};
  if(new TextEncoder().encode(JSON.stringify(result)).length>1900000)fail('FINANCIAL_RESPONSE_BUDGET: Narrow the date range.');
  return result;
 }

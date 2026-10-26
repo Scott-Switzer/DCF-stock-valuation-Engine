@@ -1,3 +1,4 @@
+import {validateCutoffPage} from './financial-cutoff.mjs';
 // One financial query implementation for Slack, the terminal and the website.
 import {FULL,historyRoute} from './history.mjs';
 import {ENRICH} from './enrichment.mjs';
@@ -262,6 +263,7 @@ export async function queryRoute(env,u,dependencies={}){
  const index=await symbolIndex(env);
  if(!index)fail('DATA_UNAVAILABLE');
  const parsed=input.request?structuredQuery(input.request,index):requestQuery(input.question,index,await directoryAliases(env));
+ if(parsed.as_of!==undefined&&(!/^[a-f0-9]{64}$/.test(snapshot?.bundle_id||'')||!/^[a-f0-9]{64}$/.test(snapshot?.source_releases?.SEC_ENGINE_MANIFEST_KEY||'')))fail('BUNDLE_UNAVAILABLE');
  const part=await read(env,FULL+`batches/${index[parsed.symbol]}.json`),security=part.rows.find(r=>r.symbol===parsed.symbol);
  const base={world:'real/us-public-markets',symbol:parsed.symbol,action:parsed.action,complete_valuation:false};
  if(parsed.action==='latest_price')return latestQuote(env,parsed.symbol);
@@ -286,7 +288,7 @@ export async function queryRoute(env,u,dependencies={}){
  let data;
  const stored=security.valuation.inputs;
  const engine=snapshot?.source_releases?.SEC_ENGINE_MANIFEST_KEY||'b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb';
- if(stored?.key&&stored?.sha256){data=await read(env,stored.key,stored.sha256);}
+ if(parsed.as_of===undefined&&stored?.key&&stored?.sha256){data=await read(env,stored.key,stored.sha256);}
  const materializedRelease=data?.source_release_id||data?.provenance?.release_id||'b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb';
  if(!data||materializedRelease!==engine) {
   // The owning native source reports each company's own coverage ceiling. The
@@ -298,10 +300,12 @@ export async function queryRoute(env,u,dependencies={}){
    const url=new URL('https://zion.internal/private/v1/financial-history');
    for(const [k,v]of Object.entries({cik,metrics:'revenue,operating_income',frequency:'annual',date_from:from,limit:'1000',release_id:engine,materialized_only:'true'}))url.searchParams.set(k,v);
    if(to)url.searchParams.set('date_to',to);
+   if(parsed.as_of!==undefined)url.searchParams.set('as_of',parsed.as_of);
    let cursor=null;
    for(let n=0;n<8;n++){
     if(cursor)url.searchParams.set('cursor',cursor);
-    const response=await env.FINANCIAL_API.fetch(new Request(url,{headers:{Authorization:'Bearer '+env.TOKEN,...(snapshot?.bundle_id?{'x-zion-bundle-id':snapshot.bundle_id}:{})}}));const page=await response.json();if(response.status!==200)fail(page.error?.code||'FINANCIAL_HISTORY_NOT_MATERIALIZED');
+    const response=await env.FINANCIAL_API.fetch(new Request(url,{headers:{Authorization:'Bearer '+env.TOKEN,...(snapshot?.bundle_id?{'x-zion-bundle-id':snapshot.bundle_id}:{})}}));const page=await boundedSourceJson(response,2*1048576);if(response.status!==200)fail(page.error?.code||'FINANCIAL_HISTORY_NOT_MATERIALIZED');
+    validateCutoffPage(page,parsed.as_of,{bundle:snapshot?.bundle_id,release:engine,cik,frequency:'annual'});
     // Only the source names this company's cutoff; fail rather than label the
     // company with another company's or a stale universe date.
     const cutoff=String(page.provenance?.company_maximum_as_of||'').slice(0,10);
@@ -331,7 +335,7 @@ export async function queryRoute(env,u,dependencies={}){
  // A stored materialization carries no cutoff of its own unless it recorded one;
  // report null instead of asserting the universe cutoff for that company.
  const sourceCutoff=data.source_cutoff??(String(data.provenance?.company_maximum_as_of||'').slice(0,10)||null);
- return {...base,answer:lines.length?`${parsed.symbol} annual ${parsed.metric.replaceAll('_',' ')}${parsed.metric==='revenue_growth'?' (year over year)':''}:\n${lines.join('\n')}`:`No annual ${parsed.metric} observations are available for ${parsed.symbol} in this range. ${coverage.sentence}`,result:{...data,observations,calculation_gaps:growthGaps,...(coverage?{coverage}:{})},source:{provider:'SEC',release:data.source_release_id||data.provenance?.release_id||'b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb',cik,source_cutoff:sourceCutoff,...(coverage?{coverage_status:coverage.reason}:{})},warnings:[...(observations.length>15?['Showing the latest 15 of '+observations.length+' available annual observations.']:[]),...(growthGaps.length?['Some annual growth rates could not be computed; explicit gaps are included.']:[]),...(coverage?[coverage.sentence]:[])]};
+ return {...base,answer:lines.length?`${parsed.symbol} annual ${parsed.metric.replaceAll('_',' ')}${parsed.metric==='revenue_growth'?' (year over year)':''}:\n${lines.join('\n')}`:`No annual ${parsed.metric} observations are available for ${parsed.symbol} in this range. ${coverage.sentence}`,result:{...data,observations,...(parsed.as_of===undefined?{}:{as_of:parsed.as_of,request:{as_of:parsed.as_of,frequency:'annual',date_from:parsed.dates[0]||null,date_to:parsed.dates[1]||null}}),calculation_gaps:growthGaps,...(coverage?{coverage}:{})},source:{provider:'SEC',release:data.source_release_id||data.provenance?.release_id||'b39a670bad0670449256e59d38bf6b9600503449baded29c25e41d5fb368c6bb',cik,source_cutoff:sourceCutoff,...(parsed.as_of===undefined?{}:{as_of:parsed.as_of}),...(coverage?{coverage_status:coverage.reason}:{})},warnings:[...(observations.length>15?['Showing the latest 15 of '+observations.length+' available annual observations.']:[]),...(growthGaps.length?['Some annual growth rates could not be computed; explicit gaps are included.']:[]),...(coverage?[coverage.sentence]:[])]};
 }
 export async function companyPacket(env,symbol){
  if(!/^[A-Z0-9][A-Z0-9.-]{0,24}$/.test(symbol||''))fail('INVALID_SYMBOL');
