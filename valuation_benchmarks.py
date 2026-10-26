@@ -67,6 +67,10 @@ def validate_publication(published_at, evidence, retrieved_at):
             raise ValueError('publication evidence requires a publication date')
         return None
     published=date.fromisoformat(str(published_at))
+    # Download time and evidence observation are independent collection events:
+    # a catalog may bind bytes downloaded earlier to headers re-checked later.
+    # Only the ordering that could fabricate a date is refused -- a publication
+    # date before publication, or after the bytes were first downloaded.
     retrieved=_instant(retrieved_at,field='retrieved_at')
     if published>retrieved.date():
         raise ValueError('publication date cannot follow retrieval')
@@ -81,8 +85,6 @@ def validate_publication(published_at, evidence, retrieved_at):
     observed=_instant(evidence.get('observed_at'),field='evidence observed_at')
     if observed.date()<published:
         raise ValueError('publication evidence cannot be observed before publication')
-    if observed>retrieved:
-        raise ValueError('publication evidence cannot be observed after retrieval')
     statement=str(evidence.get('statement') or '').strip()
     if not statement:
         raise ValueError('publication evidence needs the published statement')
@@ -148,6 +150,22 @@ def publication_status(manifest):
     return {'available':True,'published_at':published,'method':evidence['method'],
             'observed_at':evidence['observed_at'],'reason':None}
 
+def _download_time(entry):
+    """Return the catalog's disclosed download time.
+
+    The curator writes ``download_retrieved_at`` (the name the evidence receipt
+    and the PPE importer use); older hand-written catalogs and fixtures use
+    ``retrieved_at``. Both are the same disclosed value and neither is ever used
+    for availability, so accept either rather than depending on which writer
+    produced the file. A catalog carrying neither stays unusable.
+    """
+    for key in ('retrieved_at','download_retrieved_at'):
+        value=entry.get(key)
+        if value is not None:
+            return value
+    return None
+
+
 def resolve_publication(release, source_sha256, manifest_published_at, entry, manifest=None):
     """Resolve ``published_at`` from release metadata or byte-bound evidence.
 
@@ -165,7 +183,7 @@ def resolve_publication(release, source_sha256, manifest_published_at, entry, ma
         return None,None,UNAVAILABLE
     try:
         recorded=validate_publication(
-            entry.get('published_at'),entry.get('publication_evidence'),entry.get('retrieved_at')
+            entry.get('published_at'),entry.get('publication_evidence'),_download_time(entry)
         )
     except ValueError:
         return None,None,UNAVAILABLE

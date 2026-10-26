@@ -202,6 +202,40 @@ class TestHistoricalSelection:
         with pytest.raises(ValueError, match="Benchmark vintage unavailable"):
             load_benchmark(tmp_path, rid, "Software", "wacc", as_of="2026-12-31")
 
+    def test_curator_written_catalog_serves_historical_selection(self, tmp_path):
+        # scripts/build_benchmark_publication_evidence.py discloses the download
+        # time as ``download_retrieved_at``; a catalog it writes must resolve.
+        rid, sha = release(tmp_path)
+        produced = entry(rid, sha)
+        produced["download_retrieved_at"] = produced.pop("retrieved_at")
+        catalog(tmp_path, [produced])
+        row = load_benchmark(tmp_path, rid, "Software", "wacc", as_of="2026-06-01")
+        assert row["selection_mode"] == "HISTORICAL_PUBLISHED"
+        assert row["published_at"] == "2026-01-12"
+
+    def test_catalog_entry_without_a_download_time_still_fails_closed(self, tmp_path):
+        rid, sha = release(tmp_path)
+        undeclared = entry(rid, sha)
+        del undeclared["retrieved_at"]
+        catalog(tmp_path, [undeclared])
+        with pytest.raises(ValueError, match="Benchmark vintage unavailable"):
+            load_benchmark(tmp_path, rid, "Software", "wacc", as_of="2026-06-01")
+
+    def test_evidence_observed_after_the_recorded_download_still_resolves(self, tmp_path):
+        # The curator records the ingest download time while binding headers
+        # re-checked later; the two are independent collection events.
+        rid, sha = release(tmp_path)
+        produced = entry(rid, sha)
+        produced["download_retrieved_at"] = produced.pop("retrieved_at")
+        produced["download_retrieved_at"] = "2026-10-14T19:28:12.165271+00:00"
+        catalog(tmp_path, [produced])
+        row = load_benchmark(tmp_path, rid, "Software", "wacc", as_of="2026-09-01")
+        assert row["selection_mode"] == "HISTORICAL_PUBLISHED"
+
+    def test_publication_date_after_the_recorded_download_is_still_refused(self):
+        with pytest.raises(ValueError, match="publication date cannot follow retrieval"):
+            validate_publication("2026-10-20", evidence(), OBSERVED)
+
 
 class TestCoverageCatalog:
     def test_lists_only_pairs_a_selection_would_serve(self, tmp_path):
