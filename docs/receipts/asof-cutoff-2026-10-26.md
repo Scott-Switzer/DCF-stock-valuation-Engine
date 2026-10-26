@@ -46,6 +46,27 @@ the existing answer validator accepts the added `result.as_of` / `source.as_of` 
 Identity observed on every response: bundle `2c0419d1…994a`, SEC engine release
 `202719b5…db148`, CIK `0000077476`, provider `SEC`, `source_releases` 34 entries.
 
+## Sample sweep (2026-10-26)
+
+72 read-only requests: 12 symbols x 2 frequencies (annual, quarterly) x 3 cases (two
+cutoffs, current), revenue, window 2024-01-01…2025-12-31. Metadata only.
+
+| Group | Result |
+| --- | --- |
+| WMT, PEP, JNJ, CAT, MSFT, AAPL | 36 cutoff requests returned 200, every one echoed the exact cutoff, and **0** observations carried `available_at` after the requested cutoff |
+| Same six, period sets | `mid (2025-04-01) ⊆ late (2026-01-01) ⊆ current` for both frequencies; quarterly goes 4–5 → 7–8 → 8 observations, annual 1 → 1–2 → 2 |
+| JPM, NEE, AMT | 200 with zero observations in all three cases — the known source-layer gap, unchanged by the cutoff |
+| XOM, TSLA, COST | 422 `Symbol is not in the stored universe` in all three cases — absent from the frozen query universe, which is not evidence that SEC data is absent |
+
+Only-current quarters are the 2025Q4 periods (2025-12-27…2025-12-31), first available in
+2026, so their absence at a 2026-01-01 cutoff is the intended behaviour.
+
+Pre-existing behaviour, not introduced here: `coverage_gaps` include entries far outside
+the requested window (a `1900-01-01…1999-12-31` placeholder plus 2008–2017
+`AMBIGUOUS_CONCEPT_OR_DERIVATION` / `OVERLAPPING_FISCAL_CONTEXTS` items) and some entries
+repeat verbatim. The identical lists appear with and without `as_of`, so the cutoff does
+not add or suppress them; a future source-layer change should scope those gaps.
+
 ## Not verified
 
 - `mcp/scripts/verify-read-data.mjs` cannot complete in this environment: it stops at
