@@ -175,18 +175,23 @@ def resolve_publication(release, source_sha256, manifest_published_at, entry, ma
     """
     if manifest_published_at:
         status = publication_status(manifest or {})
-        return (str(manifest_published_at), (manifest or {}).get("publication_evidence"),
-                AVAILABLE if status["available"] else UNAVAILABLE)
+        if status["available"]:
+            return (str(manifest_published_at), (manifest or {}).get("publication_evidence"),
+                    AVAILABLE)
+        # A manifest date without reviewed evidence is not usable on its own, but
+        # the catalog entry bound to these exact bytes can still supply it. Fall
+        # through instead of refusing before the catalog is consulted.
+    disclosed=(str(manifest_published_at),None,UNAVAILABLE) if manifest_published_at else (None,None,UNAVAILABLE)
     if not isinstance(entry,dict) or entry.get('source_sha256')!=source_sha256:
-        return None,None,UNAVAILABLE
+        return disclosed
     if entry.get('published_at') is None:
-        return None,None,UNAVAILABLE
+        return disclosed
     try:
         recorded=validate_publication(
             entry.get('published_at'),entry.get('publication_evidence'),_download_time(entry)
         )
     except ValueError:
-        return None,None,UNAVAILABLE
+        return disclosed
     return str(entry['published_at']),recorded,AVAILABLE
 
 
