@@ -78,28 +78,35 @@ removed.
 | --- | --- |
 | Benchmark Worker | `zion-ddfi-benchmark-staging` `8af6d9d9-7c43-46cd-b58b-6e35d2ec9645` |
 | DCF staging Worker | `dcf-valuation-engine-staging` `90d0531d-a507-4a35-bcf2-11957c2cfd28` (2026-10-23) |
-| DCF production Worker | `dcf-valuation-engine` active `e74fd028-6976-4dbd-b1ed-e8d9da46ac53` (2026-10-19) |
-| Live asset `/static/js/data-workspace.js` | `230ab866…` (no coverage strings) |
-| Local asset on `main` | `4b27e14c…` (coverage strings present) |
+| DCF production Worker | `dcf-valuation-engine` active `19205915-77c1-4c89-a2ed-079e8db1cc5f` (2026-10-26T06:46Z, commit `6c9d53d`) |
+| Live asset `/static/js/data-workspace.js` | `4b27e14c…` — **coverage strings present**; `/data` renders `#financial-coverage`, `#financial-warnings`, `#financial-evidence` |
 
 PRs: DCF #85 merged (`f20813f`); core #29 merged (`d4c2f03`); DCF #86 (release-root
-test fixture) and #87 (rendered coverage DOM test) open.
+test fixture) and #87 (rendered coverage DOM test) open with all checks passing.
+Also merged since: DCF #89 (`c4bfcab`, historical `as_of` cutoff) and #90 (release
+receipt); gateway #26 (`caf9f38`, MCP forwarding); core #32 (consumption guide). Both
+cutoff Workers are deployed and live-verified — see
+`docs/receipts/asof-cutoff-2026-10-26.md` in the DCF repository.
 
-## 7. Proposed release — coverage panel
+## 7. Coverage panel — already live; no release needed
 
-1. Merge #86 and #87; work from a clean `origin/main`.
-2. `uv run --group dev python scripts/embed_assets.py` so `BUILD.tracked_dirty` is false
-   and `BUILD.commit` is the release SHA.
-3. `uv run --group dev python -m pytest tests/ -q` and
-   `npm --prefix tests/browser test` (now includes the coverage DOM test).
-4. `npx wrangler deploy --config wrangler.production.jsonc` — production only; no D1
-   migration, no pointer or data change.
-5. Re-fetch `/static/js/data-workspace.js`, confirm the hash equals `BUILD.asset_sha256`
-   and that `#financial-coverage`, `#financial-warnings`, `#financial-evidence` ship in
-   the HTML; run `live-smoke.yml`.
+Corrected 2026-10-26 after re-reading the deployed Worker. The earlier version of this
+section proposed a release for a gap that no longer exists:
 
-Rollback: `wrangler rollback e74fd028-6976-4dbd-b1ed-e8d9da46ac53 --name
-dcf-valuation-engine`, which restores the previous bundle; data and D1 are untouched.
+- production was redeployed at 2026-10-26T06:46Z from `6c9d53d`;
+- the served `/static/js/data-workspace.js` is `4b27e14c…` and contains
+  `financial-coverage`, `financial-warnings`, `financial-evidence` and `source_cutoff`;
+- `GET /data` returns those three element IDs, so the rendered panel is shipping.
+
+What remains is the regression guard, not a deploy: merge #86 and #87 after rebasing on
+current `main`, which makes the browser suite assert the rendered panel and the
+clearing behaviour.
+
+Rollback, if ever needed: `wrangler deployments status --config wrangler.production.jsonc`
+first, then `wrangler rollback <version> --name dcf-valuation-engine`. The live version at
+this writing is `19205915-77c1-4c89-a2ed-079e8db1cc5f`; the `e74fd028…` recorded in the
+previous revision of this file was already superseded, which is exactly why the version
+must be re-read instead of copied from a document.
 
 Staging is not on the path for this UI change; `90d0531d` is the staging engine and must
 not be confused with the production site.
