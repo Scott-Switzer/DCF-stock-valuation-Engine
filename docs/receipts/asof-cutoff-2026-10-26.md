@@ -36,16 +36,18 @@ recorded.
 | `as_of=2025-05-02`, `…+00:00`, `2025-02-30T00:00:00Z` | rejected (HTTP 422 / MCP input validation); no partial answer |
 | Anonymous request without a bearer | 401 |
 | Same three cases through the deployed MCP reader (`query_financial_data`) | identical cutoff echo, observation counts and gap codes; tool scope still exactly `load_dcf_model`, `query_financial_data` |
+| Same two cutoff cases through the installed CLI (`~/.local/bin/finance --request … --json`, pinned at `6c9d53d`) | identical echo, 1 observation, and 0 observations with `NO_VALID_OBSERVATIONS_IN_REQUEST` |
+| Same three cases through the deployed website `/api/data/query` (production still `6c9d53d`; not redeployed) | 200; exact echo; post-filing 1 observation; pre-publication 0 observations with the explicit gap; no `as_of` still omits `source.as_of` |
 | Public Worker smoke on `main` `c4bfcab` | run 40285078319, success |
+
+The website and CLI needed no redeploy: both forward the structured request verbatim and
+the existing answer validator accepts the added `result.as_of` / `source.as_of` fields.
 
 Identity observed on every response: bundle `2c0419d1…994a`, SEC engine release
 `202719b5…db148`, CIK `0000077476`, provider `SEC`, `source_releases` 34 entries.
 
 ## Not verified
 
-- Website `/api/data/query` and CLI forwarding of `as_of` end to end. Both pass structured
-  requests through unchanged; the shared Worker is the only new behaviour, and the public
-  smoke covers site health, not this field.
 - `mcp/scripts/verify-read-data.mjs` cannot complete in this environment: it stops at
   `https://assistant-staging.scotttunnel.xyz/readyz` with `ERR_SSL_WRONG_VERSION_NUMBER`,
   the known unresolved local gateway tunnel TLS problem. The reader and model checks that
