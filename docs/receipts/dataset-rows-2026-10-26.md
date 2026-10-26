@@ -2,7 +2,8 @@
 
 Date: 2026-10-26
 Status: **merged and deployed; live acceptance passed on the shared query, MCP, CLI and website.**
-Related: PR #92 (shared query), gateway PR #27 (MCP forwarding), docs PR for this receipt.
+Related: PR #92 (shared query), PR #94 (next-object paging), gateway PR #27 (MCP forwarding),
+docs PR for this receipt.
 
 ## Why
 
@@ -16,7 +17,7 @@ other registered families.
 
 | Component | Commit | Worker | Version | Previous |
 | --- | --- | --- | --- | --- |
-| Shared query | `4c5a336` (#92) | `zion-security-funnel-staging` | `352b9ce9-2ced-4b33-a3c2-981aabd455f1` | `8e468054-9e6b-4efb-accd-8aad0e9e31c8` |
+| Shared query | `8dd006d` (#92, #94) | `zion-security-funnel-staging` | `e2dd73ce-a47c-4410-8df3-9e9ebaea90b6` | `8e468054-9e6b-4efb-accd-8aad0e9e31c8` |
 | MCP reader | `72735a1` (#27) | `zion-financial-mcp-staging` | `8824a564-ba43-40fc-9878-c1b5ce1328f8` | `8544bc4e-984c-4cd1-9b70-f1babce58662` |
 
 Both deployed with `--keep-vars`. The funnel gained one service binding,
@@ -36,6 +37,10 @@ Both deployed with `--keep-vars`. The funnel gained one service binding,
   date scan, so `data_as_of` stays `null` rather than borrowing a row's date as
   coverage. Provenance carries `bundle_id`, `source_releases`, store, key, catalog
   `sha256`, `etag` and `catalog_release_id`.
+- Every response reports `object_count` and `object_index`; when a page ends without a
+  cursor, `next_object_index` names the object to read next (or `null` at the end). A
+  cursor never crosses an object boundary, but a whole dataset is now walkable without
+  guessing the catalogue order.
 - Catalog or bundle drift fails closed before any object is read.
 
 ## Verified live (2026-10-26)
@@ -47,7 +52,8 @@ values were captured.
 | Check | Result |
 | --- | --- |
 | `dataset_schema` (funnel, owner bearer) | 200; store `research`; key `raw/wrds/crsp_a_stock__dse/releases/20260920T035906Z/part-000000.parquet`; **50 columns**; footer declares **500,000** rows in 1 row group; `PARQUET_FOOTER_DECODED`; bundle `2c0419d1…`; `data_as_of: null` |
-| `dataset_rows` (`columns`, limit 5) | 200; 5 records with exactly the requested keys; `row_count 500000`; `row_offset 0`; `next_cursor` present |
+| `dataset_rows` (`columns`, limit 5) | 200; 5 records with exactly the requested keys; `row_count 500000`; `row_offset 0`; `next_cursor` present; `object_count 26`; `next_object_index null` while the cursor is live |
+| After the paging deploy (#94) | `dataset_schema` reports `object_count 26`, `object_index 0`; the completion warning names the next object or the last of 26 |
 | Cursor page | 200 at `row_offset 5`; default page size 100 rows when `limit` is omitted |
 | `path: "raw/wrds/secret.parquet"` | 422 `INVALID_REQUEST: Unsupported field: path` |
 | `limit: 5000` | 422 `Rows limit must be 1–1,000.` |
@@ -64,8 +70,8 @@ values were captured.
 - Licensed WRDS payloads stay private; no redistribution right is implied.
 - `data_as_of` is `null` for row pages by design, so a caller must not read it as
   coverage or freshness.
-- Dataset-level pagination across the 26 objects is manual: `next_cursor` ends at the
-  object boundary, and moving to the next object is a new `object_index`.
+- A cursor is still scoped to one object; crossing objects means a new request with
+  `next_object_index` (now supplied) rather than one opaque cursor for the dataset.
 
 ## Rollback
 
