@@ -69,7 +69,20 @@ test('dataset rows returns a bounded page with the catalog object key',async()=>
  assert.equal(result.result.next_cursor,'eyJ2IjoxfQ');
  assert.deepEqual(result.result.columns,['fyear','gvkey']);
  assert.equal(result.result.metadata_only,false);
+ assert.equal(result.result.object_count,2);
+ assert.equal(result.result.next_object_index,null);
  assert.match(result.answer,/returned 2 native rows from offset 0 of 900/);
+});
+
+test('an exhausted object points at the next catalogue object',async()=>{
+ const finished={...nativeRows(),next_cursor:null};
+ const first=await queryRoute(env({native:finished}),url({action:'dataset_rows',dataset_id:id,limit:2}),{snapshot});
+ assert.equal(first.result.next_cursor,null);
+ assert.equal(first.result.next_object_index,1);
+ assert.match(first.warnings.join(' '),/Continue with object_index 1 of 2/);
+ const last=await queryRoute(env({native:finished}),url({action:'dataset_rows',dataset_id:id,object_index:1,limit:2}),{snapshot});
+ assert.equal(last.result.next_object_index,null);
+ assert.match(last.warnings.join(' '),/last of 2/);
 });
 
 test('the second catalog object is addressable by index, never by path',async()=>{

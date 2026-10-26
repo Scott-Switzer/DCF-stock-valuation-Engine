@@ -268,7 +268,8 @@ async function datasetObject(env,request,snapshot,operation){
  const detail=await catalogDetail(env,request.dataset_id,snapshot);
  const store=typeof detail.store==='string'?detail.store:'';
  if(!DATASET_STORES.has(store))fail('DATASET_STORE_UNSUPPORTED');
- const object=catalogObjects(detail)[request.object_index];
+ const objects=catalogObjects(detail);
+ const object=objects[request.object_index];
  if(!object)fail('DATASET_OBJECT_NOT_FOUND');
  if(!env.ZION_DATASETS)fail('DATASET_READER_UNAVAILABLE');
  const target=new URL('https://datasets.internal/v1/datasets/'+store+'/'+operation);
@@ -289,7 +290,7 @@ async function datasetObject(env,request,snapshot,operation){
  const base={world:'real/us-public-markets',symbol:'WRDS',action:'dataset_'+operation,complete_valuation:false,
   result:{dataset_id:request.dataset_id,...(typeof detail.dataset==='string'?{dataset:detail.dataset}:{}),
    ...(typeof detail.family==='string'?{family:detail.family}:{}),...(typeof detail.release==='string'?{release:detail.release}:{}),
-   store,path:object.key,object_index:request.object_index,...(object.sha256?{sha256:object.sha256}:{}),
+   store,path:object.key,object_index:request.object_index,object_count:objects.length,...(object.sha256?{sha256:object.sha256}:{}),
    ...(detail.catalog_release_id?{catalog_release_id:detail.catalog_release_id}:{}),metadata_only:false},
   source};
  const label=typeof detail.dataset==='string'?detail.dataset:request.dataset_id;
@@ -305,8 +306,11 @@ async function datasetObject(env,request,snapshot,operation){
  if(!records)fail('DATASET_RESPONSE_INVALID');
  return {...base,answer:`WRDS ${label} (${store}/${object.key}): returned ${records.length} native rows from offset ${page.row_offset??request.offset} of ${page.row_count??'unknown'}, ${projectedDatasetColumns(page.columns).length} columns selected.`,
   result:{...base.result,row_count:page.row_count,row_offset:page.row_offset,limit:request.limit,
-   columns:projectedDatasetColumns(page.columns).map(column=>column.name),records,next_cursor:data.next_cursor??null},
-  warnings:[...warnings,data.next_cursor?'More rows are available; pass next_cursor back as cursor.':'This is the last page of the selected object.']};
+   columns:projectedDatasetColumns(page.columns).map(column=>column.name),records,next_cursor:data.next_cursor??null,
+   // A cursor never crosses an object boundary; hand back the next object instead of
+   // making the caller rediscover the catalogue order.
+   next_object_index:data.next_cursor||request.object_index+1>=objects.length?null:request.object_index+1},
+  warnings:[...warnings,data.next_cursor?'More rows are available in this object; pass next_cursor back as cursor.':request.object_index+1<objects.length?`This object is complete. Continue with object_index ${request.object_index+1} of ${objects.length}.`:`This object is complete and it was the last of ${objects.length}.`]};
 }
 export async function queryRoute(env,u,dependencies={}){
  const snapshot=dependencies.snapshot;
