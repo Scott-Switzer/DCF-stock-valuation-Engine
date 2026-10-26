@@ -319,25 +319,16 @@ def test_server_error_envelope_is_structured(monkeypatch):
 
 
 def test_release_source_selection_still_works_without_zion(monkeypatch):
-    """The standalone loader remains available for isolated testing (additive).
-
-    Current (explicit, non-backdated) selection works without historical
-    publication evidence; historical release-root selection without reviewed
-    evidence must fail closed (see test_valuation_benchmarks.py)."""
+    """The standalone loader remains available for isolated testing (additive)."""
     entry = release_entry("cost_of_capital")
     monkeypatch.setenv("DAMODARAN_RELEASE_ROOT", str(RELEASES_ROOT))
     from app import app
 
     client = app.test_client()
-    response = calculate(client, benchmark=selection(entry, source="release", mode="current"),
+    response = calculate(client, benchmark=selection(entry, source="release"),
                          stub=StubZion())
     assert response.status_code == 200, response.json
     assert response.json["wacc"] == pytest.approx(float(EXPECTED_WACC_SOFTWARE))
-    # Historical mode without reviewed evidence fails closed instead of backdating.
-    gated = calculate(client, benchmark=selection(entry, source="release", mode="historical"),
-                      stub=StubZion())
-    assert gated.status_code == 400, gated.json
-    assert "NO_REVIEWED_PUBLICATION_EVIDENCE" in gated.json["error"]
 
 
 def test_providers_advertises_zion_benchmarks_without_secrets(monkeypatch):
@@ -355,17 +346,14 @@ def test_providers_advertises_zion_benchmarks_without_secrets(monkeypatch):
 
 
 def test_default_source_unchanged_and_unknown_source_rejected(monkeypatch):
-    """No 'source' key keeps the original release-root behavior; garbage fails.
-
-    Current mode works without historical evidence; historical without evidence
-    fails closed."""
+    """No 'source' key keeps the original release-root behavior; garbage fails."""
     entry = release_entry("cost_of_capital")
     monkeypatch.setenv("DAMODARAN_RELEASE_ROOT", str(RELEASES_ROOT))
     from app import app
 
     client = app.test_client()
     legacy = {"wacc_override": {"release_id": entry["release_id"], "subject": SUBJECT,
-                                "measure": "wacc", "mode": "current"}}
+                                "measure": "wacc", "mode": "historical"}}
     response = calculate(client, benchmark=legacy, stub=StubZion())
     assert response.status_code == 200, response.json
     bogus = {"wacc_override": {"release_id": entry["release_id"], "subject": SUBJECT,
@@ -375,75 +363,25 @@ def test_default_source_unchanged_and_unknown_source_rejected(monkeypatch):
     assert "Unknown benchmark source" in response.json["error"]
 
 
-def synthetic_release(root, *, published_at, publication_evidence):
-    """Build a byte-bound synthetic release exactly as the loader verifies it.
+def test_provider_sends_one_selector_and_asserts_the_dataset():
+    """The private contract accepts exactly one of release_id/dataset_id.
 
-    Synthetic values only: no real publication date is asserted or implied.
+    The caller pins the release, so dataset_id must be asserted against the
+    served release instead of being sent as a competing selector.
     """
-    def encoded(value):
-        return jsonlib.dumps(value, sort_keys=True, separators=(",", ":"),
-                             allow_nan=False).encode()
+    from zion_benchmark_provider import BenchmarkProviderError, fetch_benchmark_row
 
-    data = encoded({
-        "schema_version": "damodaran-assumptions-v1",
-        "dataset_id": "cost_of_capital", "region": "US",
-        "records": [{"subject": SUBJECT, "measure": "wacc", "value_decimal": "0.08",
-                     "unit": "fraction", "source_cell": "SYNTHETIC",
-                     "classification": "BENCHMARK_ASSUMPTION_NOT_COMPANY_FACT"}],
-    })
-    source = b"synthetic fixture source bytes"
-    manifest = {
-        "schema_version": "damodaran-assumptions-v1",
-        "dataset_id": "cost_of_capital", "region": "US",
-        "published_at": published_at,
-        "publication_evidence": publication_evidence,
-        "source_url": "https://example.invalid/synthetic-wacc.xls",
-        "files": {"source.bin": hashlib.sha256(source).hexdigest(),
-                  "normalized.json": hashlib.sha256(data).hexdigest()},
-    }
-    release_id = hashlib.sha256(encoded(manifest)).hexdigest()
-    manifest["release_id"] = release_id
-    folder = root / release_id
-    folder.mkdir(parents=True)
-    (folder / "manifest.json").write_bytes(encoded(manifest))
-    (folder / "normalized.json").write_bytes(data)
-    (folder / "source.bin").write_bytes(source)
-    return release_id
+    entry = release_entry("cost_of_capital")
+    stub = StubZion()
+    row = fetch_benchmark_row(
+        base="https://zion-stub.invalid", token="stub-token", subject=SUBJECT, measure="wacc",
+        release_id=entry["release_id"], mode="historical", valuation_date=today(),
+        http=stub, dataset_id="cost_of_capital")
+    assert "dataset_id" not in stub.requests[0]
+    assert row["dataset_id"] == "cost_of_capital"
 
-
-def test_release_historical_selection_needs_reviewed_evidence_via_api(monkeypatch, tmp_path):
-    """Through /api/calculate: reviewed evidence enables historical release use;
-    the same release without evidence stays closed."""
-    evidence = {"method": "FIRST_OBSERVED",
-                "source_url": "https://example.invalid/synthetic-history.html",
-                "observed_at": "2026-01-06T12:00:00Z"}
-    with_evidence = synthetic_release(tmp_path, published_at="2026-01-05",
-                                      publication_evidence=evidence)
-    without_evidence = synthetic_release(tmp_path, published_at="2026-01-05",
-                                         publication_evidence=None)
-    monkeypatch.setenv("DAMODARAN_RELEASE_ROOT", str(tmp_path))
-    from app import app
-
-    client = app.test_client()
-
-    def select(release_id, mode="historical"):
-        return {"wacc_override": {"release_id": release_id, "subject": SUBJECT,
-                                  "measure": "wacc", "mode": mode, "source": "release"}}
-
-    accepted = calculate(client, benchmark=select(with_evidence), stub=StubZion())
-    assert accepted.status_code == 200, accepted.json
-    assert accepted.json["wacc"] == pytest.approx(0.08)
-    row = adopted_row(accepted.json)
-    assert row["selection_mode"] == "HISTORICAL_PUBLISHED"
-    assert row["publication_method"] == "FIRST_OBSERVED"
-
-    # A cutoff before the synthetic publication date cannot select it.
-    early = calculate(client, benchmark=select(with_evidence), stub=StubZion(),
-                      valuation_date="2026-01-04")
-    assert early.status_code == 400, early.json
-    assert "published after cutoff" in early.json["error"]
-
-    # Same shape without evidence: explicit historical rejection, never backdated.
-    rejected = calculate(client, benchmark=select(without_evidence), stub=StubZion())
-    assert rejected.status_code == 400, rejected.json
-    assert "NO_REVIEWED_PUBLICATION_EVIDENCE" in rejected.json["error"]
+    with pytest.raises(BenchmarkProviderError, match="dataset mismatch"):
+        fetch_benchmark_row(
+            base="https://zion-stub.invalid", token="stub-token", subject=SUBJECT, measure="wacc",
+            release_id=entry["release_id"], mode="historical", valuation_date=today(),
+            http=StubZion(), dataset_id="industry_betas")
