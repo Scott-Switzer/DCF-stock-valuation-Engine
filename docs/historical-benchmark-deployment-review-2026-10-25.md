@@ -57,12 +57,19 @@ adopts the evidence gate, or the index date is formally accepted as the record.
 
 ## 4. Release options
 
-**Option A — evidence-gated serving (recommended if the gate is the intended contract).**
-Carry `publication_evidence.json` (candidate, sha `d8c75248feff3e39ae5654a2b3cedc7f847b36ea551b6ff207ba3f3b3c60414f`)
-into R2 under `gold/ddfi-benchmarks/v1/`, pin its sha in the Worker vars, and validate it
-when loading the index: reject a historical selection whose release has no valid entry.
-Code change lands in `zion-ddfi-benchmark-worktree` (`ddfi_benchmarks_api.py` +
-config), not in DCF. Requires that repo's normal review and deploy.
+**Option A — evidence-gated serving (implemented in a PR, not merged or deployed).**
+[zion-terminal #58](https://github.com/Scott-Switzer/zion-terminal/pull/58) adds the gate in
+`ddfi_benchmarks_api.py`: historical selection loads a hash-pinned catalog object
+(`DDFI_BENCHMARKS_EVIDENCE_KEY` / `_SHA256`) through the same `pinned()` reader and cache as
+the index, then requires an entry for the exact release id whose `source_sha256` matches the
+served manifest's `source.bin` digest, whose publication date agrees with index and manifest,
+and whose method, statement, observation and download bounds pass. Missing, malformed,
+conflicting or unreviewed evidence returns 503 before any observation is served. Current
+selection never reads the catalog and is unchanged.
+
+The PR deliberately does not set the catalog vars, so merging it makes historical requests
+fail closed until the catalog and its digest are published and configured in the same
+deploy. Tests: 94 passed, 1 skipped (`pytest tests -k "benchmark or private_api"`).
 
 **Option B — accept index dates.** No code change. Document that historical availability
 is the index's `published_at`, which is server-derived at build time but unverified at
