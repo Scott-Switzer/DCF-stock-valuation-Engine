@@ -1,96 +1,65 @@
-# Benchmark evidence gate — release receipt (2026-10-25)
+# Benchmark evidence gate — release receipt (2026-10-25/26)
 
-Status: **deployed; gate reachable and enforcing; successful benchmark answers blocked
-by a pre-existing bundle-stamp defect (fix in PR #60, not deployed).**
+Status: **released and verified end to end on the deployed service.**
 Machine-readable: `docs/benchmark-evidence-gate-release-2026-10-25.json`.
 
 ## What shipped
 
-- `zion-terminal` main `5c49df8` (PRs #59 then #58): the DDFI benchmark service now
-  requires a hash-pinned, reviewed evidence catalog for **historical** selection,
-  binding each release to its served `source.bin` digest, its index/manifest
-  publication date, a reviewed method, and observation/download bounds.
-- Worker `zion-ddfi-benchmark-staging` deployed as version `00930556…` (previous
-  `5cc4eb62…`). Secrets preserved; no other service deployed.
+- `zion-terminal` main `ac83f11` (PRs #59, #58, #60): historical DDFI benchmark
+  selection requires a hash-pinned, reviewed evidence catalog bound to the served
+  `source.bin` digest, index/manifest publication date, a reviewed method, and
+  observation/download bounds.
+- Worker `zion-ddfi-benchmark-staging`, active version `8af6d9d9-7c43-46cd-b58b-6e35d2ec9645`
+  (previous `00930556…`, before that `5cc4eb62…`). Evidence key/digest, index pin,
+  existing vars, secrets and bindings preserved; no other service deployed.
 - Catalog object `gold/ddfi-benchmarks/v1/evidence/d8c75248…0414f.json`
-  (10,989 bytes, 8 releases), read back and digest-verified. Index and release
-  objects untouched.
+  (10,989 bytes, 8 releases), read back and digest-verified. Index (`4817c621…`) and
+  release objects untouched.
 
-## Authenticated acceptance (run 40255369877, deployed version)
+## Pre-existing defect fixed by this release
 
-Invocation: `benchmark-evidence-live.yml` on branch `acceptance/bench-gate-live`,
-using the repository's existing `ZION_PRIVATE_API_TOKEN` secret (the staging private
-bearer the Zion Workers already share) against
-`https://zion-ddfi-benchmark-staging.scswitzer.workers.dev`. Sanitized report
-downloaded as the run artifact; no token or observation value was recorded.
+`snapshot_bundle.stamp` compared the answer's `release.serving_release_id`
+(`ddfi-benchmarks:<sha256>`) with the financial serving pointer and raised
+`ValueError('RELEASE_MISMATCH')`, so every successful benchmark answer was discarded.
+The defect predates the evidence gate (`snapshot_bundle.py` last changed 2026-10-22,
+before both prior versions) and is independent of it. PR #60 treats the namespaced
+benchmark family as foreign while keeping the financial mismatch guard intact.
+
+## Verified on the deployed revision
+
+Workflow run **40256588261** (`Benchmark evidence live acceptance`, dispatch from main,
+repository `ZION_PRIVATE_API_TOKEN`) against the deployed origin — **PASS 16/16**:
 
 | Check | Result |
 | --- | --- |
 | anonymous / invalid bearer | 401 `UNAUTHORIZED` |
-| historical `cost_of_capital` @ 2026-06-01 | **409 `RELEASE_MISMATCH`** |
-| pre-publication cutoff (dataset) | 404 `HISTORICAL_COVERAGE_UNAVAILABLE` |
-| pre-publication cutoff (explicit pin) | 404 `BENCHMARK_VINTAGE_UNAVAILABLE` |
-| current selection | **409 `RELEASE_MISMATCH`** |
+| historical `cost_of_capital` @ 2026-06-01 | 200, catalog `d8c75248…`, `SERVER_LAST_MODIFIED`, `download_precision: day`, stamped |
+| pre-publication cutoff (dataset / explicit pin) | 404 `HISTORICAL_COVERAGE_UNAVAILABLE` / `BENCHMARK_VINTAGE_UNAVAILABLE` |
+| current selection | 200 `CURRENT_EXPLICIT`, `NOT_APPLICABLE_CURRENT_SELECTION`, stamped |
 | future cutoff | 400 `INVALID_REQUEST` |
-| eight evidenced historical selections @ 2026-10-01 | **409 `RELEASE_MISMATCH`** |
+| caller-declared stale bundle pin | 409 `RELEASE_MISMATCH` |
+| all eight evidenced datasets @ 2026-10-01 | 200, expected release identity and catalog digest, stamped |
 
-The 404/400 results are emitted by `ddfi_benchmarks_api` *after* authentication, so the
-authenticated path, the evidence gate and the rejection contract all work in the
-deployed Worker. The 409s are produced *after* a successful selection.
-
-## Root cause of the 409s
-
-`snapshot_bundle.stamp` compared the response's `release.serving_release_id`
-(`ddfi-benchmarks:<sha256>`) with the financial serving pointer in the bundle
-snapshot and raised `ValueError('RELEASE_MISMATCH')` on any difference. Benchmark
-releases carry their own hash-pinned index and evidence catalog, so every valid
-benchmark answer was discarded and reported as `409 RELEASE_MISMATCH`.
-
-This defect **predates the gate**: `snapshot_bundle.py` last changed on 2026-10-22,
-before both deployed versions. The evidence gate sits downstream of it and cannot be
-blamed, and rolling back would not restore serving — no benchmark answer was ever
-delivered through this Worker.
-
-## Fix prepared (PR #60, not deployed)
-
-- Treat `ddfi-benchmarks:` identities as a foreign pinned family in `stamp`; the
-  financial mismatch guard is unchanged. Focused test added.
-- Add `scripts/benchmark_evidence_acceptance.py` (read-only, token never in the
-  report) and `benchmark-evidence-live.yml` (dispatch + branch push) so acceptance is
-  repeatable rather than ad hoc.
-- `tests/unit/test_snapshot_bundle.py` + `tests/unit/test_benchmark_evidence_acceptance.py`:
-  18 passed.
-- Local `wrangler dev` of the PR revision against real R2 (evidence vars supplied):
-  acceptance **PASS 15/15** — historical `cost_of_capital` at 2026-06-01 returns the
-  reviewed catalog digest `d8c75248…`, `SERVER_LAST_MODIFIED`, `download_precision: day`;
-  both pre-publication forms reject; current selection returns
-  `NOT_APPLICABLE_CURRENT_SELECTION`; anonymous and invalid bearers 401.
+The bundle stamp matched the served `bundle_id` on every successful answer, and a
+wrong pin still fails closed. Local `wrangler dev` (real R2) and the offline suite
+(18 focused tests) agreed before merge; CI `existing-data-contract` and
+`full-offline-suite` passed on the merged commit.
 
 ## Not verified
 
-- Deployed successful historical/current responses (blocked by the stamp defect).
-- DCF's downstream historical path through `ZION_BENCHMARK_QUERY`.
-- Intraday ordering: retrieval evidence is day-precision by construction.
+- DCF's deployed Worker making the call through `ZION_BENCHMARK_QUERY`; its provider
+  contract is covered by tests here, but no authenticated DCF request was issued.
+- Intraday ordering remains impossible: retrieval evidence is day-precision.
 
-## Why the deployment was retained
+## Rollback (available; not executed)
 
-The earlier instruction was to roll back if acceptance failed. Acceptance failed for
-an **authentication-independent** reason: every success is rejected by a wrapper that
-also rejects it in the previous version. Rolling back would not serve any historical
-date and would restore the ability to serve historical dates *without* reviewed
-evidence had the wrapper allowed it. Retention keeps the fail-closed gate in front of
-the data while the wrapper fix ships.
+1. `wrangler rollback 00930556-deba-4edb-8948-d501c730c4a3 --name zion-ddfi-benchmark-staging`
+2. No configuration change is needed to roll back; `00930556` reads the same evidence
+   vars. Leave the immutable catalog object in place.
+3. Re-dispatch the acceptance workflow; it is expected to fail with
+   `409 RELEASE_MISMATCH` on successful selections because the stamp defect returns.
 
-## Rollback (still available; not executed)
+## Next
 
-1. `wrangler rollback 5cc4eb62-fb6a-41ad-bf9e-c95557b7706c --name zion-ddfi-benchmark-staging`
-2. Remove `DDFI_BENCHMARKS_EVIDENCE_KEY` and `DDFI_BENCHMARKS_EVIDENCE_SHA256` and
-   redeploy the prior config, or let the rollback version run with the now-unused vars.
-3. Leave the immutable catalog object; it is unreferenced after rollback. The index
-   (`4817c621…`) and release objects were never modified.
-
-## Next action (requires approval)
-
-Merge PR #60, deploy `zion-ddfi-benchmark-staging` from the merged revision, then
-dispatch `Benchmark evidence live acceptance`. Historical benchmark serving must not
-be claimed until that run is green.
+Benchmark release work is complete. Next: the V1 contract compatibility decision, then
+the coverage/freshness UI.
