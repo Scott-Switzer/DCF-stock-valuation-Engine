@@ -173,3 +173,30 @@ point-in-time certified, and none of this makes a valuation decision-grade.
   (none); one anonymous HTTPS probe (401).
 - Not run: authenticated benchmark selection, any release fetch, the coverage
   preflight script (it needs the populated release root).
+
+## 10. Candidate catalog against the current registry (2026-10-25)
+
+The 5/7 figure in §3 and §8 was measured on the older
+`artifacts/zero-subscription-integration/damodaran-releases` set. Running the existing
+curator against a **byte copy of the current registry** (8 releases) gives **8/8 evidenced,
+all byte-identical**, candidate catalog
+`artifacts/benchmark-evidence-candidate-2026-10-25/releases/publication_evidence.json`
+(receipt and `candidate-report.json` beside it, status `PREPARED_NOT_PROMOTED`).
+
+Each dataset resolves `HISTORICAL_PUBLISHED` at a cutoff after its `published_at` and is
+refused the day before. Negative controls all hold: altered source byte → integrity
+mismatch, removed catalog entry → `NO_REVIEWED_PUBLICATION_EVIDENCE`, renamed release
+directory → identity mismatch. The rebuilt `country_risk_premiums` (July 2026 bytes) and
+`industry_aggregates` do have preserved server timestamps, unlike the January vintages
+described earlier.
+
+Disclosed deviation: registry releases carry no `retrieval.json`, so the curator could not
+read the download time it requires. In the copy only, `retrieval.json` was written from
+each manifest's recorded `lineage.retrieved_at`. The curator should fall back to that
+field when the file is absent; that small change was not made here.
+
+**Catalog regeneration alone is not sufficient for deployed historical coverage.** Still
+required: (a) the catalog (or a regenerated one) placed in the canonical root, (b) a
+decision on `retrieval.json` vs the curator fallback, (c) a runtime release root
+(`DAMODARAN_RELEASE_ROOT` is unset in all six wrangler configs), (d) deployment, and
+(e) deployed acceptance. None of (a)–(e) was performed.
