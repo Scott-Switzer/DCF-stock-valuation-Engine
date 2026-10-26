@@ -236,6 +236,16 @@ class TestHistoricalSelection:
         with pytest.raises(ValueError, match="publication date cannot follow retrieval"):
             validate_publication("2026-10-20", evidence(), OBSERVED)
 
+    def test_date_only_retrieval_is_accepted_at_day_precision(self):
+        # A lineage record states the day, not an instant; it must not be
+        # upgraded, but it is still a usable ordering bound.
+        recorded = validate_publication("2026-01-12", evidence(), "2026-10-14")
+        assert recorded["method"] == "SERVER_LAST_MODIFIED"
+
+    def test_publication_after_a_date_only_retrieval_is_refused(self):
+        with pytest.raises(ValueError, match="publication date cannot follow retrieval"):
+            validate_publication("2026-01-12", evidence(), "2026-01-11")
+
 
 class TestCoverageCatalog:
     def test_lists_only_pairs_a_selection_would_serve(self, tmp_path):

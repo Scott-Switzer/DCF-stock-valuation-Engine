@@ -54,6 +54,22 @@ def _instant(value, *, field):
     return parsed
 
 
+def _retrieval(value):
+    """Return ``(date, instant_or_None)`` for a recorded download time.
+
+    A date-only record carries day precision. It is never upgraded to an
+    asserted instant, so callers can only compare it by day.
+    """
+    text=str(value)
+    if re.fullmatch(r'\d{4}-\d{2}-\d{2}', text):
+        try:
+            return date.fromisoformat(text),None
+        except ValueError:
+            raise ValueError('retrieved_at is not a calendar date') from None
+    instant=_instant(value,field='retrieved_at')
+    return instant.date(),instant
+
+
 def validate_publication(published_at, evidence, retrieved_at):
     """Validate publication metadata and return it in its recorded shape.
 
@@ -71,8 +87,8 @@ def validate_publication(published_at, evidence, retrieved_at):
     # a catalog may bind bytes downloaded earlier to headers re-checked later.
     # Only the ordering that could fabricate a date is refused -- a publication
     # date before publication, or after the bytes were first downloaded.
-    retrieved=_instant(retrieved_at,field='retrieved_at')
-    if published>retrieved.date():
+    retrieval_date,retrieval_instant=_retrieval(retrieved_at)
+    if published>retrieval_date:
         raise ValueError('publication date cannot follow retrieval')
     if not isinstance(evidence,dict):
         raise ValueError('publication date needs structured evidence')
@@ -95,7 +111,7 @@ def validate_publication(published_at, evidence, retrieved_at):
         modified=_http_date(evidence.get('server_last_modified'))
         if modified.date()!=published:
             raise ValueError('published_at must be the server Last-Modified date of the exact bytes')
-        if modified>retrieved:
+        if retrieval_instant is not None and modified>retrieval_instant:
             raise ValueError('server Last-Modified cannot follow retrieval')
         recorded['server_last_modified']=str(evidence['server_last_modified'])
     return recorded

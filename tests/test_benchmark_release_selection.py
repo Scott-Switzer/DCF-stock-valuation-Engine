@@ -32,7 +32,8 @@ def encoded(value):
     return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
 
 
-def synthetic_release(root, *, publication_evidence, published_at=PUBLISHED):
+def synthetic_release(root, *, publication_evidence, published_at=PUBLISHED,
+                     retrieval_json=RETRIEVED, lineage_retrieved=None):
     """Write a byte-bound synthetic release exactly as the loader verifies it."""
     data = encoded(
         {
@@ -63,6 +64,8 @@ def synthetic_release(root, *, publication_evidence, published_at=PUBLISHED):
             "normalized.json": hashlib.sha256(data).hexdigest(),
         },
     }
+    if lineage_retrieved is not None:
+        manifest["lineage"] = {"retrieved_at": lineage_retrieved}
     release_id = hashlib.sha256(encoded(manifest)).hexdigest()
     manifest["release_id"] = release_id
     folder = root / release_id
@@ -70,9 +73,10 @@ def synthetic_release(root, *, publication_evidence, published_at=PUBLISHED):
     (folder / "manifest.json").write_bytes(encoded(manifest))
     (folder / "normalized.json").write_bytes(data)
     (folder / "source.bin").write_bytes(SYNTHETIC_SOURCE)
-    (folder / "retrieval.json").write_bytes(
-        json.dumps({"retrieved_at": RETRIEVED}).encode()
-    )
+    if retrieval_json is not None:
+        (folder / "retrieval.json").write_bytes(
+            json.dumps({"retrieved_at": retrieval_json}).encode()
+        )
     return release_id
 
 
@@ -234,3 +238,85 @@ def test_curator_output_resolves_through_the_loader(releases, tmp_path, monkeypa
     # also proves the catalog is consulted instead of the bare manifest date.
     with pytest.raises(ValueError, match="published after cutoff"):
         load_benchmark(releases, release_id, SUBJECT, "wacc", as_of="2026-01-04")
+
+
+def run_curator(releases, tmp_path, monkeypatch):
+    """Run the real curator over every synthetic release, evidence from its bytes."""
+    from valuation_benchmarks import load_publication_evidence
+
+    evidence_root = tmp_path / "ddfi"
+    evidence_dir = evidence_root / "evidence"
+    evidence_dir.mkdir(parents=True)
+    downloads, index = [], []
+    for folder in sorted(p for p in releases.iterdir() if p.is_dir()):
+        manifest = json.loads((folder / "manifest.json").read_bytes())
+        sha = manifest["files"]["source.bin"]
+        (evidence_dir / f"{sha}.bin").write_bytes((folder / "source.bin").read_bytes())
+        downloads.append({"sha256": sha, "last_modified_server": SERVER_DATE,
+                          "evidence_path": f"evidence/{sha}.bin", "fetched_at": OBSERVED})
+        index.append({"source_sha256": sha, "stated_publication_date": PUBLISHED})
+    (evidence_root / "registry").mkdir()
+    (evidence_root / "registry/pilot_ingest_report.json").write_bytes(
+        json.dumps({"downloads": downloads}).encode()
+    )
+    (evidence_root / "registry/assumption_releases").mkdir()
+    (evidence_root / "registry/assumption_releases/index.json").write_bytes(
+        json.dumps({"releases": index}).encode()
+    )
+
+    curator = load_curator()
+    isolated_root = tmp_path / "curator-root"
+    isolated_root.mkdir(exist_ok=True)
+    monkeypatch.setattr(curator, "ROOT", isolated_root)
+    monkeypatch.setattr(curator, "workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["build_benchmark_publication_evidence.py",
+         "--releases", str(releases),
+         "--evidence-root", str(evidence_root)],
+    )
+    curator.main()
+    return load_publication_evidence(releases)
+
+
+def test_curator_reads_date_only_lineage_without_upgrading_precision(releases, tmp_path, monkeypatch):
+    from valuation_benchmarks import load_benchmark
+
+    release_id = synthetic_release(
+        releases, publication_evidence=None, retrieval_json=None,
+        lineage_retrieved="2026-10-14",
+    )
+    catalog = run_curator(releases, tmp_path, monkeypatch)
+    entry = catalog[release_id]
+    assert entry["download_retrieved_at"] == "2026-10-14"
+    assert entry["download_retrieved_at_precision"] == "day"
+    assert entry["download_retrieved_at_source"] == "manifest.lineage.retrieved_at"
+    row = load_benchmark(releases, release_id, SUBJECT, "wacc", as_of="2026-09-01")
+    assert row["selection_mode"] == "HISTORICAL_PUBLISHED"
+
+
+def test_curator_keeps_instant_precision_from_retrieval_json(releases, tmp_path, monkeypatch):
+    release_id = synthetic_release(releases, publication_evidence=None, retrieval_json=RETRIEVED)
+    entry = run_curator(releases, tmp_path, monkeypatch)[release_id]
+    assert entry["download_retrieved_at"] == RETRIEVED
+    assert entry["download_retrieved_at_precision"] == "instant"
+    assert entry["download_retrieved_at_source"] == "retrieval.json"
+
+
+def test_curator_prefers_the_coarser_record_when_both_agree(releases, tmp_path, monkeypatch):
+    release_id = synthetic_release(
+        releases, publication_evidence=None,
+        retrieval_json="2026-10-14T19:28:12+00:00", lineage_retrieved="2026-10-14",
+    )
+    entry = run_curator(releases, tmp_path, monkeypatch)[release_id]
+    assert entry["download_retrieved_at"] == "2026-10-14"
+    assert entry["download_retrieved_at_precision"] == "day"
+
+
+def test_curator_refuses_conflicting_retrieval_records(releases, tmp_path, monkeypatch):
+    synthetic_release(
+        releases, publication_evidence=None,
+        retrieval_json="2026-10-14T19:28:12+00:00", lineage_retrieved="2026-10-01",
+    )
+    with pytest.raises(ValueError, match="RETRIEVAL_CONFLICT"):
+        run_curator(releases, tmp_path, monkeypatch)
