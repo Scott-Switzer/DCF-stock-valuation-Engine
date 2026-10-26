@@ -39,9 +39,16 @@ could be set out-of-band); see §4 for what the live probe could and could not s
    publication.
 
 `validate_publication()` additionally refuses a non-https source URL, an
-observation earlier than publication, an observation later than retrieval, a bare
-string in place of structured evidence, and (for `SERVER_LAST_MODIFIED`) a date that
-is not the server header's date for the exact bytes.
+observation earlier than publication, a publication date after the recorded download, a
+bare string in place of structured evidence, and (for `SERVER_LAST_MODIFIED`) a date
+that is not the server header's date for the exact bytes.
+
+**Corrected 2026-10-25.** The loader used to require `observed_at <= retrieved_at`.
+That conflated two independent collection events (the ingest download and the header
+re-check that produces `observed_at`), and it rejected all five evidenced entries in the
+real catalog. It is removed; the remaining ordering gates are the meaningful ones.
+`download_retrieved_at` and `retrieved_at` are now both accepted as the disclosed
+download time. See §8.
 
 ## 3. What evidence actually exists
 
@@ -68,8 +75,18 @@ evidence work was done: the curated catalog exists as the review copy
 **promotion**, not collection:
 
 - `load_publication_evidence(root)` reads `<root>/publication_evidence.json` only.
-- The releases directory in this checkout is empty, so a local
-  `coverage_catalog()` here would list nothing at all.
+- The DCF registry release root is `/Users/.../Documents/Secret/data/ddfi/registry/assumption_releases`
+  (sibling repo; `tests/test_zion_benchmark_chain.py` resolves it as `parents[2]`). **Verified
+  2026-10-25:** 8 releases, every `index.json` entry carrying a `published_at`, every
+  `manifest.json` carrying `publication_evidence: null`, and **no**
+  `publication_evidence.json` beside them. So local historical release-root selection is
+  fail-closed for every one of the 8, while current selection serves
+  (`cost_of_capital` → `0.09344048072400105`, `CURRENT_EXPLICIT_SELECTION`).
+- The curated catalog exists at `evidence/benchmark_publication_evidence.json` and, as a
+  full release root with its catalog, at
+  `artifacts/zero-subscription-integration/damodaran-releases/`. Its release ids
+  (`6a7510cf…` for `cost_of_capital`) are **not** the ids of the rebuilt registry
+  releases (`11c1e6bb…`), so copying it beside the registry would resolve nothing.
 - The curator (`scripts/build_benchmark_publication_evidence.py`) writes the catalog
   beside the releases; the receipt records the work as `PREPARED_NOT_PROMOTED`.
 
@@ -106,10 +123,31 @@ So "historical release-root selection fails closed" is not a bug and not an evid
 shortage. It is the intended three-gate design, currently compounded by the release
 root not being part of the deployed bundle.
 
-## 6. What would change this answer
+## 8. Resolution defect found and fixed (2026-10-25)
+
+Even where the catalog *is* present, historical selection refused every evidenced
+release. Two deterministic defects, both verified against the real artifacts by running
+`load_benchmark` directly:
+
+| Defect | Evidence | Fix |
+| --- | --- | --- |
+| Producer/consumer field mismatch: the curator writes `download_retrieved_at`, the loader read `retrieved_at`, so `_instant(None)` raised and the entry failed closed | every entry in `evidence/` and `artifacts/…/damodaran-releases/publication_evidence.json` has `download_retrieved_at` and no `retrieved_at` | loader accepts either name; a catalog with neither still fails closed |
+| Impossible ordering: `observed_at <= retrieved_at` required, but the catalog records the 19:28Z ingest download and a 20:50Z header re-check of the same bytes | 5/5 evidenced entries rejected even after the key fix | ordering check removed; publication-before-retrieval and publication-before-observation both remain |
+
+Measured on `artifacts/zero-subscription-integration/damodaran-releases`, cutoff
+2026-09-01: **before 0/7 resolved; after 5/7 resolve** (`HISTORICAL_PUBLISHED`),
+`margins` and `country_risk` still refuse. No gate was weakened: the date must still be
+the server `Last-Modified` of the exact bytes, and a publication date after the recorded
+download is still refused.
+
+PR: [#82](https://github.com/Scott-Switzer/DCF-stock-valuation-Engine/pull/82), stacked on
+#80, 51 focused tests and 144 benchmark/valuation/coverage tests passing locally.
+
+## 9. What would change this answer
 
 | Action | Owner | Acceptance condition | Needs authorization |
 | --- | --- | --- | --- |
+| Re-run the curator against the **current registry release bytes** so the catalog's release ids match | data | `coverage_catalog(registry_root)` lists 8 releases and 5 available; `load_benchmark` resolves the registry `cost_of_capital` historically | data write (catalog generation) — not performed |
 | R5(c): ship a release root with the catalog beside it, or serve releases from a bound store, and read the catalog from that same root | DCF + data | deployed historical request for `cost_of_capital` at a cutoff after 2026-01-12 returns `HISTORICAL_PUBLISHED`; a cutoff before it returns "published after cutoff" | deploy + release contract change |
 | Acquire server-timestamped evidence for `margins` and `country_risk` exact bytes | data | `publication_status` returns `available: true` for those two releases; `coverage_catalog()` shows 7/7 | new acquisition (fetching from the provider) |
 | Mirror this policy in the owner-facing docs/UI | DCF web | the Data workspace states that historical release selection is limited to evidenced vintages | none (docs) |

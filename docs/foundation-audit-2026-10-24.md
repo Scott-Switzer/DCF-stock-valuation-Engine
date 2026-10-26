@@ -250,12 +250,14 @@ line renders for a real answer; current tests cover the module, not the rendered
 
 | # | Item | Owner | Evidence | Acceptance | Depends |
 |---|---|---|---|---|---|
-| 1 | Merge DCF #80 | DCF | 4/4 checks SUCCESS, MERGEABLE | Merged; `main` suite green | review |
+| 1 | Merge DCF #80 | DCF | 4/4 checks SUCCESS; `main` still red without it (2 zion release-root tests assert the pre-evidence contract) | Merged; `main` suite green | review |
+| 1b | Merge DCF #82 (evidence resolution) | DCF | real catalog: 0/7 → 5/7 resolve; 51 + 144 tests pass | Merged after #80; retarget to `main` | #1 + review |
 | 2 | Merge core #28 | core | docs-only, 15 smoke tests pass locally | Record on main; no CI configured for docs | review |
 | 3 | Decide `StatisticalReferencePanelV1` (V2 vs optional vs leave as M10 prep) | core + PPE + QC | compatibility doc; byte-identical vendored schema | V1 SHA unchanged and producer/consumer tests green, or V2 landed together | owner |
 | 4 | Deploy the workspace coverage panel | DCF web | asset hash mismatch proven | Step 4-5 of the release plan recorded | #1 |
 | 5 | Add a rendered-panel DOM test for coverage | DCF web | only module-level tests exist | Test fails when the coverage element is removed | #4 |
-| 6 | Publication-evidence strategy for historical release-root benchmarks | data | manifests carry `publication_evidence: null` | Reviewed catalog or documented Zion-only historical | rights review |
+| 6 | Publication-evidence strategy for historical release-root benchmarks | data | policy doc §3/§8; registry manifests carry `publication_evidence: null` and no catalog beside them | Reviewed catalog or documented Zion-only historical | rights review |
+| 6b | Re-run the evidence curator against current registry release ids | data | catalog ids (`6a7510cf…`) ≠ registry ids (`11c1e6bb…`) | `coverage_catalog` lists 8; 5 available, 2 refusing | row 6; data write authorization |
 | 7 | Catalog schema surface beyond `dataset_detail` | DCF reader | projection tests exist; no bulk schema endpoint | Bundle-checked schema view, no raw rows | #1 |
 | 8 | Issuer gap diagnosis (GE/JPM/C/GS) | data | historical diagnosis doc | Reproducible per-issuer report | private R2 |
 | 9 | One bounded normalization increment | data | proposal only | Units, identity, availability, revisions verified on one dataset | #8 |
@@ -295,3 +297,38 @@ Verification for this section: file reads of `valuation_benchmarks.py`,
 `app.py::resolve_benchmark_selections`, `tests/test_valuation_benchmarks.py`; a JSON
 summary of the review copy; `grep` of the six wrangler configs; one anonymous probe.
 No authenticated request, release fetch, or coverage preflight was run.
+
+## 11. Benchmark evidence resolution: verified defect and fix (2026-10-25)
+
+The policy section above described the gate; this section records that the gate could
+never open. Running `load_benchmark(..., as_of=...)` directly against the real artifacts
+(`artifacts/zero-subscription-integration/damodaran-releases`, 7 catalog entries) returned
+`HISTORICAL_PUBLISHED` for **0 of 7** releases.
+
+Two deterministic defects:
+
+1. `scripts/build_benchmark_publication_evidence.py` writes `download_retrieved_at`; the
+   loader read `retrieved_at`. Every entry raised inside `validate_publication` and was
+   converted to `UNAVAILABLE`. The unit tests could not catch this because their fixtures
+   were hand-built with the loader's key.
+2. `validate_publication` required `observed_at <= retrieved_at`. The catalog records the
+   ingest download (19:28Z) and a later header re-check of the same bytes (20:50Z), so
+   all five evidenced entries were rejected even once the key name matched.
+
+Fix: accept either disclosed download-time key, and drop the cross-event ordering check.
+The gates that matter are unchanged — the date must be the server `Last-Modified` of the
+exact bytes, it cannot follow the recorded download, and evidence cannot precede
+publication. After the fix, a 2026-09-01 cutoff serves the five evidenced vintages and
+still refuses `margins` and `country_risk`.
+
+PR [#82](https://github.com/Scott-Switzer/DCF-stock-valuation-Engine/pull/82), stacked on
+#80. Local: 51 focused tests, 144 in the benchmark/valuation/coverage selection.
+
+Remaining data gap (not a code gap): the canonical registry root
+`Documents/Secret/data/ddfi/registry/assumption_releases` (8 releases, sibling repo) has no
+`publication_evidence.json`, and the existing catalog's release ids do not match the
+rebuilt registry ids. Regenerating it is a data write and was not performed.
+
+**Runs performed for this section:** the three focused pytest invocations above, plus
+read-only `load_benchmark` probes against the artifacts root and the registry root, and a
+key/field summary of the two catalogs. No deployment, no credential use, no data write.
