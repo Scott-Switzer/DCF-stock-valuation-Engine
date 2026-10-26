@@ -1,6 +1,7 @@
 import {validateCutoffPage} from './financial-cutoff.mjs';
 // One financial query implementation for Slack, the terminal and the website.
-import {FULL,historyRoute} from './history.mjs';
+import {FULL,historyRoute,seriesRows,delistingsIndex,delistingRecord} from './history.mjs';
+import {totalReturnSeries} from './total-return.mjs';
 import {ENRICH} from './enrichment.mjs';
 import {boundedSourceJson} from './source-json.mjs';
 import {periodFinancials} from './period-financials.mjs';
@@ -23,6 +24,10 @@ const HINTS={
  FREQUENCY_REQUIRES_FINANCIAL_METRIC:'Quarterly and TTM frequency apply to financial metrics, not prices.',
  NO_UNIQUE_PRICE_ON_REQUESTED_DATE:'No unique stored close exists on that session; use an exact exchange trading day.',
  SESSION_NOT_INDEXED:'That session has not been published in the stored daily index. No other date was substituted.',
+ TOTAL_RETURN_NEEDS_TWO_SESSIONS:'Total return needs a start and end session date (YYYY-MM-DD); the first close has no prior close to measure from.',
+ PERMNO_NOT_IN_STORED_HISTORY:'That security has no stored CRSP history, so no total return can be computed.',
+ NO_SESSIONS_IN_WINDOW:'That date range has no stored CRSP sessions.',
+ HISTORY_WINDOW_TOO_LARGE:'That range holds too many stored sessions; shorten it.',
  REQUESTED_DATE_NOT_IN_LATEST_RELEASE:'Only the latest stored session is served for recent prices; ask for that date or an older historical session.'
 };
 const fail=(code,detail)=>{throw Error((HINTS[code]?code+': '+HINTS[code]:code)+(detail?' '+detail:''))};
@@ -63,6 +68,11 @@ export function requestQuery(query,symbols,aliases={}){
   return {action:'financials',symbol,dates,frequency,metric:/margin/.test(text)?'operating_margin':/\b(growth|grew|change)\b/.test(text)?'revenue_growth':'revenue'};
  }
  if(frequency!=='annual')fail('FREQUENCY_REQUIRES_FINANCIAL_METRIC');
+ if(/\btotal[ -]returns?\b|\bdividend[- ]adjusted\b|\bincluding dividends\b/i.test(query)){
+  if(dates.length!==2)fail('TOTAL_RETURN_NEEDS_TWO_SESSIONS');
+  if(dates[0]>=dates[1])fail('START_MUST_PRECEDE_END');
+  return {action:'total_return',symbol,dates,include_series:true,max_points:500};
+ }
  if(/\b(price|prices|return|growth|grew)\b/.test(text)){
   // A bare year is not a trading session; silently serving the latest close would misstate the date.
   if(!dates.length&&/\b(?:19|20)\d{2}\b/.test(query))fail('PRICE_NEEDS_EXACT_SESSION_DATE');
@@ -308,6 +318,45 @@ async function datasetObject(env,request,snapshot,operation){
    columns:projectedDatasetColumns(page.columns).map(column=>column.name),records,next_cursor:data.next_cursor??null},
   warnings:[...warnings,data.next_cursor?'More rows are available; pass next_cursor back as cursor.':'This is the last page of the selected object.']};
 }
+// CRSP daily RET chained into a total-return series, with the split-adjusted
+// price growth of the same window and an explicit delisting block. Anything the
+// source does not report stays a named gap; nothing is imputed.
+async function totalReturnAnswer(env,parsed,security,dependencies={}){
+ const permno=Number(security.full_history?.permno);
+ if(!Number.isInteger(permno)||permno<=0)fail('PERMNO_NOT_IN_STORED_HISTORY');
+ const [from,to]=parsed.dates;
+ const loadSeries=dependencies.seriesRows||seriesRows,loadIndex=dependencies.delistingsIndex||delistingsIndex;
+ const {rows,input_sha256,parts}=await loadSeries(env,permno,from,to);
+ if(!rows.length)fail('NO_SESSIONS_IN_WINDOW',`Stored sessions for ${parsed.symbol} do not reach ${from} to ${to}.`);
+ if(rows[0].date!==from||rows.at(-1).date!==to)fail('NO_UNIQUE_PRICE_ON_REQUESTED_DATE',`Stored sessions in this range run ${rows[0].date} to ${rows.at(-1).date}.`);
+ const index=await loadIndex(env);
+ const record=delistingRecord(index,permno);
+ const computed=totalReturnSeries(rows,{from,to,delisting:record,maxPoints:parsed.max_points});
+ const s=computed.summary,pct=value=>value===null||value===undefined?'not available':(value*100).toFixed(2)+'%';
+ const delistingText=computed.delisting.status==='DELISTING_RETURN_INCLUDED_IN_SOURCE_TOTAL_RETURN'
+  ?` The series ends at a CRSP delisting on ${computed.delisting.row_date}${computed.delisting.record?.code?` (code ${computed.delisting.record.code}, ${computed.delisting.record.family.toLowerCase()})`:''}; CRSP's delisting return is already inside the stored return and was applied once.`
+  :computed.delisting.status==='DELISTING_RETURN_NOT_OBSERVED'
+  ?` The ${computed.delisting.row_date} CRSP delisting${computed.delisting.record?.code?` (code ${computed.delisting.record.code}, ${computed.delisting.record.family.toLowerCase()})`:''} has no reported delisting return, so this figure is an upper bound: the position may have been worth zero.`
+  :'';
+ const gapText=computed.gaps.length?` ${computed.gaps.length} stored session${computed.gaps.length===1?'':'s'} had no source return and ${computed.gaps.length===1?'was':'were'} not treated as zero.`:'';
+ const comparison=s.dividend_contribution!==null
+  ?`Split-adjusted price growth over the same window was ${pct(s.price_growth)}; dividends contributed ${pct(s.dividend_contribution)} on top.`
+  :`Split-adjusted price growth through the last priced session${s.price_growth_end_date?` (${s.price_growth_end_date})`:''} was ${pct(s.price_growth)}; the delisting row carries no price, so the dividend difference is not separable there.`;
+ const answer=`${parsed.symbol} total return ${s.start_date} to ${s.end_date}: ${pct(s.total_return)}${s.total_return_is_upper_bound?' (upper bound)':''} (${pct(s.annualized_total_return)} annualized) over ${s.sessions} stored sessions. ${comparison}`+delistingText+gapText;
+ const warnings=['CRSP stored daily history; the total return chains the source RET column and includes distributions.'];
+ if(!s.total_return_complete)warnings.push('The window contains sessions without a source return, so no continuous cumulative figure is claimed; segments list each covered stretch.');
+ if(computed.delisting.status==='DELISTING_RETURN_NOT_OBSERVED')warnings.push(computed.delisting.note);
+ if(computed.delisting.status==='DELISTING_RETURN_INCLUDED_IN_SOURCE_TOTAL_RETURN'&&computed.delisting.cross_check==='MISMATCH_ROW_VALUE_USED')warnings.push('The stored delisting row return differs from the CRSP delisting file; the stored row value was used so the return is not double counted.');
+ if(computed.sampled)warnings.push(`The series is evenly sampled to ${parsed.max_points} points; the summary uses every stored session.`);
+ if(!index)warnings.push('The CRSP delisting index is not built, so delisting codes are unavailable; the price row flags still identify delisting events.');
+ const {series,...summaryOnly}=computed;
+ return {world:'real/us-public-markets',symbol:parsed.symbol,action:'total_return',complete_valuation:false,answer,
+  result:{...(parsed.include_series?computed:summaryOnly),series_included:parsed.include_series,
+   inputs:{permno,from,to,max_points:parsed.max_points,parts}},
+  source:{provider:'CRSP',release:input_sha256,permno,coverage:{security_id:security.full_history?.security_id||null,permno,date_min:security.full_history?.date_min||null,date_max:security.full_history?.date_max||null,rows:security.full_history?.rows||0},
+   ...(index?.summary?.entries_sha256?{delisting_index_sha256:index.summary.entries_sha256,delisting_source_sha256:index.source?.object?.sha256||null}:{})},
+  warnings};
+}
 export async function queryRoute(env,u,dependencies={}){
  const snapshot=dependencies.snapshot;
  const input=queryInput(u);
@@ -335,6 +384,7 @@ export async function queryRoute(env,u,dependencies={}){
  const base={world:'real/us-public-markets',symbol:parsed.symbol,action:parsed.action,complete_valuation:false};
  if(parsed.action==='latest_price')return latestQuote(env,parsed.symbol);
  if(parsed.action==='price'&&security.full_history?.date_max&&parsed.dates[0]>security.full_history.date_max)return sessionQuote(env,parsed.symbol,parsed.dates[0],snapshot);
+ if(parsed.action==='total_return')return totalReturnAnswer(env,parsed,security,dependencies);
  const getHistory=dependencies.history||((url)=>historyRoute(env,url));
  if(parsed.action==='price'||parsed.action==='growth'){
   const pages=await Promise.all(parsed.dates.map(async date=>{
