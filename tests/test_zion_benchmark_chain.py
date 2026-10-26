@@ -22,7 +22,9 @@ Acceptance points:
 
 import hashlib
 import json as jsonlib
+import shutil
 from datetime import datetime, timezone
+from email.utils import format_datetime
 from pathlib import Path
 
 import pytest
@@ -202,6 +204,38 @@ def selection(entry, *, mode="historical", source="zion"):
         "mode": mode, "source": source}}
 
 
+def reviewed_release_root(tmp_path, dataset_id="cost_of_capital"):
+    """A self-contained release root carrying synthetic reviewed evidence.
+
+    The preserved registry ships manifests with ``publication_evidence: null`` and
+    no catalog beside them, so historical selection from that tree fails closed.
+    These tests need a historical success, so they copy one release and write the
+    evidence the policy requires for exactly those source bytes.
+    """
+    from valuation_benchmarks import EVIDENCE_VERSION
+
+    entry = release_entry(dataset_id)
+    shutil.copytree(RELEASES_ROOT / entry["release_id"], tmp_path / entry["release_id"])
+    manifest = jsonlib.loads((RELEASES_ROOT / entry["release_id"] / "manifest.json").read_bytes())
+    published = manifest["published_at"]
+    modified = format_datetime(datetime.fromisoformat(published + "T00:00:00+00:00"), usegmt=True)
+    catalog = {"schema_version": EVIDENCE_VERSION, "releases": [{
+        "release_id": entry["release_id"],
+        "source_sha256": manifest["files"]["source.bin"],
+        "published_at": published,
+        "download_retrieved_at": published + "T12:00:00+00:00",
+        "publication_evidence": {
+            "method": "SERVER_LAST_MODIFIED",
+            "source_url": manifest["source_url"],
+            "statement": "Synthetic reviewed evidence for the test fixture.",
+            "observed_at": published + "T13:00:00+00:00",
+            "server_last_modified": modified,
+        },
+    }]}
+    (tmp_path / "publication_evidence.json").write_text(jsonlib.dumps(catalog))
+    return tmp_path
+
+
 def test_chain_selects_real_industry_benchmark_through_zion(monkeypatch):
     entry = release_entry("cost_of_capital")
     stub = StubZion()
@@ -318,10 +352,10 @@ def test_server_error_envelope_is_structured(monkeypatch):
     assert "HISTORICAL_COVERAGE_UNAVAILABLE" in response.json["error"]
 
 
-def test_release_source_selection_still_works_without_zion(monkeypatch):
+def test_release_source_selection_still_works_without_zion(monkeypatch, tmp_path):
     """The standalone loader remains available for isolated testing (additive)."""
     entry = release_entry("cost_of_capital")
-    monkeypatch.setenv("DAMODARAN_RELEASE_ROOT", str(RELEASES_ROOT))
+    monkeypatch.setenv("DAMODARAN_RELEASE_ROOT", str(reviewed_release_root(tmp_path)))
     from app import app
 
     client = app.test_client()
@@ -329,6 +363,20 @@ def test_release_source_selection_still_works_without_zion(monkeypatch):
                          stub=StubZion())
     assert response.status_code == 200, response.json
     assert response.json["wacc"] == pytest.approx(float(EXPECTED_WACC_SOFTWARE))
+
+
+def test_release_source_without_reviewed_evidence_fails_closed(monkeypatch, tmp_path):
+    """The same historical request is refused when the reviewed evidence is absent."""
+    entry = release_entry("cost_of_capital")
+    root = reviewed_release_root(tmp_path)
+    (root / "publication_evidence.json").unlink()
+    monkeypatch.setenv("DAMODARAN_RELEASE_ROOT", str(root))
+    from app import app
+
+    response = calculate(app.test_client(), benchmark=selection(entry, source="release"),
+                         stub=StubZion())
+    assert response.status_code == 400
+    assert "NO_REVIEWED_PUBLICATION_EVIDENCE" in response.json["error"]
 
 
 def test_providers_advertises_zion_benchmarks_without_secrets(monkeypatch):
@@ -345,10 +393,10 @@ def test_providers_advertises_zion_benchmarks_without_secrets(monkeypatch):
     assert "Bearer" not in text
 
 
-def test_default_source_unchanged_and_unknown_source_rejected(monkeypatch):
+def test_default_source_unchanged_and_unknown_source_rejected(monkeypatch, tmp_path):
     """No 'source' key keeps the original release-root behavior; garbage fails."""
     entry = release_entry("cost_of_capital")
-    monkeypatch.setenv("DAMODARAN_RELEASE_ROOT", str(RELEASES_ROOT))
+    monkeypatch.setenv("DAMODARAN_RELEASE_ROOT", str(reviewed_release_root(tmp_path)))
     from app import app
 
     client = app.test_client()
