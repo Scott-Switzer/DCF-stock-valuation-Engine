@@ -84,8 +84,9 @@ def fetch_benchmark_row(*, base, token, subject, measure, release_id, mode,
         'subject': subject,
         'measures': [measure],
     }
-    if dataset_id is not None:
-        body['dataset_id'] = dataset_id
+    # The private contract accepts exactly one of release_id/dataset_id. The
+    # caller already pins the exact release, so dataset_id is asserted against
+    # the served release below rather than sent as a second selector.
     if mode == 'historical':
         body['as_of'] = valuation_date
     response = http.post(
@@ -112,6 +113,9 @@ def fetch_benchmark_row(*, base, token, subject, measure, release_id, mode,
     served_release = release.get('ddfi_release_id')
     _require(served_release == release_id,
              f'release mismatch: requested {_short(release_id)}, Zion served {served_release}')
+    if dataset_id is not None:
+        _require(release.get('dataset_id') == dataset_id,
+                 f'dataset mismatch: requested {dataset_id}, Zion served {release.get("dataset_id")}')
     published_at = release.get('published_at')
     _require(isinstance(published_at, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', published_at),
              'release published_at is missing')
