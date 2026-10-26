@@ -29,7 +29,42 @@ export function structuredQuery(value,symbols={}){
  object(value);
  if(Object.values(value).some(v=>v===null))invalid('Explicit null is not an omitted field.');
  const action=value.action;
- if(typeof action!=='string'||!['price','growth','financials','dataset_catalog','dataset_detail'].includes(action))invalid('Unsupported action.');
+ if(typeof action!=='string'||!['price','growth','financials','dataset_catalog','dataset_detail','dataset_schema','dataset_rows'].includes(action))invalid('Unsupported action.');
+ // Licensed source archives are addressed by catalog identity plus the catalog's own
+ // object key allowlist; no caller-supplied path ever reaches R2.
+ const datasetId=value=>{
+  const id=value??'';
+  if(typeof id!=='string'||!/^[a-f0-9]{32}$/.test(id))invalid('dataset_id must be the 32-character catalog id.');
+  return id;
+ };
+ const objectIndex=value=>{
+  const index=value??0;
+  if(!Number.isSafeInteger(index)||index<0||index>10000)invalid('object_index must be 0–10,000.');
+  return index;
+ };
+ if(action==='dataset_schema'){
+  fields(value,['action','dataset_id','object_index']);
+  return {action,dataset_id:datasetId(value.dataset_id),object_index:objectIndex(value.object_index)};
+ }
+ if(action==='dataset_rows'){
+  fields(value,['action','dataset_id','object_index','columns','offset','limit','cursor']);
+  const offset=value.offset??0,limit=value.limit??100;
+  if(!Number.isSafeInteger(offset)||offset<0||offset>1000000000)invalid('Rows offset must be 0–1,000,000,000.');
+  if(!Number.isSafeInteger(limit)||limit<1||limit>1000)invalid('Rows limit must be 1–1,000.');
+  let columns;
+  if(value.columns!==undefined){
+   if(!Array.isArray(value.columns)||!value.columns.length||value.columns.length>64)invalid('columns must list 1–64 column names.');
+   if(value.columns.some(c=>typeof c!=='string'||!/^[A-Za-z0-9_]{1,64}$/.test(c))||new Set(value.columns).size!==value.columns.length)invalid('Column names must be unique source field names.');
+   columns=[...value.columns];
+  }
+  let cursor;
+  if(value.cursor!==undefined){
+   if(typeof value.cursor!=='string'||value.cursor.length<8||value.cursor.length>512||!/^[A-Za-z0-9_-]+=*$/.test(value.cursor))invalid('cursor must be the opaque value from a previous rows page.');
+   if(value.offset!==undefined)invalid('Use a cursor or an offset, not both.');
+   cursor=value.cursor;
+  }
+  return {action,dataset_id:datasetId(value.dataset_id),object_index:objectIndex(value.object_index),offset,limit,...(columns?{columns}:{}),...(cursor?{cursor}:{})};
+ }
  if(action==='dataset_detail'){
   fields(value,['action','dataset_id']);
   const dataset_id=value.dataset_id??'';
