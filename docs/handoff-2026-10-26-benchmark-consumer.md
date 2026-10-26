@@ -71,3 +71,55 @@ removed.
 2. Deploy the coverage panel and add its DOM test.
 3. Decide M10 contract shape (V2 vs optional fields) before any producer change.
 4. Publication evidence for release-root benchmarks (unchanged policy gap).
+
+## 6. Verified release state (2026-10-26)
+
+| Item | Value |
+| --- | --- |
+| Benchmark Worker | `zion-ddfi-benchmark-staging` `8af6d9d9-7c43-46cd-b58b-6e35d2ec9645` |
+| DCF staging Worker | `dcf-valuation-engine-staging` `90d0531d-a507-4a35-bcf2-11957c2cfd28` (2026-10-23) |
+| DCF production Worker | `dcf-valuation-engine` active `e74fd028-6976-4dbd-b1ed-e8d9da46ac53` (2026-10-19) |
+| Live asset `/static/js/data-workspace.js` | `230ab866…` (no coverage strings) |
+| Local asset on `main` | `4b27e14c…` (coverage strings present) |
+
+PRs: DCF #85 merged (`f20813f`); core #29 merged (`d4c2f03`); DCF #86 (release-root
+test fixture) and #87 (rendered coverage DOM test) open.
+
+## 7. Proposed release — coverage panel
+
+1. Merge #86 and #87; work from a clean `origin/main`.
+2. `uv run --group dev python scripts/embed_assets.py` so `BUILD.tracked_dirty` is false
+   and `BUILD.commit` is the release SHA.
+3. `uv run --group dev python -m pytest tests/ -q` and
+   `npm --prefix tests/browser test` (now includes the coverage DOM test).
+4. `npx wrangler deploy --config wrangler.production.jsonc` — production only; no D1
+   migration, no pointer or data change.
+5. Re-fetch `/static/js/data-workspace.js`, confirm the hash equals `BUILD.asset_sha256`
+   and that `#financial-coverage`, `#financial-warnings`, `#financial-evidence` ship in
+   the HTML; run `live-smoke.yml`.
+
+Rollback: `wrangler rollback e74fd028-6976-4dbd-b1ed-e8d9da46ac53 --name
+dcf-valuation-engine`, which restores the previous bundle; data and D1 are untouched.
+
+Staging is not on the path for this UI change; `90d0531d` is the staging engine and must
+not be confused with the production site.
+
+## 8. Owner-authenticated `/api/calculate` acceptance
+
+The route is owner-gated before any benchmark resolution:
+`POST /api/calculate` with `benchmark_selections` returns
+`401 OWNER_BENCHMARK_AUTH_REQUIRED` on staging. The accepted credentials are:
+
+- `Authorization: Bearer <ZION_OWNER_DATA_TOKEN>` (the deployed Worker secret), or
+- the 15-minute same-origin browser grant minted by `POST /api/account/data-access`,
+  which itself requires a signed-in account **and** that bearer.
+
+No existing workflow carries that credential (`gh secret list` on the repository is
+empty), and the Worker secret is write-only. The smallest owner action is one of:
+
+1. issue a single owner-authenticated `POST /api/calculate` from an owner browser
+   session (the grant cookie path), or
+2. add a repository secret whose value equals the deployed `ZION_OWNER_DATA_TOKEN` and
+   dispatch a focused acceptance workflow.
+
+Rotating the secret is not required and must not be assumed.
