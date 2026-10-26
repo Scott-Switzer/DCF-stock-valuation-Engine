@@ -148,10 +148,13 @@ successful job; their values are not emitted in the artifact.
 - Missing **functionality**: none identified in the paths that were exercised.
   Catalog pagination, `dataset_detail` projection, cutoff/provenance guards,
   bundle pinning, quarterly/TTM, and tool scope all have passing tests.
-- Missing **data/evidence**: reviewed `publication_evidence` for the real
-  Damodaran releases; certified industry mappings for banks/insurers; dataset-specific
-  normalization/units; dated issuer/security links; revision history; point-in-time
-  eligibility. These are data-model gaps, not code regressions.
+- Missing **data/evidence**: reviewed publication evidence for 2 of 7 Damodaran vintages
+  (`margins`, `country_risk`) and — more importantly — the promotion of the already
+  curated catalog into a deployed release root (see §10 and
+  `docs/historical-benchmark-evidence-policy-2026-10-25.md`); certified industry
+  mappings for banks/insurers; dataset-specific normalization/units; dated
+  issuer/security links; revision history; point-in-time eligibility. These are
+  data-model gaps, not code regressions.
 
 ## 7. Ranked backlog
 
@@ -160,9 +163,10 @@ successful job; their values are not emitted in the artifact.
 | 1 | Commit the DCF benchmark test fix (this session) | DCF | 25 passed locally; suite was red on `main` behavior change | Branch + PR, CI green on 3.12/3.13/browser | none |
 | 2 | Decide merge for `codex/continuation-handoff-20261022` (6 commits, `0b6fe92`) | core | `git rev-list --left-right --count origin/main...HEAD` → `0 6` | PR merged or branch explicitly designated the release record | owner authorization |
 | 3 | Resolve the V1 evaluator contract break (`PanelDefinitionV1`/`ReturnDefinitionV1`) | core + QC | 4-file diff in stale duplicate; new required fields | V2 bump or optional-with-defaults; QC consumer test green | #2 |
-| 4 | Backfill reviewed publication evidence or formally restrict historical `source=release` to Zion | DCF/data | manifests have `publication_evidence: null`; historical path refuses | Either a validated `publication_evidence.json` with reviewed methods, or docs + code marking release-root historical as unsupported | rights review |
+| 4 | Promote the existing publication-evidence catalog beside a deployed release root (R5c); acquire evidence for `margins`/`country_risk` | DCF/data | evidence exists for 5/7 vintages (`evidence/benchmark_publication_evidence.json`); catalog is not beside the runtime root; `DAMODARAN_RELEASE_ROOT` unset in all six configs | deployed historical request serves `HISTORICAL_PUBLISHED` after 2026-01-12 and refuses before it; coverage shows 7/7 evidenced only after the two acquisitions | deploy authorization; new acquisition for the 2 |
 | 5 | Re-run cloud acceptance after any reader/gateway change | gateway | run 40048223159 dispatched at `d7c7b3f` | Green run; `GATEWAY_ACCEPTED_SHA` matches deployed SHA | #1 |
 | 6 | Metadata-only catalog detail/schema exposure beyond `dataset_detail` | DCF reader | detail projection test exists; no bulk schema surface | Projected schema endpoint + MCP field, bundle-checked, no raw rows | #5 |
+| 6b | Document the benchmark support matrix (done 2026-10-25) | DCF | `docs/historical-benchmark-evidence-policy-2026-10-25.md` §5 | Matrix states which requests work and why release-root historical fails closed | none |
 | 7 | Coverage/freshness/missingness presentation in Data workspace | DCF web | `renderAnswerEvidence` code-ready; production not redeployed | Deployed UI shows frequency, observed range, cutoff, gap counts | #5 |
 | 8 | Issuer-by-issuer annual gap diagnosis (GE/JPM/C/GS) | data | `docs/annual-gap-diagnosis-2026-10-24.md` (historical) | Reproducible per-issuer report distinguishing mapping vs materialization | private R2 access |
 | 9 | One bounded normalization increment | data | proposal only | Units, dated identity, availability, revisions, quality gates verified on one dataset | #8 |
@@ -256,3 +260,38 @@ line renders for a real answer; current tests cover the module, not the rendered
 | 8 | Issuer gap diagnosis (GE/JPM/C/GS) | data | historical diagnosis doc | Reproducible per-issuer report | private R2 |
 | 9 | One bounded normalization increment | data | proposal only | Units, identity, availability, revisions verified on one dataset | #8 |
 | 10 | Retire or clearly mark stale duplicate checkouts | ops | this audit | One canonical path per repo | owner |
+
+## 10. Historical benchmark evidence policy (2026-10-25)
+
+Written up in `docs/historical-benchmark-evidence-policy-2026-10-25.md`. It corrects the
+phrasing used above, without changing any receipt.
+
+- **The evidence was collected; it was not promoted.** `evidence/benchmark_publication_evidence.json`
+  (`damodaran-publication-evidence-v1`, 8,141 bytes) holds **7 releases, 5 with
+  `SERVER_LAST_MODIFIED`** evidence and dates 2026-04-12 / 2026-01-12 / three on
+  2026-01-08. `margins` and `country_risk` carry `published_at: null` and no evidence,
+  so they refuse every historical cutoff. The curation receipt records the work as
+  `PREPARED_NOT_PROMOTED`.
+- **Two separate blockers, not one.** (a) `load_publication_evidence()` reads
+  `<root>/publication_evidence.json`, and the releases root in this checkout is empty,
+  so even the local runtime sees no catalog; (b) `DAMODARAN_RELEASE_ROOT` is unset in
+  all six wrangler configs in this repo, so the deployed `source: release` path refuses
+  before any release is opened — current mode included.
+- **Live probe (2026-10-25, anonymous).** `GET /api/assumptions/damodaran/<hex>`
+  returns `401 OWNER_BENCHMARK_AUTH_REQUIRED`. Owner authorization precedes the
+  configuration branch, so the probe proves anonymous denial but **cannot** settle
+  whether the release root is set at runtime. That stays unverified.
+- **Policy answer.** Historical selection is supported through `source: zion`
+  (configured per the 2026-10-22 inventory), and through `source: release` only for
+  the five evidenced vintages and only where the catalog sits beside the release root.
+  The fail-closed behaviour is the intended three-gate design (configuration, reviewed
+  evidence, cutoff), not a defect; no date was fabricated to make it pass.
+- **Ranking effect.** Backlog row 4 was mis-specified as "backfill evidence". The real
+  next step is R5(c) — ship a release root with its catalog — plus an authorized
+  acquisition for the two unevidenced vintages. Row 6b records the policy document as
+  done so it is not rebuilt.
+
+Verification for this section: file reads of `valuation_benchmarks.py`,
+`app.py::resolve_benchmark_selections`, `tests/test_valuation_benchmarks.py`; a JSON
+summary of the review copy; `grep` of the six wrangler configs; one anonymous probe.
+No authenticated request, release fetch, or coverage preflight was run.
