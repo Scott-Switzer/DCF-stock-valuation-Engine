@@ -19,7 +19,7 @@ import argparse
 import hashlib
 import json
 import sys
-from datetime import datetime
+from datetime import date, datetime
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
@@ -88,8 +88,45 @@ def verify_release(release_dir):
     return release, manifest
 
 
-def build_entry(release, manifest, evidence_root, record, stated, retrieved_at):
+def _same_retrieval(a, b):
+    """True when two records describe the same download event.
+
+    A date-only record is compared by day; it never implies an instant.
+    """
+    if len(str(a)) == 10 or len(str(b)) == 10:
+        return date.fromisoformat(str(a)[:10]) == date.fromisoformat(str(b)[:10])
+    return datetime.fromisoformat(str(a).replace("Z", "+00:00")) == datetime.fromisoformat(
+        str(b).replace("Z", "+00:00")
+    )
+
+
+def retrieval_record(release_dir, manifest):
+    """The release's recorded download time, with its real precision.
+
+    ``retrieval.json`` wins when present; otherwise the manifest's
+    ``lineage.retrieved_at`` is used. A date-only value keeps day precision and
+    is never upgraded to an asserted instant. Two disagreeing records are a
+    conflict, not a choice to make silently.
+    """
+    path = release_dir / "retrieval.json"
+    from_file = json.loads(path.read_bytes()).get("retrieved_at") if path.exists() else None
+    from_lineage = (manifest.get("lineage") or {}).get("retrieved_at")
+    if from_file and from_lineage and not _same_retrieval(from_file, from_lineage):
+        raise ValueError("RETRIEVAL_CONFLICT: " + release_dir.name)
+    source = "retrieval.json" if from_file else "manifest.lineage.retrieved_at"
+    values = [v for v in (from_file, from_lineage) if v]
+    if not values:
+        raise ValueError("RELEASE_RETRIEVAL_UNKNOWN: " + release_dir.name)
+    # Keep the coarsest recorded value: a day already stated as a day is never
+    # narrowed into an asserted instant.
+    value = next((v for v in values if len(str(v)) == 10), values[0])
+    precision = "day" if len(str(value)) == 10 else "instant"
+    return {"value": value, "precision": precision, "source": source}
+
+
+def build_entry(release, manifest, evidence_root, record, stated, retrieval):
     source_sha = manifest["files"]["source.bin"]
+    retrieved_at = retrieval["value"]
     entry = {
         "release_id": release,
         "dataset_id": manifest["dataset_id"],
@@ -97,6 +134,8 @@ def build_entry(release, manifest, evidence_root, record, stated, retrieved_at):
         "source_url": manifest["source_url"],
         "source_sha256": source_sha,
         "download_retrieved_at": retrieved_at,
+        "download_retrieved_at_precision": retrieval["precision"],
+        "download_retrieved_at_source": retrieval["source"],
         "stated_publication_date": stated,
         "stated_vintage_role": "DISCLOSED_NOT_USED_FOR_AVAILABILITY",
     }
@@ -133,7 +172,7 @@ def build_entry(release, manifest, evidence_root, record, stated, retrieved_at):
     # The single validation contract shared with the loader rejects guessed or
     # download-time dates before anything is stored.
     validate_publication(published, evidence, observed_at)
-    if datetime.fromisoformat(retrieved_at.replace("Z", "+00:00")).date() < modified.date():
+    if date.fromisoformat(str(retrieved_at)[:10]) < modified.date():
         raise ValueError("PUBLICATION_AFTER_RELEASE_RETRIEVAL: " + release)
     entry.update(
         published_at=published,
@@ -164,10 +203,9 @@ def main():
             continue
         release, manifest = verify_release(release_dir)
         source_sha = manifest["files"]["source.bin"]
-        retrieved = json.loads((release_dir / "retrieval.json").read_bytes())
-        retrieved_at = retrieved["retrieved_at"]
+        retrieval = retrieval_record(release_dir, manifest)
         entry = build_entry(
-            release, manifest, evidence_root, records.get(source_sha), stated.get(source_sha), retrieved_at
+            release, manifest, evidence_root, records.get(source_sha), stated.get(source_sha), retrieval
         )
         entries.append(entry)
         print(
