@@ -1,10 +1,13 @@
 {
   "receipt": "benchmark-evidence-gate-release-2026-10-25",
-  "status": "DEPLOYED_CONFIG_VERIFIED_AUTHENTICATED_ACCEPTANCE_BLOCKED",
+  "status": "deployed_gate_enforced_successful_answers_blocked_by_bundle_stamp_defect",
   "code": {
     "repository": "Scott-Switzer/zion-terminal",
     "main_commit": "5c49df81d268d58df5f06ca196407194b8859a7f",
-    "prs": [58, 59],
+    "prs": [
+      58,
+      59
+    ],
     "service": "zion-ddfi-benchmark-staging",
     "config": "deploy/cloudflare-query/thin-benchmark/wrangler.jsonc"
   },
@@ -12,7 +15,9 @@
     "deployed_version": "00930556-deba-4edb-8948-d501c730c4a3",
     "previous_version": "5cc4eb62-fb6a-41ad-bf9e-c95557b7706c",
     "scope": "benchmark worker only",
-    "secret_preserved": ["ZION_PRIVATE_API_TOKEN"]
+    "secret_preserved": [
+      "ZION_PRIVATE_API_TOKEN"
+    ]
   },
   "data": {
     "catalog_key": "gold/ddfi-benchmarks/v1/evidence/d8c75248feff3e39ae5654a2b3cedc7f847b36ea551b6ff207ba3f3b3c60414f.json",
@@ -26,15 +31,30 @@
     "index_or_release_objects_modified": 0
   },
   "verification": {
-    "local_tests": {"command": "pytest tests -k 'benchmark or private_api'", "passed": 98, "skipped": 2},
-    "ci": {"existing-data-contract": "pass", "full-offline-suite": "pass", "greptile_58": "did not run after final rebase; no findings on the merged diff"},
+    "local_tests": {
+      "command": "pytest tests -k 'benchmark or private_api'",
+      "passed": 98,
+      "skipped": 2
+    },
+    "ci": {
+      "existing-data-contract": "pass",
+      "full-offline-suite": "pass",
+      "greptile_58": "did not run after final rebase; no findings on the merged diff"
+    },
     "offline_real_data_module_test": "8/8 datasets resolve EXACT_PINNED_HISTORICAL with SERVER_LAST_MODIFIED day precision; pre-publication cutoff HISTORICAL_COVERAGE_UNAVAILABLE; current selection EXACT_PINNED",
-    "live_anonymous": {"status": 401, "code": "UNAUTHORIZED", "route": "/private/v1/query"},
+    "live_anonymous": {
+      "status": 401,
+      "code": "UNAUTHORIZED",
+      "route": "/private/v1/query"
+    },
     "live_authenticated": "BLOCKED: local development tokens were rejected 401; production secret is write-only"
   },
   "rollback": {
     "command": "wrangler rollback 5cc4eb62-fb6a-41ad-bf9e-c95557b7706c --name zion-ddfi-benchmark-staging",
-    "also_remove": ["DDFI_BENCHMARKS_EVIDENCE_KEY", "DDFI_BENCHMARKS_EVIDENCE_SHA256"],
+    "also_remove": [
+      "DDFI_BENCHMARKS_EVIDENCE_KEY",
+      "DDFI_BENCHMARKS_EVIDENCE_SHA256"
+    ],
     "catalog_object": "leave in place; immutable and unreferenced after rollback",
     "index": "unchanged (4817c621...)"
   },
@@ -42,5 +62,22 @@
     "Authenticated acceptance not run: no valid private token available in this environment.",
     "Deployed historical behavior is therefore verified by code-level offline exercise against real bytes, not by an authenticated endpoint call.",
     "Day-precision retrieval cannot establish intraday ordering."
-  ]
+  ],
+  "authenticated_acceptance": {
+    "run": "zion-terminal 40255369877",
+    "invocation": "benchmark-evidence-live.yml with existing ZION_PRIVATE_API_TOKEN secret",
+    "origin": "https://zion-ddfi-benchmark-staging.scswitzer.workers.dev",
+    "anonymous_and_invalid_bearer": "401 UNAUTHORIZED",
+    "prepublication_dataset_cutoff": "404 HISTORICAL_COVERAGE_UNAVAILABLE",
+    "prepublication_explicit_release": "404 BENCHMARK_VINTAGE_UNAVAILABLE",
+    "future_cutoff": "400 INVALID_REQUEST",
+    "historical_and_current_successes": "409 RELEASE_MISMATCH (bundle stamp, pre-existing defect)"
+  },
+  "serving_defect": {
+    "root_cause": "snapshot_bundle.stamp compared ddfi-benchmarks:<sha256> with the financial serving pointer",
+    "predates_release": true,
+    "fix_pr": "https://github.com/Scott-Switzer/zion-terminal/pull/60",
+    "local_fix_acceptance": "PASS 15/15 with wrangler dev against real R2"
+  },
+  "rollback_not_executed_reason": "the failure is independent of the gate and present in the previous version; rollback restores nothing and removes the fail-closed evidence check"
 }
