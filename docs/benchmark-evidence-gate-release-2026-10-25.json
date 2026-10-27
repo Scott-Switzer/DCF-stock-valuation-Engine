@@ -1,0 +1,103 @@
+{
+  "receipt": "benchmark-evidence-gate-release-2026-10-25",
+  "status": "released_and_verified_on_deployed_service",
+  "code": {
+    "repository": "Scott-Switzer/zion-terminal",
+    "main_commit": "5c49df81d268d58df5f06ca196407194b8859a7f",
+    "prs": [
+      58,
+      59
+    ],
+    "service": "zion-ddfi-benchmark-staging",
+    "config": "deploy/cloudflare-query/thin-benchmark/wrangler.jsonc"
+  },
+  "deployment": {
+    "deployed_version": "00930556-deba-4edb-8948-d501c730c4a3",
+    "previous_version": "5cc4eb62-fb6a-41ad-bf9e-c95557b7706c",
+    "scope": "benchmark worker only",
+    "secret_preserved": [
+      "ZION_PRIVATE_API_TOKEN"
+    ]
+  },
+  "data": {
+    "catalog_key": "gold/ddfi-benchmarks/v1/evidence/d8c75248feff3e39ae5654a2b3cedc7f847b36ea551b6ff207ba3f3b3c60414f.json",
+    "catalog_sha256": "d8c75248feff3e39ae5654a2b3cedc7f847b36ea551b6ff207ba3f3b3c60414f",
+    "catalog_bytes": 10989,
+    "catalog_releases": 8,
+    "readback_sha256": "d8c75248feff3e39ae5654a2b3cedc7f847b36ea551b6ff207ba3f3b3c60414f",
+    "index_key": "gold/ddfi-benchmarks/v1/index.json",
+    "index_sha256": "4817c621389ee06b65254d716573a43633b9a58a9572e57b11f7b2e4ac558ce2",
+    "index_releases": 8,
+    "index_or_release_objects_modified": 0
+  },
+  "verification": {
+    "local_tests": {
+      "command": "pytest tests -k 'benchmark or private_api'",
+      "passed": 98,
+      "skipped": 2
+    },
+    "ci": {
+      "existing-data-contract": "pass",
+      "full-offline-suite": "pass",
+      "greptile_58": "did not run after final rebase; no findings on the merged diff"
+    },
+    "offline_real_data_module_test": "8/8 datasets resolve EXACT_PINNED_HISTORICAL with SERVER_LAST_MODIFIED day precision; pre-publication cutoff HISTORICAL_COVERAGE_UNAVAILABLE; current selection EXACT_PINNED",
+    "live_anonymous": {
+      "status": 401,
+      "code": "UNAUTHORIZED",
+      "route": "/private/v1/query"
+    },
+    "live_authenticated": "BLOCKED: local development tokens were rejected 401; production secret is write-only"
+  },
+  "rollback": {
+    "executed": false,
+    "command": "wrangler rollback 00930556-deba-4edb-8948-d501c730c4a3 --name zion-ddfi-benchmark-staging",
+    "expected_after_rollback": "successful selections fail with 409 RELEASE_MISMATCH (stamp defect returns)"
+  },
+  "limits": [
+    "Authenticated acceptance not run: no valid private token available in this environment.",
+    "Deployed historical behavior is therefore verified by code-level offline exercise against real bytes, not by an authenticated endpoint call.",
+    "Day-precision retrieval cannot establish intraday ordering."
+  ],
+  "authenticated_acceptance": {
+    "run_url": "https://github.com/Scott-Switzer/zion-terminal/actions/runs/40256588261",
+    "workflow": "Benchmark evidence live acceptance",
+    "origin": "https://zion-ddfi-benchmark-staging.scswitzer.workers.dev",
+    "result": "PASS 16/16",
+    "historical_cost_of_capital_2026_06_01": "200 evidence-bound, bundle stamped",
+    "current_selection": "200 CURRENT_EXPLICIT, NOT_APPLICABLE_CURRENT_SELECTION",
+    "prepublication": "404 HISTORICAL_COVERAGE_UNAVAILABLE / BENCHMARK_VINTAGE_UNAVAILABLE",
+    "future_cutoff": "400 INVALID_REQUEST",
+    "stale_bundle_pin": "409 RELEASE_MISMATCH",
+    "datasets_verified": [
+      "capex_reinvestment",
+      "cost_of_capital",
+      "country_risk_premiums",
+      "ev_ebitda",
+      "fundamental_growth",
+      "historical_implied_erp",
+      "industry_aggregates",
+      "industry_betas"
+    ]
+  },
+  "serving_defect": {
+    "root_cause": "snapshot_bundle.stamp compared ddfi-benchmarks:<sha256> with the financial serving pointer",
+    "predates_release": true,
+    "fix_pr": "https://github.com/Scott-Switzer/zion-terminal/pull/60",
+    "fixed_in": "ac83f114c1870aed47bd192bd72384f929375e58"
+  },
+  "rollback_not_executed_reason": "the failure is independent of the gate and present in the previous version; rollback restores nothing and removes the fail-closed evidence check",
+  "merged_commit": "ac83f114c1870aed47bd192bd72384f929375e58",
+  "worker": {
+    "name": "zion-ddfi-benchmark-staging",
+    "active_version": "8af6d9d9-7c43-46cd-b58b-6e35d2ec9645",
+    "previous_version": "00930556-deba-4edb-8948-d501c730c4a3",
+    "evidence_key": "gold/ddfi-benchmarks/v1/evidence/d8c75248feff3e39ae5654a2b3cedc7f847b36ea551b6ff207ba3f3b3c60414f.json",
+    "evidence_sha256": "d8c75248feff3e39ae5654a2b3cedc7f847b36ea551b6ff207ba3f3b3c60414f",
+    "index_sha256": "4817c621389ee06b65254d716573a43633b9a58a9572e57b11f7b2e4ac558ce2"
+  },
+  "not_verified": [
+    "DCF deployed Worker calling through ZION_BENCHMARK_QUERY",
+    "intraday ordering (day-precision retrieval evidence)"
+  ]
+}
