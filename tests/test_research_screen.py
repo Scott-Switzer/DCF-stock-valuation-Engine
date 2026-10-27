@@ -120,7 +120,10 @@ def test_current_sec_alias_can_prepare_issuer_research_without_certifying_histor
     assert response.json['issuer_identity']['historical_security_eligible'] is False
 
 
-def test_sec_submissions_alias_is_checked_against_requested_issuer():
+def test_sec_submissions_alias_is_checked_against_requested_issuer(monkeypatch):
+    # The live SEC submissions alias check is a local-development direct
+    # path; in production the gate leaves unreviewed aliases unverified.
+    monkeypatch.setenv("DCF_ALLOW_DIRECT_FETCH", "1")
     class HTTP:
         def get(self,*a,**kw):
             return {'cik':320193,'name':'Apple Inc.','tickers':['AAPL']}

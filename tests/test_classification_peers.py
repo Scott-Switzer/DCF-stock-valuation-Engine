@@ -74,7 +74,7 @@ def test_covered_ticker_skips_sec_classification_network():
     assert calls == []
 
 
-def test_uncovered_ticker_still_uses_live_sec_lookup(monkeypatch):
+def test_uncovered_ticker_uses_live_sec_lookup_only_with_direct_fetch_flag(monkeypatch):
     import auto_loading
 
     seen = []
@@ -87,6 +87,12 @@ def test_uncovered_ticker_still_uses_live_sec_lookup(monkeypatch):
             return {"sic": "6021", "sicDescription": "National Commercial Banks", "entityType": "operating"}
 
     monkeypatch.setattr(auto_loading, "provider_setting", lambda name: "Tester tester@example.com")
+    # Gate closed (the production default): no lookup happens at all and the
+    # classification stays unconfirmed.
+    assert auto_loading.company_classification("ZZZZ", FakeHTTP()) is None
+    assert seen == []
+    # The live lookup survives only behind the local-development flag.
+    monkeypatch.setenv("DCF_ALLOW_DIRECT_FETCH", "1")
     record = auto_loading.company_classification("ZZZZ", FakeHTTP())
     assert record["sic"] == "6021"
     assert len(seen) == 2

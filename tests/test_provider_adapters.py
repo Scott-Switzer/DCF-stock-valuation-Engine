@@ -86,6 +86,8 @@ def test_sec_periods_reject_quarterly_and_lookahead_facts():
 
 
 def test_sec_load_produces_aligned_history_and_real_split_debt(monkeypatch):
+    # The direct SEC mode is a local-development path; enable the flag.
+    monkeypatch.setenv("DCF_ALLOW_DIRECT_FETCH", "1")
     monkeypatch.setenv("EDGAR_IDENTITY", "Test Client test@example.com")
 
     class HTTP:
@@ -287,6 +289,7 @@ def test_zion_does_not_certify_unavailable_or_wrong_period_data(change):
 
 
 def test_sec_repeated_filings_scan_unique_periods_only(monkeypatch):
+    monkeypatch.setenv("DCF_ALLOW_DIRECT_FETCH", "1")
     import dcf_loader
     from collections import Counter
 
@@ -357,6 +360,7 @@ def test_expired_budget_is_recorded_as_timeout(tmp_path, monkeypatch):
 
 
 def test_latest_quote_reads_one_day_metadata_only(tmp_path, monkeypatch):
+    monkeypatch.setenv("DCF_ALLOW_DIRECT_FETCH", "1")
     from datetime import datetime, timezone
 
     import yahoo_provider

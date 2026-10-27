@@ -87,6 +87,13 @@ def _annual_span(fact):
 
 def _fetch_tag(cik, tag, http):
     """One companyconcept payload, or a reason string describing the failure."""
+    from dcf_loader import allow_direct_fetch
+
+    if not allow_direct_fetch():
+        return None, (
+            "direct SEC companyconcept fetch is disabled; adjustment "
+            "evidence must be published with the packet (DIRECT_FETCH_DISABLED)"
+        )
     headers = _headers()
     if headers is None:
         return None, "SEC identification (EDGAR_IDENTITY) is unavailable"

@@ -1,12 +1,15 @@
-"""SEC-first statement path: bypass Yahoo annual statements for qualified issuers.
+"""SEC-first statement path: served statements and served market inputs.
 
 A company qualifies only when its published PPE packet already contains every
 statement input the DCF contract requires, with common-shareholder net income
-coming exclusively from a bridged direct SEC tag. Anything else keeps the
-existing Yahoo annual-statement path with accurate source warnings.
+coming exclusively from a bridged direct SEC tag. Anything else is an error:
+there is no Yahoo annual-statement fallback.
 
-Market inputs (price, beta, Treasury yield) still come from Yahoo market
-endpoints; only the annual *statement* request is bypassed.
+Market inputs come from the Zion serving layer too. Price and beta derive
+from served CRSP price history (see served_market); the risk-free rate has
+no served source yet, so a load that needs capital costs fails closed with
+SERVED_RISK_FREE_RATE_NOT_CONFIGURED instead of pulling a Treasury yield
+from Yahoo.
 """
 
 from copy import deepcopy
@@ -260,46 +263,28 @@ def load_sec_first(
             raise ProviderError(
                 "SEC-first path unavailable: " + "; ".join(gate["reasons"])
             )
-    from yahoo_provider import chart, market_quote, market_beta, finite
+    from yahoo_provider import finite
+    import served_market
 
-    stock = chart(http, ticker)
-    meta = stock.get("meta", {})
-    if meta.get("symbol") != ticker or meta.get("instrumentType") != "EQUITY":
-        raise ProviderError("Yahoo requires an operating-company equity ticker.")
-    if meta.get("currency") != "USD":
-        raise ProviderError("Yahoo market currency must be USD.")
-    price, price_day = market_quote(meta, asof)
+    served = served_market.latest_price(ticker, asof)
+    price, price_day = served["price"], served["price_as_of"]
     from issuer_classification import reviewed_identity
 
     identity = reviewed_identity(ticker, packet.get("cik"), asof)
     if identity is not None:
         name, cik = identity
     else:
-        try:
-            directory = http.get(
-                "https://www.sec.gov/files/company_tickers.json",
-                headers={"User-Agent": "DCF-Valuation-Engine/1.0", "Accept": "application/json"},
-                ttl=86400,
-                cache_key="sec-directory",
-            )
-            entry = next(
-                (
-                    r
-                    for r in directory.values()
-                    if str(r.get("ticker", "")).replace(".", "-") == ticker
-                ),
-                None,
-            )
-            name = entry.get("title", ticker) if entry else ticker
-            cik = str((entry or {}).get("cik_str", "")).zfill(10) or None
-        except ProviderError:
-            name = ticker
-            cik = None
+        # No direct SEC directory lookup: identity comes from the served
+        # packet only. An unreviewed issuer keeps the ticker as its display
+        # name, and the CIK is whatever the packet itself carries.
+        name = ticker
+        raw_cik = str(packet.get("cik") or "").strip()
+        cik = raw_cik.zfill(10) if raw_cik.isdigit() else None
     doc = blank_document(ticker, name, asof, "api")
     doc["company"].update(eligible=True, security_type="EQUITY")
     warnings = [
         "SEC-first statement path: annual financials come from the published PPE/SEC packet; no Yahoo annual-statement request was made.",
-        "Market price, beta and Treasury inputs remain dated Yahoo market observations, not filings.",
+        "Market price and beta come from served CRSP price history through the Zion serving layer, not from filings or Yahoo.",
         "Other nonoperating assets are explicitly assumed to be zero; review excess investments and other adjustments.",
         "Market equity weights use annual weighted-average diluted shares, which proxy for ordinary outstanding shares; per-share valuation uses the same diluted basis.",
     ]
@@ -379,21 +364,13 @@ def load_sec_first(
                 "Market equity weights use annual diluted shares as a proxy for ordinary outstanding shares.",
             ]
         )
-        benchmark, treasury = chart(http, "SPY"), chart(http, "^TNX")
-        beta, n = market_beta(stock, benchmark)
-        tm = treasury.get("meta", {})
-        if tm.get("symbol") != "^TNX" or benchmark.get("meta", {}).get("symbol") != "SPY":
-            raise ProviderError("Yahoo returned a mismatched capital-cost benchmark.")
-        rf_date = (
-            datetime.fromtimestamp(
-                finite(tm.get("regularMarketTime"), "Treasury timestamp"), timezone.utc
-            )
-            .date()
-            .isoformat()
-        )
-        rf = finite(tm.get("regularMarketPrice"), "Treasury yield") / 100
+        beta, n = served_market.served_beta(ticker, asof)
+        # Fails closed with SERVED_RISK_FREE_RATE_NOT_CONFIGURED until the
+        # serving layer publishes a Treasury yield series; no Yahoo pull.
+        rf_record = served_market.risk_free_rate(asof)
+        rf, rf_date = rf_record["rate"], rf_record["as_of"]
         if rf_date > asof or not 0 <= rf < 1:
-            raise ProviderError("Yahoo Treasury yield date or units are invalid.")
+            raise ProviderError("Served Treasury yield date or units are invalid.")
         debt = doc["bridge"]["short_term_debt"] + doc["bridge"]["long_term_debt"]
         interest = (
             packet["interest_expense"]["value"]
@@ -432,7 +409,7 @@ def load_sec_first(
             "risk_free_rate": rf,
             "risk_free_rate_as_of": rf_date,
             "beta": beta,
-            "beta_basis": f"Five-year weekly adjusted total returns versus SPY; {n} aligned observations",
+            "beta_basis": f"Five-year weekly total returns from served CRSP price history versus SPY; {n} aligned observations",
             "equity_risk_premium": 0.05,
             "credit_spread": 0.015,
             "cost_of_debt": cost_debt,
@@ -484,7 +461,7 @@ def load_sec_first(
             "Common cash dividends are unavailable; DDM cannot be computed. Missing dividends do not mean zero."
         )
     doc["source"].update(
-        name="PPE / SEC packet statements + Yahoo market inputs (SEC-first)",
+        name="PPE / SEC packet statements + Zion served market inputs (SEC-first)",
         available_at=asof,
         retrieved_at=now.isoformat(),
         warnings=warnings,
@@ -519,6 +496,7 @@ def load_sec_first(
             if k in bridge_src and bridge_src[k] is not None
         },
         market_observation={"price": price, "currency": "USD", "as_of": price_day},
+        market_provenance=served["provenance"],
         statement_source="SEC-first",
         ppe_release=packet["source"],
         ppe_cutoff=packet["cutoff_date"],
@@ -528,11 +506,12 @@ def load_sec_first(
         if isinstance(value, (int, float)):
             finite(value, key)
     # Adjustment evidence preferably rides with the validated packet
-    # publication (no network). Packets predating the evidence keep the
-    # bounded live companyconcept fallback so existing issuers (e.g. via the
-    # Zion binding) retain their audited add-backs until republication; the
-    # fetch is skipped when the shared budget is nearly spent (pending, never
-    # zero). Never fails the load.
+    # publication (no network). Packets predating the evidence use the
+    # bounded live companyconcept fallback only under the local-development
+    # direct-fetch flag; in production the fallback reports unavailable
+    # evidence instead of fetching SEC directly (see accounting_policy).
+    # The fetch is also skipped when the shared budget is nearly spent
+    # (pending, never zero). Never fails the load.
     began_adjust = time.monotonic()
     period_ends = [r["period_end"] for r in doc["historical"]]
     published = packet.get("adjustment_facts") if isinstance(packet, dict) else None
