@@ -181,10 +181,6 @@ const TICKER_DATA = [
     "n": "Abacus Global Management, Inc. 9.875% Fixed Rate Senior Notes due 2028"
   },
   {
-    "s": "ACA",
-    "n": "Arcosa, Inc. Common Stock "
-  },
-  {
     "s": "ACAA",
     "n": "Averin Capital Acquisition Corp. - Class A Ordinary Shares"
   },
@@ -425,10 +421,6 @@ const TICKER_DATA = [
     "n": "ADI Global Distribution Inc. Common Stock"
   },
   {
-    "s": "ADIL",
-    "n": "Adial Pharmaceuticals, Inc - Common Stock"
-  },
-  {
     "s": "ADM",
     "n": "Archer-Daniels-Midland Company Common Stock"
   },
@@ -591,6 +583,10 @@ const TICKER_DATA = [
   {
     "s": "AESPW",
     "n": "Aeon Acquisition I Corp. - Warrants"
+  },
+  {
+    "s": "AETR",
+    "n": "Aetherion Technologies Inc. - Common Shares"
   },
   {
     "s": "AEVA",
@@ -1957,6 +1953,10 @@ const TICKER_DATA = [
     "n": "A SPAC III Acquisition Corp. - Unit"
   },
   {
+    "s": "ASPE",
+    "n": "Aspen Neuroscience, Inc. - Common Stock"
+  },
+  {
     "s": "ASPI",
     "n": "ASP Isotopes Inc. - Common Stock"
   },
@@ -2441,6 +2441,10 @@ const TICKER_DATA = [
     "n": "AutoZone, Inc. Common Stock"
   },
   {
+    "s": "AZR",
+    "n": "Azora Therapeutics, Inc. - Common Stock"
+  },
+  {
     "s": "AZTA",
     "n": "Azenta, Inc. - Common Stock"
   },
@@ -2635,6 +2639,10 @@ const TICKER_DATA = [
   {
     "s": "BBT",
     "n": "Beacon Financial Corporation Common stock"
+  },
+  {
+    "s": "BBTX",
+    "n": "Bambusa Therapeutics, Inc. - Common stock"
   },
   {
     "s": "BBUC",
@@ -3007,6 +3015,10 @@ const TICKER_DATA = [
   {
     "s": "BH-A",
     "n": "Biglari Holdings Inc. Class A Common Stock"
+  },
+  {
+    "s": "BHAIU",
+    "n": "BHAV Acquisition Corp II - Units"
   },
   {
     "s": "BHAV",
@@ -7093,14 +7105,6 @@ const TICKER_DATA = [
     "n": "Dyne Therapeutics, Inc. - Common Stock"
   },
   {
-    "s": "DYNC",
-    "n": "Dynamix Corporation - Class A Ordinary Share"
-  },
-  {
-    "s": "DYNCU",
-    "n": "Dynamix Corporation - Unit"
-  },
-  {
     "s": "DYOR",
     "n": "Insight Digital Partners II - Class A Ordinary Shares"
   },
@@ -7435,10 +7439,6 @@ const TICKER_DATA = [
   {
     "s": "ELMD",
     "n": "Electromed, Inc. Common Stock"
-  },
-  {
-    "s": "ELME",
-    "n": "Elme Communities Common Stock"
   },
   {
     "s": "ELMT",
@@ -8225,6 +8225,10 @@ const TICKER_DATA = [
     "n": "First Community Corporation - Common Stock"
   },
   {
+    "s": "FCDH",
+    "n": "Forcendra Holding Limited - Class A Ordinary Shares"
+  },
+  {
     "s": "FCEL",
     "n": "FuelCell Energy, Inc. - Common Stock"
   },
@@ -8379,6 +8383,10 @@ const TICKER_DATA = [
   {
     "s": "FFR",
     "n": "FF EAI Robotics Ecosystem Inc. - Common Stock"
+  },
+  {
+    "s": "FFTT",
+    "n": "Masonglory Limited - Class A Ordinary Shares"
   },
   {
     "s": "FG",
@@ -9225,6 +9233,10 @@ const TICKER_DATA = [
     "n": "Guggenheim Taxable Municipal Bond & Investment Grade Debt Trust Common Shares of Beneficial Interest"
   },
   {
+    "s": "GBC",
+    "n": "Georgia Banking Company, Inc. - Common Stock"
+  },
+  {
     "s": "GBCI",
     "n": "Glacier Bancorp, Inc. Common Stock"
   },
@@ -9283,10 +9295,6 @@ const TICKER_DATA = [
   {
     "s": "GCT",
     "n": "GigaCloud Technology Inc - Class A Ordinary Shares"
-  },
-  {
-    "s": "GCTK",
-    "n": "GlucoTrack, Inc. - Common Stock"
   },
   {
     "s": "GCTS",
@@ -9703,10 +9711,6 @@ const TICKER_DATA = [
   {
     "s": "GME",
     "n": "GameStop Corporation Common Stock"
-  },
-  {
-    "s": "GME-W",
-    "n": "GameStop Corporation Warrants to Purchase Common Stock"
   },
   {
     "s": "GMED",
@@ -10183,6 +10187,10 @@ const TICKER_DATA = [
   {
     "s": "GUACW",
     "n": "Berto Acquisition Corp. II - Warrants"
+  },
+  {
+    "s": "GUNN",
+    "n": "Gunnison Copper Corp. American Depositary Shares (each representing thirty (30) Common Shares)"
   },
   {
     "s": "GURE",
@@ -12266,7 +12274,7 @@ const TICKER_DATA = [
   },
   {
     "s": "JSM",
-    "n": "Navient Corporation - 6% Senior Notes due December 15, 2043"
+    "n": "Navient LLC - 6% Senior Notes due December 15, 2043"
   },
   {
     "s": "JSPR",
@@ -13371,10 +13379,6 @@ const TICKER_DATA = [
   {
     "s": "LMT",
     "n": "Lockheed Martin Corporation Common Stock"
-  },
-  {
-    "s": "LNAI",
-    "n": "Lunai Bioworks Inc. - Common Stock"
   },
   {
     "s": "LNC",
@@ -14913,24 +14917,16 @@ const TICKER_DATA = [
     "n": "Madison Square Garden Entertainment Corp. Class A Common Stock"
   },
   {
-    "s": "MSGK-V",
-    "n": "Madison Square Garden Sports Corp. Class A Common Stock When-Issued"
+    "s": "MSGK",
+    "n": "MSG Knickerbockers Corp. Class A Common Stock"
   },
   {
     "s": "MSGM",
     "n": "Motorsport Games Inc. - Class A Common Stock"
   },
   {
-    "s": "MSGR-V",
-    "n": "MSG Rangers Corp. Class A Common Stock When-Issued"
-  },
-  {
-    "s": "MSGS",
-    "n": "Madison Square Garden Sports Corp. Class A Common Stock (New)"
-  },
-  {
-    "s": "MSGY",
-    "n": "Masonglory Limited - Class A Ordinary Shares"
+    "s": "MSGR",
+    "n": "MSG Rangers Corp. Class A Common Stock"
   },
   {
     "s": "MSI",
@@ -15265,10 +15261,6 @@ const TICKER_DATA = [
     "n": "Nordic American Tankers Limited Common Stock"
   },
   {
-    "s": "NATH",
-    "n": "Nathan's Famous, Inc. - Common Stock"
-  },
-  {
     "s": "NATL",
     "n": "NCR Atleos Corporation Common Stock"
   },
@@ -15282,7 +15274,7 @@ const TICKER_DATA = [
   },
   {
     "s": "NAVI",
-    "n": "Navient Corporation - Common Stock"
+    "n": "Navient Holdings, Inc. - Common Stock"
   },
   {
     "s": "NAVN",
@@ -15823,6 +15815,10 @@ const TICKER_DATA = [
   {
     "s": "NOMD",
     "n": "Nomad Foods Limited Ordinary Shares"
+  },
+  {
+    "s": "NORD",
+    "n": "Nordicus Partners Corporation - Common Stock"
   },
   {
     "s": "NOV",
@@ -17201,16 +17197,12 @@ const TICKER_DATA = [
     "n": "Palo Alto Networks, Inc. - Common Stock"
   },
   {
-    "s": "PAPL",
-    "n": "Pineapple Financial Inc. Common Stock"
-  },
-  {
     "s": "PAR",
     "n": "PAR Technology Corporation Common Stock"
   },
   {
     "s": "PARA",
-    "n": "Banzai International, Inc. - Class A Common Stock"
+    "n": "Parabolic Technologies, Inc. - Class A Common Stock"
   },
   {
     "s": "PARK",
@@ -18367,6 +18359,10 @@ const TICKER_DATA = [
   {
     "s": "PTHS",
     "n": "Pelthos Therapeutics Inc. Common Stock"
+  },
+  {
+    "s": "PTIV",
+    "n": "Pineapple Financial Inc. Common Stock"
   },
   {
     "s": "PTLE",
@@ -19993,6 +19989,10 @@ const TICKER_DATA = [
     "n": "Social Commerce Partners Corporation - Unit"
   },
   {
+    "s": "SCQCU",
+    "n": "SPACCircle Acquisition Corp. - Units"
+  },
+  {
     "s": "SCSC",
     "n": "ScanSource, Inc. - Common Stock"
   },
@@ -20566,7 +20566,7 @@ const TICKER_DATA = [
   },
   {
     "s": "SLMT",
-    "n": "Brera Holdings PLC - Class B Ordinary Shares"
+    "n": "Solmate Infrastructure Public Limited Company - Class B Ordinary Shares"
   },
   {
     "s": "SLN",
@@ -23813,10 +23813,6 @@ const TICKER_DATA = [
     "n": "Vishay Intertechnology, Inc. Common Stock"
   },
   {
-    "s": "VSME",
-    "n": "VS Media Holdings Limited - Class A Ordinary Shares"
-  },
-  {
     "s": "VSNT",
     "n": "Versant Media Group, Inc. - Class A Common Stock"
   },
@@ -24035,10 +24031,6 @@ const TICKER_DATA = [
   {
     "s": "WDS",
     "n": "Woodside Energy Group Limited American Depositary Shares, each representing one Ordinary Share"
-  },
-  {
-    "s": "WEAV",
-    "n": "Weave Communications, Inc. Common Stock"
   },
   {
     "s": "WEC",
@@ -24315,10 +24307,6 @@ const TICKER_DATA = [
   {
     "s": "WPP",
     "n": "WPP plc American Depositary Shares"
-  },
-  {
-    "s": "WPRT",
-    "n": "Westport Fuel Systems Inc - Common Shares"
   },
   {
     "s": "WQEY",
@@ -24843,18 +24831,6 @@ const TICKER_DATA = [
   {
     "s": "YHGJ",
     "n": "Yunhong Green CTI Ltd. - Common Stock"
-  },
-  {
-    "s": "YHNA",
-    "n": "YHN Acquisition I Limited - Ordinary Shares"
-  },
-  {
-    "s": "YHNAR",
-    "n": "YHN Acquisition I Limited - Right"
-  },
-  {
-    "s": "YHNAU",
-    "n": "YHN Acquisition I Limited - Unit"
   },
   {
     "s": "YI",
