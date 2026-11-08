@@ -693,6 +693,14 @@ const TICKER_DATA = [
     "n": "agilon health, inc. Common Stock"
   },
   {
+    "s": "AGLT",
+    "n": "Agility Robotics, Inc. - Ordinary Shares"
+  },
+  {
+    "s": "AGLTW",
+    "n": "Agility Robotics, Inc. - Warrants"
+  },
+  {
     "s": "AGM",
     "n": "Federal Agricultural Mortgage Corporation Common Stock"
   },
@@ -971,18 +979,6 @@ const TICKER_DATA = [
   {
     "s": "ALCO",
     "n": "Alico, Inc. - Common Stock"
-  },
-  {
-    "s": "ALDF",
-    "n": "Aldel Financial II Inc. - Class A Ordinary Shares"
-  },
-  {
-    "s": "ALDFU",
-    "n": "Aldel Financial II Inc. - Units"
-  },
-  {
-    "s": "ALDFW",
-    "n": "Aldel Financial II Inc. - Warrants"
   },
   {
     "s": "ALDX",
@@ -2941,10 +2937,6 @@ const TICKER_DATA = [
     "n": "Biofrontera Inc. - Common Stock"
   },
   {
-    "s": "BFRIW",
-    "n": "Biofrontera Inc. - Warrants"
-  },
-  {
     "s": "BFS",
     "n": "Saul Centers, Inc. Common Stock"
   },
@@ -4257,6 +4249,10 @@ const TICKER_DATA = [
     "n": "Pathward Financial, Inc. - Common Stock"
   },
   {
+    "s": "CASK",
+    "n": "Sempreon, Inc. - Common Stock"
+  },
+  {
     "s": "CASS",
     "n": "Cass Information Systems, Inc - Common Stock"
   },
@@ -4371,10 +4367,6 @@ const TICKER_DATA = [
   {
     "s": "CBUS",
     "n": "Cibus, Inc. - Class A Common Stock"
-  },
-  {
-    "s": "CBZ",
-    "n": "CBIZ, Inc. Common Stock"
   },
   {
     "s": "CC",
@@ -4501,18 +4493,6 @@ const TICKER_DATA = [
     "n": "Compania Cervecerias Unidas, S.A. Common Stock"
   },
   {
-    "s": "CCXI",
-    "n": "Churchill Capital Corp XI - Class A Ordinary Shares"
-  },
-  {
-    "s": "CCXIU",
-    "n": "Churchill Capital Corp XI - Units"
-  },
-  {
-    "s": "CCXIW",
-    "n": "Churchill Capital Corp XI - Warrants"
-  },
-  {
     "s": "CCZ",
     "n": "Comcast Holdings ZONES"
   },
@@ -4530,7 +4510,7 @@ const TICKER_DATA = [
   },
   {
     "s": "CDLR",
-    "n": "Cadeler A/S American Depositary Share (each representing four (4) Ordinary Shares)"
+    "n": "Cadeler plc Ordinary Shares"
   },
   {
     "s": "CDLX",
@@ -7902,7 +7882,7 @@ const TICKER_DATA = [
   },
   {
     "s": "EUDA",
-    "n": "Euda Health Holdings Limited - Ordinary Shares"
+    "n": "Euda Health Holdings Limited - Class A Ordinary Shares"
   },
   {
     "s": "EURK",
@@ -9261,10 +9241,6 @@ const TICKER_DATA = [
     "n": "Greene County Bancorp, Inc. - Common Stock"
   },
   {
-    "s": "GCDT",
-    "n": "Green Circle Decarbonize Technology Limited Class A Ordinary Shares"
-  },
-  {
     "s": "GCGR",
     "n": "General Catalyst Global Resilience Merger Corp. - Class A Ordinary Shares"
   },
@@ -9775,10 +9751,6 @@ const TICKER_DATA = [
   {
     "s": "GNT",
     "n": "GAMCO Natural Resources, Gold & Income Trust"
-  },
-  {
-    "s": "GNTA",
-    "n": "Genenta Science S.p.A. - American Depositary Shares"
   },
   {
     "s": "GNTX",
@@ -10614,7 +10586,7 @@ const TICKER_DATA = [
   },
   {
     "s": "HLT",
-    "n": "Hilton Worldwide Holdings Inc. Common Stock "
+    "n": "Hilton Worldwide Holdings Inc. - Common Stock"
   },
   {
     "s": "HLXC",
@@ -10663,10 +10635,6 @@ const TICKER_DATA = [
   {
     "s": "HNVR",
     "n": "Hanover Bancorp, Inc. - Common Stock"
-  },
-  {
-    "s": "HODO",
-    "n": "House of Doge Inc. - Common Stock"
   },
   {
     "s": "HOFT",
@@ -11513,10 +11481,6 @@ const TICKER_DATA = [
     "n": "Indaptus Therapeutics, Inc. - Common Stock"
   },
   {
-    "s": "INDV",
-    "n": "Indivior Pharmaceuticals, Inc.  - Common Stock"
-  },
-  {
     "s": "INEO",
     "n": "INNEOVA Holdings Limited - Class A Ordinary Shares"
   },
@@ -12074,7 +12038,7 @@ const TICKER_DATA = [
   },
   {
     "s": "JBDI",
-    "n": "JBDI Holdings Limited - Ordinary Shares"
+    "n": "JBDI Holdings Limited - Class A Ordinary Shares"
   },
   {
     "s": "JBGS",
@@ -12849,10 +12813,6 @@ const TICKER_DATA = [
     "n": "KVH Industries, Inc. - Common Stock"
   },
   {
-    "s": "KVUE",
-    "n": "Kenvue Inc. Common Stock"
-  },
-  {
     "s": "KVYO",
     "n": "Klaviyo, Inc. Series A Common Stock"
   },
@@ -12950,7 +12910,7 @@ const TICKER_DATA = [
   },
   {
     "s": "LASE",
-    "n": "Laser Photonics Corporation - Common Stock"
+    "n": "LASE Corp. - Common Stock"
   },
   {
     "s": "LASR",
@@ -13069,8 +13029,16 @@ const TICKER_DATA = [
     "n": "Lincoln Electric Holdings, Inc. - Common Shares"
   },
   {
+    "s": "LEDR",
+    "n": "Leader's Advantage Acquisition Corp. - Class A Ordinary Shares"
+  },
+  {
     "s": "LEDRU",
     "n": "Leader's Advantage Acquisition Corp. - Units"
+  },
+  {
+    "s": "LEDRW",
+    "n": "Leader's Advantage Acquisition Corp. - Warrants"
   },
   {
     "s": "LEDS",
@@ -14317,10 +14285,6 @@ const TICKER_DATA = [
     "n": "MacroGenics, Inc. - Common Stock"
   },
   {
-    "s": "MGPI",
-    "n": "MGP Ingredients, Inc. - Common Stock"
-  },
-  {
     "s": "MGR",
     "n": "Affiliated Managers Group, Inc. 5.875% Junior Subordinated Notes due 2059"
   },
@@ -14527,10 +14491,6 @@ const TICKER_DATA = [
   {
     "s": "MLCO",
     "n": "Melco Resorts & Entertainment Limited - American Depositary Shares "
-  },
-  {
-    "s": "MLEC",
-    "n": "Moolec Science SA - Ordinary Shares"
   },
   {
     "s": "MLGO",
@@ -15255,6 +15215,10 @@ const TICKER_DATA = [
   {
     "s": "NANOW",
     "n": "Forge Nano Holdings Inc. - Warrants"
+  },
+  {
+    "s": "NARA",
+    "n": "Narragansett Bancorp, Inc. - Common Stock"
   },
   {
     "s": "NAT",
@@ -16753,6 +16717,10 @@ const TICKER_DATA = [
     "n": "OPAL Fuels Inc. - Class A Common Stock"
   },
   {
+    "s": "OPAY",
+    "n": "OPay Limited American Depositary Shares, each representing ten Ordinary Shares"
+  },
+  {
     "s": "OPBK",
     "n": "OP Bancorp - Common Stock"
   },
@@ -18174,7 +18142,7 @@ const TICKER_DATA = [
   },
   {
     "s": "PRM",
-    "n": "Perimeter Solutions, SA Common Stock"
+    "n": "Perimeter Group Inc. Common Stock"
   },
   {
     "s": "PRMB",
@@ -18699,10 +18667,6 @@ const TICKER_DATA = [
   {
     "s": "RAL",
     "n": "Ralliant Corporation Common Stock"
-  },
-  {
-    "s": "RAMP",
-    "n": "LiveRamp Holdings, Inc. Common Stock"
   },
   {
     "s": "RANG",
@@ -19707,6 +19671,10 @@ const TICKER_DATA = [
   {
     "s": "SACH",
     "n": "Sachem Capital Corp. Common Shares"
+  },
+  {
+    "s": "SAEN",
+    "n": "Genenta Science S.p.A. - American Depositary Shares"
   },
   {
     "s": "SAFE",
@@ -21418,7 +21386,7 @@ const TICKER_DATA = [
   },
   {
     "s": "SUPN",
-    "n": "Supernus Pharmaceuticals, Inc. - Common Stock"
+    "n": "Supernus, Inc. - Common Stock"
   },
   {
     "s": "SUPV",
@@ -21523,10 +21491,6 @@ const TICKER_DATA = [
   {
     "s": "SWK",
     "n": "Stanley Black & Decker, Inc. Common Stock"
-  },
-  {
-    "s": "SWKHL",
-    "n": "SWK Holdings Corporation - 9.00% Senior Notes due 2027"
   },
   {
     "s": "SWKS",
@@ -24714,15 +24678,15 @@ const TICKER_DATA = [
   },
   {
     "s": "XTER",
-    "n": "Karman Line Acquisition Corp. - Class A Ordinary Shares"
+    "n": "Xterax Corporation II - Class A Ordinary Shares"
   },
   {
     "s": "XTERU",
-    "n": "Karman Line Acquisition Corp. - Units"
+    "n": "Xterax Corporation II - Units"
   },
   {
     "s": "XTERW",
-    "n": "Karman Line Acquisition Corp. - Warrants"
+    "n": "Xterax Corporation II - Warrants"
   },
   {
     "s": "XTIA",
