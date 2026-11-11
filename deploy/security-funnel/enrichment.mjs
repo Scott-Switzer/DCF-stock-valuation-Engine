@@ -88,17 +88,12 @@ export async function enrichmentRoute(env,u){
 
  if(u.pathname==='/connect/enrichment-sec-directory'){
   const existing=await env.DATA.get(ENRICH+'sec-directory-summary.json');if(existing)return {...await existing.json(),cached:true};
-  const url='https://www.sec.gov/files/company_tickers_exchange.json';
-  const response=await fetch(url,{headers:{'User-Agent':'Scott Switzer scswitzer@chapman.edu academic-research (Cloudflare data plane)','Accept':'application/json'},signal:AbortSignal.timeout(20000)});
-  const collected_at=new Date().toISOString();
-  if(!response.ok){await response.body?.cancel();const result={status:'PUBLIC_SEC_DIRECTORY_UNAVAILABLE_FROM_CLOUD',http_status:response.status,url,collected_at,upstream_requests:1};await put(env,ENRICH+'sec-directory-summary.json',result);return result;}
-  const reader=response.body.getReader(),chunks=[];let bytes=0;while(true){const {done,value}=await reader.read();if(done)break;bytes+=value.length;if(bytes>4*1048576){await reader.cancel();fail('SEC_DIRECTORY_BYTE_BUDGET');}chunks.push(value);}
-  const merged=new Uint8Array(bytes);let offset=0;for(const chunk of chunks){merged.set(chunk,offset);offset+=chunk.length;}const raw=new TextDecoder().decode(merged),data=JSON.parse(raw);
-  if(!Array.isArray(data.fields)||!Array.isArray(data.data)||!['cik','ticker','exchange'].every(k=>data.fields.includes(k)))fail('SEC_DIRECTORY_SHAPE');
-  const source=await immutable(env,'sec-directories',data),index={};
-  for(const values of data.data){const row=Object.fromEntries(data.fields.map((k,i)=>[k,values[i]])),symbol=row.ticker;if(!plan.symbols.includes(symbol))continue;const cik=String(row.cik).padStart(10,'0');if(!eligibleCik(cik))continue;(index[symbol]??=[]).push({cik,exchange:row.exchange,name:row.name||null});}
-  const reference=await immutable(env,'sec-directory-indexes',{source,url,collected_at,index,scope:'CURRENT_SEC_ISSUER_TICKER_DIRECTORY;NOT_HISTORICAL_OR_SHARE_CLASS_CERTIFICATION'});
-  await put(env,ENRICH+'sec-directory-index.json',reference);const result={status:'CURRENT_SEC_DIRECTORY_CONNECTED',source,reference,url,collected_at,cohort_symbols:Object.keys(index).length,ambiguous_symbols:Object.values(index).filter(v=>v.length!==1).length,upstream_requests:1};await put(env,ENRICH+'sec-directory-summary.json',result);return result;
+  // Stored copy only: the serving layer reads its own ingested SEC directory
+  // at request time and never fetches SEC live from a request path. Data-plane
+  // ingestion publishes the stored directory (sec-directories objects plus the
+  // summary above); until it does, this endpoint reports not-ingested with
+  // zero upstream requests instead of pulling from www.sec.gov.
+  return {status:'PUBLIC_SEC_DIRECTORY_NOT_INGESTED',url:'https://www.sec.gov/files/company_tickers_exchange.json',collected_at:null,upstream_requests:0,note:'No stored SEC directory copy exists yet; data-plane ingestion must publish one before enrichment can read it.'};
  }
  if(u.pathname==='/connect/enrichment-canary'){
   const cik=u.searchParams.get('cik');if(!eligibleCik(cik)||!plan.ciks.includes(cik))fail('CIK_OUTSIDE_ENRICHMENT_PLAN');

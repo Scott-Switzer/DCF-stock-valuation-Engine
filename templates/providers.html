@@ -11,7 +11,7 @@
 <tr><th scope="row">Zion compact valuation data</th><td>{% if zion_valuation_configured %}Connected{% else %}Not configured{% endif %}</td><td>Private Cloudflare connection to published SEC packets. Source dates and missing-field fallbacks appear with each company.</td></tr>
 <tr><th scope="row">Offline example</th><td>Available</td><td>Nothing. Synthetic data, not a real security.</td></tr>
 <tr><th scope="row">Manual financials</th><td>Available</td><td>Your own annual reports.</td></tr>
-<tr><th scope="row">SEC company facts</th><td>Available</td><td>Server-side <code>EDGAR_IDENTITY</code> contact identity.</td></tr>
+<tr><th scope="row">SEC company facts</th><td>Disabled in production</td><td>Direct EDGAR mode is a local-development path only (<code>DCF_ALLOW_DIRECT_FETCH=1</code>); production statements come through the Zion serving layer.</td></tr>
 <tr><th scope="row">Custom company API (Zion-compatible)</th><td>{% if zion_configured %}Configured{% else %}Not configured{% endif %}</td><td>Server-side <code>ZION_API_BASE_URL</code> (HTTPS) plus optional <code>ZION_API_TOKEN</code>. A private custom API, not a public Zion product. Unconfigured deployments return HTTP 503.</td></tr>
 <tr><th scope="row">Configured financial API</th><td>{% if custom_api_configured %}Configured{% else %}Not configured{% endif %}</td><td>Server-side <code>DCF_API_BASE_URL</code> plus optional <code>DCF_API_TOKEN</code>. See the provider contract.</td></tr>
 </tbody>

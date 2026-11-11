@@ -6,7 +6,7 @@ from datetime import date, datetime, timezone
 from html.parser import HTMLParser
 from urllib.parse import quote, urlsplit
 
-from dcf_loader import JsonHTTP, ProviderError, ticker_symbol
+from dcf_loader import JsonHTTP, ProviderError, require_direct_fetch, ticker_symbol
 
 
 def number(value):
@@ -190,6 +190,10 @@ def load_analysts(ticker):
         if "error" in cached:
             raise ProviderError(cached["error"])
         return cached
+    require_direct_fetch(
+        "The Yahoo Finance analyst page scrape",
+        "a served analyst-consensus source",
+    )
     try:
         result = parse_analysts(
             http.get(

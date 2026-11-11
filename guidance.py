@@ -4,7 +4,7 @@ from datetime import date, datetime, timezone
 from html.parser import HTMLParser
 import re
 from urllib.parse import quote
-from dcf_loader import JsonHTTP, ProviderError, provider_setting, ticker_symbol
+from dcf_loader import JsonHTTP, ProviderError, provider_setting, require_direct_fetch, ticker_symbol
 
 
 def filing_links(packet, cik, asof):
@@ -114,6 +114,10 @@ def guidance_excerpt(html, filed=None):
 
 def load_guidance(ticker):
     ticker = ticker_symbol(ticker)
+    require_direct_fetch(
+        "SEC filing guidance research (directory, submissions and filing text)",
+        "a served filing-text source",
+    )
     identity = provider_setting("EDGAR_IDENTITY")
     if "@" not in identity:
         raise ProviderError("SEC research is not configured.")

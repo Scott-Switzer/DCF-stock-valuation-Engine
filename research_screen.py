@@ -97,7 +97,11 @@ def issuer_identity(symbol, cik, asof, *, http=None):
                     qualification='ISSUER_IDENTITY_ONLY;NO_DATED_PRICE_OR_SHARE_CLASS_JOIN')
     if symbol in REVIEWED and REVIEWED[symbol]['cik'] != cik:
         return None
-    from dcf_loader import JsonHTTP
+    from dcf_loader import JsonHTTP, allow_direct_fetch
+    if not allow_direct_fetch():
+        # The live SEC submissions check is a direct fetch. With the gate
+        # closed an unreviewed alias stays unverified instead of fetching.
+        return None
     import hashlib
     import json
     from datetime import datetime, timezone
