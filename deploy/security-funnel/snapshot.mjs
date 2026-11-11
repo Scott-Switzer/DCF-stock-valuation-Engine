@@ -7,7 +7,7 @@ export function answerDate(value){
   for(const key of ['period_end','session_date','date','end_date','price_as_of']){
    const date=node[key];if(typeof date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(Date.parse(date))&&new Date(date).toISOString().slice(0,10)===date)dates.push(date);
   }
-  for(const key of ['data','result','observations','prices','rows','evidence','historical','financials','market'])if(node[key])visit(node[key]);
+  for(const key of ['data','result','summary','observations','prices','rows','evidence','historical','financials','market'])if(node[key])visit(node[key]);
  };
  visit(value);return dates.sort().at(-1)||null;
 }

@@ -29,7 +29,7 @@ export function structuredQuery(value,symbols={}){
  object(value);
  if(Object.values(value).some(v=>v===null))invalid('Explicit null is not an omitted field.');
  const action=value.action;
- if(typeof action!=='string'||!['price','growth','financials','dataset_catalog','dataset_detail','dataset_schema','dataset_rows'].includes(action))invalid('Unsupported action.');
+ if(typeof action!=='string'||!['price','growth','total_return','financials','dataset_catalog','dataset_detail','dataset_schema','dataset_rows'].includes(action))invalid('Unsupported action.');
  // Licensed source archives are addressed by catalog identity plus the catalog's own
  // object key allowlist; no caller-supplied path ever reaches R2.
  const datasetId=value=>{
@@ -78,8 +78,8 @@ export function structuredQuery(value,symbols={}){
   if(!Number.isSafeInteger(offset)||offset<0||offset>1000000||!Number.isSafeInteger(limit)||limit<1||limit>50)invalid('Catalog offset must be 0–1,000,000 and limit 1–50.');
   return {action,search,offset,limit};
  }
- const allowed={price:['date'],growth:['date_from','date_to','basis'],financials:['metric','frequency','date_from','date_to','as_of']}[action];
- if(!allowed)invalid('Use price, growth, financials, dataset_catalog, or dataset_detail.');
+ const allowed={price:['date'],growth:['date_from','date_to','basis'],total_return:['date_from','date_to','include_series','max_points'],financials:['metric','frequency','date_from','date_to','as_of']}[action];
+ if(!allowed)invalid('Use price, growth, total_return, financials, dataset_catalog, or dataset_detail.');
  fields(value,['action','symbol',...allowed]);
  if(typeof value.symbol!=='string'||!Object.hasOwn(symbols,value.symbol.toUpperCase()))invalid('Symbol is not in the stored universe.');
  const symbol=value.symbol.toUpperCase();
@@ -92,6 +92,13 @@ export function structuredQuery(value,symbols={}){
   const basis=value.basis??'split_adjusted_price';
   if(!['split_adjusted_price','raw_observed_price'].includes(basis))invalid('Unsupported price basis.');
   return {action,symbol,dates,basis};
+ }
+ if(action==='total_return'){
+  if(dates.length!==2||dates[0]===dates[1])invalid('Total return needs two different exact session dates.');
+  const include_series=value.include_series??true,max_points=value.max_points??500;
+  if(typeof include_series!=='boolean')invalid('include_series must be true or false.');
+  if(!Number.isSafeInteger(max_points)||max_points<2||max_points>5000)invalid('max_points must be 2–5,000.');
+  return {action,symbol,dates,include_series,max_points};
  }
  const metric=value.metric??'revenue';
  if(!['revenue','revenue_growth','operating_margin'].includes(metric))invalid('Unsupported financial metric.');

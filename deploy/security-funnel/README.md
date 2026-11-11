@@ -144,6 +144,7 @@ calendar dates fail instead of silently changing the question.
 {"action":"financials","symbol":"AAPL","metric":"revenue","date_from":"2024-01-01","date_to":"2025-12-31"}
 {"action":"dataset_catalog","search":"comp","offset":50,"limit":10}
 {"action":"dataset_detail","dataset_id":"0123456789abcdef0123456789abcdef"}
+{"action":"total_return","symbol":"AAPL","date_from":"2010-01-04","date_to":"2020-01-02","include_series":false}
 ```
 
 A price without `date` means latest stored close. Financial requests default to annual
@@ -154,6 +155,38 @@ the 32-character catalog id (`WRDS dataset <id>` works as natural language) and
 returns the same whitelisted metadata projection: id, dataset, family, release,
 declared rows, object descriptors and native column descriptors. Raw records,
 object payloads and unlisted keys are never returned.
+
+### Total return and delisting treatment
+
+`total_return` chains CRSP's stored daily `RET` (already a decimal fraction, and
+missing where CRSP has no return) into a cumulative series and reports the
+split-adjusted price growth of the same window beside it. Dividends are included
+in the total return and excluded from the price growth, so the difference is the
+distribution contribution. The first stored session's own return is not applied:
+growth is measured from that close. A missing return ends a segment instead of
+becoming zero, so an interior gap yields per-segment figures and no single
+cumulative claim.
+
+The final CRSP row of a delisted security carries `dlydelflg=Y`. When CRSP reports
+a delisting return, that row's `RET` already contains it
+(`delisting_return_present=true`); the reader reports `APPLIED_ONCE_BY_SOURCE_ROW`
+and never adds `DLRET` again. When CRSP reports none, the row's return is null and
+the reader returns the observed chain as an explicit upper bound
+(`total_return_is_upper_bound`, `bounds.lower=-1`) rather than imputing a value.
+Delisting codes and returns come from a compact index built from
+`crsp_a_stock__dsedelist` (true delistings only, `dlstcd>=200`, restricted to the
+frozen permno universe, 1,898 entries). Rebuild it with either the owner-only
+`POST /connect/delistings-init` route or the reproducible local builder:
+
+```bash
+node deploy/security-funnel/scripts/build-delistings-index.mjs \
+  --parquet /tmp/dsedelist.parquet --catalog-detail /tmp/dsedelist-detail.json \
+  --history-catalog /tmp/history-catalog.json --out /tmp/delistings-index.json
+```
+
+Then upload it to `full-history-2026-10-21-v1/delistings-index.json` in the data
+bucket. Without the index the price row's own delisting flag still classifies the
+event; only the reason code is unavailable.
 
 The website `/api/data/query` forwards this same input and retains owner-only
 price/catalog access. `scripts/finance.py --request '<JSON>' --json` uses the same
