@@ -1,5 +1,7 @@
 # CUIG Valuation Suite
 
+
+> **Moved (2026-10-29):** this code now lives in [personal-hedge-fund](https://github.com/Scott-Switzer/personal-hedge-fund) at `packages/door/dcf/`, imported as a full subtree with history. New work goes in the monorepo. This repo is frozen for review.
 A valuation suite with five-year unlevered discounted cash flow, dividend discount and trading-comparable models based on the **CUIG Valuation Template Fall 2026**. It shows intrinsic value today and a separate 12-month target scenario, with editable operating drivers, auditable financial sources and a replaceable data provider.
 
 **Public demo:** https://dcf-valuation-engine.scswitzer.workers.dev
