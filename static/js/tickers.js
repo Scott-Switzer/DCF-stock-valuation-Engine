@@ -261,10 +261,6 @@ const TICKER_DATA = [
     "n": "Archer Aviation Inc. Class A Common Stock"
   },
   {
-    "s": "ACHV",
-    "n": "Achieve Life Sciences, Inc.  - Common Shares"
-  },
-  {
     "s": "ACI",
     "n": "Albertsons Companies, Inc. Class A Common Stock"
   },
@@ -1757,10 +1753,6 @@ const TICKER_DATA = [
     "n": "Arhaus, Inc. - Class A Common Stock"
   },
   {
-    "s": "ARI",
-    "n": "Apollo Commercial Real Estate Finance, Inc"
-  },
-  {
     "s": "ARIS",
     "n": "Aris Mining Corporation Common Shares"
   },
@@ -2023,10 +2015,6 @@ const TICKER_DATA = [
   {
     "s": "ATAT",
     "n": "Atour Lifestyle Holdings Limited - American Depositary Shares"
-  },
-  {
-    "s": "ATCH",
-    "n": "AtlasClear Holdings, Inc. Common Stock"
   },
   {
     "s": "ATCX",
@@ -3989,10 +3977,6 @@ const TICKER_DATA = [
     "n": "BW LPG Limited Common Shares"
   },
   {
-    "s": "BWMN",
-    "n": "Bowman Consulting Group Ltd. - Common Stock"
-  },
-  {
     "s": "BWMX",
     "n": "Betterware de Mexico, S.A.P.I. de C.V. Ordinary Shares"
   },
@@ -5041,10 +5025,6 @@ const TICKER_DATA = [
     "n": "Clearfield, Inc. - Common Stock"
   },
   {
-    "s": "CLGN",
-    "n": "CollPlant Biotechnologies Ltd. - Ordinary Shares"
-  },
-  {
     "s": "CLH",
     "n": "Clean Harbors, Inc. Common Stock"
   },
@@ -5747,6 +5727,10 @@ const TICKER_DATA = [
   {
     "s": "CRMLW",
     "n": "Critical Metals Corp. - Warrants"
+  },
+  {
+    "s": "CRMN",
+    "n": "Skyline Builders Group Holding Limited - Class A Ordinary Shares"
   },
   {
     "s": "CRMT",
@@ -8081,10 +8065,6 @@ const TICKER_DATA = [
     "n": "EZCORP, Inc. - Class A Non-Voting Common Stock"
   },
   {
-    "s": "EZRA",
-    "n": "Reliance Global Group, Inc. - Common Stock"
-  },
-  {
     "s": "F",
     "n": "Ford Motor Company Common Stock"
   },
@@ -9238,7 +9218,7 @@ const TICKER_DATA = [
   },
   {
     "s": "GCBC",
-    "n": "Greene County Bancorp, Inc. - Common Stock"
+    "n": "Greene Bancorp, Inc. - Common Stock"
   },
   {
     "s": "GCGR",
@@ -10581,10 +10561,6 @@ const TICKER_DATA = [
     "n": "Hongli Group Inc. - Class A Ordinary Shares"
   },
   {
-    "s": "HLSQ",
-    "n": "Tessera Defense and Homeland Security Inc. Common Stock"
-  },
-  {
     "s": "HLT",
     "n": "Hilton Worldwide Holdings Inc. - Common Stock"
   },
@@ -10987,6 +10963,10 @@ const TICKER_DATA = [
   {
     "s": "HY",
     "n": "Hyster-Yale, Inc. Class A common stock"
+  },
+  {
+    "s": "HYAC",
+    "n": "Haymaker Acquisition Corp V Class A Ordinary Shares"
   },
   {
     "s": "HYFM",
@@ -11531,10 +11511,6 @@ const TICKER_DATA = [
   {
     "s": "INLX",
     "n": "Intellinetics, Inc. Common Stock"
-  },
-  {
-    "s": "INM",
-    "n": "InMed Pharmaceuticals Inc. - Common Shares"
   },
   {
     "s": "INMB",
@@ -12313,10 +12289,6 @@ const TICKER_DATA = [
     "n": "Karooooo Ltd. - Ordinary shares"
   },
   {
-    "s": "KAZR",
-    "n": "Skyline Builders Group Holding Limited - Class A Ordinary Shares"
-  },
-  {
     "s": "KB",
     "n": "KB Financial Group Inc"
   },
@@ -12585,10 +12557,6 @@ const TICKER_DATA = [
     "n": "Knife Riv Holding Co. Common Stock"
   },
   {
-    "s": "KNRX",
-    "n": "KNOREX LTD. Class A Ordinary Shares"
-  },
-  {
     "s": "KNSA",
     "n": "Kiniksa Pharmaceuticals International, plc - Class A Ordinary Shares"
   },
@@ -12659,10 +12627,6 @@ const TICKER_DATA = [
   {
     "s": "KPRX",
     "n": "Kiora Pharmaceuticals, Inc.  - Common Stock"
-  },
-  {
-    "s": "KPTI",
-    "n": "Karyopharm Therapeutics Inc. - Common Stock"
   },
   {
     "s": "KR",
@@ -13445,8 +13409,16 @@ const TICKER_DATA = [
     "n": "The Lovesac Company - Common Stock"
   },
   {
+    "s": "LOVI",
+    "n": "Live Oak Acquisition Corp. VI - Class A Ordinary Shares"
+  },
+  {
     "s": "LOVIU",
     "n": "Live Oak Acquisition Corp. VI - Units"
+  },
+  {
+    "s": "LOVIW",
+    "n": "Live Oak Acquisition Corp. VI - Warrants"
   },
   {
     "s": "LOW",
@@ -14041,10 +14013,6 @@ const TICKER_DATA = [
     "n": "Marcus Corporation (The) Common Stock"
   },
   {
-    "s": "MCTA",
-    "n": "Charming Medical Limited - Class A Ordinary Shares"
-  },
-  {
     "s": "MCY",
     "n": "Mercury General Corporation Common Stock"
   },
@@ -14091,6 +14059,10 @@ const TICKER_DATA = [
   {
     "s": "MDLZ",
     "n": "Mondelez International, Inc. - Class A Common Stock"
+  },
+  {
+    "s": "MDRN",
+    "n": "Modern Mining Technology Corp. Common Shares"
   },
   {
     "s": "MDRR",
@@ -14999,6 +14971,10 @@ const TICKER_DATA = [
   {
     "s": "MTR",
     "n": "Mesa Royalty Trust Common Stock"
+  },
+  {
+    "s": "MTRI",
+    "n": "Mentari Therapeutics, Inc. - Common Stock"
   },
   {
     "s": "MTRN",
@@ -16277,10 +16253,6 @@ const TICKER_DATA = [
     "n": "Next Technology Holding Inc. - Ordinary Shares"
   },
   {
-    "s": "NXXT",
-    "n": "NextNRG, Inc. - Common Stock"
-  },
-  {
     "s": "NYAX",
     "n": "Nayax Ltd. - Ordinary Shares"
   },
@@ -16578,7 +16550,7 @@ const TICKER_DATA = [
   },
   {
     "s": "OLMA",
-    "n": "Olema Pharmaceuticals, Inc. - Common Stock"
+    "n": "Olema Oncology, Inc. - Common Stock"
   },
   {
     "s": "OLN",
@@ -16739,6 +16711,10 @@ const TICKER_DATA = [
   {
     "s": "OPHC",
     "n": "OptimumBank Holdings, Inc. Common Stock"
+  },
+  {
+    "s": "OPHI",
+    "n": "CollPlant Biotechnologies Ltd. - Ordinary Shares"
   },
   {
     "s": "OPI",
@@ -18273,14 +18249,6 @@ const TICKER_DATA = [
     "n": "Pearson, Plc Common Stock"
   },
   {
-    "s": "PSQH",
-    "n": "PSQ Holdings, Inc. Class A Common Stock"
-  },
-  {
-    "s": "PSQH-W",
-    "n": "PSQ Holdings, Inc. Warrants, each exercisable for one share of Class A common stock at an exercise price of $11.50 per share"
-  },
-  {
     "s": "PSQL",
     "n": "Pasqal Holding SA - Ordinary Shares"
   },
@@ -18331,10 +18299,6 @@ const TICKER_DATA = [
   {
     "s": "PTIV",
     "n": "Pineapple Financial Inc. Common Stock"
-  },
-  {
-    "s": "PTLE",
-    "n": "PTL LTD - Class A Ordinary Shares"
   },
   {
     "s": "PTLO",
@@ -18603,6 +18567,10 @@ const TICKER_DATA = [
   {
     "s": "QUIK",
     "n": "QuickLogic Corporation - Common Stock"
+  },
+  {
+    "s": "QUIT",
+    "n": "Achieve Life Sciences, Inc.  - Common Shares"
   },
   {
     "s": "QUMS",
@@ -19329,10 +19297,6 @@ const TICKER_DATA = [
     "n": "Rockwell Automation, Inc. Common Stock"
   },
   {
-    "s": "ROKU",
-    "n": "Roku, Inc. - Class A Common Stock"
-  },
-  {
     "s": "ROL",
     "n": "Rollins, Inc. Common Stock"
   },
@@ -19957,8 +19921,16 @@ const TICKER_DATA = [
     "n": "Social Commerce Partners Corporation - Unit"
   },
   {
+    "s": "SCQC",
+    "n": "SPACCircle Acquisition Corp. - Class A Ordinary Shares"
+  },
+  {
     "s": "SCQCU",
     "n": "SPACCircle Acquisition Corp. - Units"
+  },
+  {
+    "s": "SCQCW",
+    "n": "SPACCircle Acquisition Corp. - Warrants"
   },
   {
     "s": "SCSC",
@@ -21725,10 +21697,6 @@ const TICKER_DATA = [
     "n": "Token Cat Limited - American Depositary Shares"
   },
   {
-    "s": "TCBI",
-    "n": "Texas Capital Bancshares, Inc. Common Stock"
-  },
-  {
     "s": "TCBK",
     "n": "TriCo Bancshares - Common Stock"
   },
@@ -22783,6 +22751,10 @@ const TICKER_DATA = [
   {
     "s": "TX",
     "n": "Ternium S.A. Ternium S.A. American Depositary Shares (each representing ten shares, USD1.00 par value)"
+  },
+  {
+    "s": "TXCP",
+    "n": "Texas Capital Bancshares, Inc. Common Stock"
   },
   {
     "s": "TXG",
@@ -23857,6 +23829,10 @@ const TICKER_DATA = [
     "n": "Valvoline Inc. Common Stock"
   },
   {
+    "s": "VVVV",
+    "n": "vVARDIS Holding AG Class A Ordinary Shares"
+  },
+  {
     "s": "VVX",
     "n": "V2X, Inc. Common Stock"
   },
@@ -24070,7 +24046,7 @@ const TICKER_DATA = [
   },
   {
     "s": "WFRD",
-    "n": "Weatherford International plc - Ordinary shares"
+    "n": "Weatherford International Corp - Common Stock"
   },
   {
     "s": "WGO",
@@ -24429,6 +24405,10 @@ const TICKER_DATA = [
     "n": "WW International, Inc.  - Common Stock"
   },
   {
+    "s": "WWB",
+    "n": "Windward Bio Group AG - Common shares"
+  },
+  {
     "s": "WWD",
     "n": "Woodward, Inc. - Common Stock"
   },
@@ -24539,6 +24519,10 @@ const TICKER_DATA = [
   {
     "s": "XGN",
     "n": "Exagen Inc. - Common Stock"
+  },
+  {
+    "s": "XGPU",
+    "n": "Reliance Global Group, Inc. - Common Stock"
   },
   {
     "s": "XHG",
@@ -25071,5 +25055,9 @@ const TICKER_DATA = [
   {
     "s": "ZYME",
     "n": "Zymeworks Inc. - Common Stock"
+  },
+  {
+    "s": "ZYN",
+    "n": "PTL LTD - Class A Ordinary Shares"
   }
 ];
