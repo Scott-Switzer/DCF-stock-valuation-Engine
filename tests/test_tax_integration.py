@@ -19,6 +19,37 @@ from test_sec_first import MockHTTP, full_packet  # noqa: E402
 from test_yahoo_provider import MockHTTP as YahooHTTP, TODAY as YAHOO_TODAY  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def served(monkeypatch):
+    """Served market inputs for every SEC-first load in this module.
+
+    Values mirror the retired Yahoo chart fixture (price 50, beta 1.0,
+    risk-free rate 4 percent) so tax-policy expectations stay comparable.
+    """
+    import served_market
+
+    monkeypatch.setattr(
+        served_market,
+        "latest_price",
+        lambda symbol, asof, **kwargs: {
+            "ticker": symbol,
+            "price": 50.0,
+            "price_as_of": asof,
+            "provenance": {
+                "provider": "Zion serving layer price history (CRSP)",
+                "release": "fixture-release",
+                "permno": 1,
+                "basis": "raw_observed_price",
+            },
+        },
+    )
+    monkeypatch.setattr(served_market, "served_beta", lambda symbol, asof, **kwargs: (1.0, 150))
+    monkeypatch.setattr(
+        served_market, "risk_free_rate", lambda asof: {"rate": 0.04, "as_of": asof}
+    )
+    return served_market
+
+
 def test_sec_first_load_records_tax_policy():
     from sec_first import load_sec_first
 
@@ -101,7 +132,10 @@ def test_prefer_ppe_honors_explicit_policy():
         resolve_forecast_tax([0.22, 2.0])
 
 
-def test_yahoo_retains_filed_ratio_beside_fallback():
+def test_yahoo_retains_filed_ratio_beside_fallback(monkeypatch):
+    # The Yahoo provider is a local-development path; enable the escape
+    # hatch for this provider-level test.
+    monkeypatch.setenv("DCF_ALLOW_DIRECT_FETCH", "1")
     from yahoo_provider import load_yahoo
 
     http = YahooHTTP()
@@ -325,32 +359,24 @@ def test_api_tax_selection_bypasses_shared_cache(monkeypatch):
     assert bad2.status_code == 400
 
 
-def test_explicit_selection_applies_over_yahoo_default_policy(monkeypatch):
+def test_explicit_selection_applies_over_served_default_policy(monkeypatch):
+    """An explicit scenario is recorded over the served load's default policy.
+
+    This used to ride the Yahoo fallback baseline; the automatic load now
+    serves statements only from the published packet, so the same selection
+    semantics are asserted on the SEC-first path.
+    """
     import auto_loading
-    from test_yahoo_provider import MockHTTP as YahooHTTP, TODAY as YAHOO_TODAY
+    import ppe_provider
 
-    from yahoo_provider import load_yahoo
+    packet = full_packet()
+    asof = packet["cutoff_date"]
+    monkeypatch.setattr(ppe_provider, "load_packet", lambda *a, **k: deepcopy(packet))
+    baseline = auto_loading.load_method("dcf", "TEST", asof, http=MockHTTP())
+    assert baseline["financials"]["source"]["tax_policy"]["explicit"] is False
 
-    http = YahooHTTP()
-    doc = load_yahoo("TEST", YAHOO_TODAY, http)
-    assert doc["source"]["tax_policy"]["explicit"] is False
-
-    def fake_yahoo(ticker, asof, *args, **kwargs):
-        from copy import deepcopy
-
-        return deepcopy(doc)
-
-    monkeypatch.setattr(auto_loading, "load_yahoo", fake_yahoo)
-    monkeypatch.setattr(auto_loading, "company_classification", lambda ticker, http: None)
-    import issuer_classification
-
-    monkeypatch.setattr(
-        issuer_classification, "resolve_classification",
-        lambda ticker, sec: {"status": "unconfirmed", "sic": "", "description": "",
-                             "source": "test", "source_url": "", "registry_version": ""},
-    )
     bundle = auto_loading.load_method(
-        "dcf", "TEST", YAHOO_TODAY, http=http,
+        "dcf", "TEST", asof, http=MockHTTP(),
         tax_scenario={"rates": [0.231] * 5,
                       "evidence": {"filing": "f", "period_end": "2024-12-31"}},
     )
@@ -360,7 +386,7 @@ def test_explicit_selection_applies_over_yahoo_default_policy(monkeypatch):
     assert policy["selected"]["rates"] == [0.231] * 5
     # Reported history is preserved, not overwritten by the scenario.
     assert [r["rate"] for r in policy["reported"]] == [
-        r["tax_rate"] for r in doc["historical"]
+        r["tax_rate"] for r in bundle["financials"]["historical"]
     ]
 
 
@@ -493,10 +519,10 @@ def test_auto_loading_tax_only_gate_uses_sec_first_with_explicit_policy(monkeypa
 
     Packet latest historical ETR is negative with all other gates passing.
     With an explicit scenario the automatic load must take SEC-first without
-    a Yahoo annual-statement fetch; without it the load must not claim
-    SEC-first (fallback/refusal). Invalid explicit evidence is rejected,
-    unrelated gate failures stay blocking, history is unmutated, and the
-    explicit load bypasses the shared assembly cache.
+    a Yahoo annual-statement fetch; without it the load refuses loudly,
+    because the Yahoo fallback is gone. Invalid explicit evidence is
+    rejected, unrelated gate failures stay blocking, history is unmutated,
+    and the explicit load bypasses the shared assembly cache.
     """
     import auto_loading
     import ppe_provider
@@ -535,23 +561,10 @@ def test_auto_loading_tax_only_gate_uses_sec_first_with_explicit_policy(monkeypa
     assert packet["historical"] == before
     assert [r["tax_rate"] for r in financials["historical"]] == [0.22, 0.25, -0.08]
 
-    # Without an explicit policy there is no SEC-first claim: the Yahoo
-    # fallback runs (no /timeseries/ ban here) or the load refuses loudly.
-    yahoo_calls = {}
-
-    def fake_yahoo(ticker, asof_arg, http_arg=None, include_capital_costs=True,
-                     require_wacc=True, packet=None):
-        yahoo_calls["called"] = True
-        from test_yahoo_provider import MockHTTP as YahooHTTP
-        from yahoo_provider import load_yahoo as real_yahoo
-        return real_yahoo(ticker, asof_arg, YahooHTTP(),
-                          include_capital_costs=include_capital_costs,
-                          require_wacc=require_wacc, packet=None)
-
-    monkeypatch.setattr(auto_loading, "load_yahoo", fake_yahoo)
-    fallback = auto_loading.load_method("dcf", "TEST", asof, http=MockHTTP())
-    assert fallback["financials"]["source"]["statement_source"] != "SEC-first"
-    assert yahoo_calls.get("called") is True
+    # Without an explicit policy there is no SEC-first claim and no Yahoo
+    # fallback either: the load refuses loudly with the gate's reasons.
+    with pytest.raises(ProviderError, match="tax_forecast_assumption_required"):
+        auto_loading.load_method("dcf", "TEST", asof, http=MockHTTP())
 
     # Invalid explicit evidence is rejected, never silently loaded.
     with pytest.raises(ProviderError):
@@ -566,12 +579,10 @@ def test_auto_loading_tax_only_gate_uses_sec_first_with_explicit_policy(monkeypa
     assert not broken_gate["eligible"]
     assert any(not r.startswith("tax_forecast_assumption_required_") for r in broken_gate["reasons"])
     monkeypatch.setattr(ppe_provider, "load_packet", lambda *a, **k: broken)
-    yahoo_calls.clear()
-    non_sec = auto_loading.load_method(
-        "dcf", "TEST", asof, http=MockHTTP(), tax_scenario=scenario
-    )
-    assert non_sec["financials"]["source"]["statement_source"] != "SEC-first"
-    assert yahoo_calls.get("called") is True
+    with pytest.raises(ProviderError, match="missing_bridge_cash"):
+        auto_loading.load_method(
+            "dcf", "TEST", asof, http=MockHTTP(), tax_scenario=scenario
+        )
 
     # Explicit selections never touch the shared assembly cache key.
     from company_packets import load_cached_method

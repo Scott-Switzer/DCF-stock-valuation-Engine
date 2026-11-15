@@ -74,6 +74,9 @@ def test_peer_fit_discloses_size_mismatch_and_unknown_business_fit():
 def test_references_cache_preserves_observation_time_and_is_compact(monkeypatch):
     import decision_support
 
+    # The analyst scrape is a local-development direct path; these tests
+    # exercise its cache mechanics with the escape hatch on.
+    monkeypatch.setenv("DCF_ALLOW_DIRECT_FETCH", "1")
     calls = []
     cache = {}
     packet = {
@@ -106,6 +109,7 @@ def test_references_cache_preserves_observation_time_and_is_compact(monkeypatch)
 def test_reference_failure_is_negative_cached_without_blocking_model(monkeypatch):
     import decision_support
 
+    monkeypatch.setenv("DCF_ALLOW_DIRECT_FETCH", "1")
     cache = {}
     calls = []
 

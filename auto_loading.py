@@ -1,13 +1,12 @@
 """Ticker-to-model assembly. Forecasts and peer selections remain explicit assumptions."""
 
-from ppe_provider import prefer_ppe
 from copy import deepcopy
 from datetime import datetime, timezone
 import time
 from dataclasses import asdict
 from dcf_code import DCFAssumptions, DCFModel
-from dcf_loader import JsonHTTP, ProviderError, parse_document, ticker_symbol, provider_setting
-from yahoo_provider import load_yahoo, load_company_metrics, recalculate_costs, BASE, HEADERS
+from dcf_loader import JsonHTTP, ProviderError, allow_direct_fetch, parse_document, ticker_symbol, provider_setting
+from yahoo_provider import recalculate_costs
 from issuer_classification import financial_block_reason, is_financial_sic, resolve_classification
 from readiness import reliable_peers
 
@@ -34,27 +33,15 @@ def starter_peers(ticker, http):
             "COST",
         ]
     candidates = []
-    label = "Yahoo suggestions; industry comparability unverified"
+    label = "Starter fallbacks; industry comparability unverified"
     for group, members in PEER_GROUPS:
         if ticker in members:
             label = group + "; review segment and competitive fit"
             candidates.extend(members)
             break
-    if not candidates:
-        try:
-            raw = http.get(
-                f"{BASE}/v6/finance/recommendationsbysymbol/{ticker}",
-                headers=HEADERS,
-                ttl=3600,
-                cache_key=f"yahoo-peer-suggestions-v1-{ticker}",
-            )
-            results = raw.get("finance", {}).get("result") or []
-            candidates = [
-                p.get("symbol")
-                for p in (results[0].get("recommendedSymbols", []) if results else [])
-            ]
-        except ProviderError:
-            pass
+    # No Yahoo recommendation fetch: peer suggestions come only from the
+    # reviewed starter groups and the static fallbacks below. The serving
+    # layer publishes no peer-suggestion source yet.
     # Fallbacks are suggestions, never a claim of comparable business models.
     candidates.extend(["MSFT", "IBM", "WMT", "JNJ", "XOM"])
     symbols = []
@@ -82,6 +69,11 @@ def company_classification(ticker, http):
     reviewed = registry_record(ticker)
     if reviewed is not None:
         return reviewed
+    if not allow_direct_fetch():
+        # The live SEC directory and submissions lookup is a direct fetch.
+        # With the gate closed the classification stays unconfirmed and the
+        # caller records that warning; nothing is fetched.
+        return None
     identity = provider_setting("EDGAR_IDENTITY")
     if "@" not in identity:
         return None
@@ -149,6 +141,33 @@ def financial_unavailable_reason(ticker, http, detail):
         f"{label} is a financial firm; an industrial FCFF DCF cannot be "
         f"completed from its available statements ({detail}). "
         "Use P/E and P/B relative valuation or file-based review."
+    )
+
+
+def load_peer_document(ticker, asof, http=None, *, deadline=None):
+    """Served-only peer snapshot: packet statements plus served price.
+
+    Peers never load through Yahoo. A peer with no gate-eligible published
+    packet is unavailable and raises ProviderError naming the gate reasons;
+    callers record that as a warning and continue with the peers that do
+    have served coverage.
+    """
+    from ppe_provider import load_packet
+    from sec_first import eligibility_gate, load_sec_first
+
+    packet = load_packet(ticker, asof, deadline=deadline)
+    gate = eligibility_gate(packet, ticker, asof)
+    if not gate["eligible"]:
+        raise ProviderError(
+            f"No served packet for peer {ticker}: " + "; ".join(gate["reasons"])
+        )
+    return load_sec_first(
+        ticker,
+        asof,
+        http,
+        packet,
+        include_capital_costs=False,
+        require_wacc=False,
     )
 
 
@@ -285,44 +304,30 @@ def load_method(
                 sec_first_error = str(exc)
             timings["sec_first"] = round(time.monotonic() - began, 3)
         if dcf is None:
-            began = time.monotonic()
-            try:
-                dcf = load_yahoo(
-                    ticker,
-                    asof,
-                    http,
-                    include_capital_costs=method != "relative",
-                    require_wacc=method == "dcf",
-                    packet=packet,
-                )
-            except ProviderError as exc:
-                timings["yahoo"] = round(time.monotonic() - began, 3)
-                reason = financial_unavailable_reason(ticker, http, str(exc))
-                raise ProviderError(reason or str(exc)) from exc
-            timings["yahoo"] = round(time.monotonic() - began, 3)
-            began = time.monotonic()
-            dcf = prefer_ppe(dcf, ticker, asof, deadline=getattr(http, "deadline", None), packet=packet, packet_error=packet_error,
-                             tax_override=tax_override, tax_scenario=tax_scenario)
-            existing_policy = (dcf.get("source") or {}).get("tax_policy") or {}
-            if (tax_override is not None or tax_scenario is not None) and not existing_policy.get("explicit"):
-                # Yahoo baseline kept (no packet merge recorded a selection):
-                # still record the explicit selection without mutating history.
-                from tax_policy import TaxPolicyError, document_tax_policy
-
-                try:
-                    dcf["source"]["tax_policy"] = document_tax_policy(
-                        dcf["historical"],
-                        user_override=tax_override,
-                        scenario=tax_scenario,
-                    )
-                except TaxPolicyError as exc:
-                    raise ProviderError(str(exc)) from None
-            timings["ppe_apply"] = round(time.monotonic() - began, 3)
+            # No Yahoo fallback: a packet coverage failure is an error now.
+            # The served path is the only door, so the load fails closed
+            # instead of silently pulling statements from Yahoo. A served
+            # load failure surfaces verbatim (it already names the missing
+            # input); a gate failure names the gate's reasons. Confirmed
+            # financial firms get the suitability reframe either way.
+            detail = (
+                sec_first_error
+                or packet_error
+                or "; ".join(gate["reasons"])
+                or "no published packet"
+            )
+            reason = financial_unavailable_reason(ticker, http, detail)
+            if reason:
+                raise ProviderError(reason)
             if sec_first_error:
-                dcf["source"].setdefault("warnings", []).append(
-                    f"SEC-first statement path unavailable ({sec_first_error}); using Yahoo financials with provenance."
-                )
-        dcf["source"]["statement_source"] = "SEC-first" if dcf["source"].get("statement_source") == "SEC-first" else "Yahoo"
+                raise ProviderError(sec_first_error)
+            raise ProviderError(
+                f"No served data for {ticker}: the published packet path "
+                f"is unavailable ({detail}). Direct Yahoo/SEC fallback is "
+                "disabled, so a missing packet is an error, not a silent "
+                "direct load (DIRECT_FETCH_DISABLED)."
+            )
+        dcf["source"]["statement_source"] = "SEC-first"
         dcf["source"]["sec_first_gate"] = gate
         dcf["source"]["revenue_growth_reference"] = historical_growth(dcf["historical"], "revenue")
         dividend_rows = dcf["source"]["common_dividends"]["historical"]
@@ -473,7 +478,7 @@ def load_method(
                 }
             )
             try:
-                peer = prefer_ppe(load_company_metrics(symbol, asof, http), symbol, asof, deadline=getattr(http, "deadline", None))
+                peer = load_peer_document(symbol, asof, http, deadline=getattr(http, "deadline", None))
                 suggestions[-1].update(name=peer["company"]["name"], available=True)
                 fit = peer_fit(
                     ticker,

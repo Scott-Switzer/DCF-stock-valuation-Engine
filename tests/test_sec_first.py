@@ -210,7 +210,38 @@ def test_gate_rejects_absent_packet_and_bad_contract():
     assert gate["reasons"][0].startswith("packet_contract_invalid")
 
 
-def test_loader_builds_valid_document_without_statement_request():
+@pytest.fixture
+def served(monkeypatch):
+    """Served market inputs fixture: price and beta from served history.
+
+    The values mirror the retired Yahoo chart fixture (price 50, beta 1.0,
+    risk-free rate 4 percent) so model expectations stay comparable.
+    """
+    import served_market
+
+    monkeypatch.setattr(
+        served_market,
+        "latest_price",
+        lambda symbol, asof, **kwargs: {
+            "ticker": symbol,
+            "price": 50.0,
+            "price_as_of": TODAY,
+            "provenance": {
+                "provider": "Zion serving layer price history (CRSP)",
+                "release": "fixture-release",
+                "permno": 1,
+                "basis": "raw_observed_price",
+            },
+        },
+    )
+    monkeypatch.setattr(served_market, "served_beta", lambda symbol, asof, **kwargs: (1.0, 150))
+    monkeypatch.setattr(
+        served_market, "risk_free_rate", lambda asof: {"rate": 0.04, "as_of": TODAY}
+    )
+    return served_market
+
+
+def test_loader_builds_valid_document_without_statement_request(served):
     http = MockHTTP()
     doc = load_sec_first("TEST", TODAY, http, full_packet())
     assert not any("/timeseries/" in url for url in http.calls)
@@ -218,11 +249,15 @@ def test_loader_builds_valid_document_without_statement_request():
     assert [r["net_income"] for r in doc["historical"]] == [110, 120, 130]
     assert doc["source"]["statement_source"] == "SEC-first"
     assert doc["market"]["price"] == 50
+    assert doc["source"]["market_provenance"]["release"] == "fixture-release"
     assert doc["source"]["common_book_equity"]["value"] == doc["historical"][-1][
         "book_value"
     ]
     assert doc["source"]["capital_costs"]["wacc"] is not None
-    assert doc["company"]["name"] == "Test Inc"
+    # No direct SEC directory lookup: an unreviewed issuer keeps the ticker
+    # as its display name and takes its CIK from the packet.
+    assert not any("company_tickers" in url for url in http.calls)
+    assert doc["company"]["name"] == "TEST"
 
 
 def test_loader_reports_gate_failure_instead_of_building():
@@ -232,7 +267,7 @@ def test_loader_reports_gate_failure_instead_of_building():
         load_sec_first("TEST", TODAY, http, packet)
 
 
-def test_dcf_load_uses_sec_first_and_records_gate(monkeypatch):
+def test_dcf_load_uses_sec_first_and_records_gate(monkeypatch, served):
     import auto_loading
     import ppe_provider
 

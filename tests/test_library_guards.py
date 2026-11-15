@@ -68,7 +68,7 @@ WATCH_ENTRIES = [
 
 def test_watch_refresh_uses_quotes_and_never_loads_statements(monkeypatch):
     import auto_loading
-    import yahoo_provider
+    import served_market
 
     monkeypatch.setattr(library, "list_watch", lambda: WATCH_ENTRIES[:2])
 
@@ -78,11 +78,11 @@ def test_watch_refresh_uses_quotes_and_never_loads_statements(monkeypatch):
     monkeypatch.setattr(auto_loading, "load_method", full_load)
     quotes = []
 
-    def fake_quote(ticker, asof, http=None):
+    def fake_quote(ticker, asof, **kwargs):
         quotes.append(ticker)
         return {"ticker": ticker, "price": 5.0, "price_as_of": "2026-10-06"}
 
-    monkeypatch.setattr(yahoo_provider, "latest_quote", fake_quote)
+    monkeypatch.setattr(served_market, "latest_price", fake_quote)
     states = library.check_watch()
     assert quotes == ["AAA", "BBB"]
     assert states[0]["price"] == 5.0
@@ -92,7 +92,7 @@ def test_watch_refresh_uses_quotes_and_never_loads_statements(monkeypatch):
 
 def test_watch_refresh_stops_at_shared_budget(monkeypatch):
     import dcf_loader
-    import yahoo_provider
+    import served_market
     from fake_clock import FakeClock
 
     clock = FakeClock()
@@ -103,12 +103,12 @@ def test_watch_refresh_stops_at_shared_budget(monkeypatch):
     monkeypatch.setattr(library, "WATCH_BUDGET_SECONDS", 0.45)
     quotes = []
 
-    def slow_quote(ticker, asof, http=None):
+    def slow_quote(ticker, asof, **kwargs):
         quotes.append(ticker)
         clock.advance(0.3)
         return {"ticker": ticker, "price": 5.0, "price_as_of": "2026-10-06"}
 
-    monkeypatch.setattr(yahoo_provider, "latest_quote", slow_quote)
+    monkeypatch.setattr(served_market, "latest_price", slow_quote)
     states = library.check_watch()
     assert quotes == ["AAA", "BBB"]
     assert states[2]["price"] is None and "Reload" in states[2]["error"]

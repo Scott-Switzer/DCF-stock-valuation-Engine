@@ -400,15 +400,16 @@ def remove_watch(ticker):
 
 
 def check_watch():
-    """Re-price watched tickers with cheap quotes under one shared time budget.
+    """Re-price watched tickers with served quotes under one shared time budget.
 
-    Quotes come from the provider's one-day chart metadata, so a refresh never
-    loads statements, peers or capital costs. The budget is one JsonHTTP
-    deadline for the whole refresh; tickers reached after it expires are marked
-    unchecked rather than holding the page.
+    Quotes come from the serving layer's stored price history, so a refresh
+    never loads statements, peers or capital costs and never pulls a direct
+    Yahoo quote. The budget is one shared deadline for the whole refresh;
+    tickers reached after it expires are marked unchecked rather than
+    holding the page.
     """
     from dcf_loader import JsonHTTP, ProviderError
-    from yahoo_provider import latest_quote
+    import served_market
 
     asof = datetime.now(timezone.utc).date().isoformat()
     http = JsonHTTP(budget=WATCH_BUDGET_SECONDS)
@@ -424,7 +425,7 @@ def check_watch():
             states.append(state)
             continue
         try:
-            quote = latest_quote(entry["ticker"], asof, http)
+            quote = served_market.latest_price(entry["ticker"], asof)
             price = quote["price"]
             state["price"] = price
             state["price_as_of"] = quote["price_as_of"]

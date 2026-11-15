@@ -40,6 +40,100 @@ class ProviderError(RuntimeError):
     pass
 
 
+# --- Direct-fetch gate -------------------------------------------------------
+# Production data enters through the Zion serving layer only: published
+# packets, the native history API and served price history. Direct fetches to
+# Yahoo Finance or SEC EDGAR are disabled unless DCF_ALLOW_DIRECT_FETCH=1 is
+# set for local development, in which case every direct fetch logs a loud
+# warning. The gate is enforced at the JsonHTTP transport (every production
+# fetch passes through it) and again at each provider entry point, so a path
+# fails closed with a named missing served source instead of silently
+# falling back to a direct pull.
+import logging as _logging
+
+_direct_fetch_logger = _logging.getLogger("dcf.direct_fetch")
+
+DIRECT_HOSTS = {
+    "query1.finance.yahoo.com": (
+        "Yahoo Finance",
+        "served price history and published statement packets",
+    ),
+    "query2.finance.yahoo.com": (
+        "Yahoo Finance",
+        "served price history and published statement packets",
+    ),
+    "finance.yahoo.com": (
+        "Yahoo Finance",
+        "a served analyst-consensus source",
+    ),
+    "www.sec.gov": (
+        "SEC EDGAR",
+        "served SEC history and published statement packets",
+    ),
+    "data.sec.gov": (
+        "SEC EDGAR",
+        "served SEC history and published statement packets",
+    ),
+}
+
+
+def allow_direct_fetch():
+    """True only when the local-development escape hatch is explicitly on."""
+    return provider_setting("DCF_ALLOW_DIRECT_FETCH").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def require_direct_fetch(what, missing_served_source):
+    """Entry-point gate for a feature whose only source is a direct fetch.
+
+    Raises ProviderError naming the missing served source when the escape
+    hatch is off; logs a loud warning and returns when it is on.
+    """
+    if allow_direct_fetch():
+        _direct_fetch_logger.warning(
+            "DCF_ALLOW_DIRECT_FETCH=1: %s is using a DIRECT fetch. Local "
+            "development only; production must use %s.",
+            what,
+            missing_served_source,
+        )
+        return
+    raise ProviderError(
+        f"Direct fetch disabled (DIRECT_FETCH_DISABLED): {what} cannot run "
+        f"because {missing_served_source} is not available through the Zion "
+        "serving layer yet. Production loads go through the serving layer "
+        "only; no direct Yahoo or SEC request was made. Set "
+        "DCF_ALLOW_DIRECT_FETCH=1 for local development only."
+    )
+
+
+def direct_fetch_guard(url):
+    """Transport-level gate applied to every JsonHTTP request."""
+    host = (urlparse(str(url)).hostname or "").lower()
+    entry = DIRECT_HOSTS.get(host)
+    if entry is None:
+        return
+    label, missing = entry
+    if allow_direct_fetch():
+        _direct_fetch_logger.warning(
+            "DCF_ALLOW_DIRECT_FETCH=1: DIRECT %s fetch to %s. Local "
+            "development only; production must use %s.",
+            label,
+            host,
+            missing,
+        )
+        return
+    raise ProviderError(
+        f"Direct {label} fetch is disabled (DIRECT_FETCH_DISABLED): "
+        f"production data comes through the Zion serving layer only. "
+        f"Missing served source: {missing}. Set DCF_ALLOW_DIRECT_FETCH=1 "
+        "for local development only."
+    )
+
+
 def ticker_symbol(value):
     if not isinstance(value, str):
         raise ValueError("Ticker must be text.")
@@ -273,6 +367,7 @@ class JsonHTTP:
         return ProviderError(message)
 
     def get(self, url, *, headers=None, params=None, ttl=0, cache_key=None, text_response=False):
+        direct_fetch_guard(url)
         if cache_key:
             cached = self.store.get(cache_key)
             if cached is not None:
@@ -537,6 +632,10 @@ def blank_document(ticker, name, asof, kind):
 
 
 def load_sec(ticker, asof, http):
+    require_direct_fetch(
+        "The direct SEC company facts mode",
+        "served SEC history (the Zion native history API or a published packet)",
+    )
     identity = provider_setting("EDGAR_IDENTITY")
     if "@" not in identity:
         raise ProviderError(

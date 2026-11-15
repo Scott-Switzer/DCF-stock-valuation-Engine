@@ -1,6 +1,19 @@
 import copy
 from datetime import datetime, timezone, timedelta
 import unittest
+
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _direct_fetch_dev_mode(monkeypatch):
+    # The Yahoo provider is a local-development path behind
+    # DCF_ALLOW_DIRECT_FETCH; these tests exercise the provider itself with
+    # the escape hatch on. The production fail-closed gate is covered in
+    # tests/test_direct_gate.py.
+    monkeypatch.setenv("DCF_ALLOW_DIRECT_FETCH", "1")
+
+
 from yahoo_provider import (
     load_yahoo,
     load_company_metrics,
