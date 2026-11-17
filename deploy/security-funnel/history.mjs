@@ -129,6 +129,112 @@ async function expandBatch(env,n,signedRead){
  return {batch:n,securities:b.rows.length,full_range_inputs:b.rows.filter(r=>r.valuation.inputs.status==='FULL_RANGE_SOURCE_INPUTS_CONNECTED').length,blocked:b.rows.filter(r=>r.valuation.inputs.full_range_expansion).map(r=>({symbol:r.symbol,reason:r.valuation.inputs.full_range_expansion.reason}))};
 }
 async function security(env,symbol){if(!/^[A-Z0-9][A-Z0-9.-]{0,24}$/.test(symbol||''))fail('INVALID_SYMBOL');const index=await read(env.DATA,FULL+'symbol-batches.json');if(!(symbol in index))fail('SYMBOL_NOT_IN_FROZEN_UNIVERSE');const b=await read(env.DATA,FULL+`batches/${index[symbol]}.json`),plan=await read(env.DATA,FULL+'plan.json');if(b.input_sha256!==plan.input_sha256||!['full-history-v2','full-history-v3'].includes(b.connection_version))fail('FULL_HISTORY_PIN_CHANGED');return b.rows.find(r=>r.symbol===symbol);}
+// One decode per part for every column a total-return window needs.
+export async function seriesRows(env,permno,from,to,cap=20000){
+ const plan=await read(env.DATA,FULL+'plan.json'),catalog=await read(env.DATA,FULL+'history-catalog.json',plan.catalog_sha256);
+ const refs=(catalog[String(permno)]||[]).filter(a=>(!from||a.date_max>=from)&&(!to||a.date_min<=to));
+ if(!refs.length)fail('PERMNO_NOT_IN_STORED_HISTORY');
+ const fields=['permno','dlycaldt','split_adjusted_price','source_total_return','dlydelflg','delisting_return_present'];
+ const rows=[];
+ for(const entry of refs){
+  const p=await openMaterialized(env,entry.ref),data=await p.columns(fields),ids=data.permno,dates=data.dlycaldt;
+  for(let i=0;i<ids.length;i++){
+   if(String(ids[i])!==String(permno))continue;
+   const date=dates[i];if(from&&date<from)continue;if(to&&date>to)continue;
+   if(rows.length>cap)fail('HISTORY_WINDOW_TOO_LARGE');
+   rows.push({date,split_adjusted_price:data.split_adjusted_price[i],source_total_return:data.source_total_return[i],
+    dlydelflg:data.dlydelflg[i],delisting_return_present:data.delisting_return_present[i]===true});
+  }
+ }
+ rows.sort((a,b)=>a.date.localeCompare(b.date));
+ return {rows,input_sha256:plan.input_sha256,parts:refs.length};
+}
+// The CRSP delisting file is a small, hash-pinned source object. Its compact
+// derived index is built once and read by every total-return question.
+let DELISTING_CACHE=null;
+export async function delistingsIndex(env){
+ const object=await env.DATA.get(FULL+'delistings-index.json');
+ if(!object)return null;
+ const etag=object.etag||null;
+ if(etag&&DELISTING_CACHE?.etag===etag)return DELISTING_CACHE.value;
+ if(object.size>4*1048576)fail('DELISTINGS_INDEX_BUDGET');
+ const value=JSON.parse(await object.text());
+ if(value.schema_version!=='zion-crsp-delistings-v1'||typeof value.entries!=='object')fail('DELISTINGS_INDEX_SCHEMA');
+ if(etag)DELISTING_CACHE={etag,value};
+ return value;
+}
+export function delistingRecord(index,permno){
+ const row=index?.entries?.[String(permno)];
+ if(!Array.isArray(row)||row.length<3)return null;
+ return {date:row[0],code:Number(row[1]),dlret:typeof row[2]==='number'?row[2]:null,dlretx:typeof row[3]==='number'?row[3]:null};
+}
+// Owner-only build. Reads the catalogued delisting file through the datasets
+// service, keeps only true delistings (dlstcd >= 200) for the frozen universe and
+// writes a deterministic index pinned by the source object's digest.
+async function delistingsInit(env){
+ const id='4833fe6633fc104b61475e35b253898a';
+ const response=await env.FINANCIAL_API.fetch(new Request('https://zion.internal/private/v1/datasets/catalog/'+id,{headers:{Authorization:'Bearer '+env.TOKEN},signal:AbortSignal.timeout(15000)}));
+ const detail=await boundedJson(response,262144);
+ if(!response.ok)fail(detail.error?.code||'DELISTING_CATALOG_UNAVAILABLE');
+ const store=detail.store,object=(detail.objects||[])[0];
+ if(store!=='research'||!object?.key||!/^[a-f0-9]{64}$/.test(object.sha256||''))fail('DELISTING_SOURCE_UNSUPPORTED');
+ const existing=await env.DATA.get(FULL+'delistings-index.json');
+ if(existing&&existing.size<=4*1048576){const done=JSON.parse(await existing.text());if(done.source?.object?.sha256===object.sha256)return {...done.summary,reused:true};}
+ const plan=await read(env.DATA,FULL+'plan.json'),catalog=await read(env.DATA,FULL+'history-catalog.json',plan.catalog_sha256);
+ const universe=new Set(Object.keys(catalog)),rows=[];
+ let cursor;
+ for(let page=0;page<120;page++){
+  const target=new URL('https://datasets.internal/v1/datasets/'+store+'/rows');
+  target.searchParams.set('path',object.key);
+  target.searchParams.set('columns','permno,dlstdt,dlstcd,dlret,dlretx');
+  target.searchParams.set('limit','1000');
+  if(cursor)target.searchParams.set('cursor',cursor);
+  const pageResponse=await env.ZION_DATASETS.fetch(new Request(target,{headers:{'User-Agent':'Zion-Security-Funnel/1.0'},signal:AbortSignal.timeout(20000)}));
+  const data=await boundedJson(pageResponse,4*1048576);
+  if(!pageResponse.ok)fail(data.error?.code||'DELISTING_SOURCE_READ_FAILED');
+  if(data.schema_version!=='zion-native-table-v1')fail('DELISTING_SOURCE_SCHEMA');
+  rows.push(...(data.data?.rows||[]));
+  cursor=data.next_cursor||null;
+  if(!cursor)break;
+  if(page===119)fail('DELISTING_SOURCE_PAGE_BUDGET');
+ }
+ const source={dataset:detail.dataset,catalog_id:id,catalog_release_id:detail.catalog_release_id,store,
+  object:{key:object.key,sha256:object.sha256,rows:object.rows??null}};
+ const {payload,summary}=await delistingIndexPayload({rows,universe,source});
+ await put(env,FULL+'delistings-index.json',payload);
+ return summary;
+}
+// Shared by the Worker route and the reproducible local build script so both
+// produce byte-identical indexes from the same rules.
+export function delistingEntries(rows,universe){
+ const entries={},families={};let scanned=0,delistings=0;
+ for(const row of rows){
+  scanned++;
+  const permno=Number(row.permno),code=Number(row.dlstcd);
+  if(!Number.isInteger(code)||code<200||!universe.has(String(permno)))continue;
+  delistings++;
+  const family=String(code).slice(0,1)+'00';
+  families[family]=(families[family]||0)+1;
+  const date=String(row.dlstdt||'').slice(0,10);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))continue;
+  entries[String(permno)]=[date,code,typeof row.dlret==='number'?row.dlret:null,typeof row.dlretx==='number'?row.dlretx:null];
+ }
+ return {entries,families,scanned,delistings};
+}
+export async function delistingIndexPayload({rows,universe,source}){
+ const built=delistingEntries(rows,universe);
+ const entries_sha256=await sha(JSON.stringify(built.entries));
+ const summary={source_dataset:source.dataset,catalog_id:source.catalog_id,catalog_release_id:source.catalog_release_id,
+  rows_scanned:built.scanned,delistings_in_universe:built.delistings,indexed_permnos:Object.keys(built.entries).length,
+  code_families:built.families,entries_sha256,reused:false};
+ return {payload:{schema_version:'zion-crsp-delistings-v1',source,summary,entries:built.entries},summary};
+}
+async function boundedJson(response,max){
+ if(!response.body)throw Error('SOURCE_UNAVAILABLE');
+ const raw=await response.text();
+ if(raw.length>max)throw Error('SOURCE_RESPONSE_TOO_LARGE');
+ return JSON.parse(raw);
+}
 export function validateHistoryQuery(u){
  const allowed=new Set(['symbol','permno','date_from','date_to','part','offset','limit','expected_input_sha256','metadata_only']);
  for(const k of u.searchParams.keys())if(!allowed.has(k)||u.searchParams.getAll(k).length!==1)fail('INVALID_HISTORY_PARAMETER');
@@ -202,6 +308,7 @@ export async function historyRoute(env,u,signedRead,checkPacket){
   const datasets=Object.entries(catalog.datasets).filter(([id])=>/dsf|cumulativeadjfactor|stksecurityinfohist|ciq.*symbol|comp.*security/.test(id)).map(([id,d])=>({dataset:id,rows:d.manifest_rows,objects:d.objects.length,columns:d.columns,manifest_key:d.manifest_key,manifest_sha256:d.manifest_sha256}));
   const result={source_catalog_sha256:digest,datasets,provider_requests:0,raw_payload_reads:0};await put(env,FULL+'source-repair-audit.json',result);return result;
  }
+ if(u.pathname==='/connect/delistings-init')return delistingsInit(env);
  if(u.pathname==='/connect/history-expand-batch')return expandBatch(env,Number(u.searchParams.get('n')),signedRead);
  if(u.pathname==='/connect/history-init')return init(env);
  if(u.pathname==='/connect/history-batch')return batch(env,Number(u.searchParams.get('n')),signedRead,checkPacket);
